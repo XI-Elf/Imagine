@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BattleArmor" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_armor.gd" id="1_pqbst"]
+
+[resource]
+script = ExtResource("1_pqbst")
+id = "none"
+title = "Без брони"
+good_vs = PackedStringArray()
+weak_vs = PackedStringArray()

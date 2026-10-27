@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="BattleCreature" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_v7cp3"]
+
+[resource]
+script = ExtResource("1_v7cp3")
+id = "wolf"
+title = "Волк"
+human = false
+scores = {
+"cha": 6,
+"con": 12,
+"dex": 15,
+"int": 3,
+"lck": 10,
+"str": 12,
+"wis": 12
+}
+natural_ac = 11
+weapons = PackedStringArray("wolf_bite")
+abilities = PackedStringArray()
+immune = PackedStringArray()
+save_profs = PackedStringArray()
+stealth_prof = true
+perception_prof = true
+speed_ft = 40
+ai = "beast"
+morale = 0.4

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_vduyc"]
+
+[resource]
+script = ExtResource("1_vduyc")
+id = "second_wind"
+title = "Второе дыхание"
+description = "Бонусное действие: восстановить 1d10 + уровень HP. Раз за бой."
+cost = "bonus"
+kind = "heal"
+target = "self"
+range_ft = 0
+heal_dice = "1d10"
+heal_add_level = true
+uses_per_battle = 1

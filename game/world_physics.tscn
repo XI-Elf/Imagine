@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://xr4syptvk6st"]
+
+[ext_resource type="Script" uid="uid://d4k3ehpey827l" path="res://world_physics.gd" id="1_db20r"]
+
+[node name="WorldPhysics" type="Node" unique_id=669856346]
+script = ExtResource("1_db20r")

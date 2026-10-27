@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BattleEffect" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_effect.gd" id="1_ptmr6"]
+
+[resource]
+script = ExtResource("1_ptmr6")
+id = "frightened"
+title = "Напуган"
+duration_rounds = 2
+attack_dis = true
+save_adv = PackedStringArray()
+save_dis = PackedStringArray()
+save_autofail = PackedStringArray()
+end_save_stat = "wis"
+end_save_dc = 11

@@ -1,0 +1,863 @@
+{
+ "provinces": {
+  "1": {
+   "name": "Северные останцы",
+   "regions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "2": {
+   "name": "Плато старого мира",
+   "regions": [
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+   ]
+  },
+  "3": {
+   "name": "Зелёная коса",
+   "regions": [
+    14,
+    15,
+    16,
+    17,
+    18
+   ]
+  },
+  "4": {
+   "name": "Западное побережье",
+   "regions": [
+    19,
+    20,
+    21,
+    22
+   ]
+  },
+  "5": {
+   "name": "Излучины реки",
+   "regions": [
+    23,
+    24,
+    25,
+    26,
+    27
+   ]
+  },
+  "6": {
+   "name": "Озёрная низина",
+   "regions": [
+    28,
+    29,
+    30,
+    31,
+    32,
+    33
+   ]
+  },
+  "7": {
+   "name": "Кратерные степи",
+   "regions": [
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ]
+  },
+  "8": {
+   "name": "Каменные ворота",
+   "regions": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47
+   ]
+  },
+  "9": {
+   "name": "Южные разломы",
+   "regions": [
+    48,
+    49,
+    50,
+    51,
+    52,
+    53
+   ]
+  },
+  "10": {
+   "name": "Затонувшие края",
+   "regions": [
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60
+   ]
+  },
+  "11": {
+   "name": "Хребет пепла",
+   "regions": [
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67
+   ]
+  },
+  "12": {
+   "name": "Западный серп",
+   "regions": [
+    68,
+    69,
+    70,
+    71,
+    72
+   ]
+  },
+  "13": {
+   "name": "Северный риф",
+   "regions": [
+    73
+   ]
+  },
+  "14": {
+   "name": "Верхние острова",
+   "regions": [
+    74,
+    75
+   ]
+  },
+  "15": {
+   "name": "Пыльная коса",
+   "regions": [
+    76,
+    77,
+    78
+   ]
+  },
+  "16": {
+   "name": "Восточные скалы",
+   "regions": [
+    79,
+    80,
+    81,
+    82
+   ]
+  },
+  "17": {
+   "name": "Разлом архипелага",
+   "regions": [
+    83
+   ]
+  },
+  "18": {
+   "name": "Сердце островов",
+   "regions": [
+    84,
+    85,
+    86
+   ]
+  },
+  "19": {
+   "name": "Малые болота",
+   "regions": [
+    87
+   ]
+  },
+  "20": {
+   "name": "Зубчатые берега",
+   "regions": [
+    88
+   ]
+  },
+  "21": {
+   "name": "Одинокая отмель",
+   "regions": [
+    89
+   ]
+  },
+  "22": {
+   "name": "Малый осколок",
+   "regions": [
+    90
+   ]
+  },
+  "23": {
+   "name": "Северо-восточные пороги",
+   "regions": [
+    91
+   ]
+  },
+  "24": {
+   "name": "Каменная шея",
+   "regions": [
+    92,
+    93,
+    94,
+    95
+   ]
+  },
+  "25": {
+   "name": "Кратерное плато",
+   "regions": [
+    96,
+    97,
+    98,
+    99,
+    100
+   ]
+  },
+  "26": {
+   "name": "Южные бухты",
+   "regions": [
+    101,
+    102,
+    103
+   ]
+  },
+  "27": {
+   "name": "Обветренные высоты",
+   "regions": [
+    104,
+    105
+   ]
+  },
+  "28": {
+   "name": "Восточные гребни",
+   "regions": [
+    106,
+    107,
+    108
+   ]
+  },
+  "29": {
+   "name": "Рыжие холмы",
+   "regions": [
+    109,
+    110,
+    111,
+    112
+   ]
+  },
+  "30": {
+   "name": "Юго-восточная кромка",
+   "regions": [
+    113,
+    114
+   ]
+  },
+  "31": {
+   "name": "Последний мыс",
+   "regions": [
+    115,
+    116,
+    117
+   ]
+  }
+ },
+ "regions": {
+  "1": {
+   "province": 1,
+   "code": "R001",
+   "dominant_biome": "Горы"
+  },
+  "2": {
+   "province": 1,
+   "code": "R002",
+   "dominant_biome": "Лес"
+  },
+  "3": {
+   "province": 1,
+   "code": "R003",
+   "dominant_biome": "Горы"
+  },
+  "4": {
+   "province": 1,
+   "code": "R004",
+   "dominant_biome": "Берег"
+  },
+  "5": {
+   "province": 1,
+   "code": "R005",
+   "dominant_biome": "Горы"
+  },
+  "6": {
+   "province": 1,
+   "code": "R006",
+   "dominant_biome": "Лес"
+  },
+  "7": {
+   "province": 2,
+   "code": "R007",
+   "dominant_biome": "Пустошь"
+  },
+  "8": {
+   "province": 2,
+   "code": "R008",
+   "dominant_biome": "Пустошь"
+  },
+  "9": {
+   "province": 2,
+   "code": "R009",
+   "dominant_biome": "Лес"
+  },
+  "10": {
+   "province": 2,
+   "code": "R010",
+   "dominant_biome": "Лес"
+  },
+  "11": {
+   "province": 2,
+   "code": "R011",
+   "dominant_biome": "Горы"
+  },
+  "12": {
+   "province": 2,
+   "code": "R012",
+   "dominant_biome": "Болото"
+  },
+  "13": {
+   "province": 2,
+   "code": "R013",
+   "dominant_biome": "Радиоактивный лес"
+  },
+  "14": {
+   "province": 3,
+   "code": "R014",
+   "dominant_biome": "Лес"
+  },
+  "15": {
+   "province": 3,
+   "code": "R015",
+   "dominant_biome": "Лес"
+  },
+  "16": {
+   "province": 3,
+   "code": "R016",
+   "dominant_biome": "Лес"
+  },
+  "17": {
+   "province": 3,
+   "code": "R017",
+   "dominant_biome": "Лес"
+  },
+  "18": {
+   "province": 3,
+   "code": "R018",
+   "dominant_biome": "Лес"
+  },
+  "19": {
+   "province": 4,
+   "code": "R019",
+   "dominant_biome": "Лес"
+  },
+  "20": {
+   "province": 4,
+   "code": "R020",
+   "dominant_biome": "Лес"
+  },
+  "21": {
+   "province": 4,
+   "code": "R021",
+   "dominant_biome": "Лес"
+  },
+  "22": {
+   "province": 4,
+   "code": "R022",
+   "dominant_biome": "Лес"
+  },
+  "23": {
+   "province": 5,
+   "code": "R023",
+   "dominant_biome": "Болото"
+  },
+  "24": {
+   "province": 5,
+   "code": "R024",
+   "dominant_biome": "Болото"
+  },
+  "25": {
+   "province": 5,
+   "code": "R025",
+   "dominant_biome": "Болото"
+  },
+  "26": {
+   "province": 5,
+   "code": "R026",
+   "dominant_biome": "Болото"
+  },
+  "27": {
+   "province": 5,
+   "code": "R027",
+   "dominant_biome": "Болото"
+  },
+  "28": {
+   "province": 6,
+   "code": "R028",
+   "dominant_biome": "Лес"
+  },
+  "29": {
+   "province": 6,
+   "code": "R029",
+   "dominant_biome": "Лес"
+  },
+  "30": {
+   "province": 6,
+   "code": "R030",
+   "dominant_biome": "Лес"
+  },
+  "31": {
+   "province": 6,
+   "code": "R031",
+   "dominant_biome": "Лес"
+  },
+  "32": {
+   "province": 6,
+   "code": "R032",
+   "dominant_biome": "Лес"
+  },
+  "33": {
+   "province": 6,
+   "code": "R033",
+   "dominant_biome": "Лес"
+  },
+  "34": {
+   "province": 7,
+   "code": "R034",
+   "dominant_biome": "Лес"
+  },
+  "35": {
+   "province": 7,
+   "code": "R035",
+   "dominant_biome": "Лес"
+  },
+  "36": {
+   "province": 7,
+   "code": "R036",
+   "dominant_biome": "Лес"
+  },
+  "37": {
+   "province": 7,
+   "code": "R037",
+   "dominant_biome": "Лес"
+  },
+  "38": {
+   "province": 7,
+   "code": "R038",
+   "dominant_biome": "Болото"
+  },
+  "39": {
+   "province": 7,
+   "code": "R039",
+   "dominant_biome": "Лес"
+  },
+  "40": {
+   "province": 7,
+   "code": "R040",
+   "dominant_biome": "Лес"
+  },
+  "41": {
+   "province": 7,
+   "code": "R041",
+   "dominant_biome": "Лес"
+  },
+  "42": {
+   "province": 8,
+   "code": "R042",
+   "dominant_biome": "Горы"
+  },
+  "43": {
+   "province": 8,
+   "code": "R043",
+   "dominant_biome": "Лес"
+  },
+  "44": {
+   "province": 8,
+   "code": "R044",
+   "dominant_biome": "Горы"
+  },
+  "45": {
+   "province": 8,
+   "code": "R045",
+   "dominant_biome": "Горы"
+  },
+  "46": {
+   "province": 8,
+   "code": "R046",
+   "dominant_biome": "Пустошь"
+  },
+  "47": {
+   "province": 8,
+   "code": "R047",
+   "dominant_biome": "Лес"
+  },
+  "48": {
+   "province": 9,
+   "code": "R048",
+   "dominant_biome": "Лес"
+  },
+  "49": {
+   "province": 9,
+   "code": "R049",
+   "dominant_biome": "Лес"
+  },
+  "50": {
+   "province": 9,
+   "code": "R050",
+   "dominant_biome": "Лес"
+  },
+  "51": {
+   "province": 9,
+   "code": "R051",
+   "dominant_biome": "Лес"
+  },
+  "52": {
+   "province": 9,
+   "code": "R052",
+   "dominant_biome": "Лес"
+  },
+  "53": {
+   "province": 9,
+   "code": "R053",
+   "dominant_biome": "Лес"
+  },
+  "54": {
+   "province": 10,
+   "code": "R054",
+   "dominant_biome": "Лес"
+  },
+  "55": {
+   "province": 10,
+   "code": "R055",
+   "dominant_biome": "Лес"
+  },
+  "56": {
+   "province": 10,
+   "code": "R056",
+   "dominant_biome": "Лес"
+  },
+  "57": {
+   "province": 10,
+   "code": "R057",
+   "dominant_biome": "Лес"
+  },
+  "58": {
+   "province": 10,
+   "code": "R058",
+   "dominant_biome": "Лес"
+  },
+  "59": {
+   "province": 10,
+   "code": "R059",
+   "dominant_biome": "Болото"
+  },
+  "60": {
+   "province": 10,
+   "code": "R060",
+   "dominant_biome": "Лес"
+  },
+  "61": {
+   "province": 11,
+   "code": "R061",
+   "dominant_biome": "Горы"
+  },
+  "62": {
+   "province": 11,
+   "code": "R062",
+   "dominant_biome": "Горы"
+  },
+  "63": {
+   "province": 11,
+   "code": "R063",
+   "dominant_biome": "Лес"
+  },
+  "64": {
+   "province": 11,
+   "code": "R064",
+   "dominant_biome": "Лес"
+  },
+  "65": {
+   "province": 11,
+   "code": "R065",
+   "dominant_biome": "Горы"
+  },
+  "66": {
+   "province": 11,
+   "code": "R066",
+   "dominant_biome": "Горы"
+  },
+  "67": {
+   "province": 11,
+   "code": "R067",
+   "dominant_biome": "Горы"
+  },
+  "68": {
+   "province": 12,
+   "code": "R068",
+   "dominant_biome": "Лес"
+  },
+  "69": {
+   "province": 12,
+   "code": "R069",
+   "dominant_biome": "Лес"
+  },
+  "70": {
+   "province": 12,
+   "code": "R070",
+   "dominant_biome": "Болото"
+  },
+  "71": {
+   "province": 12,
+   "code": "R071",
+   "dominant_biome": "Лес"
+  },
+  "72": {
+   "province": 12,
+   "code": "R072",
+   "dominant_biome": "Горы"
+  },
+  "73": {
+   "province": 13,
+   "code": "R073",
+   "dominant_biome": "Берег"
+  },
+  "74": {
+   "province": 14,
+   "code": "R074",
+   "dominant_biome": "Лес"
+  },
+  "75": {
+   "province": 14,
+   "code": "R075",
+   "dominant_biome": "Лес"
+  },
+  "76": {
+   "province": 15,
+   "code": "R076",
+   "dominant_biome": "Пустошь"
+  },
+  "77": {
+   "province": 15,
+   "code": "R077",
+   "dominant_biome": "Пустошь"
+  },
+  "78": {
+   "province": 15,
+   "code": "R078",
+   "dominant_biome": "Пустошь"
+  },
+  "79": {
+   "province": 16,
+   "code": "R079",
+   "dominant_biome": "Радиоактивная пустошь"
+  },
+  "80": {
+   "province": 16,
+   "code": "R080",
+   "dominant_biome": "Пустошь"
+  },
+  "81": {
+   "province": 16,
+   "code": "R081",
+   "dominant_biome": "Пустошь"
+  },
+  "82": {
+   "province": 16,
+   "code": "R082",
+   "dominant_biome": "Радиоактивная пустошь"
+  },
+  "83": {
+   "province": 17,
+   "code": "R083",
+   "dominant_biome": "Лес"
+  },
+  "84": {
+   "province": 18,
+   "code": "R084",
+   "dominant_biome": "Болото"
+  },
+  "85": {
+   "province": 18,
+   "code": "R085",
+   "dominant_biome": "Лес"
+  },
+  "86": {
+   "province": 18,
+   "code": "R086",
+   "dominant_biome": "Болото"
+  },
+  "87": {
+   "province": 19,
+   "code": "R087",
+   "dominant_biome": "Радиоактивное болото"
+  },
+  "88": {
+   "province": 20,
+   "code": "R088",
+   "dominant_biome": "Болото"
+  },
+  "89": {
+   "province": 21,
+   "code": "R089",
+   "dominant_biome": "Болото"
+  },
+  "90": {
+   "province": 22,
+   "code": "R090",
+   "dominant_biome": "Берег"
+  },
+  "91": {
+   "province": 23,
+   "code": "R091",
+   "dominant_biome": "Радиоактивный лес"
+  },
+  "92": {
+   "province": 24,
+   "code": "R092",
+   "dominant_biome": "Горы"
+  },
+  "93": {
+   "province": 24,
+   "code": "R093",
+   "dominant_biome": "Лес"
+  },
+  "94": {
+   "province": 24,
+   "code": "R094",
+   "dominant_biome": "Горы"
+  },
+  "95": {
+   "province": 24,
+   "code": "R095",
+   "dominant_biome": "Горы"
+  },
+  "96": {
+   "province": 25,
+   "code": "R096",
+   "dominant_biome": "Горы"
+  },
+  "97": {
+   "province": 25,
+   "code": "R097",
+   "dominant_biome": "Болото"
+  },
+  "98": {
+   "province": 25,
+   "code": "R098",
+   "dominant_biome": "Горы"
+  },
+  "99": {
+   "province": 25,
+   "code": "R099",
+   "dominant_biome": "Горы"
+  },
+  "100": {
+   "province": 25,
+   "code": "R100",
+   "dominant_biome": "Горы"
+  },
+  "101": {
+   "province": 26,
+   "code": "R101",
+   "dominant_biome": "Болото"
+  },
+  "102": {
+   "province": 26,
+   "code": "R102",
+   "dominant_biome": "Болото"
+  },
+  "103": {
+   "province": 26,
+   "code": "R103",
+   "dominant_biome": "Радиоактивное болото"
+  },
+  "104": {
+   "province": 27,
+   "code": "R104",
+   "dominant_biome": "Горы"
+  },
+  "105": {
+   "province": 27,
+   "code": "R105",
+   "dominant_biome": "Горы"
+  },
+  "106": {
+   "province": 28,
+   "code": "R106",
+   "dominant_biome": "Горы"
+  },
+  "107": {
+   "province": 28,
+   "code": "R107",
+   "dominant_biome": "Лес"
+  },
+  "108": {
+   "province": 28,
+   "code": "R108",
+   "dominant_biome": "Радиоактивная пустошь"
+  },
+  "109": {
+   "province": 29,
+   "code": "R109",
+   "dominant_biome": "Лес"
+  },
+  "110": {
+   "province": 29,
+   "code": "R110",
+   "dominant_biome": "Пустошь"
+  },
+  "111": {
+   "province": 29,
+   "code": "R111",
+   "dominant_biome": "Лес"
+  },
+  "112": {
+   "province": 29,
+   "code": "R112",
+   "dominant_biome": "Радиоактивная пустошь"
+  },
+  "113": {
+   "province": 30,
+   "code": "R113",
+   "dominant_biome": "Горы"
+  },
+  "114": {
+   "province": 30,
+   "code": "R114",
+   "dominant_biome": "Болото"
+  },
+  "115": {
+   "province": 31,
+   "code": "R115",
+   "dominant_biome": "Лес"
+  },
+  "116": {
+   "province": 31,
+   "code": "R116",
+   "dominant_biome": "Лес"
+  },
+  "117": {
+   "province": 31,
+   "code": "R117",
+   "dominant_biome": "Лес"
+  }
+ }
+}

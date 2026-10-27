@@ -1,0 +1,17 @@
+# Godot 4
+.godot/
+*.translation
+export_credentials.cfg
+/android/
+mono_crash.*.json
+.mono/
+data_*/
+
+# Сборки и бинарный редактор (в репозиторий не кладём)
+_runtime/
+*.exe
+*.pck
+*.zip
+/build/
+/dist/
+HEX_import.log

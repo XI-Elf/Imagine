@@ -1,0 +1,160 @@
+{
+  "traumas": {
+    "luxation_arm": {
+      "name_ru": "Вывих руки",
+      "name_en": "Arm Luxation",
+      "body_part": "arm",
+      "effects": {"loot": -0.1, "power": -0.1},
+      "treatment": "Вправить (навык медицины)",
+      "can_block_equipment": true
+    },
+    "broken_arm": {
+      "name_ru": "Перелом руки",
+      "name_en": "Broken Arm",
+      "body_part": "arm",
+      "effects": {"power": -0.25, "loot": -0.15},
+      "treatment": "Шина + навык медицины",
+      "can_block_equipment": true
+    },
+    "broken_leg": {
+      "name_ru": "Перелом ноги",
+      "name_en": "Broken Leg",
+      "body_part": "leg",
+      "effects": {"speed": -0.4, "loot": -0.1},
+      "treatment": "Шина + отдых"
+    },
+    "broken_head": {
+      "name_ru": "Перелом / Сотрясение головы",
+      "name_en": "Head Trauma",
+      "body_part": "head",
+      "effects": {"loot": -0.3, "power": -0.2, "exhaustion": 0.08},
+      "treatment": "Покой + зелья"
+    },
+    "bullet_wound": {
+      "name_ru": "Пулевое / Стрельное ранение",
+      "name_en": "Arrow/Bullet Wound",
+      "effects": {"bleeding": 0.05, "health_decay": 0.03},
+      "treatment": "Извлечь + перевязать"
+    },
+    "laceration": {
+      "name_ru": "Рваная рана",
+      "name_en": "Laceration",
+      "effects": {"bleeding": 0.04, "health_decay": 0.02},
+      "treatment": "Зашить или забинтовать"
+    },
+    "burn": {
+      "name_ru": "Ожог",
+      "name_en": "Burn",
+      "effects": {"pain": 0.1, "health_decay": 0.015},
+      "treatment": "Промыть + мазь"
+    },
+    "blindness": {
+      "name_ru": "Слепота",
+      "name_en": "Blindness",
+      "effects": {"loot": -0.5, "power": -0.5, "speed": -0.3},
+      "treatment": "Редко лечится, чаще временная"
+    }
+  },
+  "diseases": {
+    "dysentery": {
+      "name_ru": "Дизентерия",
+      "name_en": "Dysentery",
+      "effects": {"poison": 0.04, "thirst": 0.05, "hunger": 0.04},
+      "treatment": "Пенициллин / зелье + отдых",
+      "cause": "Грязная еда или вода"
+    },
+    "radiation_sickness": {
+      "name_ru": "Лучевая болезнь",
+      "name_en": "Radiation Sickness",
+      "effects": {"health_decay": 0.03, "exhaustion": 0.05, "emaciation": 0.06},
+      "treatment": "Снизить радиацию + специальные зелья",
+      "cause": "Высокий уровень радиации"
+    },
+    "intoxication": {
+      "name_ru": "Интоксикация",
+      "name_en": "Intoxication",
+      "effects": {"exhaustion": 0.04, "emaciation": 0.07},
+      "treatment": "Активированный уголь / отдых",
+      "cause": "Яд, грязная вода, передозировка"
+    },
+    "blood_poisoning": {
+      "name_ru": "Заражение крови",
+      "name_en": "Blood Poisoning",
+      "effects": {"emaciation": 0.076, "health_decay": 0.04},
+      "treatment": "Антибиотики / сильные зелья",
+      "cause": "Необработанная рана"
+    },
+    "desert_fever": {
+      "name_ru": "Пустынная лихорадка",
+      "name_en": "Desert Fever",
+      "effects": {"poison": 0.05, "exhaustion": 0.06},
+      "treatment": "Жаропонижающие зелья",
+      "cause": "Жара + ослабленный иммунитет"
+    },
+    "sleeping_sickness": {
+      "name_ru": "Сонная болезнь",
+      "name_en": "Sleeping Sickness",
+      "effects": {"energy_decay": 0.08, "exhaustion": 0.07},
+      "treatment": "Стимуляторы / длительный отдых"
+    },
+    "intestinal_ulcers": {
+      "name_ru": "Язва кишечника",
+      "name_en": "Intestinal Ulcers",
+      "effects": {"hunger": 0.07, "health_decay": 0.02},
+      "treatment": "Диета + зелья"
+    },
+    "black_scabies": {
+      "name_ru": "Чёрная чесотка",
+      "name_en": "Black Scabies",
+      "effects": {"pain": 0.15, "speed": -0.1},
+      "treatment": "Мази + чистота",
+      "cause": "Паразиты / грязь"
+    },
+    "cadaver_shivers": {
+      "name_ru": "Трупная дрожь",
+      "name_en": "Cadaver Shivers",
+      "effects": {"power": -0.3, "loot": -0.2},
+      "treatment": "Согревающие зелья + отдых",
+      "cause": "Холод + истощение"
+    },
+    "worm_parasite": {
+      "name_ru": "Червь-паразит",
+      "name_en": "Worm Parasite",
+      "effects": {"hunger": 0.05, "emaciation": 0.02},
+      "treatment": "Антигельминтные средства",
+      "cause": "Сырое мясо"
+    }
+  },
+  "positive_effects": {
+    "warm_meal": {
+      "name_ru": "Сытная еда",
+      "name_en": "Warm Meal",
+      "effects": {"hunger_restore": 30, "energy_restore": 15, "move_speed": 0.1},
+      "duration_hours": 4
+    },
+    "healing_salve": {
+      "name_ru": "Лечебная мазь",
+      "name_en": "Healing Salve",
+      "effects": {"health_regen": 2.0},
+      "duration_hours": 8
+    },
+    "anti_radiation": {
+      "name_ru": "Антирад",
+      "name_en": "Anti-Radiation",
+      "effects": {"radiation_decay": 5.0},
+      "duration_hours": 6
+    },
+    "painkiller": {
+      "name_ru": "Обезболивающее",
+      "name_en": "Painkiller",
+      "effects": {"ignore_pain": true, "energy_restore": 10},
+      "duration_hours": 3
+    },
+    "rested": {
+      "name_ru": "Отдохнувший",
+      "name_en": "Rested",
+      "effects": {"energy_max_bonus": 20, "health_regen": 1.0},
+      "duration_hours": 12
+    }
+  }
+}

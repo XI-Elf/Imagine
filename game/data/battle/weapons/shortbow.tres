@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_owfru"]
+
+[resource]
+script = ExtResource("1_owfru")
+id = "shortbow"
+title = "Короткий лук"
+icon = "bow"
+damage = [{
+"bonus": 0,
+"dice": "1d6",
+"type": "piercing"
+}]
+stat = "dex"
+ranged = true
+range_ft = 80
+long_range_ft = 320
+two_handed = true
+ammo = 16

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_uy1ld"]
+
+[resource]
+script = ExtResource("1_uy1ld")
+id = "tusk"
+title = "Клыки"
+icon = "tusk"
+damage = [{
+"bonus": 0,
+"dice": "1d6",
+"type": "slashing"
+}]
+proficiency = "natural"

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BattleEffect" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_effect.gd" id="1_ha60s"]
+
+[resource]
+script = ExtResource("1_ha60s")
+id = "restrained"
+title = "Опутан"
+duration_rounds = 2
+attack_dis = true
+attacked_adv = true
+speed_mult = 0.0
+save_adv = PackedStringArray()
+save_dis = PackedStringArray("dex")
+save_autofail = PackedStringArray()
+end_save_stat = "str"
+end_save_dc = 12

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BattleEffect" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_effect.gd" id="1_anpk2"]
+
+[resource]
+script = ExtResource("1_anpk2")
+id = "hurt_leg"
+title = "Повреждена нога"
+speed_mult = 0.5
+save_adv = PackedStringArray()
+save_dis = PackedStringArray()
+save_autofail = PackedStringArray()

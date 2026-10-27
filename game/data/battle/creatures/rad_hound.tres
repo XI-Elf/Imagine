@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="BattleCreature" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_gjhwd"]
+
+[resource]
+script = ExtResource("1_gjhwd")
+id = "rad_hound"
+title = "Радиоактивная гончая"
+human = false
+scores = {
+"cha": 5,
+"con": 13,
+"dex": 14,
+"int": 3,
+"lck": 10,
+"str": 13,
+"wis": 12
+}
+natural_ac = 11
+weapons = PackedStringArray("hound_bite")
+abilities = PackedStringArray("howl")
+resist = {
+"radiation": 0.5
+}
+immune = PackedStringArray()
+save_profs = PackedStringArray()
+speed_ft = 40
+ai = "beast"
+morale = 0.0

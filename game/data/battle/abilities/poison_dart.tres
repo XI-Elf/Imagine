@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_px8km"]
+
+[resource]
+script = ExtResource("1_px8km")
+id = "poison_dart"
+title = "Ядовитый дротик"
+description = "Дальняя атака Ловкостью: 1d4 колющего + 1d6 яда; спасбросок Выносливости или отравлен."
+stat = "dex"
+range_ft = 40
+save_stat = "con"
+damage = [{
+"bonus": 0,
+"dice": "1d4",
+"type": "piercing"
+}, {
+"bonus": 0,
+"dice": "1d6",
+"type": "poison"
+}]
+apply_effect = "poisoned"
+uses_per_battle = 3

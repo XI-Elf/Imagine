@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_ncr7k"]
+
+[resource]
+script = ExtResource("1_ncr7k")
+id = "dagger"
+title = "Нож"
+icon = "knife"
+damage = [{
+"bonus": 0,
+"dice": "1d4",
+"type": "piercing"
+}]
+stat = "finesse"
+range_ft = 20
+long_range_ft = 60
+light = true

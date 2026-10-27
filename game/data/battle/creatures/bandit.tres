@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="BattleCreature" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_blncq"]
+
+[resource]
+script = ExtResource("1_blncq")
+id = "bandit"
+title = "Разбойник"
+scores = {
+"cha": 10,
+"con": 12,
+"dex": 12,
+"int": 10,
+"lck": 10,
+"str": 11,
+"wis": 10
+}
+armor = "leather"
+weapons = PackedStringArray("shortsword", "dagger")
+abilities = PackedStringArray("net")
+immune = PackedStringArray()
+save_profs = PackedStringArray()

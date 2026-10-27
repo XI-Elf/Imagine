@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_7njf5"]
+
+[resource]
+script = ExtResource("1_7njf5")
+id = "healing_salve"
+title = "Лечебная мазь"
+description = "Действие: союзник рядом восстанавливает 1d8 + Мудрость HP."
+kind = "heal"
+target = "ally"
+stat = "wis"
+range_ft = 5
+heal_dice = "1d8"
+uses_per_battle = 3

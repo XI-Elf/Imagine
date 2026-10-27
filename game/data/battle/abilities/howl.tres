@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_y46r5"]
+
+[resource]
+script = ExtResource("1_y46r5")
+id = "howl"
+title = "Вой"
+description = "Бонусное действие: враги в 30 футах — спасбросок Мудрости или напуганы. Раз за бой."
+cost = "bonus"
+kind = "save"
+target = "self"
+stat = "con"
+range_ft = 0
+radius_ft = 30
+save_stat = "wis"
+half_on_save = false
+apply_effect = "frightened"
+uses_per_battle = 1

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BattleEffect" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_effect.gd" id="1_8dyo2"]
+
+[resource]
+script = ExtResource("1_8dyo2")
+id = "hidden"
+title = "Скрыт"
+attack_adv = true
+attacked_dis = true
+save_adv = PackedStringArray()
+save_dis = PackedStringArray()
+save_autofail = PackedStringArray()
+ends_on_attack = true

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BattleEffect" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_effect.gd" id="1_qdpnn"]
+
+[resource]
+script = ExtResource("1_qdpnn")
+id = "burning"
+title = "Горит"
+duration_rounds = 3
+save_adv = PackedStringArray()
+save_dis = PackedStringArray()
+save_autofail = PackedStringArray()
+turn_start_dice = "1d4"
+turn_start_type = "fire"
+end_save_stat = "dex"
+end_save_dc = 10

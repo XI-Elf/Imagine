@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_rh81k"]
+
+[resource]
+script = ExtResource("1_rh81k")
+id = "mutant_cleaver"
+title = "Ржавый мутоклинок"
+icon = "cleaver"
+damage = [{
+"bonus": 0,
+"dice": "1d8",
+"type": "slashing"
+}, {
+"bonus": 0,
+"dice": "1d4",
+"type": "radiation"
+}]
+proficiency = "martial"

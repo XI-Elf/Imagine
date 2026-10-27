@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_grck5"]
+
+[resource]
+script = ExtResource("1_grck5")
+id = "hound_bite"
+title = "Светящийся укус"
+icon = "bite"
+damage = [{
+"bonus": 0,
+"dice": "1d6",
+"type": "piercing"
+}, {
+"bonus": 0,
+"dice": "1d4",
+"type": "radiation"
+}]
+proficiency = "natural"

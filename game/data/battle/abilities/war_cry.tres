@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_8gkjf"]
+
+[resource]
+script = ExtResource("1_8gkjf")
+id = "war_cry"
+title = "Боевой клич"
+description = "Бонусное действие: союзники в 15 футах воодушевлены (атаки с преимуществом 2 раунда). Раз за бой."
+cost = "bonus"
+kind = "self"
+target = "self"
+range_ft = 0
+radius_ft = 15
+apply_effect = "rallied"
+uses_per_battle = 1

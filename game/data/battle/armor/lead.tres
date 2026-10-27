@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BattleArmor" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_armor.gd" id="1_6s4sp"]
+
+[resource]
+script = ExtResource("1_6s4sp")
+id = "lead"
+title = "Свинцовые пластины"
+base_ac = 15
+dex_cap = 0
+dr = {
+"radiation": 4
+}
+stealth_disadvantage = true
+good_vs = PackedStringArray("radiation")
+weak_vs = PackedStringArray("slashing")

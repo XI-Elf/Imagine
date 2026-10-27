@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_xyo8n"]
+
+[resource]
+script = ExtResource("1_xyo8n")
+id = "sling"
+title = "Праща"
+icon = "sling"
+stat = "dex"
+ranged = true
+range_ft = 30
+long_range_ft = 120
+ammo = 20

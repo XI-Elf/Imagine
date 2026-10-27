@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BattleEffect" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_effect.gd" id="1_naki1"]
+
+[resource]
+script = ExtResource("1_naki1")
+id = "rallied"
+title = "Воодушевлён"
+duration_rounds = 2
+attack_adv = true
+save_adv = PackedStringArray()
+save_dis = PackedStringArray()
+save_autofail = PackedStringArray()

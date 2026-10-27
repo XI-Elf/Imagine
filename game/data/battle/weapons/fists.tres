@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_6q8ob"]
+
+[resource]
+script = ExtResource("1_6q8ob")
+id = "fists"
+title = "Кулаки"
+icon = "fist"
+damage = [{
+"bonus": 1,
+"dice": "",
+"type": "bludgeoning"
+}]
+proficiency = "natural"

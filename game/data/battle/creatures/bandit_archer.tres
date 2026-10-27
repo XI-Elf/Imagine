@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BattleCreature" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_4xdkw"]
+
+[resource]
+script = ExtResource("1_4xdkw")
+id = "bandit_archer"
+title = "Разбойник-лучник"
+scores = {
+"cha": 10,
+"con": 12,
+"dex": 14,
+"int": 10,
+"lck": 10,
+"str": 10,
+"wis": 11
+}
+armor = "hides"
+weapons = PackedStringArray("shortbow", "dagger")
+abilities = PackedStringArray()
+immune = PackedStringArray()
+save_profs = PackedStringArray()
+perception_prof = true
+ai = "ranged"
+morale = 0.4

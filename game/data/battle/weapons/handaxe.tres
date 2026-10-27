@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_7wh01"]
+
+[resource]
+script = ExtResource("1_7wh01")
+id = "handaxe"
+title = "Топорик"
+icon = "axe"
+damage = [{
+"bonus": 0,
+"dice": "1d4",
+"type": "slashing"
+}, {
+"bonus": 1,
+"dice": "",
+"type": "bludgeoning"
+}]
+light = true

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_xa11g"]
+
+[resource]
+script = ExtResource("1_xa11g")
+id = "fire_flask"
+title = "Огненная смесь"
+description = "Бросок склянки: все в радиусе 5 футов — спасбросок Ловкости, 2d6 огня (половина при успехе), провал — горит."
+kind = "save"
+target = "cell"
+radius_ft = 5
+damage = [{
+"bonus": 0,
+"dice": "2d6",
+"type": "fire"
+}]
+apply_effect = "burning"
+uses_per_battle = 2

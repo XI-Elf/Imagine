@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BattleEffect" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_effect.gd" id="1_flmdn"]
+
+[resource]
+script = ExtResource("1_flmdn")
+id = "blinded"
+title = "Ослеплён"
+attack_dis = true
+attacked_adv = true
+save_adv = PackedStringArray()
+save_dis = PackedStringArray()
+save_autofail = PackedStringArray()

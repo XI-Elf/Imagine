@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BattleArmor" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_armor.gd" id="1_rsqnf"]
+
+[resource]
+script = ExtResource("1_rsqnf")
+id = "chain"
+title = "Кольчуга"
+base_ac = 14
+dex_cap = 0
+dr = {
+"piercing": 2,
+"slashing": 2
+}
+stealth_disadvantage = true
+good_vs = PackedStringArray("slashing", "piercing")
+weak_vs = PackedStringArray("bludgeoning")

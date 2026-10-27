@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BattleArmor" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_armor.gd" id="1_h6ejp"]
+
+[resource]
+script = ExtResource("1_h6ejp")
+id = "leather"
+title = "Кожаная"
+base_ac = 12
+dr = {
+"bludgeoning": 2,
+"slashing": 2
+}
+good_vs = PackedStringArray("slashing", "bludgeoning")
+weak_vs = PackedStringArray("piercing")

@@ -1,0 +1,48 @@
+{
+  "characteristics": {
+    "health": {
+      "name_ru": "Здоровье",
+      "name_en": "Health",
+      "description": "Основной ресурс выживания. При 0 персонаж теряет сознание или умирает.",
+      "base_max": 100,
+      "regen_per_hour": 0.5,
+      "critical_threshold": 20
+    },
+    "hunger": {
+      "name_ru": "Голод",
+      "name_en": "Hunger",
+      "description": "При 0 начинается истощение и потеря здоровья.",
+      "base_max": 100,
+      "decay_per_hour": 1.2
+    },
+    "thirst": {
+      "name_ru": "Жажда",
+      "name_en": "Thirst",
+      "description": "При 0 резко падает здоровье и энергия.",
+      "base_max": 100,
+      "decay_per_hour": 1.5
+    },
+    "energy": {
+      "name_ru": "Энергия",
+      "name_en": "Energy",
+      "description": "Нужна для действий. Восстанавливается отдыхом и едой.",
+      "base_max": 100,
+      "decay_per_hour": 0.8
+    },
+    "radiation": {
+      "name_ru": "Радиация",
+      "name_en": "Radiation",
+      "description": "Накапливается в заражённых зонах. Высокие значения вызывают лучевую болезнь.",
+      "base_max": 1000,
+      "decay_per_hour": 0.1,
+      "sickness_thresholds": [100, 200, 350]
+    },
+    "stamina": {
+      "name_ru": "Выносливость",
+      "name_en": "Stamina",
+      "description": "Влияет на скорость передвижения и грузоподъёмность.",
+      "base_max": 100
+    }
+  },
+  "derived_stats": ["attack_power", "defense", "search_efficiency", "move_speed", "carry_weight", "radiation_resist"]
+}

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_b74x7"]
+
+[resource]
+script = ExtResource("1_b74x7")
+id = "wolf_bite"
+title = "Укус"
+icon = "bite"
+damage = [{
+"bonus": 0,
+"dice": "2d4",
+"type": "piercing"
+}]
+proficiency = "natural"
+on_hit_effect = "prone"
+on_hit_save = "str"
+on_hit_dc = 11
