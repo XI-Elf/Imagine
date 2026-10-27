@@ -1,0 +1,1191 @@
+{
+ "license_note": "Все звуки — CC0 1.0 (общественное достояние), атрибуция не обязательна; источники указаны для проверки.",
+ "packages": {
+  "mtg": {
+   "src": "Minetest Game 5.6.1 (Ubuntu 24.04 пакет minetest-data_5.6.1+dfsg+~1.9.0mt8+dfsg-4build3)",
+   "doc": "games/minetest_game/mods/<мод>/README.txt (раздел Sounds)"
+  },
+  "mobs": {
+   "src": "Mobs Redo (Ubuntu 24.04 пакет minetest-mod-mobs-redo), debian/copyright",
+   "doc": "debian/copyright"
+  },
+  "cdogs": {
+   "src": "C-Dogs SDL 2.0.0 (Ubuntu 24.04 пакет cdogs-sdl-data_2.0.0+dfsg-1)",
+   "doc": "debian/copyright"
+  },
+  "trigger": {
+   "src": "Trigger Rally 0.6.6.1 (Ubuntu 24.04 пакет trigger-rally-data_0.6.6.1-3ubuntu1, data.zip)",
+   "doc": "debian/copyright: data/data.zip/sounds/wind.wav — CC0"
+  },
+  "ambience": {
+   "src": "Ambience Redo by TenPlus1 (зеркало gitlab.com/minetest-mirrors/ambience, ветка master)",
+   "doc": "license.txt мода (раздел Sound licenses)"
+  },
+  "uisfx": {
+   "src": "uisfx 0.4.0 (npm), набор organic",
+   "doc": "LICENSE-AUDIO: звуки синтезированы, CC0-1.0"
+  }
+ },
+ "sounds": {
+  "amb_desert": {
+   "file": "res://audio/sfx/amb_desert.ogg",
+   "package": "ambience",
+   "original": "desertwind.ogg",
+   "author": "Proxima4",
+   "license": "CC0-1.0",
+   "source_url": "http://www.freesound.org/people/Proxima4/sounds/104320/",
+   "seconds": 8.85,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "amb_fire": {
+   "file": "res://audio/sfx/amb_fire.ogg",
+   "package": "mtg",
+   "original": "default_furnace_active.ogg",
+   "author": "iankath",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/iankath/sounds/173991/",
+   "seconds": 10.0,
+   "edit": "моно 44.1 кГц, громкость пика -10 дБ, Ogg Vorbis"
+  },
+  "amb_rumble": {
+   "file": "res://audio/sfx/amb_rumble.ogg",
+   "package": "mtg",
+   "original": "env_sounds_lava.1.ogg",
+   "author": "Halion",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Halion/sounds/17785/",
+   "seconds": 7.82,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "amb_water_1": {
+   "file": "res://audio/sfx/amb_water_1.ogg",
+   "package": "mtg",
+   "original": "env_sounds_water.1.ogg",
+   "author": "Yuval",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Yuval/sounds/197023/",
+   "seconds": 6.0,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "amb_water_2": {
+   "file": "res://audio/sfx/amb_water_2.ogg",
+   "package": "mtg",
+   "original": "env_sounds_water.2.ogg",
+   "author": "Yuval",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Yuval/sounds/197023/",
+   "seconds": 5.96,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "amb_water_3": {
+   "file": "res://audio/sfx/amb_water_3.ogg",
+   "package": "mtg",
+   "original": "env_sounds_water.3.ogg",
+   "author": "Yuval",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Yuval/sounds/197023/",
+   "seconds": 5.97,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "amb_water_4": {
+   "file": "res://audio/sfx/amb_water_4.ogg",
+   "package": "mtg",
+   "original": "env_sounds_water.4.ogg",
+   "author": "Yuval",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Yuval/sounds/197023/",
+   "seconds": 5.97,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "amb_wind": {
+   "file": "res://audio/sfx/amb_wind.ogg",
+   "package": "trigger",
+   "original": "wind.wav",
+   "author": "авторы Trigger Rally (kougloff, Iwan Gabovitch и др.)",
+   "license": "CC0-1.0",
+   "source_url": "debian/copyright trigger-rally: data/data.zip/sounds/wind.wav — CC0",
+   "seconds": 3.5,
+   "edit": "моно 44.1 кГц, громкость пика -10 дБ, Ogg Vorbis"
+  },
+  "anvil_1": {
+   "file": "res://audio/sfx/anvil_1.ogg",
+   "package": "mtg",
+   "original": "default_place_node_metal.1.ogg",
+   "author": "Ogrebane",
+   "license": "CC0-1.0",
+   "source_url": "http://opengameart.org/content/wood-and-metal-sound-effects-volume-2",
+   "seconds": 0.5,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "anvil_2": {
+   "file": "res://audio/sfx/anvil_2.ogg",
+   "package": "mtg",
+   "original": "default_place_node_metal.2.ogg",
+   "author": "Ogrebane",
+   "license": "CC0-1.0",
+   "source_url": "http://opengameart.org/content/wood-and-metal-sound-effects-volume-2",
+   "seconds": 0.5,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "bats": {
+   "file": "res://audio/sfx/bats.ogg",
+   "package": "ambience",
+   "original": "bats.ogg",
+   "author": "SaloSensei",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/SaloSensei/sounds/616219/",
+   "seconds": 5.0,
+   "edit": "моно 44.1 кГц, громкость пика -10 дБ, Ogg Vorbis"
+  },
+  "bird_jay": {
+   "file": "res://audio/sfx/bird_jay.ogg",
+   "package": "ambience",
+   "original": "bluejay.ogg",
+   "author": "UncleSigmund",
+   "license": "CC0-1.0",
+   "source_url": "http://www.freesound.org/people/UncleSigmund/sounds/42382/",
+   "seconds": 6.56,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "die_man_3": {
+   "file": "res://audio/sfx/die_man_3.ogg",
+   "package": "cdogs",
+   "original": "chars/die/man/3.ogg",
+   "author": "JohnsonBrandEditing",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/JohnsonBrandEditing/sounds/173944/",
+   "seconds": 0.84,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "die_man_4": {
+   "file": "res://audio/sfx/die_man_4.ogg",
+   "package": "cdogs",
+   "original": "chars/die/man/4.ogg",
+   "author": "JohnsonBrandEditing",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/JohnsonBrandEditing/sounds/173944/",
+   "seconds": 0.91,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "die_man_5": {
+   "file": "res://audio/sfx/die_man_5.ogg",
+   "package": "cdogs",
+   "original": "chars/die/man/5.ogg",
+   "author": "JohnsonBrandEditing",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/JohnsonBrandEditing/sounds/173944/",
+   "seconds": 1.05,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "die_man_6": {
+   "file": "res://audio/sfx/die_man_6.ogg",
+   "package": "cdogs",
+   "original": "chars/die/man/6.ogg",
+   "author": "JohnsonBrandEditing",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/JohnsonBrandEditing/sounds/173944/",
+   "seconds": 1.33,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "die_man_7": {
+   "file": "res://audio/sfx/die_man_7.ogg",
+   "package": "cdogs",
+   "original": "chars/die/man/7.ogg",
+   "author": "JohnsonBrandEditing",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/JohnsonBrandEditing/sounds/173944/",
+   "seconds": 0.84,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dig_1": {
+   "file": "res://audio/sfx/dig_1.ogg",
+   "package": "mtg",
+   "original": "default_gravel_dug.1.ogg",
+   "author": "lolamadeus",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lolamadeus/sounds/179341/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dig_2": {
+   "file": "res://audio/sfx/dig_2.ogg",
+   "package": "mtg",
+   "original": "default_gravel_dug.2.ogg",
+   "author": "lolamadeus",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lolamadeus/sounds/179341/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dig_3": {
+   "file": "res://audio/sfx/dig_3.ogg",
+   "package": "mtg",
+   "original": "default_gravel_dug.3.ogg",
+   "author": "lolamadeus",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lolamadeus/sounds/179341/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dog_bark_0": {
+   "file": "res://audio/sfx/dog_bark_0.ogg",
+   "package": "cdogs",
+   "original": "chars/alert/dog/0.ogg",
+   "author": "ScouseMouseJB",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/apolloaiello/sounds/276267/",
+   "seconds": 0.62,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dog_bark_1": {
+   "file": "res://audio/sfx/dog_bark_1.ogg",
+   "package": "cdogs",
+   "original": "chars/alert/dog/1.ogg",
+   "author": "ScouseMouseJB",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/apolloaiello/sounds/276267/",
+   "seconds": 0.52,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dog_bark_2": {
+   "file": "res://audio/sfx/dog_bark_2.ogg",
+   "package": "cdogs",
+   "original": "chars/alert/dog/2.ogg",
+   "author": "ScouseMouseJB",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/apolloaiello/sounds/276267/",
+   "seconds": 0.18,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dog_bark_3": {
+   "file": "res://audio/sfx/dog_bark_3.ogg",
+   "package": "cdogs",
+   "original": "chars/alert/dog/3.ogg",
+   "author": "ScouseMouseJB",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/apolloaiello/sounds/276267/",
+   "seconds": 0.19,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dog_die_0": {
+   "file": "res://audio/sfx/dog_die_0.ogg",
+   "package": "cdogs",
+   "original": "chars/die/dog/0.ogg",
+   "author": "16G_Panska_Dolezal_Stepan",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/16G_Panska_Dolezal_Stepan/sounds/498703/",
+   "seconds": 0.57,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "dog_die_1": {
+   "file": "res://audio/sfx/dog_die_1.ogg",
+   "package": "cdogs",
+   "original": "chars/die/dog/1.ogg",
+   "author": "esperri",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/esperri/sounds/118966/",
+   "seconds": 0.44,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "door_close": {
+   "file": "res://audio/sfx/door_close.ogg",
+   "package": "cdogs",
+   "original": "door_close.ogg",
+   "author": "jberkuta14",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/jberkuta14/sounds/134894/",
+   "seconds": 0.2,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "door_open": {
+   "file": "res://audio/sfx/door_open.ogg",
+   "package": "cdogs",
+   "original": "door.ogg",
+   "author": "jberkuta14",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/jberkuta14/sounds/134894/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "draw_weapon": {
+   "file": "res://audio/sfx/draw_weapon.ogg",
+   "package": "cdogs",
+   "original": "knife_switch.ogg",
+   "author": "freefire66, Qat",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/freefire66/sounds/175953/ ; https://freesound.org/people/Qat/sounds/107590/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "drip_1": {
+   "file": "res://audio/sfx/drip_1.ogg",
+   "package": "ambience",
+   "original": "drippingwater1.ogg",
+   "author": "kddekadenz",
+   "license": "CC0-1.0",
+   "source_url": "Dripping Water Mod, http://minetest.net/forum/viewtopic.php?id=1688",
+   "seconds": 0.43,
+   "edit": "моно 44.1 кГц, громкость пика -10 дБ, Ogg Vorbis"
+  },
+  "drip_2": {
+   "file": "res://audio/sfx/drip_2.ogg",
+   "package": "ambience",
+   "original": "drippingwater2.ogg",
+   "author": "kddekadenz",
+   "license": "CC0-1.0",
+   "source_url": "Dripping Water Mod, http://minetest.net/forum/viewtopic.php?id=1688",
+   "seconds": 0.91,
+   "edit": "моно 44.1 кГц, громкость пика -10 дБ, Ogg Vorbis"
+  },
+  "explode": {
+   "file": "res://audio/sfx/explode.ogg",
+   "package": "mtg",
+   "original": "tnt_explode.ogg",
+   "author": "steveygos93 (правка TumeniNodes)",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/s/80401/",
+   "seconds": 1.33,
+   "edit": "моно 44.1 кГц, громкость пика -5 дБ, Ogg Vorbis"
+  },
+  "gate": {
+   "file": "res://audio/sfx/gate.ogg",
+   "package": "mtg",
+   "original": "doors_fencegate_open.ogg",
+   "author": "mhtaylor67",
+   "license": "CC0-1.0",
+   "source_url": "http://www.freesound.org/people/mhtaylor67/sounds/126041/",
+   "seconds": 0.61,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_0": {
+   "file": "res://audio/sfx/hit_blade_0.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/0.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_1": {
+   "file": "res://audio/sfx/hit_blade_1.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/1.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.24,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_2": {
+   "file": "res://audio/sfx/hit_blade_2.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/2.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_3": {
+   "file": "res://audio/sfx/hit_blade_3.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/3.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.24,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_4": {
+   "file": "res://audio/sfx/hit_blade_4.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/4.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_5": {
+   "file": "res://audio/sfx/hit_blade_5.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/5.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.24,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_6": {
+   "file": "res://audio/sfx/hit_blade_6.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/6.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_7": {
+   "file": "res://audio/sfx/hit_blade_7.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/7.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.24,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_blade_8": {
+   "file": "res://audio/sfx/hit_blade_8.ogg",
+   "package": "cdogs",
+   "original": "hits/knife_flesh/8.ogg",
+   "author": "lmbubec, MrPokephile",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_fist": {
+   "file": "res://audio/sfx/hit_fist.ogg",
+   "package": "cdogs",
+   "original": "knuckles.ogg",
+   "author": "borq1",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/borq1/sounds/475965/",
+   "seconds": 0.4,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_metal_1": {
+   "file": "res://audio/sfx/hit_metal_1.ogg",
+   "package": "mtg",
+   "original": "default_dug_metal.1.ogg",
+   "author": "Iwan Gabovitch (qubodup)",
+   "license": "CC0-1.0",
+   "source_url": "http://opengameart.org/users/qubodup",
+   "seconds": 0.5,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_metal_2": {
+   "file": "res://audio/sfx/hit_metal_2.ogg",
+   "package": "mtg",
+   "original": "default_dug_metal.2.ogg",
+   "author": "Iwan Gabovitch (qubodup)",
+   "license": "CC0-1.0",
+   "source_url": "http://opengameart.org/users/qubodup",
+   "seconds": 0.5,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_wood_1": {
+   "file": "res://audio/sfx/hit_wood_1.ogg",
+   "package": "mtg",
+   "original": "default_dig_choppy.1.ogg",
+   "author": "Sheyvan",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Sheyvan/sounds/476113/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_wood_2": {
+   "file": "res://audio/sfx/hit_wood_2.ogg",
+   "package": "mtg",
+   "original": "default_dig_choppy.2.ogg",
+   "author": "Sheyvan",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Sheyvan/sounds/476113/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "hit_wood_3": {
+   "file": "res://audio/sfx/hit_wood_3.ogg",
+   "package": "mtg",
+   "original": "default_dig_choppy.3.ogg",
+   "author": "Sheyvan",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Sheyvan/sounds/476113/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "ignite": {
+   "file": "res://audio/sfx/ignite.ogg",
+   "package": "mtg",
+   "original": "tnt_ignite.ogg",
+   "author": "theneedle.tv (правка TumeniNodes)",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/s/316682/",
+   "seconds": 3.57,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "map_close": {
+   "file": "res://audio/sfx/map_close.ogg",
+   "package": "cdogs",
+   "original": "map_close.ogg",
+   "author": "drzhnn",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/drzhnn/sounds/199940/",
+   "seconds": 0.22,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "map_open": {
+   "file": "res://audio/sfx/map_open.ogg",
+   "package": "cdogs",
+   "original": "map_open.ogg",
+   "author": "drzhnn",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/drzhnn/sounds/199940/",
+   "seconds": 0.19,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "pickup": {
+   "file": "res://audio/sfx/pickup.ogg",
+   "package": "cdogs",
+   "original": "pickup.ogg",
+   "author": "daboy291",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/daboy291/sounds/138078/",
+   "seconds": 0.3,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "ricochet_0": {
+   "file": "res://audio/sfx/ricochet_0.ogg",
+   "package": "cdogs",
+   "original": "ricochet/0.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_1": {
+   "file": "res://audio/sfx/ricochet_1.ogg",
+   "package": "cdogs",
+   "original": "ricochet/1.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_2": {
+   "file": "res://audio/sfx/ricochet_2.ogg",
+   "package": "cdogs",
+   "original": "ricochet/2.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_3": {
+   "file": "res://audio/sfx/ricochet_3.ogg",
+   "package": "cdogs",
+   "original": "ricochet/3.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_4": {
+   "file": "res://audio/sfx/ricochet_4.ogg",
+   "package": "cdogs",
+   "original": "ricochet/4.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_5": {
+   "file": "res://audio/sfx/ricochet_5.ogg",
+   "package": "cdogs",
+   "original": "ricochet/5.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_6": {
+   "file": "res://audio/sfx/ricochet_6.ogg",
+   "package": "cdogs",
+   "original": "ricochet/6.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.38,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_7": {
+   "file": "res://audio/sfx/ricochet_7.ogg",
+   "package": "cdogs",
+   "original": "ricochet/7.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "ricochet_8": {
+   "file": "res://audio/sfx/ricochet_8.ogg",
+   "package": "cdogs",
+   "original": "ricochet/8.ogg",
+   "author": "rakurka",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/rakurka/sounds/187533/",
+   "seconds": 0.35,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "step_bones_0": {
+   "file": "res://audio/sfx/step_bones_0.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/0.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.14,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_1": {
+   "file": "res://audio/sfx/step_bones_1.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/1.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.11,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_2": {
+   "file": "res://audio/sfx/step_bones_2.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/2.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.13,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_3": {
+   "file": "res://audio/sfx/step_bones_3.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/3.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.14,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_4": {
+   "file": "res://audio/sfx/step_bones_4.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/4.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.11,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_5": {
+   "file": "res://audio/sfx/step_bones_5.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/5.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.13,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_6": {
+   "file": "res://audio/sfx/step_bones_6.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/6.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.15,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_7": {
+   "file": "res://audio/sfx/step_bones_7.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/7.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.06,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_8": {
+   "file": "res://audio/sfx/step_bones_8.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/8.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.12,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_bones_9": {
+   "file": "res://audio/sfx/step_bones_9.ogg",
+   "package": "cdogs",
+   "original": "footsteps/bones/9.ogg",
+   "author": "blukotek",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/blukotek/sounds/249319/",
+   "seconds": 0.1,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_0": {
+   "file": "res://audio/sfx/step_gravel_0.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/0.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.19,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_1": {
+   "file": "res://audio/sfx/step_gravel_1.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/1.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.1,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_2": {
+   "file": "res://audio/sfx/step_gravel_2.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/2.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_3": {
+   "file": "res://audio/sfx/step_gravel_3.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/3.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.16,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_4": {
+   "file": "res://audio/sfx/step_gravel_4.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/4.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.24,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_5": {
+   "file": "res://audio/sfx/step_gravel_5.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/5.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.23,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_6": {
+   "file": "res://audio/sfx/step_gravel_6.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/6.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.19,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_7": {
+   "file": "res://audio/sfx/step_gravel_7.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/7.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.23,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_8": {
+   "file": "res://audio/sfx/step_gravel_8.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/8.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.19,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_gravel_9": {
+   "file": "res://audio/sfx/step_gravel_9.ogg",
+   "package": "cdogs",
+   "original": "footsteps/gravel/9.ogg",
+   "author": "Ali_6868",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/Ali_6868/packs/21608/",
+   "seconds": 0.2,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_metal_1": {
+   "file": "res://audio/sfx/step_metal_1.ogg",
+   "package": "mtg",
+   "original": "default_metal_footstep.1.ogg",
+   "author": "mypantsfelldown",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/mypantsfelldown/sounds/398937/",
+   "seconds": 0.25,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "step_metal_2": {
+   "file": "res://audio/sfx/step_metal_2.ogg",
+   "package": "mtg",
+   "original": "default_metal_footstep.2.ogg",
+   "author": "mypantsfelldown",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/mypantsfelldown/sounds/398937/",
+   "seconds": 0.17,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "step_metal_3": {
+   "file": "res://audio/sfx/step_metal_3.ogg",
+   "package": "mtg",
+   "original": "default_metal_footstep.3.ogg",
+   "author": "mypantsfelldown",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/mypantsfelldown/sounds/398937/",
+   "seconds": 0.23,
+   "edit": "моно 44.1 кГц, громкость пика -8 дБ, Ogg Vorbis"
+  },
+  "step_sand_1": {
+   "file": "res://audio/sfx/step_sand_1.ogg",
+   "package": "mtg",
+   "original": "default_sand_footstep.1.ogg",
+   "author": "worthahep88",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/worthahep88/sounds/319224/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_sand_2": {
+   "file": "res://audio/sfx/step_sand_2.ogg",
+   "package": "mtg",
+   "original": "default_sand_footstep.2.ogg",
+   "author": "worthahep88",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/worthahep88/sounds/319224/",
+   "seconds": 0.29,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_sand_3": {
+   "file": "res://audio/sfx/step_sand_3.ogg",
+   "package": "mtg",
+   "original": "default_sand_footstep.3.ogg",
+   "author": "worthahep88",
+   "license": "CC0-1.0",
+   "source_url": "https://freesound.org/people/worthahep88/sounds/319224/",
+   "seconds": 0.28,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_soft_1": {
+   "file": "res://audio/sfx/step_soft_1.ogg",
+   "package": "mtg",
+   "original": "default_snow_footstep.1.ogg",
+   "author": "Ryding",
+   "license": "CC0-1.0",
+   "source_url": "http://freesound.org/people/Ryding/sounds/94337/",
+   "seconds": 0.27,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_soft_2": {
+   "file": "res://audio/sfx/step_soft_2.ogg",
+   "package": "mtg",
+   "original": "default_snow_footstep.2.ogg",
+   "author": "Ryding",
+   "license": "CC0-1.0",
+   "source_url": "http://freesound.org/people/Ryding/sounds/94337/",
+   "seconds": 0.38,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_soft_3": {
+   "file": "res://audio/sfx/step_soft_3.ogg",
+   "package": "mtg",
+   "original": "default_snow_footstep.3.ogg",
+   "author": "Ryding",
+   "license": "CC0-1.0",
+   "source_url": "http://freesound.org/people/Ryding/sounds/94337/",
+   "seconds": 0.32,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_soft_4": {
+   "file": "res://audio/sfx/step_soft_4.ogg",
+   "package": "mtg",
+   "original": "default_snow_footstep.4.ogg",
+   "author": "Ryding",
+   "license": "CC0-1.0",
+   "source_url": "http://freesound.org/people/Ryding/sounds/94337/",
+   "seconds": 0.26,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "step_soft_5": {
+   "file": "res://audio/sfx/step_soft_5.ogg",
+   "package": "mtg",
+   "original": "default_snow_footstep.5.ogg",
+   "author": "Ryding",
+   "license": "CC0-1.0",
+   "source_url": "http://freesound.org/people/Ryding/sounds/94337/",
+   "seconds": 0.31,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "swing": {
+   "file": "res://audio/sfx/swing.ogg",
+   "package": "mobs",
+   "original": "mobs_swing.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "debian/copyright: sounds/mobs_swing.ogg, 2008 qubodup, CC0",
+   "seconds": 0.32,
+   "edit": "моно 44.1 кГц, громкость пика -3 дБ, Ogg Vorbis"
+  },
+  "ui_buy": {
+   "file": "res://audio/sfx/ui_buy.ogg",
+   "package": "uisfx",
+   "original": "organic/purchase.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/purchase.ogg",
+   "seconds": 0.86,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_click": {
+   "file": "res://audio/sfx/ui_click.ogg",
+   "package": "uisfx",
+   "original": "organic/press.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/press.ogg",
+   "seconds": 0.29,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_close": {
+   "file": "res://audio/sfx/ui_close.ogg",
+   "package": "uisfx",
+   "original": "organic/close.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/close.ogg",
+   "seconds": 0.49,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_dice": {
+   "file": "res://audio/sfx/ui_dice.ogg",
+   "package": "uisfx",
+   "original": "organic/progress-step.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/progress-step.ogg",
+   "seconds": 0.37,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_drop": {
+   "file": "res://audio/sfx/ui_drop.ogg",
+   "package": "uisfx",
+   "original": "organic/drop.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/drop.ogg",
+   "seconds": 0.45,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_error": {
+   "file": "res://audio/sfx/ui_error.ogg",
+   "package": "uisfx",
+   "original": "organic/error.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/error.ogg",
+   "seconds": 0.79,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_level_up": {
+   "file": "res://audio/sfx/ui_level_up.ogg",
+   "package": "uisfx",
+   "original": "organic/level-up.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/level-up.ogg",
+   "seconds": 1.13,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_open": {
+   "file": "res://audio/sfx/ui_open.ogg",
+   "package": "uisfx",
+   "original": "organic/open.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/open.ogg",
+   "seconds": 0.51,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_select": {
+   "file": "res://audio/sfx/ui_select.ogg",
+   "package": "uisfx",
+   "original": "organic/select.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/select.ogg",
+   "seconds": 0.43,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_sleep": {
+   "file": "res://audio/sfx/ui_sleep.ogg",
+   "package": "uisfx",
+   "original": "organic/sleep.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/sleep.ogg",
+   "seconds": 0.64,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_success": {
+   "file": "res://audio/sfx/ui_success.ogg",
+   "package": "uisfx",
+   "original": "organic/success.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/success.ogg",
+   "seconds": 0.92,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_victory": {
+   "file": "res://audio/sfx/ui_victory.ogg",
+   "package": "uisfx",
+   "original": "organic/achievement.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/achievement.ogg",
+   "seconds": 1.42,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_wake": {
+   "file": "res://audio/sfx/ui_wake.ogg",
+   "package": "uisfx",
+   "original": "organic/wake.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/wake.ogg",
+   "seconds": 0.63,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "ui_warning": {
+   "file": "res://audio/sfx/ui_warning.ogg",
+   "package": "uisfx",
+   "original": "organic/warning.ogg",
+   "author": "uisfx (romainsimon), синтез",
+   "license": "CC0-1.0",
+   "source_url": "https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/warning.ogg",
+   "seconds": 0.83,
+   "edit": "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+  },
+  "whoosh_0": {
+   "file": "res://audio/sfx/whoosh_0.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/0.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.24,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_1": {
+   "file": "res://audio/sfx/whoosh_1.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/1.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.21,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_2": {
+   "file": "res://audio/sfx/whoosh_2.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/2.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.21,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_3": {
+   "file": "res://audio/sfx/whoosh_3.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/3.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.21,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_4": {
+   "file": "res://audio/sfx/whoosh_4.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/4.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.21,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_5": {
+   "file": "res://audio/sfx/whoosh_5.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/5.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.21,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_6": {
+   "file": "res://audio/sfx/whoosh_6.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/6.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.21,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_7": {
+   "file": "res://audio/sfx/whoosh_7.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/7.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.21,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  },
+  "whoosh_8": {
+   "file": "res://audio/sfx/whoosh_8.ogg",
+   "package": "cdogs",
+   "original": "hits/gas/8.ogg",
+   "author": "qubodup",
+   "license": "CC0-1.0",
+   "source_url": "https://opengameart.org/content/wind-hit-time-morph",
+   "seconds": 0.22,
+   "edit": "моно 44.1 кГц, громкость пика -6 дБ, Ogg Vorbis"
+  }
+ }
+}

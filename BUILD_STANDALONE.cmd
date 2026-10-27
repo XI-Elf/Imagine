@@ -10,7 +10,9 @@ rem ============================================================================
 
 set "PROJECT=%~dp0game"
 set "ENGINE="
-if exist "%~dp0_runtime\Godot.exe" set "ENGINE=%~dp0_runtime\Godot.exe"
+rem Движок в архиве игры называется AmberWorldRuntime.exe (им же запускает Start_HEX.cmd); Godot.exe — старое имя
+if exist "%~dp0_runtime\AmberWorldRuntime.exe" set "ENGINE=%~dp0_runtime\AmberWorldRuntime.exe"
+if not defined ENGINE if exist "%~dp0_runtime\Godot.exe" set "ENGINE=%~dp0_runtime\Godot.exe"
 if not defined ENGINE if exist "%PROJECT%\_runtime\Godot.exe" set "ENGINE=%PROJECT%\_runtime\Godot.exe"
 if not defined ENGINE if defined GODOT set "ENGINE=%GODOT%"
 if not defined ENGINE (
@@ -48,7 +50,12 @@ if not exist "%TPL%\windows_release_x86_64.exe" (
 
 rem --- импорт ресурсов и экспорт ---
 echo Импорт ресурсов...
-"%ENGINE%" --headless --path "%PROJECT%" --import
+"%ENGINE%" --headless --editor --path "%PROJECT%" --import --quit
+if errorlevel 1 (
+    echo Импорт не удался: в архиве не будет game\.godot и игра не запустится.
+    pause
+    exit /b 4
+)
 set "OUT=%~dp0dist\AmberWorld"
 if exist "%~dp0dist" rmdir /s /q "%~dp0dist"
 mkdir "%OUT%"

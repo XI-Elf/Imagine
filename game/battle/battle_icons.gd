@@ -9,7 +9,7 @@ const STEEL := Color(0.78, 0.8, 0.82)
 const STEEL_DARK := Color(0.42, 0.45, 0.48)
 const WOOD := Color(0.55, 0.36, 0.18)
 const WOOD_DARK := Color(0.33, 0.2, 0.1)
-const TYPE_COLORS: Dictionary = {"fire": Color(0.92, 0.25, 0.12), "radiation": Color(0.75, 0.95, 0.15), "poison": Color(0.35, 0.8, 0.25),
+const TYPE_COLORS: Dictionary = {"fire": Color(0.92, 0.25, 0.12), "radiation": Color(0.7, 0.42, 0.94), "poison": Color(0.35, 0.8, 0.25),
 	"slashing": Color(0.75, 0.75, 0.78), "piercing": Color(0.6, 0.75, 0.9), "bludgeoning": Color(0.7, 0.55, 0.35), "cold": Color(0.6, 0.85, 1.0)}
 
 
@@ -273,9 +273,8 @@ static func damage_type(ci: CanvasItem, dtype: String, c: Vector2, r: float) -> 
 		"fire":
 			_poly(ci, [[0.0, -0.75], [0.5, 0.1], [0.35, 0.55], [0.0, 0.7], [-0.35, 0.55], [-0.5, 0.1]], c, r, col)
 		"radiation":
-			ci.draw_circle(c, r * 0.18, col.darkened(0.5))
-			for a in 3:
-				ci.draw_arc(c, r * 0.48, a * TAU / 3.0 - 0.45, a * TAU / 3.0 + 0.45, 6, col.darkened(0.5), r * 0.4)
+			# проклятье (Huzzah 2026-10-23: вместо знака радиации)
+			preload("res://characters/inventory_view.gd").curse_icon(ci, c, r)
 		"slashing":
 			_line(ci, [-0.5, 0.5], [0.5, -0.5], c, r, Color(0.3, 0.3, 0.35), 0.22)
 		"piercing":

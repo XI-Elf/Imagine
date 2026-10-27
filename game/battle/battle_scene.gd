@@ -25,6 +25,7 @@ const Rules := preload("res://battle/combat_rules.gd")
 const Data := preload("res://battle/battle_data.gd")
 const Icons := preload("res://battle/battle_icons.gd")
 const Art := preload("res://storybook/art.gd")
+const ComicUI := preload("res://ui/comic_ui.gd")
 
 const C_TEXT := Color(0.91, 0.86, 0.69)
 const C_DIM := Color(0.62, 0.6, 0.5)
@@ -846,12 +847,7 @@ func _build() -> void:
 	log_box.bbcode_enabled = true
 	log_box.scroll_following = true
 	log_box.add_theme_font_size_override("normal_font_size", 13)
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.06, 0.07, 0.05, 0.95)
-	st.border_color = C_EDGE
-	st.set_border_width_all(2)
-	st.set_content_margin_all(12.0)
-	log_box.add_theme_stylebox_override("normal", st)
+	log_box.add_theme_stylebox_override("normal", ComicUI.panel(22.0))   # рамка комикса (Q24)
 	log_box.visible = false
 	add_child(log_box)
 
@@ -860,12 +856,18 @@ func _hit(r: Rect2, id: String) -> void:
 	hits.append({"rect": r, "id": id})
 
 
+## Плашка интерфейса боя: тонкая стальная рамка комикса (ui/comic_ui.gd, Q24) чуть шире прямоугольника,
+## чтобы рамка не налезала на текст; наведение (fill = C_PANEL_HI) — светлее, своя заливка — внутри рамки,
+## выбор — цветная кромка hl
 func _panel(ci: CanvasItem, r: Rect2, hl: Color = Color(0, 0, 0, 0), fill: Color = C_PANEL) -> void:
 	ci.draw_rect(Rect2(r.position + Vector2(3, 4), r.size), Color(0, 0, 0, 0.45))
-	ci.draw_rect(r, fill)
-	ci.draw_rect(Rect2(r.position + Vector2(2, 2), Vector2(r.size.x - 4, minf(r.size.y * 0.42, 30.0))), Color(1, 1, 1, 0.035))
-	ci.draw_rect(r.grow(-2.0), C_EDGE, false, 1.5)
-	ci.draw_rect(r, Color(0, 0, 0, 0.95), false, 1.5)
+	if r.size.x >= 24.0 and r.size.y >= 20.0:
+		ComicUI.draw_box(ci, "button", r.grow(5.0), Color(1.3, 1.3, 1.35) if fill == C_PANEL_HI else Color.WHITE)
+		if fill != C_PANEL and fill != C_PANEL_HI:   # цветная кнопка («В бой», «Конец хода») — заливка внутри рамки
+			ci.draw_rect(r.grow(-3.0), fill)
+	else:
+		ci.draw_rect(r, fill)
+		ci.draw_rect(r, Color(0, 0, 0, 0.95), false, 1.5)
 	if hl.a > 0.0:
 		ci.draw_rect(r.grow(-1.0), hl, false, 2.5)
 
@@ -1240,6 +1242,10 @@ func _draw_end(ci: CanvasItem) -> void:
 		tiles.append({"kind": "portrait", "id": k, "n": kinds[k]})
 	if int(core.loot.get("money", 0)) > 0:
 		tiles.append({"kind": "coin", "n": int(core.loot["money"])})
+	if int(core.loot.get("items", {}).get("scrap", 0)) > 0:
+		tiles.append({"kind": "scrap", "n": int(core.loot["items"]["scrap"])})
+	if int(core.loot.get("items", {}).get("hide", 0)) > 0:
+		tiles.append({"kind": "pelt", "n": int(core.loot["items"]["hide"])})
 	tiles.append({"kind": "time", "n": core.round_n})
 	var tx: float = r.get_center().x - tiles.size() * 36.0
 	for t in tiles:
@@ -1254,6 +1260,21 @@ func _draw_end(ci: CanvasItem) -> void:
 				ci.draw_circle(tr.get_center(), 15.0, Color(0.95, 0.8, 0.35))
 			"time":
 				Icons.action(ci, "ready", tr.grow(-14.0), Color(0.2, 0.15, 0.1))
+			"scrap":
+				# Металлолом: гнутая пластина с заклёпками
+				var c: Vector2 = tr.get_center()
+				ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-18, -6), c + Vector2(8, -16), c + Vector2(18, 4), c + Vector2(-4, 16)]), Color(0.45, 0.42, 0.38))
+				ci.draw_polyline(PackedVector2Array([c + Vector2(-18, -6), c + Vector2(8, -16), c + Vector2(18, 4), c + Vector2(-4, 16), c + Vector2(-18, -6)]), Color(0.15, 0.12, 0.1), 2.0)
+				for k in 3:
+					ci.draw_circle(c + Vector2(-8 + k * 8, -4 + k * 4), 2.2, Color(0.7, 0.45, 0.25))
+			"pelt":
+				# Шкура: растянутая кожа с лапами
+				var c: Vector2 = tr.get_center()
+				var pelt := PackedVector2Array([c + Vector2(-10, -18), c + Vector2(-20, -14), c + Vector2(-14, -4), c + Vector2(-20, 10), c + Vector2(-10, 8),
+					c + Vector2(-6, 18), c + Vector2(6, 18), c + Vector2(10, 8), c + Vector2(20, 10), c + Vector2(14, -4), c + Vector2(20, -14), c + Vector2(10, -18)])
+				ci.draw_colored_polygon(pelt, Color(0.55, 0.38, 0.22))
+				pelt.append(pelt[0])
+				ci.draw_polyline(pelt, Color(0.15, 0.1, 0.06), 2.0)
 		_text(ci, tr.end - Vector2(24, 4), str(t["n"]), 13, Color.WHITE, 22, HORIZONTAL_ALIGNMENT_RIGHT)
 		tx += 72.0
 	var lines: Array = []
@@ -1363,8 +1384,8 @@ func _button_text(id: String, c) -> String:
 
 
 const ARENA_NAMES: Dictionary = {"coast": "побережье", "forest": "лес", "wasteland": "пустошь", "swamp": "болото",
-	"mountains": "горы", "hot": "раскалённые горы", "rad_forest": "радиоактивный лес", "rad_wasteland": "радиоактивная пустошь",
-	"rad_swamp": "радиоактивное болото"}
+	"mountains": "горы", "hot": "раскалённые горы", "rad_forest": "проклятый лес", "rad_wasteland": "проклятая пустошь",
+	"rad_swamp": "проклятое болото"}
 
 
 func _cond_name(id: String) -> String:

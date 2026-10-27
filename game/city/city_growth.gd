@@ -6,6 +6,7 @@ extends RefCounted
 ## view(def, этап) — описание города на этом этапе: его строит city_map.gd и рисует миниатюра на общей карте.
 
 const KINDS: Array = ["walk", "win", "bring", "pay"]
+const Endless := preload("res://city/endless_quests.gd")
 
 
 static func has_growth(def: Dictionary) -> bool:
@@ -16,8 +17,18 @@ static func new_state() -> Dictionary:
 	return {"done": [], "taken": {}}
 
 
+## Очки роста — сданные поручения цепочек; бесконечные (после последнего этапа) не в счёт
 static func points(g: Dictionary) -> int:
-	return g.get("done", []).size()
+	var k: int = 0
+	for id in g.get("done", []):
+		if not String(id).contains(Endless.MARK):
+			k += 1
+	return k
+
+
+## Сколько бесконечных поручений сдано всего (для доски и меню города)
+static func endless_done(g: Dictionary) -> int:
+	return g.get("done", []).size() - points(g)
 
 
 ## Номер этапа: последний, чьи очки набраны
@@ -118,18 +129,38 @@ static func chain(def: Dictionary, npc_id: String) -> Array:
 	return def.get("growth", {}).get("quests", {}).get(npc_id, [])
 
 
-## Задание, которым НПС сейчас занят с героем: первое несданное в его цепочке, если этап его уже открыл
+## Задание основной цепочки, которым НПС сейчас занят с героем: первое несданное, если этап его уже открыл;
+## цепочка пройдена и город вырос до конца — бесконечное поручение (endless_quests.gd, вопрос Q14)
 static func current(def: Dictionary, g: Dictionary, npc_id: String) -> Dictionary:
 	var st: int = stage(def, g)
 	for q in chain(def, npc_id):
-		if g["done"].has(q["id"]):
+		if q.get("spare", false) or g["done"].has(q["id"]):
 			continue
 		return q if int(q.get("stage", 0)) <= st else {}
-	return {}
+	return Endless.next_for(def, g, npc_id) if Endless.open_for(def, st, npc_id) else {}
+
+
+## Все поручения НПС, которые можно взять или сдать сейчас: текущее основной цепочки и открытые запасные
+## (spare — вопрос Q03: запасные берутся в любом порядке, чтобы одно непосильное поручение не держало рост)
+static func available(def: Dictionary, g: Dictionary, npc_id: String) -> Array:
+	var out: Array = []
+	var q: Dictionary = current(def, g, npc_id)
+	if not q.is_empty():
+		out.append(q)
+	var st: int = stage(def, g)
+	for s in chain(def, npc_id):
+		if s.get("spare", false) and not g["done"].has(s["id"]) and int(s.get("stage", 0)) <= st:
+			out.append(s)
+	# Город вырос: бесконечное поручение рядом с недоделанными из цепочки
+	if Endless.open_for(def, st, npc_id) and not Endless.is_endless(q):
+		out.append(Endless.next_for(def, g, npc_id))
+	return out
 
 
 ## Есть ли у НПС следующие задания, которые откроются позже (для реплики «город должен подрасти»)
 static func waiting(def: Dictionary, g: Dictionary, npc_id: String) -> bool:
+	if Endless.open_for(def, stage(def, g), npc_id):
+		return true
 	for q in chain(def, npc_id):
 		if not g["done"].has(q["id"]):
 			return true
@@ -157,6 +188,8 @@ static func progress(g: Dictionary, q: Dictionary, bag: Dictionary, km: float, w
 			return [int(bag.get("items", {}).get(String(q["item"]), 0)), int(q["n"])]
 		"pay":
 			return [int(bag.get("money", 0)), int(q["money"])]
+	# Вид не из KINDS: такое поручение никогда не сдать — опечатка в данных (tools/make_city_growth.py)
+	push_warning("city_growth: поручение %s неизвестного вида «%s» (бывают %s)" % [q.get("id", "?"), q.get("kind", ""), KINDS])
 	return [0, 1]
 
 

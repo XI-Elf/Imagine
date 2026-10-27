@@ -244,7 +244,9 @@ static func years(n: int) -> String:
 	return "лет"
 
 
-## Биография 09: пишется сама по выбранному, одинаковый выбор — одинаковый текст
+## Биография коротко (Huzzah 2026-10-23: «меньше текста»): 2–3 предложения —
+## кто и откуда с ремеслом, одна черта (самая короткая из выбранных), мировоззрение.
+## Одинаковый выбор — одинаковый текст. Полные тексты 09 остались в creation.json.
 static func biography(p: Dictionary) -> String:
 	var data: Dictionary = C().get("biography", {})
 	var nm: String = String(p.get("name", "")).strip_edges()
@@ -256,21 +258,19 @@ static func biography(p: Dictionary) -> String:
 	var sel: Array = p.get("traits", [])
 	var age: int = int(p.get("age", 25))
 	var out: PackedStringArray = []
-	out.append("%s. Возраст — %d %s. %s история началась задолго до этой дороги." % [nm, age, years(age), "Его" if male else "Её"])
-	out.append(String(data.get("origins", {}).get(o, "")))
-	out.append(String(data.get("bridges", {}).get(o, {}).get(pr, "")) + " " + String(data.get("professions", {}).get(pr, "")))
-	var details: PackedStringArray = []
+	out.append("%s, %d %s. %s, ремесло — %s." % [nm, age, years(age),
+		String(data.get("origins_short", {}).get(o, "Родом издалека")), String(data.get("professions_short", {}).get(pr, "своё"))])
+	var best: String = ""
 	for k in C()["traits"]:
 		if sel.has(k):
-			details.append(String(data.get("traits", {}).get(k, R.trait_def(k).get("text", ""))))
-	if details.is_empty():
-		out.append("Привычки ещё не сложились в ясный портрет: характер предстоит узнать по поступкам.")
-	else:
-		out.append("Прожитые годы оставили не только ремесло, но и привычки. " + " ".join(details))
-	var al: String = alignment_name(alignment(sel))
-	out.append("Так складывается отношение к миру. " + String(data.get("alignments", {}).get(al, "")) + " Мировоззрение в начале пути: «%s»." % al)
-	out.append(String(data.get("endings", {}).get(pr, "")))
-	return "\n\n".join(out)
+			var t: String = String(data.get("traits", {}).get(k, R.trait_def(k).get("text", "")))
+			var first: String = t.split(":")[0].split(";")[0].split(".")[0].strip_edges()
+			if first != "" and (best == "" or first.length() < best.length()):
+				best = first
+	if best != "":
+		out.append(best + ".")
+	out.append("Мировоззрение: «%s»." % alignment_name(alignment(sel)))
+	return " ".join(out)
 
 
 static func random_params(r: RandomNumberGenerator) -> Dictionary:

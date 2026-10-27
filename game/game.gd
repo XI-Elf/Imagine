@@ -7,10 +7,11 @@ extends Node2D
 ## Текстуры биомов вблизи — art/terrain/*.png (слои TEX_* в map_shaders.gd).
 ## Все растры выровнены по доске-шестиугольнику инструментом tools/make_new_map.py.
 ## Мир плоский: координаты X Y в метрах, одно время суток на всю карту. Облака и дождь
-## берутся из модели атмосферы (world_physics.tscn) в окне ATM_ORIGIN / ATM_SPAN.
+## — простая погода по сезону и биому (world_physics.tscn, weather/simple_weather.gd) в окне ATM_ORIGIN / ATM_SPAN.
 ## Шейдер карты в map_shaders.gd.
 
 const Board := preload("res://board.gd")
+const ComicUI := preload("res://ui/comic_ui.gd")
 const MENU_SCENE := "res://main_menu.tscn"
 const MAP_COLOR_FILE := "res://art/map/map_color.png"
 const MAP_BIOMES_FILE := "res://art/map/map_biomes.png"
@@ -19,6 +20,8 @@ const MAP_PROVINCES_FILE := "res://art/map/map_provinces.png"
 const MAP_REGIONS_FILE := "res://art/map/map_regions.png"
 const MAP_NAMES_FILE := "res://art/map/map_names.json"
 const MAP_HOT_FILE := "res://art/map/map_hot.png"
+const MAP_HEIGHT_FILE := "res://art/map/map_height.png"
+const HEIGHT_MAX_M: float = 900.0      # высота белого в map_height.png [ВРЕМЕННО]; шейдер рисует светотень с превышением ×2
 # Текстуры биомов, по порядку слоёв массива terrain_tex (последний — маски свечения)
 const TERRAIN_FILES: Array = ["t00_water", "t01_coast", "t02_forest", "t03_field1", "t04_field2",
 	"t05_wasteland", "t06_swamp", "t07_mountains", "t08_hot_mountains", "t09_rad_forest",
@@ -52,12 +55,16 @@ const CAMERA_SPEED := 500.0
 
 # Биомы слоя map_biomes.png (номер = значение пикселя)
 const BIOME_NAMES := ["за краем мира", "вода", "берег", "лес", "пустошь", "болото", "горы",
-	"радиоактивный лес", "радиоактивная пустошь", "радиоактивное болото"]
+	"проклятый лес", "проклятая пустошь", "проклятое болото"]
 
 # Камера в метрах і масштаб у пікселях на метр
 var cam_pos := Vector2(20812.5, 18000.0)
 var zoom: float = 0.04
 var min_zoom: float = 0.03
+var noise_image: Image                 # шум шейдера (noise_tex): декор читает те же поляны, что рисует шейдер
+var global_map: bool = false           # M: обзор всего мира, камера не следует за героем
+var _gm_zoom: float = 1.0
+var _gm_cam := Vector2.ZERO
 var show_clouds: bool = true
 var clock: GameClock
 var physics: WorldPhysics
@@ -68,6 +75,7 @@ var render_mat := ShaderMaterial.new()
 var biome_img: Image
 var water_img: Image
 var hot_img: Image
+var height_img: Image
 var province_img: Image
 var region_img: Image
 var map_names: Dictionary = {}   # {"provinces": {id: {name, regions}}, "regions": {id: {province, code}}}
@@ -135,10 +143,7 @@ func _startup() -> void:
 		_save_data = WorldSave.read(slot)
 		if not _save_data.is_empty():
 			WorldSave.apply_early(self, _save_data)
-	physics.turbo = true
-	physics.static_file = "res://art/map/atmo_static.png"
-	physics.state_file = "res://art/map/atmo_state.bin"
-	physics.rain_scale_file = ""
+	physics.game = self
 	physics.setup(clock, SRC_SIZE.x, SRC_SIZE.y)
 	clock.season_changed.connect(_on_season_changed)
 
@@ -166,10 +171,6 @@ func _startup() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	while physics.is_spinning_up():
-		_set_progress(0.30 + 0.68 * physics.spinup_progress(), "Подготовка атмосферы: ветры, облака, влага")
-		await get_tree().process_frame
-	physics.turbo = false
 	clock.paused = false
 
 	_set_progress(1.0, "Мир готов")
@@ -264,14 +265,8 @@ func _build_loading_screen() -> void:
 	loading_bar.custom_minimum_size = Vector2(560, 20)
 	loading_bar.max_value = 100.0
 	loading_bar.show_percentage = false
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.1, 0.09, 0.08, 0.9)
-	bg_style.set_corner_radius_all(4)
-	var fill_style := StyleBoxFlat.new()
-	fill_style.bg_color = Color("c9a24b")
-	fill_style.set_corner_radius_all(4)
-	loading_bar.add_theme_stylebox_override("background", bg_style)
-	loading_bar.add_theme_stylebox_override("fill", fill_style)
+	loading_bar.custom_minimum_size.y = 28.0
+	ComicUI.bar_styles(loading_bar)
 	box.add_child(loading_bar)
 
 	var row := HBoxContainer.new()
@@ -352,9 +347,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_O:
 			observer_mode = not observer_mode
 			observer_marker.visible = observer_mode
-		# Перехід за координатами X Y
+		# M — глобальная карта (весь мир), ещё раз — назад к герою; Shift+M — переход по координатам X Y
 		if event.physical_keycode == KEY_M:
-			_open_goto()
+			if event.shift_pressed:
+				_open_goto()
+			else:
+				toggle_global_map()
 		# Швидкість погоди
 		if event.physical_keycode == KEY_PERIOD:
 			physics.change_weather_speed(1)
@@ -386,6 +384,11 @@ func _id_at(img: Image, p: Vector2) -> int:
 	return int(round(img.get_pixel(x, y).r * 255.0))
 
 
+# Высота над низиной в метрах (art/map/map_height.png, билинейно, как в шейдере)
+func height_at(p: Vector2) -> float:
+	return _soft_at(height_img, p) * HEIGHT_MAX_M
+
+
 # Вода в точке: маска map_water.png, читается билинейно, как в шейдере (water_at); 0,5 и выше — вода
 func water_at(p: Vector2) -> float:
 	return _soft_at(water_img, p)
@@ -411,6 +414,9 @@ func temperature_line(p: Vector2) -> String:
 	if is_nan(t):
 		return ""
 	var s: String = "%+d °C" % int(round(t))
+	var wn: String = str(physics.weather_here(p).get("name", ""))
+	if wn != "":
+		s += ", " + wn
 	if is_hot(p):
 		s += "   жаркие горы (+%d °C)" % int(HOT_BONUS_C)
 	return s
@@ -523,6 +529,24 @@ func world_to_screen(p: Vector2) -> Vector2:
 
 
 # Відкриває поле для переходу за координатами X Y
+## M: показать весь мир; повторно — вернуть прежний масштаб (камера снова у героя)
+func toggle_global_map() -> void:
+	global_map = not global_map
+	if global_map:
+		_gm_zoom = zoom
+		_gm_cam = cam_pos
+		var vs: Vector2 = get_viewport_rect().size
+		zoom = clampf(minf(vs.x / MAP_SIZE.x, vs.y / MAP_SIZE.y) * 0.97, min_zoom, MAX_ZOOM)
+		cam_pos = MAP_SIZE * 0.5
+		event_text = "Глобальная карта · M — назад"
+	else:
+		zoom = _gm_zoom
+		cam_pos = _gm_cam
+		event_text = ""
+	event_timer = 3.0
+	_clamp_camera()
+
+
 func _open_goto() -> void:
 	typing = true
 	goto_edit.text = ""
@@ -590,6 +614,8 @@ func _build_map() -> void:
 	biome_img = _load_id_layer(MAP_BIOMES_FILE, "biome_tex")
 	water_img = _load_id_layer(MAP_WATER_FILE, "water_tex")
 	hot_img = _load_id_layer(MAP_HOT_FILE, "hot_tex")
+	height_img = _load_id_layer(MAP_HEIGHT_FILE, "height_tex")
+	render_mat.set_shader_parameter("height_max", HEIGHT_MAX_M * 2.2)
 	_load_terrain_textures()
 	province_img = _load_id_layer(MAP_PROVINCES_FILE, "province_tex")
 	region_img = _load_id_layer(MAP_REGIONS_FILE, "region_tex")
@@ -666,8 +692,6 @@ func _update_hud() -> void:
 		var place: String = place_line(m)
 		if place != "":
 			compact += "\n" + place
-	if physics.is_spinning_up():
-		compact += "\nПогода: подготовка атмосферы"
 	if not details_visible:
 		if event_timer > 0.0:
 			compact += "\n" + event_text
@@ -735,6 +759,7 @@ func _make_noise_texture() -> ImageTexture:
 			# Канал G це канал R зі зсувом (37, 17): з нього виходить тривимірний шум на кулі
 			var gg: float = base[((y + 17) % 256) * 256 + (x + 37) % 256]
 			noise_img.set_pixel(x, y, Color(r, gg, rng.randf(), rng.randf()))
+	noise_image = noise_img
 	return ImageTexture.create_from_image(noise_img)
 
 
@@ -760,14 +785,7 @@ func _build_ui() -> void:
 
 	hud_panel = PanelContainer.new()
 	hud_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.055, 0.065, 0.06, 0.84)
-	panel_style.content_margin_left = 12.0
-	panel_style.content_margin_right = 12.0
-	panel_style.content_margin_top = 10.0
-	panel_style.content_margin_bottom = 10.0
-	panel_style.set_corner_radius_all(6)
-	hud_panel.add_theme_stylebox_override("panel", panel_style)
+	hud_panel.add_theme_stylebox_override("panel", ComicUI.panel(18.0, 0.92))
 	ui_layer.add_child(hud_panel)
 	hud_scroll = ScrollContainer.new()
 	hud_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -832,9 +850,13 @@ func _build_ui() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	pause_panel.add_child(center)
 
+	var frame := PanelContainer.new()
+	frame.add_theme_stylebox_override("panel", ComicUI.panel(34.0))
+	ComicUI.tech_plate(frame)
+	center.add_child(frame)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
-	center.add_child(box)
+	frame.add_child(box)
 
 	var title := Label.new()
 	title.text = "Меню"

@@ -16,7 +16,11 @@ const R := preload("res://characters/actor_rules.gd")
 const HeroProfile := preload("res://characters/hero_profile.gd")
 const HeroCreateScript := preload("res://characters/hero_create.gd")
 const HeroWindowScript := preload("res://characters/hero_window.gd")
+const HeroDeath := preload("res://characters/hero_death.gd")
 const HeroRoute := preload("res://characters/hero_route.gd")
+const Ruins := preload("res://world/ruins.gd")
+const Trade := preload("res://city/trade.gd")
+const TransportScript := preload("res://characters/transport.gd")
 
 const OVERWORLD_NPCS: bool = false
 const NPC_COUNT: int = 8
@@ -42,9 +46,12 @@ var window: CanvasLayer             # окно героя (characters/hero_windo
 var _creator: CanvasLayer           # экран создания героя (characters/hero_create.gd), пока открыт
 var _last_clock: float = -1.0
 var _forage_cd: float = 0.0
+var ruins_looted: Dictionary = {}       # руины на карте (world/ruins.gd): "x:y" -> игровые секунды обыска
 var _rng := RandomNumberGenerator.new()
 var _status: Label
 var route: Node2D               # ход мышью: путь героя к точке (hero_route.gd)
+var transport: Node2D           # лошадь и повозка героя (transport.gd): R — верхом / пешком
+var death: Node                 # экран гибели героя и нового персонажа (hero_death.gd)
 
 
 func setup(g: Node2D) -> void:
@@ -65,6 +72,12 @@ func setup(g: Node2D) -> void:
 	route = HeroRoute.new()
 	add_child(route)
 	route.setup(self)
+	transport = TransportScript.new()
+	add_child(transport)
+	transport.setup(self)
+	death = HeroDeath.new()
+	add_child(death)
+	death.setup(self)
 
 
 # Общая сумка героя — у менеджера миров (worlds/worlds.gd); без него своя
@@ -255,7 +268,7 @@ func _process(delta: float) -> void:
 				_drive_hero(b, env, delta)
 		else:
 			_npc_think(b, env, delta)
-	if controls_hero and not hero.is_empty():
+	if controls_hero and not hero.is_empty() and not game.global_map:
 		game.cam_pos = hero["pos"]
 		game._clamp_camera()
 	_update_status()
@@ -270,7 +283,7 @@ func _step(b: Dictionary, dir: Vector2, run: bool, delta: float) -> bool:
 	if dir == Vector2.ZERO or not a.can_move():
 		b["drowning"] = a.exert(delta, env, "rest")
 		return false
-	var v: float = a.travel_speed(env, run)
+	var v: float = a.travel_speed(env, run) * slope_factor(b["pos"], dir)
 	var next: Vector2 = b["pos"] + dir.normalized() * v * delta
 	var into_water: bool = not b["hero"] and game.biome_at(next) == 1 and game.biome_at(b["pos"]) != 1
 	if game.biome_at(next) == 0 or v <= 0.0 or into_water or _walled(next, b["pos"]):
@@ -280,6 +293,14 @@ func _step(b: Dictionary, dir: Vector2, run: bool, delta: float) -> bool:
 	a.note_travel(b["pos"].distance_to(next), env)
 	b["pos"] = next
 	return true
+
+
+## В гору медленнее, под гору чуть быстрее (объём гор, Huzzah 2026-10-24) [ВРЕМЕННО]: уклон по карте высот на 12 м вперёд
+func slope_factor(p: Vector2, dir: Vector2) -> float:
+	if not game.has_method("height_at") or dir == Vector2.ZERO:
+		return 1.0
+	var grade: float = (game.height_at(p + dir.normalized() * 12.0) - game.height_at(p)) / 12.0
+	return clampf(1.0 / (1.0 + maxf(grade, 0.0) * 1.2), 0.55, 1.0) * (1.0 + clampf(-grade * 0.3, 0.0, 0.08))
 
 
 # Стена города на общей карте (world/settlements.gd): снаружи внутрь не пройти, изнутри выйти можно
@@ -307,8 +328,16 @@ func _drive_hero(b: Dictionary, env: Dictionary, delta: float) -> void:
 	elif controls_hero and not hold_hero and not game.menu_open and not sheet_visible and route.active():
 		dir = route.steer(b["pos"])
 		by_route = dir != Vector2.ZERO
+	var goal: Vector2 = route.final_point() if by_route else Vector2.INF
+	var from: Vector2 = b["pos"]
 	var moved: bool = _step(b, dir.limit_length(1.0), Input.is_physical_key_pressed(KEY_SHIFT), delta)
-	if by_route:
+	# Шаг дотянулся до точки клика или перескочил её — встать точно в неё (раньше герой
+	# останавливался за 3 м до цели, а у самой цели метался туда-сюда)
+	if goal != Vector2.INF and b["pos"].distance_to(from) >= from.distance_to(goal) - 0.01:
+		if game.biome_at(goal) != 0 and not _walled(goal, from):
+			b["pos"] = goal
+		route.cancel()
+	elif by_route:
 		route.stepped(moved, delta)
 
 
@@ -317,7 +346,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
-	if _creator != null:
+	if _creator != null or (death != null and death.active):
 		return
 	match event.physical_keycode:
 		KEY_G:
@@ -359,10 +388,29 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F:
 			if _hero_alive() and _forage_cd <= 0.0:
 				_forage_cd = FORAGE_COOLDOWN_S
-				_event("Нашёл еду" if forage(hero) else "Ничего съедобного")
+				var site: Dictionary = Ruins.near(game, hero["pos"])
+				if not site.is_empty():
+					_event(search_ruins(site))
+				else:
+					_event("Нашёл еду" if forage(hero) else "Ничего съедобного")
 		_:
 			return
 	get_viewport().set_input_as_handled()
+
+
+## Обыскать руины рядом с героем (вопрос Q04): лом и монеты — в сумку героя (Worlds.inventory)
+func search_ruins(site: Dictionary) -> String:
+	var w: Node = get_tree().root.get_node_or_null("Worlds") if is_inside_tree() else null
+	var bag: Dictionary = w.inventory if w != null else {}
+	var a: Actor = hero["actor"]
+	var found: Dictionary = Ruins.search(site, ruins_looted, game.clock.total_seconds, a.derived()["search_efficiency"], _rng, bag)
+	if found.is_empty():
+		return "Руины уже обысканы: загляните через несколько дней"
+	a.add_xp("survival", 1.0)
+	var parts: PackedStringArray = []
+	for id in found:
+		parts.append("%s ×%d" % [Trade.item_name(id), int(found[id])])
+	return "Обыскал руины: %s" % ", ".join(parts)
 
 
 func _hero_alive() -> bool:
@@ -499,6 +547,7 @@ func _draw() -> void:
 		return
 	var font: Font = ThemeDB.fallback_font
 	var vp: Rect2 = get_viewport_rect().grow(40.0)
+	_draw_ruins(font)
 	for b in bodies:
 		var a: Actor = b["actor"]
 		var sp: Vector2 = game.world_to_screen(b["pos"])
@@ -508,9 +557,17 @@ func _draw() -> void:
 		if not a.alive:
 			col = Color(0.5, 0.5, 0.5)
 		var r: float = clampf(0.6 * game.zoom, 4.0, 14.0)
+		# На горе фигура ближе к глазу: чуть крупнее, тень уходит дальше от ног
+		var up: float = game.height_at(b["pos"]) / game.HEIGHT_MAX_M if game.has_method("height_at") else 0.0
 		draw_circle(sp, r + 1.5, Color(0, 0, 0, 0.8))
 		if game.zoom > 3.0:
-			Art.sprite(self, "traveler" if b["hero"] else "villager", sp, clampf(1.9 * game.zoom, 16.0, 76.0))
+			var hpx: float = clampf(1.9 * game.zoom, 16.0, 76.0) * (1.0 + up * 0.35)
+			if up > 0.02:
+				draw_set_transform(sp + Vector2(hpx * 0.12, hpx * 0.06) * (1.0 + up * 2.0), 0.0, Vector2(1.0, 0.35))
+				draw_circle(Vector2.ZERO, hpx * 0.28, Color(0, 0, 0, 0.28))
+				draw_set_transform(Vector2.ZERO)
+			var lift: float = transport.rider_lift(hpx) if b["hero"] and transport != null else 0.0
+			Art.sprite(self, "traveler" if b["hero"] else "villager", sp - Vector2(0, hpx * 0.08 * up + lift), hpx)
 		else:
 			draw_circle(sp, r, col)
 		if not a.alive:
@@ -531,6 +588,30 @@ func _draw() -> void:
 			draw_rect(Rect2(sp + Vector2(-w / 2, r + 4), Vector2(w * hp, 4)), Color(0.85, 0.2, 0.2) if hp < 0.3 else Color(0.4, 0.85, 0.35))
 
 
+## Руины на карте: груда камней и обломок стены; вблизи — подпись (обысканные — серые)
+func _draw_ruins(font: Font) -> void:
+	if game.zoom < 0.25:
+		return
+	var vs: Vector2 = get_viewport_rect().size / game.zoom
+	var now: float = game.clock.total_seconds
+	for s in Ruins.in_rect(game, Rect2(game.cam_pos - vs * 0.5, vs).grow(40.0)):
+		var sp: Vector2 = game.world_to_screen(s["pos"])
+		var h: float = clampf(9.0 * game.zoom, 8.0, 260.0)
+		var done: bool = Ruins.looted_now(ruins_looted, s["key"], now)
+		var tint: Color = Color(0.62, 0.6, 0.56) if done else Color(0.92, 0.86, 0.78)
+		# Обломок стены: два зуба кладки за камнями
+		var wall := PackedVector2Array([sp + Vector2(-0.55, 0.0) * h, sp + Vector2(-0.55, -0.62) * h, sp + Vector2(-0.38, -0.5) * h,
+			sp + Vector2(-0.3, -0.78) * h, sp + Vector2(-0.12, -0.55) * h, sp + Vector2(0.05, -0.6) * h, sp + Vector2(0.12, 0.0) * h])
+		draw_colored_polygon(wall, Color(0.5, 0.46, 0.4, 0.95) * tint)
+		draw_polyline(wall, Color(0.12, 0.1, 0.08, 0.9), maxf(1.0, h * 0.02))
+		Art.sprite(self, "rock", sp + Vector2(h * 0.1, h * 0.05), h * 0.55, tint)
+		Art.sprite(self, "rock", sp + Vector2(-h * 0.35, h * 0.12), h * 0.35, tint)
+		if game.zoom >= 0.6:
+			var label: String = "Руины" + (" (обысканы)" if done else "")
+			draw_string_outline(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, 4, Color(0, 0, 0, 0.9))
+			draw_string(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, Color(0.95, 0.88, 0.7))
+
+
 func _update_status() -> void:
 	var vp: Vector2 = get_viewport_rect().size
 	if hero.is_empty():
@@ -539,11 +620,13 @@ func _update_status() -> void:
 		var a: Actor = hero["actor"]
 		var env: Dictionary = WorldEnv.sample(game, hero["pos"])
 		if not a.alive:
-			_status.text = "Герой погиб: %s.  G — новый герой" % Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
+			_status.text = "Герой погиб: %s" % Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
 		else:
-			_status.text = "Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d  Радиация %d   %s, ощущается %d °C, шаг %.1f км/ч%s" % [
+			var alt: float = game.height_at(hero["pos"]) if game.has_method("height_at") else 0.0
+			_status.text = "Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d  Воздействие проклятья %d   %s%s, ощущается %d °C, шаг %.1f км/ч%s" % [
 				int(a.res["health"]), int(a.res["hunger"]), int(a.res["thirst"]), int(a.res["energy"]),
 				int(a.res["stamina"]), int(a.res["radiation"]), R.terrain(int(env["biome"])).get("name", ""),
+				", высота %d м" % int(round(alt / 10.0) * 10.0) if alt >= 20.0 else "",
 				int(round(a.feels_temp(env))), a.calculate_speed(env),
 				"" if controls_hero else "   (камера свободна, G — к герою)"]
 	_status.position = Vector2(14.0, vp.y - 34.0)
@@ -572,14 +655,14 @@ func sheet_text(a: Actor) -> String:
 	for bf in a.buffs:
 		t += "\n  + %s (%.0f ч)" % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])]
 	var dv: Dictionary = a.derived()
-	t += "\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от радиации %d %%\n" % [
+	t += "\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n" % [
 		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0)]
 	t += "\nНавыки:"
 	var sk: Dictionary = R.skills()
 	for k in sk:
 		t += "\n  %s %d (опыт %d)" % [sk[k].get("name_ru", k), a.skill_level(k), int(a.skills[k]["xp"])]
 	t += "\n\nПройдено %.1f км" % (a.distance_m / 1000.0)
-	t += "\n\nG управление, Shift бег, Z сон, E пить, F еда, T знахарь, I персонаж, Tab сумка"
+	t += "\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T знахарь, R верхом / пешком, I персонаж, Tab сумка"
 	return t
 
 
@@ -590,7 +673,7 @@ func to_dict() -> Dictionary:
 	var list: Array = []
 	for b in bodies:
 		list.append({"actor": b["actor"].to_dict(), "pos": b["pos"], "home": b["home"], "hero": b["hero"], "kit": b["kit"]})
-	return {"bodies": list, "controls_hero": controls_hero}
+	return {"bodies": list, "controls_hero": controls_hero, "ruins_looted": ruins_looted.duplicate()}
 
 
 func load_dict(d: Dictionary) -> void:
@@ -606,6 +689,7 @@ func load_dict(d: Dictionary) -> void:
 		if b["hero"]:
 			hero = b
 	controls_hero = bool(d.get("controls_hero", false)) and not hero.is_empty()
+	ruins_looted = d.get("ruins_looted", {}).duplicate()
 	_last_clock = -1.0
 	if route != null:
 		route.cancel()

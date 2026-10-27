@@ -22,6 +22,9 @@ uniform sampler2D biome_tex : filter_nearest, repeat_disable;
 uniform sampler2D water_tex : filter_linear, repeat_disable;
 // Жаркие горы: сглаженная маска, 0,5 — край зоны (как hot в game.gd)
 uniform sampler2D hot_tex : filter_linear, repeat_disable;
+// Высоты (art/map/map_height.png, tools/make_height.py): 0..1 -> 0..height_max метров для светотени (с превышением)
+uniform sampler2D height_tex : filter_linear, repeat_disable;
+uniform float height_max = 2000.0;
 // Текстуры биомов (слои TEX_*), последний слой — маски свечения R лес, G пустошь, B болото
 uniform sampler2DArray terrain_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform bool use_textures = false;
@@ -75,7 +78,9 @@ const int TEX_RAD_FOREST = 9;
 const int TEX_RAD_WASTE = 10;
 const int TEX_RAD_SWAMP = 11;
 const int TEX_GLOW = 12;
-const float TILE_M[12] = {12.0, 2.5, 1.8, 3.0, 3.0, 3.0, 4.0, 5.0, 5.0, 1.8, 3.0, 4.0};
+// Huzzah 2026-10-23: при самом сильном приближении (MAX_ZOOM 40 px/м в game.gd) пиксель картинки
+// 512 px = пиксель экрана, при отдалении текстура только сжимается (мипмапы). 512 / 40 = 12,8 м
+const float TILE_M[12] = {12.8, 12.8, 12.8, 12.8, 12.8, 12.8, 12.8, 12.8, 12.8, 12.8, 12.8, 12.8};
 
 float board_hex_norm(vec2 v) {
 	return max(abs(v.y), max(abs(0.8660254 * v.x + 0.5 * v.y), abs(-0.8660254 * v.x + 0.5 * v.y)));
@@ -234,20 +239,36 @@ vec3 borders(vec2 p, vec3 col) {
 	return col;
 }
 
+// Высота в точке, 0..1
+float height_at(vec2 p) {
+	return textureLod(height_tex, clamp(p / map_size, vec2(0.0), vec2(1.0)), 0.0).r;
+}
+
+// Светотень рельефа (Huzzah 2026-10-24: «должен чувствоваться объём, когда поднимаюсь на гору»):
+// склон к свету светлее, от света темнее; шаг разности — пиксель слоя высот или пиксель экрана, что крупнее
+float relief(vec2 p) {
+	float e = max(map_size.x / float(textureSize(height_tex, 0).x), 1.5 / zoom);
+	float hx = (height_at(p + vec2(e, 0.0)) - height_at(p - vec2(e, 0.0))) * height_max / (2.0 * e);
+	float hy = (height_at(p + vec2(0.0, e)) - height_at(p - vec2(0.0, e))) * height_max / (2.0 * e);
+	vec3 n = normalize(vec3(-hx, -hy, 1.0));
+	vec3 l = normalize(vec3(-0.6, -0.6, 0.55));
+	return dot(n, l) - l.z;
+}
+
 // Жаркие горы в точке: 0..1 (от 0,5 — зона)
 float hot_at(vec2 p) {
 	return textureLod(hot_tex, clamp(p / map_size, vec2(0.0), vec2(1.0)), 0.0).r;
 }
 
-// Слой текстуры в точке (метры), повтор s метров. Два чтения — прямое и повёрнутое со сдвигом —
+// Слой текстуры в точке (метры), повтор s метров. Два чтения — прямое и отражённое со сдвигом —
 // смешиваются крупным шумом, чтобы повтор не бросался в глаза. Градиенты считаются из масштаба
 // (вызовы бывают внутри ветвлений)
 vec3 tex_s(vec2 p, int l, float s) {
 	float g = 1.0 / (zoom * s);
 	vec3 a = textureGrad(terrain_tex, vec3(p / s, float(l)), vec2(g, 0.0), vec2(0.0, g)).rgb;
-	vec2 q = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * p / (s * 1.37) + vec2(0.37, 0.71);
-	float g2 = g / 1.37;
-	vec3 b = textureGrad(terrain_tex, vec3(q, float(l)), vec2(g2, 0.0), vec2(0.0, g2)).rgb;
+	// Вторая копия — отражённая и сдвинутая, без поворота и масштаба: пиксели остаются 1:1
+	vec2 q = vec2(-p.x, p.y) / s + vec2(0.37, 0.71);
+	vec3 b = textureGrad(terrain_tex, vec3(q, float(l)), vec2(-g, 0.0), vec2(0.0, g)).rgb;
 	return mix(a, b, smoothstep(0.38, 0.62, noise2(p / (s * 1.1) + vec2(float(l) * 3.1, 1.7))));
 }
 
@@ -444,6 +465,13 @@ void fragment() {
 		float bb = biome_at(P);
 		if (bb > 1.5 && wet < 0.5) {
 			col = mix(col, vec3(0.88, 0.89, 0.92), winter * 0.35 * smoothstep(0.35, 0.65, fbm(P, 120.0)));
+		}
+		// Рельеф: светотень склонов, вершины светлее и холоднее, на самых высоких — снег
+		float hgt = height_at(P);
+		if (hgt > 0.002 && wet < 0.5) {
+			col *= clamp(1.0 + relief(P) * 1.15, 0.5, 1.45);
+			col = mix(col, col * 1.06 + vec3(0.02, 0.03, 0.05), hgt * 0.3);
+			col = mix(col, vec3(0.90, 0.91, 0.94), smoothstep(0.82, 0.97, hgt + 0.08 * fbm(P, 90.0)) * (1.0 - hot) * 0.7);
 		}
 		// День и ночь
 		vec3 sun_dir;

@@ -5,6 +5,7 @@ const GAME_SCENE := "res://game.tscn"
 const WorldSave := preload("res://world_save.gd")
 const BG_IMAGE := "res://art/menu_bg.jpg"
 const HeroCreateScript := preload("res://characters/hero_create.gd")
+const ComicUI := preload("res://ui/comic_ui.gd")
 
 # Кольори інтерфейсу
 const COLOR_BG := Color("2b2823")      # колір фону, якщо картинки немає
@@ -123,10 +124,7 @@ func _on_hero_created(params: Dictionary) -> void:
 		return
 	Engine.set_meta("aw_load", "")
 	Engine.set_meta("aw_new_hero", params)
-	if ResourceLoader.exists(GAME_SCENE):
-		get_tree().change_scene_to_file(GAME_SCENE)
-	else:
-		message_label.text = "Сцену гри ще не створено"
+	_open_game()
 
 
 # «Продолжить»: игра загрузит сохранённый мир
@@ -137,20 +135,30 @@ func _on_continue() -> void:
 func _load_slot(slot: String) -> void:
 	if slot == "":
 		return
+	# Нечитаемое сохранение (старая версия, повреждено) игра молча заменила бы новым пустым миром
+	if WorldSave.read(slot).is_empty():
+		_close_load_menu()
+		message_label.text = "Сохранение не читается (повреждено или от другой версии игры)"
+		return
 	Engine.set_meta("aw_load", slot)
-	get_tree().change_scene_to_file(GAME_SCENE)
+	_open_game()
+
+
+# Переход в мир; если сцена не открылась — сообщение под кнопками, а не тишина
+func _open_game() -> void:
+	var err: Error = ERR_FILE_NOT_FOUND
+	if ResourceLoader.exists(GAME_SCENE):
+		err = get_tree().change_scene_to_file(GAME_SCENE)
+	if err != OK:
+		Engine.set_meta("aw_load", "")
+		message_label.text = "Не открывается сцена мира %s (%s)" % [GAME_SCENE, error_string(err)]
 
 
 # Список сохранений: вид, дата, персонаж, игровая дата; «Загрузить» и «Удалить»
 func _build_load_panel(parent: Control) -> void:
 	_load_panel = PanelContainer.new()
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.10, 0.09, 0.08, 0.96)
-	st.border_color = Color("c9a24b")
-	st.set_border_width_all(2)
-	st.set_corner_radius_all(8)
-	st.set_content_margin_all(18.0)
-	_load_panel.add_theme_stylebox_override("panel", st)
+	_load_panel.add_theme_stylebox_override("panel", ComicUI.panel(30.0))
+	ComicUI.tech_plate(_load_panel)
 	_load_panel.visible = false
 	parent.add_child(_load_panel)
 	var v := VBoxContainer.new()

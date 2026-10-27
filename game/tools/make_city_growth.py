@@ -36,8 +36,9 @@ for b in [COMMON, HERO_HUT, GUARD_HUT, ELDER_HUT, TANNERY]:
 # Кожевник — новый житель, имя англосаксонское (Huzzah: новые имена норвежские и англосаксонские)
 d['npcs'].append({
 	'id': 'tanner', 'name': 'Кожевник Эдрик', 'role': 'tanner', 'home': TANNERY, 'work': TANNERY,
-	# Одежда (ветка инвентаря): портниха и старьёвщик придут только с посадом, а кожаное — у кожевника с самого начала
-	'hours': [7, 19], 'skill': 'sewing', 'stock': {'rope': 4, 'leather_jacket': 1, 'boots': 2, 'gloves': 3}, 'buys': ['hide', 'rope'],
+	# Одежда (ветка инвентаря): портниха и старьёвщик придут только с посадом, а кожаное — у кожевника с самого начала.
+	# Нож — тоже у кожевника с «Острога» (вопрос Q02, Huzzah 2026-10-24): первый бой кулаками непроходим
+	'hours': [7, 19], 'skill': 'sewing', 'stock': {'rope': 4, 'knife': 2, 'leather_jacket': 1, 'boots': 2, 'gloves': 3}, 'buys': ['hide', 'rope'],
 	'lines': ['Кожа любит терпение: неделю в чане, неделю на сушилах.', 'Шкуры несите — выделаю, куплю.'],
 })
 
@@ -53,6 +54,9 @@ well_props = [i for i, p in enumerate(d['props']) if p['kind'] == 'well']
 south_well = max(well_props, key=lambda i: d['props'][i]['cells'][0][1])
 
 elder_lines = npc['posadnik']['lines']
+# Глава стоит у доски объявлений на площади
+BOARD = next(list(p['cell']) for p in d['places'] if p['id'] == 'notice_board')
+BOARD = [BOARD[0], BOARD[1] + 1]
 in_common = {'home': COMMON, 'work': COMMON}
 stages = [
 	{'name': 'Острог', 'points': 0, 'wall': 'palisade',
@@ -60,7 +64,7 @@ stages = [
 	 'npc_set': {
 		# Пока портнихи нет, рубаху, штаны и шапку продаёт глава из общих запасов (одежда — ветка инвентаря)
 		# Глава днём стоит на площади у доски объявлений, ночует в общем доме
-		'posadnik': dict(in_common, work_cell=[66, 58], stock={'linen_shirt': 2, 'trousers': 2, 'felt_cap': 1}, buys=[], lines=[
+		'posadnik': dict(in_common, work_cell=BOARD, stock={'linen_shirt': 2, 'trousers': 2, 'felt_cap': 1}, buys=[], lines=[
 			'Нас трое под одной крышей, а места за частоколом на целый город. Поможешь — люди и придут.',
 			'Дела есть у каждого из нас: у меня, у Бригит, у Эдрика. Спрашивай.'] + elder_lines[1:]),
 		'healer': dict(in_common),
@@ -88,6 +92,11 @@ stages = [
 	 'names': {ELDER_HUT: bld[ELDER_HUT]['name']},
 	 'npc_set': {'posadnik': {'home': 'hall', 'work': 'hall', 'lines': elder_lines}}},
 ]
+
+# Маленький город (Huzzah 2026-10-24) — не все дома кварталов есть в плане
+for st in stages:
+	if 'buildings' in st:
+		st['buildings'] = [b for b in st['buildings'] if b in bld]
 
 # Задания: по три у каждого. У троих основателей первое — с острога, у кузнеца, торговки и стражника — со слободы;
 # следующее в цепочке открывает следующий этап. Каждое сданное задание — очко роста (points у этапа — сколько нужно)
@@ -161,6 +170,31 @@ quests = {
 	],
 }
 
+# Запасные поручения (вопрос Q03, Huzzah 2026-10-24: «около 24 поручений на 18 очков роста»): по одному у каждого,
+# мирные, берутся в любом порядке рядом с основной цепочкой. Если основное не по силам (бой кулаками), рост не встаёт
+spares = {
+	'posadnik': Q(id='elder_s', stage=0, spare=True, kind='walk', km=2, reward=8, title='Обойти межи',
+		ask='Межевые камни растащили, кто куда. Обойди округу километра два и запомни, где наша земля кончается.',
+		done='Теперь знаю, докуда пахать. Соседям так и скажу.'),
+	'healer': Q(id='healer_s', stage=0, spare=True, kind='pay', money=10, reward=0, title='Ступка и котелок',
+		ask='Травы есть, а растереть и сварить не в чем. Дай 10 монет на ступку и котелок.',
+		done='Теперь и отвар будет, и мазь. Спасибо.'),
+	'tanner': Q(id='tanner_s', stage=0, spare=True, kind='walk', km=2, reward=8, title='Дубовая кора',
+		ask='Для чанов нужна кора, а дубы далеко. Пройди километра два, найди мне рощу поближе.',
+		done='Есть роща у оврага. Хватит на всю зиму.'),
+	'smith': Q(id='smith_s', stage=1, spare=True, kind='pay', money=20, reward=0, title='Уголь для горна',
+		ask='Лом есть, угля нет. Дай 20 монет углежогам — и горн не остынет.',
+		done='Угля на месяц. Куй не хочу.'),
+	'trader': Q(id='trader_s', stage=2, spare=True, kind='walk', km=4, reward=10, title='Весть купцам',
+		ask='Купцы не знают, что у нас торг. Пройди километра четыре по дорогам, расскажи встречным.',
+		done='Уже спрашивают, когда ярмарка. Твоя работа.'),
+	'guard_1': Q(id='guard_s', stage=2, spare=True, kind='bring', item='rope', n=2, reward=10, title='Верёвки для сторожки',
+		ask='Колокол у ворот висит на гнилой верёвке. Принеси две крепкие — у Эдрика бывают.',
+		done='Теперь, если что, весь город услышит.'),
+}
+for nid, q in spares.items():
+	quests[nid].append(q)
+
 # Проверки: всё, что появляется на этапах, есть в пуле; нулевой этап — трое в общем доме и лачуга
 later_b = {b for s in stages[1:] for b in s.get('buildings', [])}
 later_n = {n for s in stages[1:] for n in s.get('npcs', [])}
@@ -174,10 +208,15 @@ base_b = [b['id'] for b in d['buildings'] if b['id'] not in later_b and b['kind'
 assert sorted(base_b) == sorted([COMMON, HERO_HUT]), base_b
 for nid, chain in quests.items():
 	assert nid in [n['id'] for n in d['npcs']], nid
-	for i, q in enumerate(chain):
+	for i, q in enumerate([q for q in chain if not q.get('spare')]):
 		assert q['stage'] == i + (0 if nid in ('posadnik', 'healer', 'tanner') else 1), q['id']
 total = sum(len(c) for c in quests.values())
-assert stages[-1]['points'] == total, total
+main = sum(1 for c in quests.values() for q in c if not q.get('spare'))
+assert stages[-1]['points'] == main == 18 and total == 24, (main, total)
+# На каждом этапе очков с запасом: доступных к нему поручений больше, чем нужно для следующего этапа
+for k in range(1, len(stages)):
+	open_q = sum(1 for c in quests.values() for q in c if q['stage'] < k)
+	assert open_q > stages[k]['points'] or k == len(stages) - 1, (k, open_q)
 
 d['growth'] = {
 	'_note': 'Рост города (Huzzah 2026-10-23). Этап — по числу сданных заданий (points). Что не упомянуто в этапах 1+, стоит с начала. Генератор: tools/make_city_growth.py',

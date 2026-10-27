@@ -21,7 +21,7 @@ const RESOURCES: Array = ["health", "hunger", "thirst", "energy", "radiation", "
 const SUBSTEP_S: float = 600.0
 const OPEN_WOUNDS: Array = ["bullet_wound", "laceration"]
 const DEATH_CAUSES: Dictionary = {
-	"thirst": "жажда", "hunger": "голод", "radiation": "радиация", "drowning": "утонул",
+	"thirst": "жажда", "hunger": "голод", "radiation": "воздействие проклятья", "drowning": "утонул",
 	"wounds": "раны", "disease": "болезнь", "other": "неизвестно",
 }
 
@@ -40,6 +40,7 @@ var sleep_h: float = 0.0
 var wet_h: float = 0.0              # сколько игровых часов ещё сохнуть
 var moving: bool = false            # шёл ли последние секунды (трата энергии в tick)
 var carried_kg: float = 0.0
+var pack_kg: float = 0.0            # сколько кг везут лошадь и повозка (characters/transport.gd), не сохраняется
 var mount: String = ""              # "" пешком, "horse", "cart" (movement.json пака)
 var distance_m: float = 0.0
 var traits: Array = []              # черты характера (creation.json): постоянные эффекты, как у состояний
@@ -278,6 +279,8 @@ func _step(h: float, env: Dictionary) -> void:
 		var rate: float = float(ch["energy"].get("decay_per_hour", 0.8))
 		if moving:
 			rate *= R.num("movement", "moving_energy_mult", 1.5) * float(ter.get("energy", 1.0))
+			if mount != "":
+				rate *= float(R.transport().get("riding_energy_mult", 1.0))
 		if cold:
 			rate *= R.num("climate", "cold_energy_mult", 1.5)
 		add_res("energy", -(rate + extra) * h)
@@ -487,7 +490,7 @@ func treat(id: String, healer: Actor, items: Array = []) -> Dictionary:
 func carry_capacity() -> float:
 	var sr: Dictionary = R.section("stats")
 	var kg: float = float(sr.get("carry_base_kg", 15.0)) + float(sr.get("carry_per_str_kg", 1.0)) * stat("str")
-	return kg * (0.5 + 0.5 * res["stamina"] / max_of("stamina")) * mult("power")
+	return kg * (0.5 + 0.5 * res["stamina"] / max_of("stamina")) * mult("power") + pack_kg
 
 
 func radiation_resist() -> float:
@@ -570,7 +573,7 @@ func calculate_speed(env: Dictionary, run: bool = false) -> float:
 	if bool(ter.get("swim", false)):
 		kmh = float(mv.get("swim_mps", 0.6)) * 3.6
 	else:
-		kmh = R.base_kmh(mount) * float(ter.get("speed", 1.0))
+		kmh = R.base_kmh(mount) * float(ter.get("speed", 1.0)) * R.mount_terrain(mount, int(env.get("biome", 4)))
 		if run and can_run():
 			kmh *= float(mv.get("run_mult", 2.1))
 		if float(ter.get("radiation_h", 0.0)) > 0.0:
@@ -647,7 +650,10 @@ func note_travel(meters: float, env: Dictionary) -> void:
 		if rng.randf() < fall:
 			_fall()
 	if not bool(ter.get("swim", false)):
-		add_xp("survival", km)
+		if mount != "":
+			add_xp("riding", km * float(R.transport().get("riding_xp_per_km", 1.0)))
+		else:
+			add_xp("survival", km)
 
 
 func _fall() -> void:

@@ -6,10 +6,12 @@ const FILE := "res://data/characters/names.json"
 const CULTURES: Array = ["baltic", "essex", "norse", "irish"]
 
 static var _data: Dictionary = {}
+static var _read: bool = false
 
 
 static func data() -> Dictionary:
-	if _data.is_empty():
+	if not _read:
+		_read = true
 		var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(FILE)) if FileAccess.file_exists(FILE) else null
 		_data = v.get("cultures", {}) if v is Dictionary else {}
 		if _data.is_empty():

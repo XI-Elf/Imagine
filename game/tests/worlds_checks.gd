@@ -52,6 +52,8 @@ func load_game(slot: String = "") -> Node2D:
 
 func _run() -> void:
 	W = root.get_node_or_null("Worlds")
+	# Заглушки города и боя — только в тестах (вопрос Q07)
+	W.test_doubles = {"city": load("res://tests/doubles/city_stub.gd"), "battle": load("res://tests/doubles/battle_stub.gd")}
 	ok(W != null, "автозагрузка Worlds есть")
 	var game: Node2D = await load_game()
 	ok(game.ready_done and W.game == game, "Worlds подключился к общей карте")

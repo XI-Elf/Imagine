@@ -21,6 +21,7 @@ signal exit_requested(city_id: String, gate_id: String)
 
 const CityMap := preload("res://city/city_map.gd")
 const Trade := preload("res://city/trade.gd")
+const Craft := preload("res://city/craft.gd")
 const CityRoute := preload("res://city/city_route.gd")
 const WorldEnv := preload("res://characters/world_env.gd")
 const R := preload("res://characters/actor_rules.gd")
@@ -28,13 +29,26 @@ const ClockScene := preload("res://game_clock.tscn")
 const T = CityMap.T
 const Art := preload("res://storybook/art.gd")
 const Growth := preload("res://city/city_growth.gd")
+const CityMenu := preload("res://city/city_menu.gd")
+## Экран города (city_menu.gd, видео Huzzah 2026-10-23): вход через ворота открывает меню услуг,
+## пешая карта — по кнопке «Пройтись по городу», Esc на улице — назад в меню
+## (меню — при входе с общей карты; отдельный запуск сцены без "settlement" в ctx — сразу на улице)
+var menu: CanvasLayer
+var walking: bool = true               # false — открыт экран города
+var _gate_in: String = ""              # ворота, через которые вошёл (ими же уходит из меню)
 var art_time: float = 0.0
 var art_last_hero := Vector2.ZERO
 var art_moving: bool = false
+var _art_walk: Dictionary = {}          # Actor → шёл ли в этом кадре (НПС)
+var _art_face: Dictionary = {}          # Actor → 1 вправо, -1 влево
 
 const DATA_DIR := "res://data/cities/"
 const PX: float = 16.0                 # пикселей на метр при масштабе 1
+## Повтор текстур земли/стен/крыш: при самом сильном приближении (zoom 3) пиксель картинки 512 px =
+## пиксель экрана, при отдалении текстура сжимается (Huzzah 2026-10-23)
+const TEX_PERIOD: float = 512.0 / 3.0
 const BODY_R: float = 0.35             # радиус тела, м
+const START_ZOOM: float = 2.2
 const TALK_M: float = 2.4
 const LOOK_M: float = 3.4
 const ROLE_NAMES: Dictionary = {
@@ -82,7 +96,7 @@ var _rng := RandomNumberGenerator.new()
 var _hero_bld: int = -1
 var _fog_dirty: bool = true
 var _map_view: bool = false
-var _zoom_before: float = 1.0
+var _zoom_before: float = START_ZOOM
 var event_text: String = ""
 var event_timer: float = 0.0
 
@@ -111,8 +125,9 @@ var _panel_title: Label
 var _panel_text: Label
 var _panel_box: VBoxContainer
 var _buttons: Array = []
-var _panel_kind: String = ""           # "", "talk", "trade", "bag", "note"
+var _panel_kind: String = ""           # "", "talk", "trade", "craft", "bag", "note"
 var _talk_npc: Dictionary = {}
+var craft_rng := RandomNumberGenerator.new()   # удача работы своими руками в мастерской (craft.gd)
 
 
 ## Слой с рисованием через Callable: так статичная земля рисуется один раз, а люди каждый кадр
@@ -124,6 +139,7 @@ class DrawLayer extends Node2D:
 
 func _ready() -> void:
 	_setup_nodes()
+	craft_rng.randomize()
 	# Запуск сцены отдельно (F6 в редакторе): Чёрнославль и новый герой
 	await get_tree().process_frame
 	if not entered:
@@ -145,6 +161,8 @@ func _setup_nodes() -> void:
 	_night = CanvasModulate.new()
 	add_child(_night)
 	cam = Camera2D.new()
+	# Герой на экране 60–80 px (вопрос Q09, Huzzah 2026-10-24): 1,9 м × PX × 2,2 ≈ 67 px
+	cam.zoom = Vector2(START_ZOOM, START_ZOOM)
 	add_child(cam)
 	if cam.is_inside_tree():
 		cam.make_current()
@@ -153,6 +171,9 @@ func _setup_nodes() -> void:
 	window = HeroWindowScript.new()
 	window.setup(func() -> Actor: return hero, func() -> Dictionary: return bag)
 	add_child(window)
+	menu = CityMenu.new()
+	menu.setup(self)
+	add_child(menu)
 
 
 func _layer(fn: Callable) -> DrawLayer:
@@ -236,6 +257,13 @@ func enter(id: String, h: Actor, c: Dictionary) -> void:
 			var fine: int = _take_fine(int(rules.get("intruder_fine", 15)))
 			intruder_until = -1.0
 			arrival = "стража поймала вас у стены и привела в %s. Штраф %d" % [jail.get("name", "казарму"), fine]
+	_gate_in = String(gate.get("id", ""))
+	var saved_walk: bool = live and bool(c["state"].get("walking", true))
+	if (live and not saved_walk) or (not live and entry == "gate" and bool(c.get("menu", c.has("settlement")))):
+		open_menu()
+	else:
+		walking = true
+		menu.close()
 	_hero_bld = map.building_at(hero_pos)
 	_reveal()
 	_fit_camera_limits()
@@ -485,6 +513,8 @@ func _update_npc(n: Dictionary, env: Dictionary, dt_game: float, delta: float) -
 
 
 func _npc_on_duty_here(n: Dictionary) -> bool:
+	if not walking:
+		return _on_duty(n["def"], clock.hour_of_day()) and not n["actor"].sleeping
 	return _on_duty(n["def"], clock.hour_of_day()) and n["pos"].distance_to(n["work_pos"]) < 4.0 and not n["actor"].sleeping
 
 
@@ -510,7 +540,12 @@ func _process(delta: float) -> void:
 	art_last_hero = hero_pos
 
 	for n in npcs:
+		var was: Vector2 = n["pos"]
 		_update_npc(n, env_at(n["pos"]), dt_game, delta)
+		var d: Vector2 = n["pos"] - was
+		_art_walk[n["actor"]] = d.length_squared() > 0.00001
+		if absf(d.x) > 0.0005:
+			_art_face[n["actor"]] = signf(d.x)
 
 	var b: int = map.building_at(hero_pos)
 	if b != _hero_bld:
@@ -551,6 +586,8 @@ func _menu_blocked() -> bool:
 		return true
 	if window != null and window.visible:
 		return true
+	if not walking:
+		return true
 	return _panel.visible and _panel_kind != "note"
 
 
@@ -580,18 +617,31 @@ func _drive_hero(env: Dictionary, delta: float) -> void:
 	elif route.active():
 		dir = route.steer(delta)
 		by_route = dir != Vector2.ZERO
+	var goal: Vector2 = route.final_point() if by_route else Vector2.INF
+	var from: Vector2 = hero_pos
 	var moved: bool = move_hero(dir, run, delta, env)
-	if by_route:
+	# Шаг дотянулся до конца пути или перескочил его — встать точно в точку, без дрожи вокруг
+	if goal != Vector2.INF and hero_pos.distance_to(from) >= from.distance_to(goal) - 0.02:
+		if map.is_free(goal, BODY_R):
+			hero_pos = goal
+		route.finish()
+	elif by_route:
 		route.stepped(moved, delta)
 
 
 ## Шаг героя (открыт для тестов): скользит вдоль стен, ворота — выход
 func move_hero(dir: Vector2, run: bool, delta: float, env: Dictionary) -> bool:
+	# Первый шаг будит героя (раньше can_move() отсекал спящего и он не вставал)
+	if dir != Vector2.ZERO and hero.sleeping:
+		hero.set_sleep(false)
+		_say("Вы проснулись")
 	if dir == Vector2.ZERO or not hero.can_move():
 		hero.exert(delta, env, "rest")
+		# Выспался — встаёт сам
+		if hero.sleeping and float(hero.res["energy"]) >= 99.0 and hero.sleep_h >= 1.0:
+			hero.set_sleep(false)
+			_say("Вы выспались и встали")
 		return false
-	if hero.sleeping:
-		hero.set_sleep(false)
 	dir = dir.limit_length(1.0)
 	hero_dir = dir.normalized()
 	hero.carried_kg = Trade.weight(bag)
@@ -775,19 +825,21 @@ func talk(n: Dictionary) -> void:
 		var lines: Array = nd.get("lines", ["…"])
 		text = "«%s»" % lines[int(n["line_i"]) % lines.size()]
 		opts.append(["Поговорить", func(): n["line_i"] += 1; talk(n)])
-		var q: Dictionary = Growth.current(full_def, growth, String(nd["id"]))
-		if not q.is_empty():
+		var qs: Array = Growth.available(full_def, growth, String(nd["id"]))
+		for q in qs:
 			if Growth.taken(growth, q):
 				var done: bool = Growth.ready(growth, q, bag, hero_km(), battles_won())
 				opts.append(["%s: %s (%s)" % ["Сдать поручение" if done else "Поручение", q["title"], quest_status(q)], func(): turn_in(n, q)])
 			else:
 				opts.append(["Работа: %s" % q["title"], func(): quest_offer(n, q)])
-		elif Growth.waiting(full_def, growth, String(nd["id"])):
+		if qs.is_empty() and Growth.waiting(full_def, growth, String(nd["id"])):
 			text += "\n\nДругих поручений пока нет: пусть город подрастёт."
 		var working: bool = _npc_on_duty_here(n)
 		if not n["stock"].is_empty() or not n["buys"].is_empty():
 			if working:
 				opts.append(["Торговать", func(): open_trade(n)])
+				if Craft.skill_of(role) != "":
+					opts.append(["Мастерская", func(): open_craft(n)])
 			else:
 				text += "\n\nСейчас не торгует: приходите в часы работы (%d–%d)." % [int(nd["hours"][0]), int(nd["hours"][1])]
 		var sv: Dictionary = nd.get("services", {})
@@ -824,6 +876,61 @@ func _trade_result(n: Dictionary, err: String) -> void:
 	if err != "":
 		_say(err)
 	open_trade(n)
+
+
+## Мастерская кожевника или кузнеца (craft.gd): список рецептов и урок у мастера
+func open_craft(n: Dictionary) -> void:
+	_talk_npc = n
+	var role: String = String(n["def"].get("role", ""))
+	var sk: String = Craft.skill_of(role)
+	var master: Actor = n["actor"]
+	var opts: Array = []
+	for id in Craft.recipes_for(role):
+		var r: Dictionary = Craft.recipe(id)
+		var mark: String = "" if Craft.missing(bag, r).is_empty() else "  (нет материалов)"
+		opts.append(["%s: %s%s" % [Trade.item_name(String(r["out"])), Craft.inputs_text(r), mark], func(): open_recipe(n, id)])
+	if hero.skill_level(sk) < master.skill_level(sk):
+		opts.append(["Учиться у мастера (%d)" % Craft.lesson_fee(hero, sk), func(): _craft_result(n, "", Craft.lesson(bag, hero, master, sk), "Урок пройден")])
+	opts.append(["Назад", func(): talk(n)])
+	_open_panel("craft", "%s: %s" % [Craft.workshop_name(role), master.display_name], "%s\nДеньги: %d   Выносливость: %d" % [
+		_craft_skill_line(sk, master), int(bag["money"]), int(hero.res["stamina"])], opts)
+
+
+func _craft_skill_line(sk: String, master: Actor) -> String:
+	var nm: String = String(R.skills().get(sk, {}).get("name_ru", sk))
+	return "%s: у вас %d (опыт %d), у мастера %d" % [nm, hero.skill_level(sk), int(hero.skills.get(sk, {}).get("xp", 0)), master.skill_level(sk)]
+
+
+func open_recipe(n: Dictionary, id: String) -> void:
+	var r: Dictionary = Craft.recipe(id)
+	var master: Actor = n["actor"]
+	var sk: String = Craft.skill_of(String(r["master"]))
+	var lines: PackedStringArray = ["Материалы: %s" % Craft.inputs_text(r)]
+	var lack: Array = Craft.missing(bag, r)
+	if not lack.is_empty():
+		lines.append("Не хватает: %s" % ", ".join(PackedStringArray(lack)))
+	lines.append("Нужен навык: %d" % int(r.get("level", 0)))
+	var opts: Array = []
+	if master.skill_level(sk) >= int(r.get("level", 0)):
+		opts.append(["Заказать у мастера (%d)" % int(r.get("fee", 0)), func(): _craft_result(n, id, Craft.order(bag, r, master), "Готово: %s" % Trade.item_name(String(r["out"])))])
+	else:
+		lines.append("Мастер такого не умеет: только своими руками.")
+	var why: String = Craft.self_blocker(bag, r, hero)
+	if why == "":
+		opts.append(["Сделать самому (шанс %d %%, выносливость −%d)" % [int(round(Craft.chance(r, hero) * 100.0)), int(r.get("work", 0))],
+			func(): _craft_result(n, id, "", String(Craft.make(bag, r, hero, craft_rng)["text"]))])
+	else:
+		lines.append("Самому: %s" % why.to_lower())
+	opts.append(["Назад", func(): open_craft(n)])
+	_open_panel("craft", Trade.item_name(String(r["out"])), "\n".join(lines), opts)
+
+
+func _craft_result(n: Dictionary, id: String, err: String, done: String) -> void:
+	_say(err if err != "" else done)
+	if id != "":
+		open_recipe(n, id)
+	else:
+		open_craft(n)
 
 
 func rent_room(n: Dictionary) -> void:
@@ -927,7 +1034,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_E:
 			if _panel.visible:
 				_close_panel()
-			else:
+			elif walking:
 				interact()
 		KEY_TAB:
 			if _panel.visible:
@@ -938,10 +1045,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				_close_panel()
 			window.toggle("stats")
 		KEY_M:
-			toggle_map()
+			if walking:
+				toggle_map()
 		KEY_ESCAPE:
 			if not _panel.visible and not _map_view:
-				return   # меню паузы игры (Worlds)
+				if walking and not is_intruder():
+					open_menu()
+					get_viewport().set_input_as_handled()
+				return   # в меню города — меню паузы игры (Worlds)
 			_close_panel()
 			if _map_view:
 				toggle_map()
@@ -1047,7 +1158,7 @@ func _draw_ground(l: Node2D) -> void:
 	l.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	var cs: float = map.cell_m * PX
 	var grass: Texture2D = Art.ground("t03_field1")
-	Art.surface(l, grass, Rect2(Vector2(-PX * 40, -PX * 40), map.size_m() * PX + Vector2(PX * 80, PX * 80)), cs * 1.2)
+	Art.surface(l, grass, Rect2(Vector2(-PX * 40, -PX * 40), map.size_m() * PX + Vector2(PX * 80, PX * 80)), TEX_PERIOD)
 	for y in map.h:
 		for x in map.w:
 			var t: int = map.at(x, y)
@@ -1061,8 +1172,14 @@ func _draw_ground(l: Node2D) -> void:
 				T.WALL: texture = Art.tex("masonry")
 				T.PALISADE: texture = Art.tex("masonry") if String(def.get("wall", "")) == "stone" else Art.tex("wood")
 				T.RUBBLE: texture = Art.ground("t07_mountains")
-			var period: float = cs * (0.75 if t in [T.SQUARE, T.STALL, T.WELL, T.WALL, T.PALISADE] else 1.2)
-			Art.surface(l, texture, r, period)
+			# Дом рисует спрайт здания; под краями картинки — трава, а не кладка (Huzzah 2026-10-24); пол — когда герой внутри
+			var under_sprite: bool = t in [T.WALL, T.DOOR, T.FLOOR] and _sprite_cell(x, y)
+			if under_sprite:
+				texture = grass
+			Art.surface(l, texture, r, TEX_PERIOD)
+			if under_sprite:
+				l.draw_rect(r, Color(0.48, 0.53, 0.34, 0.30))
+				continue
 			if t in [T.GRASS, T.TREE]:
 				l.draw_rect(r, Color(0.48, 0.53, 0.34, 0.30))
 			elif t == T.OUTSIDE:
@@ -1072,6 +1189,11 @@ func _draw_ground(l: Node2D) -> void:
 				l.draw_rect(r, Color(0.22, 0.18, 0.12, 0.45), false, 1.2)
 			if t == T.DOOR:
 				l.draw_line(r.position + Vector2(cs * 0.2, cs * 0.5), r.position + Vector2(cs * 0.8, cs * 0.5), Color(0.3, 0.2, 0.12), 3.0)
+
+
+func _sprite_cell(x: int, y: int) -> bool:
+	var b: int = map.bld[y * map.w + x]
+	return b >= 0 and String(map.buildings[b].get("kind", "house")) != "ruins"
 
 
 func _draw_actors(_l: Node2D) -> void:
@@ -1091,9 +1213,20 @@ func _body(l: Node2D, p: Vector2, col: Color, a: Actor, dir: Vector2) -> void:
 			var role: String = String(n["def"].get("role", "citizen"))
 			key = "guard" if role == "guard" else ("woman" if role in ["healer", "trader"] else "villager")
 			break
-	var bob: float = sin(art_time * 7.0 + p.x) * 0.7 if a == hero and art_moving else 0.0
 	var tint: Color = Color.WHITE if a.alive else Color(0.5, 0.5, 0.5, 0.65)
-	Art.sprite(l, key, p * PX + Vector2(0, bob), PX * 1.9, tint)
+	# Анимация: идёт — шаг, стоит — дышит; спящий и мёртвый не шевелятся
+	var moving: bool = art_moving if a == hero else bool(_art_walk.get(a, false))
+	var face: float = float(_art_face.get(a, 1.0))
+	if a == hero and absf(hero_dir.x) > 0.2:
+		face = signf(hero_dir.x)
+		_art_face[a] = face
+	if a.sleeping:
+		# Спящий лежит на боку
+		Art.sprite(l, key, p * PX + Vector2(-PX * 0.8, PX * 0.3), PX * 1.9, tint, -1.45)
+	elif not a.alive:
+		Art.sprite(l, key, p * PX, PX * 1.9, tint)
+	else:
+		Art.figure(l, key, p * PX, PX * 1.9, tint, art_time, moving and a.alive, face < 0.0, p.x * 0.37 + float(a.get_instance_id() % 97))
 	if a == hero:
 		l.draw_arc(p * PX, BODY_R * PX * 1.2 + 4.0, 0.0, TAU, 24, Color(col, 0.8), 1.5)
 
@@ -1111,6 +1244,10 @@ const ROOF_COLORS: Dictionary = {
 	"smithy": Color(0.32, 0.32, 0.34), "hall": Color(0.5, 0.3, 0.42), "house": Color(0.48, 0.36, 0.22),
 	"temple": Color(0.62, 0.55, 0.38),
 }
+
+
+# Где дверь на спрайте здания (доля ширины) — то же, что DOOR_AT в tools/make_city_radial.py
+const DOOR_AT: Dictionary = {"house": 0.43, "inn": 0.66, "hall": 0.5, "temple": 0.45, "smithy": 0.5, "healer": 0.35}
 
 
 func _draw_roofs(l: Node2D) -> void:
@@ -1168,9 +1305,18 @@ func _draw_roofs(l: Node2D) -> void:
 					var inside: bool = int(b["index"]) == _hero_bld
 					var key: String = kind if kind in ["inn", "hall", "temple", "smithy", "healer"] else "house"
 					var texture: Texture2D = Art.tex(key)
-					var h: float = minf(rect.size.x * float(texture.get_height()) / float(texture.get_width()), rect.size.y + cs * 2.0)
-					var sprite_rect := Rect2(Vector2(rect.position.x, rect.end.y - h), Vector2(rect.size.x, h))
+					# Спрайт нарисован фасадом к зрителю: ширина — ширина дома, низ — по южной стене (чуть ниже, на крыльцо),
+					# крыша выше прямоугольника; сдвиг — чтобы дверь на картинке пришлась на клетку двери (Huzzah 2026-10-24)
+					var h: float = rect.size.x * float(texture.get_height()) / float(texture.get_width())
+					var shift: float = (float(b["door"][0]) + 0.5) * cs - (rect.position.x + rect.size.x * float(DOOR_AT.get(key, 0.5)))
+					var sprite_rect := Rect2(Vector2(rect.position.x + shift, rect.end.y + cs * 0.35 - h), Vector2(rect.size.x, h))
 					var alpha: float = 0.12 if inside else 1.0
+					if inside:
+						Art.surface(l, Art.tex("wood"), rect, TEX_PERIOD)
+						l.draw_rect(rect, Color(0.22, 0.18, 0.12, 0.85), false, cs * 0.35)
+					# Герой за домом (крыша выше стены) — дом полупрозрачный, чтобы пешку было видно
+					if not inside and hero_pos.y * PX < rect.position.y and sprite_rect.grow(-cs * 0.3).has_point(hero_pos * PX):
+						alpha = 0.45
 					l.draw_texture_rect(texture, sprite_rect, false, Color(1, 1, 1, alpha))
 					# Actual door position remains visible even when a facade is stylized.
 					var door: Vector2 = map.center_of(Vector2i(b["door"][0], b["door"][1])) * PX
@@ -1216,8 +1362,8 @@ func _draw_roofs(l: Node2D) -> void:
 		for t in towers:
 			var c: Vector2 = map.center_of(t) * PX
 			var tr := Rect2(c - Vector2(cs, cs) * 1.1, Vector2(cs, cs) * 2.2)
-			Art.surface(l, Art.tex("masonry"), tr, cs * 0.75)
-			Art.surface(l, Art.tex("roof"), Rect2(c - Vector2(cs, cs) * 0.75, Vector2(cs, cs) * 1.5), cs * 0.75)
+			Art.surface(l, Art.tex("masonry"), tr, TEX_PERIOD)
+			Art.surface(l, Art.tex("roof"), Rect2(c - Vector2(cs, cs) * 0.75, Vector2(cs, cs) * 1.5), TEX_PERIOD)
 			l.draw_rect(tr, Color(0.22, 0.18, 0.12, 0.85), false, 2.0)
 	# Ворота: подпись и отметка «заперты»
 	for g in def.get("gates", []):
@@ -1260,13 +1406,7 @@ func _build_ui() -> void:
 	_hint = _mk_label(15, Color("fff2c0"))
 	_event = _mk_label(17, Color("ffffff"))
 	_panel = PanelContainer.new()
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.06, 0.065, 0.06, 0.92)
-	st.border_color = Color(0.55, 0.45, 0.25)
-	st.set_border_width_all(1)
-	st.set_content_margin_all(14.0)
-	st.set_corner_radius_all(6)
-	_panel.add_theme_stylebox_override("panel", st)
+	_panel.add_theme_stylebox_override("panel", preload("res://ui/comic_ui.gd").panel(22.0, 0.96))   # рамка комикса (Q24)
 	_panel.visible = false
 	_panel.custom_minimum_size = Vector2(440, 0)
 	_ui.add_child(_panel)
@@ -1322,7 +1462,7 @@ func _open_panel(kind: String, title: String, text: String, opts: Array) -> void
 	_panel.visible = true
 	_panel.reset_size()
 	var vp: Vector2 = get_viewport_rect().size
-	_panel.position = Vector2(vp.x - _panel.size.x - 20.0, 60.0)
+	_panel.position = Vector2(vp.x - _panel.size.x - 20.0, 60.0) if walking else (vp - _panel.size) * 0.5
 
 
 func _close_panel() -> void:
@@ -1367,6 +1507,10 @@ func _update_hud(env: Dictionary) -> void:
 			hint = "E — %s: %s" % [{"water": "пить", "container": "обыскать", "bed": "лечь спать"}.get(p.get("kind", ""), "осмотреть"), p["name"]]
 	_hint.text = hint if hint != "" else "ЛКМ или WASD идти · ПКМ стоп · Shift бег · E говорить · I персонаж · Tab сумка · M план"
 	_hint.position = Vector2(14.0, vp.y - 60.0)
+	_top.visible = walking
+	_hint.visible = walking
+	if walking and not is_intruder():
+		_hint.text += " · Esc город"
 	_event.text = event_text if event_timer > 0.0 else ""
 	_event.modulate.a = clampf(event_timer, 0.0, 1.0)
 	_event.position = Vector2((vp.x - _event.size.x) * 0.5, 44.0)
@@ -1407,6 +1551,8 @@ func quest_status(q: Dictionary) -> String:
 
 func _quest_reward(q: Dictionary) -> String:
 	var r: int = int(q.get("reward", 0))
+	if q.get("endless", false):
+		return "Награда: %d монет." % r
 	return "Награда: %d монет. Город вырастет." % r if r > 0 else "Город вырастет."
 
 
@@ -1495,12 +1641,58 @@ func _board_text(p: Dictionary) -> String:
 	lines.append("%s — %s. Сдано поручений: %d%s." % [display_name, Growth.stage_name(full_def, stage), Growth.points(growth),
 		", до этапа «%s» нужно %d" % [Growth.stage_name(full_def, stage + 1), need] if need > 0 else ""])
 	for n in npcs:
-		var q: Dictionary = Growth.current(full_def, growth, String(n["def"]["id"]))
-		if not q.is_empty():
+		for q in Growth.available(full_def, growth, String(n["def"]["id"])):
 			lines.append("— %s: %s%s" % [n["actor"].display_name, q["title"], " (взято: %s)" % quest_status(q) if Growth.taken(growth, q) else ""])
 	if lines.size() == 1:
 		lines.append("Новых поручений нет.")
 	return "\n".join(PackedStringArray(lines))
+
+
+# =====================================================================
+# ЭКРАН ГОРОДА (city_menu.gd)
+# =====================================================================
+func open_menu() -> void:
+	walking = false
+	route.cancel()
+	if _map_view:
+		toggle_map()
+	_close_panel()
+	event_timer = 0.0
+	menu.open()
+
+
+## «Пройтись по городу»: прежняя пешая карта, герой у ворот (или где был)
+func walk_city() -> void:
+	walking = true
+	_close_panel()
+	menu.close()
+	cam.position = hero_pos * PX
+	cam.reset_smoothing()
+	_say("%s: вы идёте по улицам. Esc — назад к экрану города" % display_name)
+
+
+## «Поговорить»: жители без своего дела
+func menu_people(list: Array) -> void:
+	var opts: Array = []
+	for n in list:
+		var a: Actor = n["actor"]
+		opts.append(["%s%s" % [a.display_name, " (спит)" if a.sleeping else ""], func(): talk(n)])
+	opts.append(["Назад", _close_panel])
+	_open_panel("talk", "Поговорить", "" if not list.is_empty() else "Больше никого нет.", opts)
+
+
+## «Покинуть город»: через те же ворота; ночью заперто — привратник выпустит за плату
+func menu_leave() -> void:
+	var g: String = _gate_in if _gate_in != "" else String(def.get("gates", [{}])[0].get("id", ""))
+	if not map.closed_gates.has(g):
+		_leave(g)
+		return
+	for n in npcs:
+		if String(n["def"].get("gate", "")) == g and not n["actor"].sleeping:
+			talk(n)
+			_panel_text.text = "Ворота заперты до %d:00. %s" % [int(rules.get("gates_open_h", 6.0)), _panel_text.text]
+			return
+	_open_note(String(_gate_def(g).get("name", "Ворота")), "Ворота заперты до %d:00, привратника нет. Переночуйте в городе." % int(rules.get("gates_open_h", 6.0)))
 
 
 # =====================================================================
@@ -1513,7 +1705,7 @@ func to_dict() -> Dictionary:
 	var d: Dictionary = {
 		"city_id": city_id, "hero_pos": [hero_pos.x, hero_pos.y], "fog": Marshalls.raw_to_base64(fog),
 		"discovered": discovered.keys(), "looted": looted.duplicate(), "paid_gate": paid_gate.duplicate(), "npcs": list,
-		"intruder_until": intruder_until, "left": leaving, "growth": growth.duplicate(true),
+		"intruder_until": intruder_until, "left": leaving, "growth": growth.duplicate(true), "walking": walking,
 	}
 	if own_bag:
 		d["bag"] = bag.duplicate(true)

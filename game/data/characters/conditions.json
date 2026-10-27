@@ -64,11 +64,11 @@
       "cause": "Грязная еда или вода"
     },
     "radiation_sickness": {
-      "name_ru": "Лучевая болезнь",
+      "name_ru": "Проклятая хворь",
       "name_en": "Radiation Sickness",
       "effects": {"health_decay": 0.03, "exhaustion": 0.05, "emaciation": 0.06},
-      "treatment": "Снизить радиацию + специальные зелья",
-      "cause": "Высокий уровень радиации"
+      "treatment": "Снизить воздействие проклятья + специальные зелья",
+      "cause": "Сильное воздействие проклятья"
     },
     "intoxication": {
       "name_ru": "Интоксикация",

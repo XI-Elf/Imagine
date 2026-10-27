@@ -1,0 +1,133 @@
+Amber Game — звуки
+
+Все звуковые файлы игры (game/audio/sfx/*.ogg) — CC0 1.0 Universal (общественное достояние).
+Атрибуция не обязательна; авторы и ссылки указаны, чтобы происхождение каждого файла можно было проверить.
+Текст CC0: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Правка всех файлов: моно 44.1 кГц, выровнена громкость пика, Ogg Vorbis. Машиночитаемый список — game/data/audio/sounds.json.
+
+Откуда взяты (пакеты):
+  [mtg] Minetest Game 5.6.1 (Ubuntu 24.04 пакет minetest-data_5.6.1+dfsg+~1.9.0mt8+dfsg-4build3) — лицензия по: games/minetest_game/mods/<мод>/README.txt (раздел Sounds)
+  [mobs] Mobs Redo (Ubuntu 24.04 пакет minetest-mod-mobs-redo), debian/copyright — лицензия по: debian/copyright
+  [cdogs] C-Dogs SDL 2.0.0 (Ubuntu 24.04 пакет cdogs-sdl-data_2.0.0+dfsg-1) — лицензия по: debian/copyright
+  [trigger] Trigger Rally 0.6.6.1 (Ubuntu 24.04 пакет trigger-rally-data_0.6.6.1-3ubuntu1, data.zip) — лицензия по: debian/copyright: data/data.zip/sounds/wind.wav — CC0
+  [ambience] Ambience Redo by TenPlus1 (зеркало gitlab.com/minetest-mirrors/ambience, ветка master) — лицензия по: license.txt мода (раздел Sound licenses)
+  [uisfx] uisfx 0.4.0 (npm), набор organic — лицензия по: LICENSE-AUDIO: звуки синтезированы, CC0-1.0
+
+Файл | автор | лицензия | исходный файл в пакете | ссылка
+amb_desert.ogg | Proxima4 | CC0-1.0 | [ambience] desertwind.ogg | http://www.freesound.org/people/Proxima4/sounds/104320/
+amb_fire.ogg | iankath | CC0-1.0 | [mtg] default_furnace_active.ogg | https://freesound.org/people/iankath/sounds/173991/
+amb_rumble.ogg | Halion | CC0-1.0 | [mtg] env_sounds_lava.1.ogg | https://freesound.org/people/Halion/sounds/17785/
+amb_water_1.ogg | Yuval | CC0-1.0 | [mtg] env_sounds_water.1.ogg | https://freesound.org/people/Yuval/sounds/197023/
+amb_water_2.ogg | Yuval | CC0-1.0 | [mtg] env_sounds_water.2.ogg | https://freesound.org/people/Yuval/sounds/197023/
+amb_water_3.ogg | Yuval | CC0-1.0 | [mtg] env_sounds_water.3.ogg | https://freesound.org/people/Yuval/sounds/197023/
+amb_water_4.ogg | Yuval | CC0-1.0 | [mtg] env_sounds_water.4.ogg | https://freesound.org/people/Yuval/sounds/197023/
+amb_wind.ogg | авторы Trigger Rally (kougloff, Iwan Gabovitch и др.) | CC0-1.0 | [trigger] wind.wav | debian/copyright trigger-rally: data/data.zip/sounds/wind.wav — CC0
+anvil_1.ogg | Ogrebane | CC0-1.0 | [mtg] default_place_node_metal.1.ogg | http://opengameart.org/content/wood-and-metal-sound-effects-volume-2
+anvil_2.ogg | Ogrebane | CC0-1.0 | [mtg] default_place_node_metal.2.ogg | http://opengameart.org/content/wood-and-metal-sound-effects-volume-2
+bats.ogg | SaloSensei | CC0-1.0 | [ambience] bats.ogg | https://freesound.org/people/SaloSensei/sounds/616219/
+bird_jay.ogg | UncleSigmund | CC0-1.0 | [ambience] bluejay.ogg | http://www.freesound.org/people/UncleSigmund/sounds/42382/
+die_man_3.ogg | JohnsonBrandEditing | CC0-1.0 | [cdogs] chars/die/man/3.ogg | https://freesound.org/people/JohnsonBrandEditing/sounds/173944/
+die_man_4.ogg | JohnsonBrandEditing | CC0-1.0 | [cdogs] chars/die/man/4.ogg | https://freesound.org/people/JohnsonBrandEditing/sounds/173944/
+die_man_5.ogg | JohnsonBrandEditing | CC0-1.0 | [cdogs] chars/die/man/5.ogg | https://freesound.org/people/JohnsonBrandEditing/sounds/173944/
+die_man_6.ogg | JohnsonBrandEditing | CC0-1.0 | [cdogs] chars/die/man/6.ogg | https://freesound.org/people/JohnsonBrandEditing/sounds/173944/
+die_man_7.ogg | JohnsonBrandEditing | CC0-1.0 | [cdogs] chars/die/man/7.ogg | https://freesound.org/people/JohnsonBrandEditing/sounds/173944/
+dig_1.ogg | lolamadeus | CC0-1.0 | [mtg] default_gravel_dug.1.ogg | https://freesound.org/people/lolamadeus/sounds/179341/
+dig_2.ogg | lolamadeus | CC0-1.0 | [mtg] default_gravel_dug.2.ogg | https://freesound.org/people/lolamadeus/sounds/179341/
+dig_3.ogg | lolamadeus | CC0-1.0 | [mtg] default_gravel_dug.3.ogg | https://freesound.org/people/lolamadeus/sounds/179341/
+dog_bark_0.ogg | ScouseMouseJB | CC0-1.0 | [cdogs] chars/alert/dog/0.ogg | https://freesound.org/people/apolloaiello/sounds/276267/
+dog_bark_1.ogg | ScouseMouseJB | CC0-1.0 | [cdogs] chars/alert/dog/1.ogg | https://freesound.org/people/apolloaiello/sounds/276267/
+dog_bark_2.ogg | ScouseMouseJB | CC0-1.0 | [cdogs] chars/alert/dog/2.ogg | https://freesound.org/people/apolloaiello/sounds/276267/
+dog_bark_3.ogg | ScouseMouseJB | CC0-1.0 | [cdogs] chars/alert/dog/3.ogg | https://freesound.org/people/apolloaiello/sounds/276267/
+dog_die_0.ogg | 16G_Panska_Dolezal_Stepan | CC0-1.0 | [cdogs] chars/die/dog/0.ogg | https://freesound.org/people/16G_Panska_Dolezal_Stepan/sounds/498703/
+dog_die_1.ogg | esperri | CC0-1.0 | [cdogs] chars/die/dog/1.ogg | https://freesound.org/people/esperri/sounds/118966/
+door_close.ogg | jberkuta14 | CC0-1.0 | [cdogs] door_close.ogg | https://freesound.org/people/jberkuta14/sounds/134894/
+door_open.ogg | jberkuta14 | CC0-1.0 | [cdogs] door.ogg | https://freesound.org/people/jberkuta14/sounds/134894/
+draw_weapon.ogg | freefire66, Qat | CC0-1.0 | [cdogs] knife_switch.ogg | https://freesound.org/people/freefire66/sounds/175953/ ; https://freesound.org/people/Qat/sounds/107590/
+drip_1.ogg | kddekadenz | CC0-1.0 | [ambience] drippingwater1.ogg | Dripping Water Mod, http://minetest.net/forum/viewtopic.php?id=1688
+drip_2.ogg | kddekadenz | CC0-1.0 | [ambience] drippingwater2.ogg | Dripping Water Mod, http://minetest.net/forum/viewtopic.php?id=1688
+explode.ogg | steveygos93 (правка TumeniNodes) | CC0-1.0 | [mtg] tnt_explode.ogg | https://freesound.org/s/80401/
+gate.ogg | mhtaylor67 | CC0-1.0 | [mtg] doors_fencegate_open.ogg | http://www.freesound.org/people/mhtaylor67/sounds/126041/
+hit_blade_0.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/0.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_1.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/1.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_2.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/2.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_3.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/3.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_4.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/4.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_5.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/5.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_6.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/6.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_7.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/7.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_blade_8.ogg | lmbubec, MrPokephile | CC0-1.0 | [cdogs] hits/knife_flesh/8.ogg | https://freesound.org/people/lmbubec/sounds/118792/ ; https://freesound.org/people/MrPokephile/sounds/155973/
+hit_fist.ogg | borq1 | CC0-1.0 | [cdogs] knuckles.ogg | https://freesound.org/people/borq1/sounds/475965/
+hit_metal_1.ogg | Iwan Gabovitch (qubodup) | CC0-1.0 | [mtg] default_dug_metal.1.ogg | http://opengameart.org/users/qubodup
+hit_metal_2.ogg | Iwan Gabovitch (qubodup) | CC0-1.0 | [mtg] default_dug_metal.2.ogg | http://opengameart.org/users/qubodup
+hit_wood_1.ogg | Sheyvan | CC0-1.0 | [mtg] default_dig_choppy.1.ogg | https://freesound.org/people/Sheyvan/sounds/476113/
+hit_wood_2.ogg | Sheyvan | CC0-1.0 | [mtg] default_dig_choppy.2.ogg | https://freesound.org/people/Sheyvan/sounds/476113/
+hit_wood_3.ogg | Sheyvan | CC0-1.0 | [mtg] default_dig_choppy.3.ogg | https://freesound.org/people/Sheyvan/sounds/476113/
+ignite.ogg | theneedle.tv (правка TumeniNodes) | CC0-1.0 | [mtg] tnt_ignite.ogg | https://freesound.org/s/316682/
+map_close.ogg | drzhnn | CC0-1.0 | [cdogs] map_close.ogg | https://freesound.org/people/drzhnn/sounds/199940/
+map_open.ogg | drzhnn | CC0-1.0 | [cdogs] map_open.ogg | https://freesound.org/people/drzhnn/sounds/199940/
+pickup.ogg | daboy291 | CC0-1.0 | [cdogs] pickup.ogg | https://freesound.org/people/daboy291/sounds/138078/
+ricochet_0.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/0.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_1.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/1.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_2.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/2.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_3.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/3.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_4.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/4.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_5.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/5.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_6.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/6.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_7.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/7.ogg | https://freesound.org/people/rakurka/sounds/187533/
+ricochet_8.ogg | rakurka | CC0-1.0 | [cdogs] ricochet/8.ogg | https://freesound.org/people/rakurka/sounds/187533/
+step_bones_0.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/0.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_1.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/1.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_2.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/2.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_3.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/3.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_4.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/4.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_5.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/5.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_6.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/6.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_7.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/7.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_8.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/8.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_bones_9.ogg | blukotek | CC0-1.0 | [cdogs] footsteps/bones/9.ogg | https://freesound.org/people/blukotek/sounds/249319/
+step_gravel_0.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/0.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_1.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/1.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_2.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/2.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_3.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/3.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_4.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/4.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_5.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/5.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_6.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/6.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_7.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/7.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_8.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/8.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_gravel_9.ogg | Ali_6868 | CC0-1.0 | [cdogs] footsteps/gravel/9.ogg | https://freesound.org/people/Ali_6868/packs/21608/
+step_metal_1.ogg | mypantsfelldown | CC0-1.0 | [mtg] default_metal_footstep.1.ogg | https://freesound.org/people/mypantsfelldown/sounds/398937/
+step_metal_2.ogg | mypantsfelldown | CC0-1.0 | [mtg] default_metal_footstep.2.ogg | https://freesound.org/people/mypantsfelldown/sounds/398937/
+step_metal_3.ogg | mypantsfelldown | CC0-1.0 | [mtg] default_metal_footstep.3.ogg | https://freesound.org/people/mypantsfelldown/sounds/398937/
+step_sand_1.ogg | worthahep88 | CC0-1.0 | [mtg] default_sand_footstep.1.ogg | https://freesound.org/people/worthahep88/sounds/319224/
+step_sand_2.ogg | worthahep88 | CC0-1.0 | [mtg] default_sand_footstep.2.ogg | https://freesound.org/people/worthahep88/sounds/319224/
+step_sand_3.ogg | worthahep88 | CC0-1.0 | [mtg] default_sand_footstep.3.ogg | https://freesound.org/people/worthahep88/sounds/319224/
+step_soft_1.ogg | Ryding | CC0-1.0 | [mtg] default_snow_footstep.1.ogg | http://freesound.org/people/Ryding/sounds/94337/
+step_soft_2.ogg | Ryding | CC0-1.0 | [mtg] default_snow_footstep.2.ogg | http://freesound.org/people/Ryding/sounds/94337/
+step_soft_3.ogg | Ryding | CC0-1.0 | [mtg] default_snow_footstep.3.ogg | http://freesound.org/people/Ryding/sounds/94337/
+step_soft_4.ogg | Ryding | CC0-1.0 | [mtg] default_snow_footstep.4.ogg | http://freesound.org/people/Ryding/sounds/94337/
+step_soft_5.ogg | Ryding | CC0-1.0 | [mtg] default_snow_footstep.5.ogg | http://freesound.org/people/Ryding/sounds/94337/
+swing.ogg | qubodup | CC0-1.0 | [mobs] mobs_swing.ogg | debian/copyright: sounds/mobs_swing.ogg, 2008 qubodup, CC0
+ui_buy.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/purchase.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/purchase.ogg
+ui_click.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/press.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/press.ogg
+ui_close.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/close.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/close.ogg
+ui_dice.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/progress-step.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/progress-step.ogg
+ui_drop.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/drop.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/drop.ogg
+ui_error.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/error.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/error.ogg
+ui_level_up.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/level-up.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/level-up.ogg
+ui_open.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/open.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/open.ogg
+ui_select.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/select.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/select.ogg
+ui_sleep.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/sleep.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/sleep.ogg
+ui_success.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/success.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/success.ogg
+ui_victory.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/achievement.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/achievement.ogg
+ui_wake.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/wake.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/wake.ogg
+ui_warning.ogg | uisfx (romainsimon), синтез | CC0-1.0 | [uisfx] organic/warning.ogg | https://uisfx.com — пакет npm uisfx 0.4.0, sounds/organic/warning.ogg
+whoosh_0.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/0.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_1.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/1.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_2.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/2.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_3.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/3.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_4.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/4.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_5.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/5.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_6.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/6.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_7.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/7.ogg | https://opengameart.org/content/wind-hit-time-morph
+whoosh_8.ogg | qubodup | CC0-1.0 | [cdogs] hits/gas/8.ogg | https://opengameart.org/content/wind-hit-time-morph

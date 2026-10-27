@@ -69,8 +69,8 @@ func _run() -> void:
 	city.enter("s001", hero, {"inventory": bag, "gate": "south", "state": full_state()})
 	city.exit_requested.connect(func(c, g): exits.append([c, g]))
 	await frames(5)
-	ok(city.entered and city.map.radial() and city.map.w == 128 and city.map.h == 128, "Чёрнославль: радиальный план 128×128 клеток")
-	ok(city.map.buildings.size() == 51 and city.npcs.size() == 29, "выросший город: 51 дом, 29 НПС (Storybook и кожевник)")
+	ok(city.entered and city.map.radial() and city.map.w == 84 and city.map.h == 84 and city.map.cell_m == 1.0, "Чёрнославль: радиальный план 84×84 клетки по 1 м")
+	ok(city.map.buildings.size() == 43 and city.npcs.size() == 29, "выросший город: 43 дома, 29 НПС (Storybook и кожевник)")
 	ok(city.map.tile_at(city.hero_pos) in [CityMap.T.ROAD, CityMap.T.GRASS], "герой у южных ворот на дороге: %s" % city.hero_pos)
 	city.clock.paused = true
 	set_hour(city, 11.0)
@@ -119,8 +119,12 @@ func _run() -> void:
 
 	# Торговля
 	city.hero_pos = trader["pos"] + Vector2(0, 1.6)
+	# Площадь маленького города тесная: прохожих на время проверки отводим в сторону
+	for n in city.npcs:
+		if n != trader and n["pos"].distance_to(city.hero_pos) < 3.0:
+			n["pos"] += Vector2(0, 6)
 	await frames(2)
-	ok(city._nearest_npc() == trader, "рядом торговка")
+	ok(city._nearest_npc() == trader, "рядом торговка: %s %s" % [String(city._nearest_npc().get("def", {}).get("id", "")), city._nearest_npc().get("pos", "")])
 	var m0: int = bag["money"]
 	ok(Trade.buy(bag, trader["stock"], "bread", hero) == "" and Trade.count(bag, "bread") == 1, "купил хлеб")
 	ok(bag["money"] == m0 - Trade.buy_price("bread", hero), "деньги списаны: %d → %d" % [m0, bag["money"]])
@@ -251,7 +255,7 @@ func _run() -> void:
 	city4.enter("s001", hero, {"inventory": Trade.new_bag(40), "entry": "sneak", "side": "east", "state": full_state()})
 	city4.clock.paused = true
 	await frames(2)
-	ok(city4.hero_pos.x > 230.0 and city4.is_intruder(), "у восточной стены: %s" % city4.hero_pos)
+	ok(city4.hero_pos.x > city4.map.size_m().x * 0.85 and city4.is_intruder(), "у восточной стены: %s" % city4.hero_pos)
 	for n in city4.npcs:
 		if n["def"].get("role", "") == "guard":
 			n["actor"].set_sleep(true)

@@ -168,9 +168,18 @@ func steer(delta: float) -> Vector2:
 	if points.size() == 1 and pos.distance_to(points[0]) < 0.15:
 		_arrive()
 		return Vector2.ZERO
-	var v: Vector2 = points[0] - pos
-	# Последний кусок короче шага — сбавить, чтобы не дрожать у цели
-	return v / maxf(v.length(), 0.25) if v.length() < 0.25 else v.normalized()
+	# Последний шаг город сам обрезает до точки (city_world._drive_hero), здесь только направление
+	return (points[0] - pos).normalized()
+
+
+## Последняя точка пути (INF — путь не на последнем отрезке)
+func final_point() -> Vector2:
+	return points[0] if active() and points.size() == 1 else Vector2.INF
+
+
+## Дошли до последней точки: поставить героя в неё и завершить путь
+func finish() -> void:
+	_arrive()
 
 
 # Конец пути: житель или место рядом — заговорить / использовать (до колодца в клетке не дойти вплотную)

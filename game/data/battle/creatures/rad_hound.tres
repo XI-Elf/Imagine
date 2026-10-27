@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_gjhwd")
 id = "rad_hound"
-title = "Радиоактивная гончая"
+title = "Проклятая гончая"
 human = false
 scores = {
 "cha": 5,

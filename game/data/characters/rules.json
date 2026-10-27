@@ -10,9 +10,9 @@
           "catch": {"black_scabies": 0.004}},
     "6": {"name": "горы", "speed": 0.5, "energy": 2.0, "radiation_h": 0.0, "temp": -6.0,
           "fall_per_km": 0.01},
-    "7": {"name": "радиоактивный лес", "speed": 0.75, "energy": 1.2, "radiation_h": 4.0, "temp": -1.5},
-    "8": {"name": "радиоактивная пустошь", "speed": 1.0, "energy": 1.0, "radiation_h": 6.0, "temp": 2.5},
-    "9": {"name": "радиоактивное болото", "speed": 0.45, "energy": 1.6, "radiation_h": 5.0, "temp": 0.0, "wet": true,
+    "7": {"name": "проклятый лес", "speed": 0.75, "energy": 1.2, "radiation_h": 4.0, "temp": -1.5},
+    "8": {"name": "проклятая пустошь", "speed": 1.0, "energy": 1.0, "radiation_h": 6.0, "temp": 2.5},
+    "9": {"name": "проклятое болото", "speed": 0.45, "energy": 1.6, "radiation_h": 5.0, "temp": 0.0, "wet": true,
           "catch": {"black_scabies": 0.006}}
   },
   "movement": {

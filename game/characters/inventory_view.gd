@@ -1,16 +1,19 @@
 extends Control
-## Вкладка «Инвентарь» окна героя (референсы Huzzah 2026-10-23, гамма «синий мрамор»):
+## Вкладка «Инвентарь» окна героя (референсы Huzzah 2026-10-23; с 2026-10-24 оформление комикса — Q24 A,
+## тёмная сталь и уголь из ui/comic_ui.gd вместо «синего мрамора»):
 ## сверху строка показателей героя значками (здоровье, сытость, вода, энергия, силы, радиация) и деньги;
 ## ниже «По типу» / «Бросить всё» и груз N/M; слева фильтры по виду вещей, в середине сумка крупными
 ## ячейками (значок, число в углу, значок вида) с листанием страниц, под ней выбранная вещь и её кнопки;
-## справа кукла героя (paper_doll.gd): слоты одежды по бокам, фигура в надетом (без одежды — майка
-## и короткие бриджи), внизу 3 оружия «в бой» и доспех боя.
-## Рисуется кодом, мрамор — шум FastNoiseLite (одна текстура на игру).
+## справа кукла героя: слоты одежды по бокам, в середине силуэт фишки героя (art/storybook/traveler.png),
+## внизу 3 оружия «в бой». Доспех в бою берётся из надетого на «Тело» (wear.armor), отдельного слота нет.
+## Сумка — один сплошной лист без видимых клеток (сетка только для раскладки и клика).
+## Рисуется кодом; рамки — nine-patch комикса (art/comic_ui). marble() оставлен для qa/render_doll.gd.
 ## Состояние (выбор, фильтр, страница, сортировка) и действия — у окна hero_window.gd.
 
 const Doll := preload("res://characters/paper_doll.gd")
 const Icons := preload("res://battle/battle_icons.gd")
 const Trade := preload("res://city/trade.gd")
+const ComicUI := preload("res://ui/comic_ui.gd")
 
 const INK := Color("0c1626")
 const MARBLE_DARK := Color("1a2d4d")
@@ -25,6 +28,7 @@ const DIM := Color("9fb0c8")
 const GOLD := Color("e9c66a")
 const RED := Color("c4413a")
 const RED_DARK := Color("6e1c18")
+const SHEET := Color(0.075, 0.072, 0.085)   # лист сумки (уголь чуть темнее панелей)
 
 ## Фильтры слева: id, подпись, виды вещей
 const FILTERS: Array = [["all", "Всё"], ["food", "Провизия"], ["med", "Медицина"], ["gear", "Снаряжение"],
@@ -33,7 +37,8 @@ const CAT_ORDER: Array = ["food", "med", "weapon", "gear", "tools", "parts", "mi
 const TOOLS: Array = ["rope"]
 const PARTS: Array = ["scrap", "hide"]
 const STAT_KEYS: Array = ["health", "hunger", "thirst", "energy", "stamina", "radiation"]
-const STAT_NAMES: Dictionary = {"health": "Здоровье", "hunger": "Сытость", "thirst": "Вода", "energy": "Энергия", "stamina": "Силы", "radiation": "Радиация"}
+const STAT_NAMES: Dictionary = {"health": "Здоровье", "hunger": "Сытость", "thirst": "Вода", "energy": "Энергия", "stamina": "Силы", "radiation": "Воздействие проклятья"}
+const PAWN := "res://art/storybook/traveler.png"
 
 const W := 900.0
 const FILT := Rect2(0.0, 98.0, 140.0, 416.0)
@@ -51,13 +56,12 @@ var win: Node                      # hero_window.gd
 var actor: Actor
 var bag: Dictionary = {}
 var weapons: Dictionary = {}       # предмет -> оружие боя (config.item_weapons)
-var armor: Resource = null         # доспех героя в бою (config.hero.armor)
+var armor: Resource = null         # доспех героя в бою: из надетого на «Тело» (wear.armor), иначе нет
 var loadout_max: int = 3
 var _hits: Array = []              # [Rect2, тип, id]
 var _hover: int = -1
 var _font: Font
 var _wicons: Dictionary = {}
-var _doll := Doll.new()
 
 
 func setup(window: Node, a: Actor, b: Dictionary, item_weapons: Dictionary, lmax: int, arm: Resource) -> void:
@@ -125,7 +129,8 @@ func shown_items() -> Array:
 	var f: String = String(_w("inv_filter", "all"))
 	var out: Array = []
 	for id in bag.get("items", {}).keys():
-		if Trade.count(bag, id) > 0 and (f == "all" or cat_of(id, weapons) == f):
+		# Лошадь и повозка — не вещи в сумке: их видно на карте и в строке над героем (transport.gd)
+		if Trade.count(bag, id) > 0 and not Trade.item(id).has("transport") and (f == "all" or cat_of(id, weapons) == f):
 			out.append(id)
 	if bool(_w("inv_sort", false)):
 		out.sort_custom(func(a, b):
@@ -211,12 +216,11 @@ func _layout() -> void:
 		var x: float = DOLL.position.x + 10.0 if i < 3 else DOLL.end.x - 72.0
 		var r := Rect2(x, DOLL.position.y + 40.0 + (i % 3) * 92.0, 62, 62)
 		_hits.append([r, "equip", String(eq.get(Doll.SLOTS[i][0], "")), Doll.SLOTS[i][0]])
-	# внизу: оружие в бой и доспех
+	# внизу: оружие в бой (доспех — то, что надето на «Тело»)
 	var lo: Array = bag.get("battle_loadout", [])
-	var bx: float = DOLL.get_center().x - (loadout_max + 1) * 64.0 * 0.5 + 4.0
+	var bx: float = DOLL.get_center().x - loadout_max * 64.0 * 0.5 + 4.0
 	for i in loadout_max:
 		_hits.append([Rect2(bx + i * 64.0, DOLL.end.y - 66, 56, 56), "weapon", String(lo[i]) if i < lo.size() else ""])
-	_hits.append([Rect2(bx + loadout_max * 64.0, DOLL.end.y - 66, 56, 56), "armor", ""])
 	# кнопки выбранной вещи
 	var s: String = _sel()
 	if s != "":
@@ -238,36 +242,27 @@ func _layout() -> void:
 	queue_redraw()
 
 
+## Кнопка — стальная табличка комикса; on (выбранный фильтр) — с янтарным отливом, как нажатая
 func _btn(text: String, cb: Callable, size_px: int, on: bool = false) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", size_px)
-	b.add_theme_color_override("font_color", INK if on else TEXT)
-	b.add_theme_color_override("font_hover_color", INK if on else Color.WHITE)
-	b.add_theme_color_override("font_pressed_color", INK)
-	b.add_theme_color_override("font_disabled_color", Color(DIM, 0.4))
-	b.add_theme_constant_override("outline_size", 0 if on else 3)
-	b.add_theme_color_override("font_outline_color", INK)
-	for n in ["normal", "hover", "pressed", "disabled"]:
-		var light: bool = on or n == "pressed"
-		b.add_theme_stylebox_override(n, marble_box(light, n == "hover", n == "disabled"))
+	ComicUI.button_styles(b, size_px)
+	if on:
+		b.add_theme_stylebox_override("normal", ComicUI.button_box("pressed"))
+		b.add_theme_stylebox_override("hover", ComicUI.button_box("hover_pressed"))
+		b.add_theme_color_override("font_color", Color("ffe2a8"))
 	b.pressed.connect(cb)
 	return b
 
 
-## Плита из мрамора с тёмной кромкой и светлой фаской — для кнопок
-static func marble_box(light: bool, hover: bool = false, dim: bool = false) -> StyleBoxTexture:
-	var st := StyleBoxTexture.new()
-	st.texture = marble(light)
-	st.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-	st.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-	st.modulate_color = Color(1.25, 1.25, 1.3) if hover else (Color(0.6, 0.6, 0.65) if dim else Color.WHITE)
-	st.content_margin_left = 10.0
-	st.content_margin_right = 10.0
-	st.content_margin_top = 4.0
-	st.content_margin_bottom = 4.0
-	return st
+## Стиль кнопки комикса (раньше — плита мрамора; имя оставлено для старых вызовов)
+static func marble_box(light: bool, hover: bool = false, dim: bool = false) -> StyleBox:
+	if dim:
+		return ComicUI.button_box("disabled")
+	if light:
+		return ComicUI.button_box("hover_pressed" if hover else "pressed")
+	return ComicUI.button_box("hover" if hover else "normal")
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -307,8 +302,6 @@ func _tip(h: int) -> String:
 		return ""
 	var e: Array = _hits[h]
 	match e[1]:
-		"armor":
-			return "Доспех в бою: %s" % (String(armor.get("title")) if armor != null else "нет")
 		"weapon":
 			return "Оружие в бой: %s" % Trade.item_name(e[2]) if e[2] != "" else "Пусто. Выберите оружие в сумке и нажмите «В бой»"
 		"equip":
@@ -316,7 +309,10 @@ func _tip(h: int) -> String:
 			for sl in Doll.SLOTS:
 				if sl[0] == e[3]:
 					nm = sl[1]
-			return "%s: %s" % [nm, Trade.item_name(e[2])] if e[2] != "" else "%s: пусто. Выберите одежду в сумке и нажмите «Надеть»" % nm
+			var tip: String = "%s: %s" % [nm, Trade.item_name(e[2])] if e[2] != "" else "%s: пусто. Выберите одежду в сумке и нажмите «Надеть»" % nm
+			if e[3] == "body":
+				tip += "\nДоспех в бою: %s" % (String(armor.get("title")) if armor != null else "нет")
+			return tip
 		"cell":
 			return "%s ×%d · двойной клик — съесть/выпить" % [Trade.item_name(e[2]), Trade.count(bag, e[2])] if e[2] != "" and kind_of(e[2]) in ["еда", "питьё"] else ("%s ×%d" % [Trade.item_name(e[2]), Trade.count(bag, e[2])] if e[2] != "" else "")
 	return ""
@@ -329,39 +325,41 @@ func _draw() -> void:
 	_draw_stats()
 	_draw_weight()
 	_panel_rect(Rect2(GRID - Vector2(6, 6), Vector2(COLS * (CELL + GAP) + 8, H - GRID.y + 6)), false)
-	_panel_rect(DOLL, true)
+	# сумка — один угольный лист, клетки не видны
+	var sheet := Rect2(GRID, Vector2(COLS * (CELL + GAP) - GAP, ROWS * (CELL + GAP) - GAP))
+	draw_rect(sheet, SHEET)
+	draw_rect(sheet, Color(ComicUI.STEEL_HI, 0.45), false, 1.0)
+	ComicUI.draw_box(self, "portrait", DOLL.grow(6.0))
 	_draw_doll()
 	for i in _hits.size():
 		var e: Array = _hits[i]
 		var r: Rect2 = e[0]
 		var sel: bool = e[2] != "" and e[2] == _sel()
-		cell(self, r, i == _hover, sel, cat_of(e[2], weapons) if e[2] != "" else "")
+		if e[1] == "cell":
+			sheet_mark(self, r, i == _hover and e[2] != "", sel)
+		else:
+			cell(self, r, i == _hover, sel, cat_of(e[2], weapons) if e[2] != "" else "")
 		if e[2] != "":
 			item_icon(e[2], r.grow(-12.0))
 		match e[1]:
-			"armor":
-				_armor_icon(Rect2(r.position + Vector2(16, 8), Vector2(r.size.x - 32, r.size.y - 26)))
-				_text_c(Vector2(r.get_center().x, r.end.y - 6), String(armor.get("title")) if armor != null else "без доспеха", 11, INK)
 			"weapon":
 				if e[2] == "":
-					_text_c(Vector2(r.get_center().x, r.get_center().y + 5), "пусто", 11, Color(INK, 0.5))
-				_text(r.position + Vector2(5, r.size.y - 5), str(i - COLS * ROWS - Doll.SLOTS.size() + 1), 10, Color(INK, 0.6))
+					_text_c(Vector2(r.get_center().x, r.get_center().y + 5), "пусто", 11, Color(DIM, 0.6))
+				_text(r.position + Vector2(9, r.size.y - 8), str(i - COLS * ROWS - Doll.SLOTS.size() + 1), 10, Color(DIM, 0.8))
 			"equip":
 				if e[2] == "":
 					for sl in Doll.SLOTS:
 						if sl[0] == e[3]:
-							_text_c(Vector2(r.get_center().x, r.get_center().y + 5), sl[1], 12, Color(INK, 0.45))
+							_text_c(Vector2(r.get_center().x, r.get_center().y + 5), sl[1], 12, Color(DIM, 0.6))
 			"cell":
 				if e[2] != "":
 					_badge(e[2], Rect2(r.position + Vector2(4, 4), Vector2(16, 16)))
 					var n: int = Trade.count(bag, e[2])
 					_text_r(r.end - Vector2(6, 6), str(n), 17, TEXT, true)
 					if equipped().values().has(e[2]):
-						_text(r.position + Vector2(5, r.size.y - 6), "надето", 11, Color("2e6a2e"))
+						_text(r.position + Vector2(5, r.size.y - 6), "надето", 11, Color("8fd18a"), true)
 	var py: float = GRID.y + ROWS * (CELL + GAP) + 2.0
 	_text_c(Vector2(GRID.x + (COLS * (CELL + GAP) - GAP) * 0.5, py + 22), "%d/%d" % [_page() + 1, pages()], 18, TEXT, true)
-	if shown_items().is_empty():
-		_text_c(Vector2(GRID.x + (COLS * (CELL + GAP)) * 0.5, GRID.y + CELL * 1.6), "Пусто" if String(_w("inv_filter", "all")) != "all" else "Сумка пуста. Купите в Чёрнославле или найдите в тайниках", 14, INK, false)
 	_draw_details(py + 40)
 
 
@@ -399,11 +397,9 @@ func _draw_weight() -> void:
 	weight_icon(self, Rect2(W - 40 - sw, 56, 26, 26), GOLD)
 
 
-## Подложка: мраморная плита с кромкой (тёмная или светлая)
+## Подложка: тонкая стальная рамка комикса чуть шире прямоугольника (light — подсвеченная)
 func _panel_rect(r: Rect2, light: bool) -> void:
-	draw_texture_rect(marble(light), r, true)
-	draw_rect(r, INK, false, 3.0)
-	draw_rect(r.grow(-3.0), Color(EDGE, 0.55), false, 1.0)
+	ComicUI.draw_box(self, "button", r.grow(4.0), Color(1.15, 1.15, 1.2) if light else Color.WHITE)
 
 
 func _draw_doll() -> void:
@@ -411,13 +407,46 @@ func _draw_doll() -> void:
 	_text(p.position + Vector2(12, 26), "Снаряжение", 17, TEXT, true)
 	if actor != null:
 		_text_r(Vector2(p.end.x - 12, p.position.y + 26), actor.display_name, 17, GOLD, true)
-	var female: bool = actor != null and String(actor.profile.get("gender", "")) in ["female", "f", "woman"]
-	var fig := Rect2(p.position.x + 78, p.position.y + 34, p.size.x - 156, p.size.y - 112)
+	var fig := Rect2(p.position.x + 78, p.position.y + 40, p.size.x - 156, p.size.y - 118)
 	var foot := Vector2(fig.get_center().x, fig.end.y - 2.0)
 	draw_set_transform(foot, 0.0, Vector2(1.0, 0.25))
 	draw_circle(Vector2.ZERO, 48.0, Color(0.05, 0.1, 0.2, 0.3))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_doll.draw(self, fig, female, looks())
+	pawn_silhouette(self, fig)
+
+
+## Силуэт героя по текстуре его фишки: тёмная заливка со светлой обводкой
+static func pawn_silhouette(ci: CanvasItem, fig: Rect2) -> void:
+	var t: Texture2D = silhouette_tex()
+	if t == null:
+		return
+	var k: float = minf(fig.size.y / float(t.get_height()), fig.size.x / float(t.get_width()))
+	var sz: Vector2 = Vector2(t.get_size()) * k
+	var r := Rect2(Vector2(fig.get_center().x - sz.x * 0.5, fig.end.y - sz.y), sz)
+	for d in [Vector2(-2, 0), Vector2(2, 0), Vector2(0, -2), Vector2(0, 2), Vector2(-1.5, -1.5), Vector2(1.5, 1.5), Vector2(-1.5, 1.5), Vector2(1.5, -1.5)]:
+		ci.draw_texture_rect(t, Rect2(r.position + d, r.size), false, Color(0.62, 0.67, 0.74, 0.9))
+	ci.draw_texture_rect(t, r, false, Color(0.13, 0.15, 0.18))
+
+
+## Белый силуэт из картинки фишки (альфа та же), красится модуляцией; один на игру
+static func silhouette_tex() -> Texture2D:
+	if _tex.has("pawn"):
+		return _tex["pawn"]
+	var src: Texture2D = load(PAWN) if ResourceLoader.exists(PAWN) else null
+	if src == null:
+		return null
+	var img: Image = src.get_image()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	img.clear_mipmaps()
+	for y in img.get_height():
+		for x in img.get_width():
+			var a: float = img.get_pixel(x, y).a
+			img.set_pixel(x, y, Color(1, 1, 1, 1.0 if a > 0.5 else a * 2.0))
+	img.generate_mipmaps()
+	_tex["pawn"] = ImageTexture.create_from_image(img)
+	return _tex["pawn"]
 
 
 func _draw_details(y: float) -> void:
@@ -494,17 +523,29 @@ static func rivet(ci: CanvasItem, c: Vector2, r: float = 3.5) -> void:
 	ci.draw_circle(c - Vector2(r, r) * 0.3, r * 0.45, Color("e6edf6"))
 
 
-## Ячейка: светлый мрамор, тёмная кромка, лёгкий оттенок вида вещи, выбранная — золотая рамка
+## Ячейка: стальная ячейка комикса (мелкая — тонкая табличка, чтобы влезла подпись),
+## лёгкий оттенок вида вещи внутри, выбранная — золотая рамка
 func cell(ci: CanvasItem, r: Rect2, hover: bool, sel: bool, cat: String) -> void:
-	ci.draw_texture_rect(marble(true), r, true, Color(1.12, 1.12, 1.15) if hover else Color.WHITE)
+	var lit: Color = Color(1.3, 1.3, 1.35) if hover else Color.WHITE
+	if r.size.x >= 70.0:
+		ComicUI.draw_box(ci, "slot", r, lit)
+	else:
+		ComicUI.draw_box(ci, "button", r.grow(3.0), lit)
 	var tint: Dictionary = {"food": Color(0.85, 0.6, 0.2, 0.14), "med": Color(0.3, 0.8, 0.3, 0.12), "weapon": Color(0.8, 0.25, 0.2, 0.12),
 		"tools": Color(0.5, 0.4, 0.3, 0.12), "gear": Color(0.3, 0.45, 0.8, 0.12), "parts": Color(0.3, 0.3, 0.3, 0.12)}
 	if tint.has(cat):
-		ci.draw_rect(r, tint[cat])
-	ci.draw_rect(Rect2(r.position, Vector2(r.size.x, 4)), Color(0, 0, 0, 0.15))
-	ci.draw_rect(r, INK, false, 2.0)
+		ci.draw_rect(r.grow(-14.0), Color(tint[cat], tint[cat].a * 1.6))
 	if sel:
 		ci.draw_rect(r.grow(-2.0), GOLD, false, 3.0)
+
+
+## Место вещи на листе сумки: без рамки; наведение — лёгкий свет, выбранная — золотой уголок-рамка
+func sheet_mark(ci: CanvasItem, r: Rect2, hover: bool, sel: bool) -> void:
+	if hover:
+		ci.draw_rect(r.grow(-3.0), Color(1, 1, 1, 0.16))
+	if sel:
+		ci.draw_rect(r.grow(-3.0), Color(GOLD, 0.18))
+		ci.draw_rect(r.grow(-3.0), GOLD, false, 2.0)
 
 
 ## Значок вида в левом верхнем углу ячейки, как на референсе
@@ -557,29 +598,27 @@ static func stat_icon(ci: CanvasItem, k: String, r: Rect2) -> void:
 		"stamina":
 			Icons.action(ci, "dash", r, Color("e88a4a"))
 		"radiation":
-			var c := Color("d8d040")
-			ci.draw_circle(o, s * 0.9, Color(0.1, 0.1, 0.05))
-			for i in 3:
-				var a0: float = -PI * 0.5 + i * TAU / 3.0 - 0.5
-				var pts := PackedVector2Array([o + Vector2.from_angle(a0) * s * 0.25])
-				for j in 7:
-					pts.append(o + Vector2.from_angle(a0 + j / 6.0) * s * 0.8)
-				pts.append(o + Vector2.from_angle(a0 + 1.0) * s * 0.25)
-				ci.draw_colored_polygon(pts, c)
-			ci.draw_circle(o, s * 0.14, c)
+			curse_icon(ci, o, s)
 
 
-func _armor_icon(r: Rect2) -> void:
-	var o: Vector2 = r.get_center()
-	var s: float = minf(r.size.x, r.size.y) * 0.5
-	var col: Color = Color("7a5232") if armor == null or String(armor.get("id")) in ["leather", "hides"] else Color("8d99a6")
-	var body := PackedVector2Array()
-	for p in [[-0.35, -0.75], [-0.12, -0.6], [0.12, -0.6], [0.35, -0.75], [0.75, -0.45], [0.55, -0.1], [0.42, -0.2], [0.42, 0.7], [-0.42, 0.7], [-0.42, -0.2], [-0.55, -0.1], [-0.75, -0.45]]:
-		body.append(o + Vector2(p[0], p[1]) * s)
-	draw_colored_polygon(body, col if armor != null else Color(col, 0.3))
-	body.append(body[0])
-	draw_polyline(body, INK, 2.0, true)
-	draw_line(o + Vector2(-0.42, 0.25) * s, o + Vector2(0.42, 0.25) * s, INK, 2.0)
+## Значок проклятья: тёмный круг, фиолетовое «дурное око» со зрачком-щелью и шипами
+static func curse_icon(ci: CanvasItem, o: Vector2, s: float) -> void:
+	var c := Color("b46cf0")
+	ci.draw_circle(o, s * 0.95, Color(0.09, 0.04, 0.13))
+	for i in 8:
+		var a: float = i * TAU / 8.0
+		var d := Vector2.from_angle(a)
+		var n := Vector2(-d.y, d.x)
+		ci.draw_colored_polygon(PackedVector2Array([o + d * s * 0.92, o + d * s * 0.62 + n * s * 0.12, o + d * s * 0.62 - n * s * 0.12]), Color(c, 0.85))
+	var eye := PackedVector2Array()
+	for k in 13:
+		var t: float = PI * k / 12.0
+		eye.append(o + Vector2(-cos(t) * 0.62, -sin(t) * 0.34) * s)
+	for k in range(1, 12):
+		var t: float = PI * k / 12.0
+		eye.append(o + Vector2(cos(t) * 0.62, sin(t) * 0.34) * s)
+	ci.draw_colored_polygon(eye, c)
+	ci.draw_colored_polygon(PackedVector2Array([o + Vector2(0, -0.3) * s, o + Vector2(0.09, 0) * s, o + Vector2(0, 0.3) * s, o + Vector2(-0.09, 0) * s]), Color(0.09, 0.04, 0.13))
 
 
 ## Значок предмета: оружие — из иконок боя, остальное — простые рисунки по виду

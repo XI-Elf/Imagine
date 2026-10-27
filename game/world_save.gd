@@ -9,8 +9,10 @@ extends RefCounted
 
 const DIR: String = "user://saves/"
 const LEGACY_PATH: String = "user://world_save.dat"   # первая версия: одна ячейка без заголовка
-# 5: карта 2D 04 (постапокалиптический вид, области и регионы). Сохранения версий 1–4 не загружаются
-const VERSION: int = 5
+# 5: карта 2D 04 (постапокалиптический вид, области и регионы).
+# 6: 2D 07 patch 01 — маленький радиальный город (клетка 1 м), рост с запасными поручениями, куртка на герое.
+# Сохранения другой версии удаляются при первом обращении к списку (вопрос Q05, Huzzah 2026-10-24)
+const VERSION: int = 6
 const AUTOSAVE: String = "autosave"
 const MANUAL_KEEP: int = 10
 
@@ -30,12 +32,17 @@ static func list() -> Array:
 			var slot: String = f.get_basename()
 			var h: Dictionary = _header(path_of(slot))
 			if h.is_empty() or int(h.get("version", 0)) != VERSION:
+				# От другой сборки — удалить: загрузить его всё равно нельзя (Q05)
+				push_warning("world_save: удалено сохранение другой версии %s" % path_of(slot))
+				DirAccess.remove_absolute(path_of(slot))
 				continue
 			h["slot"] = slot
 			out.append(h)
+	# Старая ячейка LEGACY_PATH лежит вне DIR и без заголовка — тоже удаляется (версии 1–4 не читаются)
+	if FileAccess.file_exists(LEGACY_PATH):
+		DirAccess.remove_absolute(LEGACY_PATH)
 	for h in out:
-		var kind: String = "Автосохранение" if h["slot"] == AUTOSAVE else ("Старое сохранение" if h["slot"] == "legacy" else "Сохранение")
-		h["title"] = kind
+		h["title"] = "Автосохранение" if h["slot"] == AUTOSAVE else "Сохранение"
 	out.sort_custom(func(a, b): return int(a["unix"]) > int(b["unix"]))
 	return out
 
@@ -67,13 +74,18 @@ static func read(slot: String = "") -> Dictionary:
 		return {}
 	var f := FileAccess.open(path_of(slot), FileAccess.READ)
 	if f == null:
+		push_warning("world_save: не открыть %s (%s)" % [path_of(slot), error_string(FileAccess.get_open_error())])
 		return {}
 	var first: Variant = f.get_var(false)
 	var d: Variant = first
 	if first is Dictionary and first.has("header"):
 		d = f.get_var(false)
 	f.close()
-	if not (d is Dictionary) or int(d.get("version", 0)) != VERSION:
+	if not (d is Dictionary):
+		push_warning("world_save: %s повреждено — нет данных мира" % path_of(slot))
+		return {}
+	if int(d.get("version", 0)) != VERSION:
+		push_warning("world_save: %s версии %d, игра читает только %d" % [path_of(slot), int(d.get("version", 0)), VERSION])
 		return {}
 	return d
 
@@ -120,7 +132,8 @@ static func write(game: Node, manual: bool = false) -> bool:
 	DirAccess.make_dir_recursive_absolute(DIR)
 	var slot: String = AUTOSAVE
 	if manual:
-		slot = "manual_%d" % int(Time.get_unix_time_from_system())
+		# Миллисекунды: две ручные записи в одну секунду не затирают друг друга
+		slot = "manual_%d" % int(Time.get_unix_time_from_system() * 1000.0)
 	var d: Dictionary = build(game)
 	var header: Dictionary = {
 		"header": true, "version": VERSION, "saved_at": d["saved_at"], "unix": int(Time.get_unix_time_from_system()),
@@ -137,13 +150,31 @@ static func write(game: Node, manual: bool = false) -> bool:
 	var tmp: String = path + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
+		push_error("world_save: не записать %s (%s)" % [tmp, error_string(FileAccess.get_open_error())])
 		return false
 	f.store_var(header, false)
 	f.store_var(d, false)
+	var werr: Error = f.get_error()
 	f.close()
+	if werr != OK:
+		push_error("world_save: ошибка записи %s (%s)" % [tmp, error_string(werr)])
+		DirAccess.remove_absolute(tmp)
+		return false
+	# Старая ячейка сначала уходит в .bak: если переименование не удастся, она возвращается на место
+	var bak: String = path + ".bak"
+	if FileAccess.file_exists(bak):
+		DirAccess.remove_absolute(bak)
 	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(path)
-	var ok: bool = DirAccess.rename_absolute(tmp, path) == OK
+		DirAccess.rename_absolute(path, bak)
+	var err: Error = DirAccess.rename_absolute(tmp, path)
+	var ok: bool = err == OK
+	if ok:
+		if FileAccess.file_exists(bak):
+			DirAccess.remove_absolute(bak)
+	else:
+		push_error("world_save: не переименовать %s -> %s (%s)" % [tmp, path, error_string(err)])
+		if FileAccess.file_exists(bak) and not FileAccess.file_exists(path):
+			DirAccess.rename_absolute(bak, path)
 	if manual:
 		var manuals: Array = list().filter(func(h): return String(h["slot"]).begins_with("manual_"))
 		for k in range(MANUAL_KEEP, manuals.size()):
@@ -155,20 +186,23 @@ static func write(game: Node, manual: bool = false) -> bool:
 static func apply_early(game: Node, d: Dictionary) -> void:
 	game.clock.total_seconds = float(d.get("clock_total", game.clock.total_seconds))
 	game.clock._sync_last()
-	game.clock.speed_index = int(d.get("clock_speed", game.clock.speed_index))
+	# Индекс скорости из сохранения — в пределах нынешнего списка GameClock.SPEEDS
+	game.clock.speed_index = clampi(int(d.get("clock_speed", game.clock.speed_index)), 0, GameClock.SPEEDS.size() - 1)
 	game.physics.weather_speed = float(d.get("weather_speed", game.physics.weather_speed))
-	var atmo: PackedByteArray = d.get("atmosphere", PackedByteArray())
-	if not atmo.is_empty():
+	var atmo: Variant = d.get("atmosphere", PackedByteArray())
+	if atmo is PackedByteArray and not atmo.is_empty():
 		game.physics.preload_state = atmo
 
 
 # После загрузки карты: камера
 static func apply_late(game: Node, d: Dictionary) -> void:
-	game.cam_pos = d.get("cam_pos", game.cam_pos)
+	var cam: Variant = d.get("cam_pos", game.cam_pos)
+	if cam is Vector2:
+		game.cam_pos = cam
 	game.zoom = clampf(float(d.get("zoom", game.zoom)), game.min_zoom, game.MAX_ZOOM)
 	game._clamp_camera()
-	if game.get("cast") != null and d.has("cast"):
+	if game.get("cast") != null and d.get("cast") is Dictionary:
 		game.cast.load_dict(d["cast"])
 	var worlds: Node = _worlds(game)
-	if worlds != null and d.has("worlds"):
+	if worlds != null and d.get("worlds") is Dictionary:
 		worlds.load_dict(d["worlds"])

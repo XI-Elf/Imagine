@@ -119,7 +119,7 @@ func build_from_creature(c: BattleCreature, a: Actor, t: int, cfg: BattleConfig,
 
 # Раненый персонаж входит в бой раненым: HP = максимум × здоровье Actor / 100
 func _from_actor_health(cfg: BattleConfig) -> void:
-	var frac: float = clampf(actor.res["health"] / actor.max_of("health"), 0.0, 1.0)
+	var frac: float = clampf(float(actor.res["health"]) / maxf(actor.max_of("health"), 1.0), 0.0, 1.0)
 	hp = maxi(1, int(round(max_hp * frac)))
 	hp_at_start = hp
 
@@ -308,8 +308,11 @@ func load_dict(d: Dictionary) -> void:
 	potions = int(d.get("potions", potions))
 	effects = []
 	for e in d.get("effects", []):
-		add_effect(String(e["id"]))
-		effects[-1]["left"] = int(e["left"])
+		# Эффекта могло не стать в data/battle/effects (переименовали) — пропускаем, не трогая чужие
+		if add_effect(String(e["id"])):
+			for x in effects:
+				if x["id"] == String(e["id"]):
+					x["left"] = int(e.get("left", x["left"]))
 	initiative = int(d.get("init", initiative))
 	down = bool(d.get("down", false))
 	dead = bool(d.get("dead", false))

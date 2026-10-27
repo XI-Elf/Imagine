@@ -46,7 +46,10 @@ static func config() -> BattleConfig:
 	var key: String = "config"
 	if not _cache.has(key):
 		var r: Resource = load(DIR + "config.tres") if ResourceLoader.exists(DIR + "config.tres") else null
-		_cache[key] = r if r != null else BattleConfig.new()
+		if not (r is BattleConfig):
+			push_warning("battle_data: не прочитан %sconfig.tres — числа боя по умолчанию из battle_config.gd" % DIR)
+			r = BattleConfig.new()
+		_cache[key] = r
 	return _cache[key]
 
 

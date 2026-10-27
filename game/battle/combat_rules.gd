@@ -14,7 +14,7 @@ const Combatant := preload("res://battle/combatant.gd")
 
 const DAMAGE_NAMES: Dictionary = {
 	"slashing": "режущий", "piercing": "колющий", "bludgeoning": "дробящий", "fire": "огненный",
-	"radiation": "радиационный", "poison": "ядовитый", "fall": "падение", "cold": "холод", "acid": "кислота",
+	"radiation": "проклятый", "poison": "ядовитый", "fall": "падение", "cold": "холод", "acid": "кислота",
 	"lightning": "молния", "necrotic": "некротический", "radiant": "светящийся",
 }
 

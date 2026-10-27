@@ -44,16 +44,13 @@ func _run() -> void:
 	var hb: Dictionary = game.cast.hero
 	var here: Vector2 = hb["pos"]
 	await frames(3)
-	var k := InputEventKey.new()
-	k.physical_keycode = KEY_K
-	k.keycode = KEY_K
-	k.pressed = true
-	Input.parse_input_event(k)
+	# Отладочной K больше нет (Q07): бой как от случайного нападения, враги — из encounters.gd
+	W.start_battle({})
 	await frames(2)
 	while W.busy:
 		await process_frame
 	var b: Node = W.current_node()
-	ok(W.is_battle() and b.get_script().resource_path == "res://battle/battle_scene.gd", "K — бой из ветки «Боевая сцена»")
+	ok(W.is_battle() and b.get_script().resource_path == "res://battle/battle_scene.gd", "бой из ветки «Боевая сцена»")
 	ok(game.clock.paused, "часы стоят")
 	await create_timer(2.0).timeout
 	if shots != "":

@@ -6,10 +6,13 @@ extends RefCounted
 const ITEMS_FILE := "res://data/cities/items.json"
 
 static var _items: Dictionary = {}
+static var _read: bool = false
 
 
 static func items() -> Dictionary:
-	if _items.is_empty():
+	# Читается один раз: если файла нет, ошибка пишется один раз, а не на каждый вызов (каждый кадр)
+	if not _read:
+		_read = true
 		var f := FileAccess.open(ITEMS_FILE, FileAccess.READ)
 		if f != null:
 			var v: Variant = JSON.parse_string(f.get_as_text())
@@ -73,6 +76,12 @@ static func sell_price(id: String, seller: Actor) -> int:
 static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor) -> String:
 	if int(stock.get(id, 0)) <= 0:
 		return "Нет в наличии"
+	# Лошадь и повозка (Q16): одна на героя, повозке нужна лошадь
+	if bool(item(id).get("unique", false)) and count(bag, id) > 0:
+		return "Уже есть"
+	var need: String = String(item(id).get("requires", ""))
+	if need != "" and count(bag, need) <= 0:
+		return "Сначала нужна %s" % item_name(need).to_lower()
 	var price: int = buy_price(id, buyer)
 	if int(bag["money"]) < price:
 		return "Не хватает денег"

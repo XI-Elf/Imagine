@@ -84,6 +84,7 @@ func _run() -> void:
 	while not game.ready_done and Time.get_ticks_msec() - t0 < 120000:
 		await process_frame
 	ok(game.ready_done, "карта загрузилась")
+	game.physics.travel_weather = false   # дождь и гроза замедляют ход: шаги проверяются без погоды
 	var st: Node2D = game.settlements
 	var cast: Node2D = game.cast
 	ok(st != null and st.list.size() == 1, "один город в реестре: %d" % (st.list.size() if st else -1))
@@ -205,14 +206,31 @@ func _run() -> void:
 	a.res["stamina"] = a.max_of("stamina")
 	a.res["health"] = a.max_of("health")
 
-	# Неудача без поимки: стража настороже, кнопка неактивна
+	# Шанс поимки зажат в 0.05…0.95 (settlements.caught_chance): даже при 0 и 1 в правилах
+	# остаётся 5 % обратного исхода, поэтому исход ниже проверяется при фиксированном seed
 	var saved: Dictionary = st.sneak_rules.duplicate()
-	st.sneak_rules["min"] = 0.0
+	st.sneak_rules["per_agi_caught"] = 0.0
+	st.sneak_rules["caught_day"] = 0.0
+	st.sneak_rules["caught_night"] = 0.0
+	ok(is_equal_approx(st.caught_chance(a, {"night": false}), 0.05) and is_equal_approx(st.caught_chance(a, {"night": true}), 0.05), "зажим: шанс поимки 0 в правилах → 0.05")
+	st.sneak_rules["caught_day"] = 1.0
+	st.sneak_rules["caught_night"] = 1.0
+	ok(is_equal_approx(st.caught_chance(a, {"night": false}), 0.95) and is_equal_approx(st.caught_chance(a, {"night": true}), 0.95), "зажим: шанс поимки 1 в правилах → 0.95")
+	# Броски try_sneak: пролез, вывих, поимка. Seed 12345 даёт третий бросок 0.023 (< 0.05),
+	# seed 42 — 0.298 (между 0.05 и 0.95)
+	st.sneak_rules["min"] = 0.0001
 	st.sneak_rules["max"] = 0.0001
 	st.sneak_rules["caught_day"] = 0.0
 	st.sneak_rules["caught_night"] = 0.0
 	st.sneak_rules["fall_chance"] = 0.0
+	st._rng.seed = 12345
+	ok(st.try_sneak(city, a, {"night": false}) == "caught", "seed 12345: при шансе поимки 0 всё равно поймали (зажим 0.05)")
+	st.alert_until.clear()
+	a.res["stamina"] = a.max_of("stamina")
+
+	# Неудача без поимки: стража настороже, кнопка неактивна (seed 42: третий бросок 0.298 ≥ 0.05)
 	await frames(2)
+	st._rng.seed = 42
 	await key(KEY_E)
 	ok(game.event_text.contains("Не удалось"), "неудача: %s" % game.event_text)
 	ok(st.alert_left_s(city) > 0.0, "стража настороже %.0f мин" % (st.alert_left_s(city) / 60.0))
@@ -239,14 +257,15 @@ func _run() -> void:
 		await create_timer(1.0).timeout
 		ok(hero["pos"].distance_to(ex) < 60.0 and st.prompt_for.is_empty(), "вышел к воротам, выбор не всплыл")
 
-	# Поймали: entry "caught"
-	st.sneak_rules["min"] = 0.0
+	# Поймали: entry "caught" (seed 42: третий бросок 0.298 < 0.95)
+	st.sneak_rules["min"] = 0.0001
 	st.sneak_rules["max"] = 0.0001
 	st.sneak_rules["caught_day"] = 1.0
 	st.sneak_rules["caught_night"] = 1.0
 	st.sneak_rules["per_agi_caught"] = 0.0
 	await place(hero, north + Vector2(0, -150), Vector2(0, -1))
 	await walk_until_prompt(st, hero, north)
+	st._rng.seed = 42
 	await key(KEY_E)
 	ok(got.size() == 2 and got[1]["entry"] == "caught", "заметили: entry %s" % (got[1].get("entry") if got.size() > 1 else "-"))
 	if wm != null:
@@ -266,5 +285,23 @@ func _run() -> void:
 		await create_timer(1.0).timeout
 
 	ok(game.place_line(city["_center"]).contains(city["name"]), "подсказка: %s" % game.place_line(city["_center"]))
+
+	# Медальон на карте (знамя и картинка по развитию): Чёрнославль — по этапу роста, другие — по размеру
+	var W2: Node = root.get_node_or_null("Worlds")
+	var saved_states: Dictionary = W2.city_states.duplicate() if W2 != null else {}
+	if W2 != null:
+		W2.city_states.erase(String(city.get("city_id", city["id"])))
+	ok(st.dev_level(city) == 1 and st.medallion_texture(1) != null, "новая игра: медальон «острог»")
+	var done: Array = []
+	for id in city["_plan"]["growth"]["quests"]:
+		for q in city["_plan"]["growth"]["quests"][id]:
+			done.append(q["id"])
+	if W2 != null:
+		W2.city_states[String(city.get("city_id", city["id"]))] = {"growth": {"done": done, "taken": {}}}
+		ok(st.dev_level(city) == 5, "все поручения сданы: медальон большого города (%d)" % st.dev_level(city))
+		W2.city_states = saved_states
+	for k in 6:
+		ok(st.medallion_texture(k) != null, "картинка медальона %d" % k)
+	ok(st.dev_level({"size": "hamlet"}) == 0 and st.dev_level({"size": "capital"}) == 5, "без роста — по размеру: деревушка — стоянка, столица — большой город")
 	print("ИТОГ: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)

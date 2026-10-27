@@ -154,7 +154,7 @@ func _run() -> void:
 			if not cq.is_empty():
 				do_quest(city, npc(city, String(n["def"]["id"])), cq)
 	ok(city.stage == 4 and Growth.stage_name(city.full_def, 4) == "Чёрнославль", "все 18 поручений — город вырос до конца")
-	ok(city.map.buildings.size() == 51 and city.npcs.size() == 29, "51 дом, 29 жителей: %d, %d" % [city.map.buildings.size(), city.npcs.size()])
+	ok(city.map.buildings.size() == 43 and city.npcs.size() == 29, "43 дома, 29 жителей: %d, %d" % [city.map.buildings.size(), city.npcs.size()])
 	ok(city.def["wall"] == "stone" and city.map.building_by_id("inn")["name"].begins_with("Трактир"), "каменная стена, общий дом снова трактир")
 	ok(not npc(city, "posadnik")["def"].has("work_cell") and city.map.building_at(npc(city, "posadnik")["work_pos"]) == int(city.map.building_by_id("hall")["index"]), "глава работает в детинце")
 	ok(npc(city, "posadnik")["def"]["home"] == "hall" and npc(city, "tanner")["def"]["home"] == "house_2", "глава в детинце, кожевник в дубильне")
@@ -171,7 +171,7 @@ func _run() -> void:
 
 	# Миниатюра на карте: этапы по тому же описанию
 	var plan: Dictionary = city.full_def
-	ok(Growth.view(plan, 0)["buildings"].size() == 4 and Growth.view(plan, 4)["buildings"].size() == 51, "миниатюра: 4 постройки в начале, 51 в конце")
+	ok(Growth.view(plan, 0)["buildings"].size() == 4 and Growth.view(plan, 4)["buildings"].size() == 43, "миниатюра: 4 постройки в начале, 43 в конце")
 
 	city.queue_free()
 	print("city_growth_checks: %d/%d" % [checks - fails, checks])

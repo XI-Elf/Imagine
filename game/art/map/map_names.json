@@ -337,7 +337,7 @@
   "13": {
    "province": 2,
    "code": "R013",
-   "dominant_biome": "Радиоактивный лес"
+   "dominant_biome": "Проклятый лес"
   },
   "14": {
    "province": 3,
@@ -667,7 +667,7 @@
   "79": {
    "province": 16,
    "code": "R079",
-   "dominant_biome": "Радиоактивная пустошь"
+   "dominant_biome": "Проклятая пустошь"
   },
   "80": {
    "province": 16,
@@ -682,7 +682,7 @@
   "82": {
    "province": 16,
    "code": "R082",
-   "dominant_biome": "Радиоактивная пустошь"
+   "dominant_biome": "Проклятая пустошь"
   },
   "83": {
    "province": 17,
@@ -707,7 +707,7 @@
   "87": {
    "province": 19,
    "code": "R087",
-   "dominant_biome": "Радиоактивное болото"
+   "dominant_biome": "Проклятое болото"
   },
   "88": {
    "province": 20,
@@ -727,7 +727,7 @@
   "91": {
    "province": 23,
    "code": "R091",
-   "dominant_biome": "Радиоактивный лес"
+   "dominant_biome": "Проклятый лес"
   },
   "92": {
    "province": 24,
@@ -787,7 +787,7 @@
   "103": {
    "province": 26,
    "code": "R103",
-   "dominant_biome": "Радиоактивное болото"
+   "dominant_biome": "Проклятое болото"
   },
   "104": {
    "province": 27,
@@ -812,7 +812,7 @@
   "108": {
    "province": 28,
    "code": "R108",
-   "dominant_biome": "Радиоактивная пустошь"
+   "dominant_biome": "Проклятая пустошь"
   },
   "109": {
    "province": 29,
@@ -832,7 +832,7 @@
   "112": {
    "province": 29,
    "code": "R112",
-   "dominant_biome": "Радиоактивная пустошь"
+   "dominant_biome": "Проклятая пустошь"
   },
   "113": {
    "province": 30,

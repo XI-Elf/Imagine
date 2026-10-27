@@ -56,6 +56,18 @@ static func base_kmh(mount: String = "") -> float:
 	return float(m.get("medieval_adaptation", {}).get(mount, m.get("base_speed_kmh", 3.0)))
 
 
+# Лошадь и повозка (data/characters/transport.json, вопрос Q16): груз, местность, езда
+static func transport() -> Dictionary:
+	return _load("transport.json")
+
+
+# Множитель местности для транспорта: повозка вязнет в болоте и не лезет в горы; пешком — 1
+static func mount_terrain(mount: String, biome: int) -> float:
+	if mount == "":
+		return 1.0
+	return float(transport().get(mount, {}).get("terrain", {}).get(str(biome), 1.0))
+
+
 # Создание героя: происхождения, профессии, черты характера, биография (правила 09)
 static func creation() -> Dictionary:
 	return _load("creation.json")

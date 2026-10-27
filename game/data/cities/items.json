@@ -1,5 +1,5 @@
 {
-  "_note": "Предметы для торговли в городах. price — базовая цена в монетах, weight — кг. use: eat/drink — что делает при использовании (Actor.eat/drink), treat — ключ для лечения (rules.json treatments). wear — одежда: slot (head, body, back, hands, legs, feet), look — как рисуется на кукле героя (characters/paper_doll.gd), color. Все числа [ВРЕМЕННО].",
+  "_note": "Предметы для торговли в городах. price — базовая цена в монетах, weight — кг. use: eat/drink — что делает при использовании (Actor.eat/drink), treat — ключ для лечения (rules.json treatments). wear — одежда: slot (head, body, back, hands, legs, feet), look — как рисуется на кукле героя (characters/paper_doll.gd), color. transport — лошадь или повозка (characters/transport.gd, вопрос Q16): в сумке, но не в сетке инвентаря; unique — одна на героя; requires — что нужно иметь до покупки. Все числа [ВРЕМЕННО].",
   "currency": "монеты",
   "items": {
     "bread":            {"name": "Хлеб",                 "price": 3,  "weight": 0.5, "use": {"eat": 20, "kind": "cooked"}},
@@ -28,13 +28,23 @@
     "old_coin":         {"name": "Довоенная монета",     "price": 12, "weight": 0.02},
     "amber":            {"name": "Кусок янтаря",         "price": 20, "weight": 0.1},
     "vegetables":       {"name": "Овощи",                "price": 2,  "weight": 0.5, "use": {"eat": 12, "kind": "cooked"}},
+    "horse":            {"name": "Лошадь",               "price": 80, "weight": 0.0, "transport": "horse", "unique": true},
+    "cart":             {"name": "Повозка",              "price": 50, "weight": 0.0, "transport": "cart", "unique": true, "requires": "horse"},
     "straw_hat":        {"name": "Соломенная шляпа",    "price": 8,  "weight": 0.3, "wear": {"slot": "head", "look": "straw_hat", "color": "d8b45a"}},
     "felt_cap":         {"name": "Войлочная шапка",     "price": 6,  "weight": 0.2, "wear": {"slot": "head", "look": "cap", "color": "6b4a3a"}},
     "linen_shirt":      {"name": "Льняная рубаха",      "price": 7,  "weight": 0.4, "wear": {"slot": "body", "look": "shirt", "color": "e4d8bc"}},
-    "leather_jacket":   {"name": "Кожаная куртка",      "price": 30, "weight": 2.5, "wear": {"slot": "body", "look": "jacket", "color": "7a5232"}},
+    "leather_jacket":   {"name": "Кожаная куртка",      "price": 30, "weight": 2.5, "wear": {"slot": "body", "look": "jacket", "color": "7a5232", "armor": "leather"}},
     "travel_cloak":     {"name": "Дорожный плащ",       "price": 18, "weight": 1.5, "wear": {"slot": "back", "look": "cloak", "color": "5d7a4a"}},
     "gloves":           {"name": "Рукавицы",            "price": 5,  "weight": 0.2, "wear": {"slot": "hands", "look": "gloves", "color": "8a6a44"}},
     "trousers":         {"name": "Суконные штаны",      "price": 9,  "weight": 0.6, "wear": {"slot": "legs", "look": "trousers", "color": "4b5568"}},
-    "boots":            {"name": "Сапоги",              "price": 20, "weight": 1.2, "wear": {"slot": "feet", "look": "boots", "color": "5a3a22"}}
+    "boots":            {"name": "Сапоги",              "price": 20, "weight": 1.2, "wear": {"slot": "feet", "look": "boots", "color": "5a3a22"}},
+    "hide_vest":        {"name": "Шкурная безрукавка",  "price": 14, "weight": 3.0, "wear": {"slot": "body", "look": "jacket", "color": "8b6b4a", "armor": "hides"}},
+    "leather_cap":      {"name": "Кожаный колпак",      "price": 8,  "weight": 0.4, "wear": {"slot": "head", "look": "cap", "color": "6e4a2c"}},
+    "fur_cloak":        {"name": "Меховой плащ",        "price": 22, "weight": 3.0, "wear": {"slot": "back", "look": "cloak", "color": "6b5440"}},
+    "chain_mail":       {"name": "Кольчуга",            "price": 90, "weight": 10.0, "wear": {"slot": "body", "look": "jacket", "color": "8a8d92", "armor": "chain"}},
+    "plate_armor":      {"name": "Латы",                "price": 180, "weight": 15.0, "wear": {"slot": "body", "look": "jacket", "color": "a7abb2", "armor": "plate"}},
+    "spear":            {"name": "Копьё",               "price": 14, "weight": 2.0},
+    "mace":             {"name": "Булава",              "price": 22, "weight": 2.5},
+    "shortsword":       {"name": "Короткий меч",        "price": 40, "weight": 1.5}
   }
 }

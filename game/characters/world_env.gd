@@ -20,8 +20,16 @@ static func sample(game: Node, p: Vector2) -> Dictionary:
 		temp = float(game.temperature_at(p))
 	else:
 		temp = air_temp(biome, hour, doy)
-	# Дождя в точке пока не спросить: модель атмосферы отдаёт его только шейдеру
-	return {"biome": biome, "water": water, "temp_c": temp, "rain": 0.0, "night": hour < 5.5 or hour >= 20.5, "hour": hour}
+	# Погода в точке (world_physics.weather_here): тип для штрафа скорости и дождь, мм/ч
+	var weather: String = ""
+	var rain: float = 0.0
+	var physics: Variant = game.get("physics")
+	if physics != null and physics.has_method("weather_here") and bool(physics.get("travel_weather")):
+		var w: Dictionary = physics.weather_here(p)
+		weather = str(w.get("type", ""))
+		rain = float(w.get("rain_mm_h", 0.0))
+	return {"biome": biome, "water": water, "temp_c": temp, "weather": weather, "rain": rain,
+		"night": hour < 5.5 or hour >= 20.5, "hour": hour}
 
 
 static func air_temp(biome: int, hour: float, doy: float) -> float:

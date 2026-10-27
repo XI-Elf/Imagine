@@ -15,6 +15,7 @@ const Rules := preload("res://battle/combat_rules.gd")
 const Combatant := preload("res://battle/combatant.gd")
 const Grid := preload("res://battle/battle_grid.gd")
 const Enc := preload("res://battle/encounters.gd")
+const Trade := preload("res://city/trade.gd")
 const ROUND_S: float = 6.0
 
 var cfg: BattleConfig
@@ -69,6 +70,7 @@ func _spawn() -> void:
 		var lo: Dictionary = cfg.hero.duplicate() if hero else cfg.npc.duplicate()
 		if hero and req.get("inventory", null) is Dictionary:
 			lo["weapons"] = default_loadout()
+			lo["armor"] = worn_armor(req["inventory"])
 		if not hero:
 			var sets: Array = cfg.npc.get("weapons", [["club"]])
 			lo["weapons"] = sets[npc_i % sets.size()]
@@ -168,6 +170,14 @@ func inventory_weapons() -> Array:
 	return out
 
 
+## Доспех героя — то, что надето на «Тело» (items.json wear.armor); ничего — без доспеха
+static func worn_armor(inv: Dictionary) -> String:
+	var body: String = String(inv.get("equipped", {}).get("body", ""))
+	if body == "" or int(inv.get("items", {}).get(body, 0)) <= 0:
+		return "none"
+	return String(Trade.item(body).get("wear", {}).get("armor", "none"))
+
+
 ## Что взять по умолчанию: прошлый выбор (inventory.battle_loadout), если всё ещё в сумке, иначе первые из сумки
 func default_loadout() -> Array:
 	var have: Array = inventory_weapons()
@@ -212,7 +222,7 @@ func draw_weapon(c, i: int) -> bool:
 
 
 func _group_title() -> String:
-	var t: Dictionary = {"bandits": "разбойники", "wolves": "волки", "boar": "кабан", "hounds": "радиоактивные гончие"}
+	var t: Dictionary = {"bandits": "разбойники", "wolves": "волки", "boar": "кабан", "hounds": "проклятые гончие"}
 	return t.get(String(req.get("group", "")), "враги")
 
 
@@ -1085,14 +1095,33 @@ func _finish(o: String) -> void:
 			c.write_back()
 	if o == "win":
 		var money: int = 0
+		var scrap: int = 0
+		var hides: int = 0
 		for c in all:
 			if c.team == 1 and c.dead and c.human:
 				money += int(roller.roll("2d6", {"silent": true})["total"])
+				# Лом с бандитов (вопрос Q04, Huzzah 2026-10-24): 0–2 куска с каждого [ВРЕМЕННО]
+				# (кости d3 у DiceRoller нет — «1d3» не разбиралось, и лом не падал никогда)
+				scrap += roller.rng.randi_range(0, 2)
+			elif c.team == 1 and c.dead and not c.is_pet:
+				# Шкуры со зверей — материал для кожевника (вопрос Q18): 1–2 с каждого [ВРЕМЕННО]
+				hides += roller.rng.randi_range(1, 2)
 		if money > 0:
-			loot = {"money": money}
-			var inv: Variant = req.get("inventory", null)
-			if inv is Dictionary:
-				inv["money"] = int(inv.get("money", 0)) + money
+			loot["money"] = money
+		var got: Dictionary = {}
+		if scrap > 0:
+			got["scrap"] = scrap
+		if hides > 0:
+			got["hide"] = hides
+		if not got.is_empty():
+			loot["items"] = got
+		var inv: Variant = req.get("inventory", null)
+		if inv is Dictionary and not loot.is_empty():
+			inv["money"] = int(inv.get("money", 0)) + money
+			if not got.is_empty() and not inv.has("items"):
+				inv["items"] = {}
+			for id in got:
+				inv["items"][id] = int(inv["items"].get(id, 0)) + int(got[id])
 	log_line({"win": "Победа.", "flee": "Отступили.", "lose": "Поражение."}[o], "head")
 	finished.emit(o)
 

@@ -5,10 +5,10 @@ extends Node
 ## Миры лежат стеком: карта → город → бой. leave() снимает верхний мир и возвращает в тот, откуда пришли:
 ## из города — на общую карту к воротам города, из боя — туда, где бой начался (карта или город).
 ##
-## Город: res://city/city_world.tscn (ветка «Мир города»), без неё — заглушка worlds/city_stub.gd.
+## Город: res://city/city_world.tscn (ветка «Мир города»).
 ##   После add_child: city.enter(city_id, hero: Actor|null, ctx). Выход: сигнал exit_requested(city_id, gate_id)
 ##   или Worlds.leave(). Сохранение: to_dict() / load_dict(state) (load_dict сразу после enter).
-## Бой: res://battle/battle.tscn (ветка «Боевая сцена»), без неё — заглушка worlds/battle_stub.gd.
+## Бой: res://battle/battle.tscn (ветка «Боевая сцена»).
 ##   До add_child: battle.setup(req). Выход: сигнал battle_finished(result)
 ##   {outcome: win|lose|flee, origin, return_pos, game_minutes, dead: [actor_id]}.
 ##   На время боя часы мира стоят, после боя к ним прибавляется result.game_minutes.
@@ -20,7 +20,8 @@ extends Node
 ## Деньги и вещи героя: Worlds.inventory {money, items: {id: count}} — один словарь на игру, по ссылке в ctx
 ##   города и req боя, сохраняется здесь. Состояние каждого города (to_dict) помнится по city_id между визитами.
 ## Случайные нападения: на каждый пройденный героем км спрашивается battle/encounters.gd roll_on_km(hero, env, rng).
-## [ОТЛАДКА] На общей карте F8 — тестовый город у героя, K — проверочный бой.
+## Отладочных клавиш нет (вопрос Q07, Huzzah 2026-10-24: F8, K и заглушки из игры убраны). Заглушки города и боя
+## живут в tests/doubles/ и подставляются только тестами: test_doubles = {"city": Script, "battle": Script} и "stub": true.
 
 signal world_changed(kind: String, id: String)
 signal battle_finished(result: Dictionary)
@@ -28,20 +29,19 @@ signal battle_finished(result: Dictionary)
 const GAME_SCENE := "res://game.tscn"
 const CITY_SCENE := "res://city/city_world.tscn"
 const BATTLE_SCENE := "res://battle/battle.tscn"
-const CityStub := preload("res://worlds/city_stub.gd")
-const BattleStub := preload("res://worlds/battle_stub.gd")
 const ENCOUNTERS := "res://battle/encounters.gd"
 const WorldEnv := preload("res://characters/world_env.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
-# Ключи местности для боя, по номерам биомов game.BIOME_NAMES
-const TERRAIN_KEYS: Array = ["void", "water", "coast", "forest", "wasteland", "swamp", "mountains",
+# Ключи местности для боя, по номерам биомов game.BIOME_NAMES (0 — как battle/encounters.gd terrain_key: пустошь)
+const TERRAIN_KEYS: Array = ["wasteland", "water", "coast", "forest", "wasteland", "swamp", "mountains",
 	"rad_forest", "rad_wasteland", "rad_swamp"]
 
 var game: Node2D = null          # общая карта (game.tscn)
 var stack: Array = []            # миры поверх карты: {kind: "city"|"battle", id, node, ctx | req}
 var busy: bool = false           # идёт переход (затемнение)
+var test_doubles: Dictionary = {}  # только для тестов: {"city"|"battle": Script} — заглушки из tests/doubles/
 var _linked_settlements: Object = null
 var _fade_layer: CanvasLayer
 var _fade: ColorRect
@@ -134,10 +134,18 @@ func _attach(g: Node2D) -> void:
 	_linked_settlements = null
 	_km_actor = null
 	_autosave_t = 0.0
-	inventory = {"money": 0, "items": {}}
+	# Старт: на герое кожаная куртка — это его доспех в бою (раньше доспех давался из настроек боя
+	# невидимо и снять его было нельзя; patch 01 к 2D 07). В сумке две фляги воды (вопрос Q20: без воды герой
+	# умирал за ~22 реальных минуты; скорость нужд не меняем)
+	inventory = start_inventory()
 	city_states = {}
 	battles_won = 0
 	g.tree_exiting.connect(_on_game_exiting.bind(g))
+
+
+# Сумка нового героя: в новой игре и после гибели прежнего (characters/hero_death.gd)
+func start_inventory() -> Dictionary:
+	return {"money": 0, "items": {"leather_jacket": 1, "water_flask": 2}, "equipped": {"body": "leather_jacket"}}
 
 
 # Карта выгружается (выход в меню): все миры поверх неё уходят вместе с ней
@@ -167,7 +175,7 @@ func _process(delta: float) -> void:
 	var h: Actor = hero_actor()
 	if h != _km_actor:
 		_km_actor = h
-		if h != null:
+		if h != null and not h.km_passed.is_connected(_on_hero_km.bind(h)):
 			h.km_passed.connect(_on_hero_km.bind(h))
 	# Карта, пока её не видно, не считает автосохранение — считаем здесь (в бою не сохраняем)
 	if is_away() and not is_battle():
@@ -208,21 +216,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			game._toggle_menu()
 			get_viewport().set_input_as_handled()
 		return
-	if game.menu_open or game.typing or not (event is InputEventKey) or not event.pressed or event.echo:
-		return
-	# [ОТЛАДКА] проверка переходов без городов и боёв других веток
-	if event.physical_keycode == KEY_F8:
-		var p: Vector2 = hero_body().get("pos", game.cam_pos)
-		enter_city("test", {"return_pos": p, "settlement": {"id": "test", "name": "Тестовый город"}, "stub": true})
-		get_viewport().set_input_as_handled()
-	elif event.physical_keycode == KEY_K:
-		# Враги пустые — сцена боя наберёт их сама (encounters.gd); заглушке даём двоих
-		var foes: Array = []
-		if not ResourceLoader.exists(BATTLE_SCENE):
-			for i in 2:
-				foes.append(Actor.new("bandit_%d" % (i + 1), "Разбойник %d" % (i + 1), true, randi()))
-		start_battle({"enemies": foes})
-		get_viewport().set_input_as_handled()
 
 
 # =====================================================================
@@ -253,10 +246,10 @@ func _enter_city_now(city_id: String, ctx: Dictionary, state: Variant = null) ->
 	if state != null:
 		c["state"] = state
 	_deactivate_top()
-	var node: Node = _make(CITY_SCENE, CityStub, bool(c.get("stub", false)))
+	var node: Node = _make(CITY_SCENE, "city", bool(c.get("stub", false)))
 	get_tree().root.add_child(node)
 	if node.has_signal("exit_requested"):
-		node.exit_requested.connect(func(_cid: String, gate_id: String) -> void: leave({"gate_id": gate_id}))
+		node.exit_requested.connect(func(_cid: String, gate_id: String) -> void: _leave_when_free(node, {"gate_id": gate_id}))
 	stack.append({"kind": "city", "id": city_id, "node": node, "ctx": c})
 	node.enter(city_id, hero_actor(), c)
 	if state is Dictionary and node.has_method("load_dict"):
@@ -318,12 +311,12 @@ func _start_battle_now(req: Dictionary, state: Variant = null) -> Node:
 	if stack.size() <= 0 or stack[-1]["kind"] != "battle":
 		_clock_was_paused = game.clock.paused
 	game.clock.paused = true
-	var node: Node = _make(BATTLE_SCENE, BattleStub, bool(r.get("stub", false)))
+	var node: Node = _make(BATTLE_SCENE, "battle", bool(r.get("stub", false)))
 	if node.has_method("setup"):
 		node.setup(r)
 	get_tree().root.add_child(node)
 	if node.has_signal("battle_finished"):
-		node.battle_finished.connect(func(result: Dictionary) -> void: leave(result))
+		node.battle_finished.connect(func(result: Dictionary) -> void: _leave_when_free(node, result))
 	stack.append({"kind": "battle", "id": String(r["origin"]), "node": node, "req": r})
 	if state is Dictionary and node.has_method("load_dict"):
 		node.load_dict(state)
@@ -357,8 +350,7 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
 	game.clock.paused = _clock_was_paused
 	var minutes: float = float(result.get("game_minutes", 0.0))
 	if minutes > 0.0:
-		game.clock.total_seconds += minutes * 60.0
-		game.clock._sync_last()
+		game.clock.skip(minutes * 60.0)
 	var dead: Array = result.get("dead", [])
 	for a in e["req"].get("allies", []):
 		if a is Actor and a.alive and dead.has(a.actor_id):
@@ -382,6 +374,15 @@ func leave(result: Dictionary = {}) -> bool:
 	await _fade_to(0.0)
 	busy = false
 	return true
+
+
+# Выход, о котором попросил сам мир (ворота, конец боя): если идёт затемнение, ждём его, а не теряем просьбу —
+# иначе город с leaving = true или законченный бой остаются на экране навсегда
+func _leave_when_free(node: Node, result: Dictionary) -> void:
+	while busy and is_inside_tree():
+		await get_tree().process_frame
+	if not stack.is_empty() and stack[-1]["node"] == node:
+		leave(result)
 
 
 func _leave_now(result: Dictionary) -> void:
@@ -494,12 +495,11 @@ func _show_tree(n: Node) -> void:
 	n.remove_meta("_worlds_vis")
 
 
-func _make(path: String, stub: Script, force_stub: bool) -> Node:
-	if not force_stub and ResourceLoader.exists(path):
-		var ps: PackedScene = load(path)
-		if ps != null:
-			return ps.instantiate()
-	return stub.new()
+func _make(path: String, kind: String, stub: bool) -> Node:
+	if stub and test_doubles.has(kind):
+		return test_doubles[kind].new()
+	var ps: PackedScene = load(path)
+	return ps.instantiate()
 
 
 func _fade_to(a: float) -> void:
@@ -541,9 +541,15 @@ func to_dict() -> Dictionary:
 func load_dict(d: Dictionary) -> void:
 	if game == null:
 		return
-	var list: Array = d.get("stack", [])
-	inventory = d.get("inventory", inventory)
-	city_states = d.get("city_states", {})
+	var list: Array = d.get("stack", []) if d.get("stack") is Array else []
+	# Сумка — {money, items}: без этих ключей Trade и город падают на первом же обращении
+	var inv: Variant = d.get("inventory", inventory)
+	if inv is Dictionary:
+		if not (inv.get("items") is Dictionary):
+			inv["items"] = {}
+		inv["money"] = int(inv.get("money", 0))
+		inventory = inv
+	city_states = d.get("city_states", {}) if d.get("city_states") is Dictionary else {}
 	battles_won = int(d.get("battles_won", 0))
 	if not list.is_empty() and game.get("cast") != null:
 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))

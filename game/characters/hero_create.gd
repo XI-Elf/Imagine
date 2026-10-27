@@ -8,6 +8,7 @@ signal finished(params: Dictionary)
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
+const ComicUI := preload("res://ui/comic_ui.gd")
 
 const COL_TEXT := Color("d8cfb0")
 const COL_DIM := Color("9a9078")
@@ -87,13 +88,7 @@ func _ready() -> void:
 
 func _side_panel(content: Control, w: float) -> Control:
 	var panel := PanelContainer.new()
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.10, 0.09, 0.08, 0.97)
-	st.border_color = Color(0.36, 0.31, 0.22)
-	st.set_border_width_all(1)
-	st.set_corner_radius_all(6)
-	st.set_content_margin_all(10.0)
-	panel.add_theme_stylebox_override("panel", st)
+	panel.add_theme_stylebox_override("panel", ComicUI.panel(20.0))
 	panel.custom_minimum_size = Vector2(w, 0.0)
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -106,16 +101,8 @@ func _side_panel(content: Control, w: float) -> Control:
 
 func _build_story() -> Control:
 	var panel := PanelContainer.new()
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.17, 0.145, 0.105, 0.98)
-	st.border_color = COL_GOLD
-	st.set_border_width_all(2)
-	st.set_corner_radius_all(6)
-	st.content_margin_left = 26.0
-	st.content_margin_right = 26.0
-	st.content_margin_top = 16.0
-	st.content_margin_bottom = 16.0
-	panel.add_theme_stylebox_override("panel", st)
+	panel.add_theme_stylebox_override("panel", ComicUI.panel(28.0))
+	ComicUI.tech_plate(panel)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)

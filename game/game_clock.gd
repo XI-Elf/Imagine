@@ -173,6 +173,12 @@ func reset() -> void:
 	_sync_last()
 
 
+## Перескок времени вперёд (бой, ожидание): сигналы часа, дня, года и сезона идут как при обычном ходе
+func skip(seconds: float) -> void:
+	if seconds > 0.0:
+		_set_total(total_seconds + seconds)
+
+
 func change_speed(step: int) -> void:
 	speed_index = clampi(speed_index + step, 0, SPEEDS.size() - 1)
 

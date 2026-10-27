@@ -1,0 +1,24 @@
+{
+  "_note": "Крафт в мастерских (вопрос Q18, Huzzah 2026-10-24: заказ у мастера + своими руками с навыком). workshops — роль НПС -> навык пака (data/characters/skills.json). recipe: master — роль мастерской, out — предмет из items.json, in — материалы {id: n}, level — нужный уровень навыка (и у мастера для заказа, и у героя для своих рук), fee — плата мастеру за заказ, work — сколько выносливости уходит своими руками, xp — опыт навыка за удачу. self: шанс своими руками = base + per_level × (навык − level), не выше max; при неудаче пропадает доля fail_loss каждого материала (с округлением вверх) и даётся fail_xp опыта. lesson: урок у мастера — xp опыта за fee + fee_per_level × текущий уровень, не выше уровня мастера. Все числа [ВРЕМЕННО].",
+  "workshops": {
+    "tanner": {"skill": "sewing", "name": "Дубильня"},
+    "smith":  {"skill": "blacksmith", "name": "Кузня"}
+  },
+  "self": {"base": 0.7, "per_level": 0.1, "max": 0.95, "fail_loss": 0.5, "fail_xp": 0.5},
+  "lesson": {"xp": 40, "fee": 10, "fee_per_level": 5},
+  "recipes": {
+    "hide_vest":      {"master": "tanner", "out": "hide_vest",      "in": {"hide": 2},             "level": 0, "fee": 4,  "work": 15, "xp": 20},
+    "gloves":         {"master": "tanner", "out": "gloves",         "in": {"hide": 1},             "level": 0, "fee": 2,  "work": 10, "xp": 10},
+    "leather_cap":    {"master": "tanner", "out": "leather_cap",    "in": {"hide": 1},             "level": 1, "fee": 3,  "work": 10, "xp": 15},
+    "fur_cloak":      {"master": "tanner", "out": "fur_cloak",      "in": {"hide": 3},             "level": 1, "fee": 5,  "work": 20, "xp": 25},
+    "boots":          {"master": "tanner", "out": "boots",          "in": {"hide": 2, "rope": 1},  "level": 2, "fee": 6,  "work": 20, "xp": 30},
+    "leather_jacket": {"master": "tanner", "out": "leather_jacket", "in": {"hide": 3, "rope": 1},  "level": 3, "fee": 10, "work": 30, "xp": 45},
+    "knife":          {"master": "smith",  "out": "knife",          "in": {"scrap": 2},            "level": 0, "fee": 3,  "work": 15, "xp": 15},
+    "spear":          {"master": "smith",  "out": "spear",          "in": {"scrap": 2, "rope": 1}, "level": 1, "fee": 4,  "work": 20, "xp": 25},
+    "axe":            {"master": "smith",  "out": "axe",            "in": {"scrap": 3},            "level": 1, "fee": 5,  "work": 25, "xp": 30},
+    "mace":           {"master": "smith",  "out": "mace",           "in": {"scrap": 4},            "level": 2, "fee": 6,  "work": 30, "xp": 40},
+    "shortsword":     {"master": "smith",  "out": "shortsword",     "in": {"scrap": 5, "hide": 1}, "level": 3, "fee": 10, "work": 35, "xp": 60},
+    "chain_mail":     {"master": "smith",  "out": "chain_mail",     "in": {"scrap": 10},           "level": 4, "fee": 20, "work": 50, "xp": 100},
+    "plate_armor":    {"master": "smith",  "out": "plate_armor",    "in": {"scrap": 16, "hide": 2},"level": 6, "fee": 40, "work": 70, "xp": 180}
+  }
+}

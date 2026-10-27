@@ -124,10 +124,11 @@ func _run() -> void:
 
 	# Бой: подсказка боя поверх сцены боя, справка на вкладке «Бой»
 	T._gap_t = 0.0
-	await key(KEY_K)
+	W.start_battle({})   # отладочной K больше нет (Q07): бой как от случайного нападения
+	await process_frame
 	while W.busy:
 		await process_frame
-	ok(W.is_battle() and T.context() == "battle", "K — бой, контекст боя")
+	ok(W.is_battle() and T.context() == "battle", "бой, контекст боя")
 	ok(await wait_hint(T, "battle", T.GAP_S + 3.0), "подсказка пошагового боя")
 	await create_timer(1.0).timeout
 	await shot("t06_battle_hint.png")

@@ -90,7 +90,7 @@ func _rules() -> void:
 	var lv: Dictionary = P.skill_levels(p)
 	ok(int(lv.get("blacksmith", 0)) == 3 and int(lv.get("survival", 0)) == 1, "навыки пака от прошлого: %s" % lv)
 	var bio: String = P.biography(p)
-	ok(bio.begins_with("Конрад. Возраст — 35 лет") and bio.contains("Мировоззрение в начале пути"), "биография пишется сама")
+	ok(bio.begins_with("Конрад, 35 лет.") and bio.contains("Мировоззрение: «") and bio.length() < 260 and bio.count(".") <= 4, "биография короткая и пишется сама: " + bio)
 	ok(P.biography(p) == bio, "биография одинаковая при одинаковом выборе")
 
 	var a := Actor.new("hero", "Герой", false, 7)
@@ -196,7 +196,7 @@ func _game() -> void:
 	ok(a.traits.has("quiet") and a.profile.has("biography"), "у героя черты и история")
 	if game.get("settlements") != null:
 		ok(cast.hero["pos"].distance_to(game.settlements.spawn_point()) < 600.0, "герой у ворот города")
-	ok(W == null or (W.inventory["items"].is_empty() and int(W.inventory["money"]) == 0), "сумка новой игры пустая")
+	ok(W == null or (W.inventory["items"] == {"leather_jacket": 1, "water_flask": 2} and String(W.inventory.get("equipped", {}).get("body", "")) == "leather_jacket" and int(W.inventory["money"]) == 0), "новая игра: надетая кожаная куртка (доспех в бою) и две фляги воды")
 	game.zoom = 0.6
 	key(KEY_I)
 	await frames(3)
@@ -264,8 +264,9 @@ func _game() -> void:
 	cast.window.drop_all()
 	ok(Trade.count(bag, "rope") == 0 and Trade.count(bag, "bread") == 1, "«Бросить всё» в «Инструментах» выбросило только верёвку")
 	cast.window.set_filter("all")
+	var flasks: int = Trade.count(bag, "water_flask")
 	cast.window.use_item("water_flask")
-	ok(Trade.count(bag, "water_flask") == 1, "выпил воду из сумки")
+	ok(Trade.count(bag, "water_flask") == flasks - 1, "выпил воду из сумки")
 	# Одежда на кукле: без одежды — майка и бриджи (h08), надел — видно на фигуре
 	for it in ["linen_shirt", "trousers", "boots", "straw_hat", "travel_cloak", "gloves", "leather_jacket"]:
 		Trade.add(bag, it, 1)
@@ -321,13 +322,13 @@ func _game() -> void:
 		W.leave()
 		for i in 90:
 			await process_frame
-	# Гибель: G открывает создание нового героя
+	# Гибель: экран гибели со случайным новым героем (characters/hero_death.gd, вопрос Q06)
 	a.die("other")
-	await frames(2)
-	key(KEY_G)
+	for i in 120:
+		if cast.death.active:
+			break
+		await process_frame
+	ok(cast.death.active, "после гибели — экран нового героя")
+	cast.death.continue_as_new()
 	await frames(3)
-	ok(cast._creator != null and cast.sheet_visible, "G после гибели — экран создания героя")
-	cast._creator.randomize_all()
-	cast._creator._on_create()
-	await frames(3)
-	ok(cast._creator == null and cast.hero["actor"].alive and cast.hero["actor"] != a, "новый герой создан")
+	ok(not cast.death.active and cast.hero["actor"].alive and cast.hero["actor"] != a, "новый герой создан")

@@ -14,12 +14,29 @@ const LOG_FILE := "user://integrity_log.txt"
 # Скрипты и сцены: путь, критично ли отсутствие
 const SCRIPTS: Array = [
 	["res://game.gd", true], ["res://game_clock.gd", true], ["res://world_physics.gd", true],
-	["res://atmosphere_model.gd", true], ["res://map_shaders.gd", true], ["res://main_menu.gd", true],
+	["res://weather/simple_weather.gd", true], ["res://map_shaders.gd", true], ["res://main_menu.gd", true],
 	["res://world_save.gd", true], ["res://board.gd", true],
+	# Автозагрузки (project.godot [autoload]) и то, без чего мир не строится: если они не компилируются,
+	# игра падает уже в меню или на загрузке карты
+	["res://worlds/worlds.gd", true], ["res://tutorial/tutorial.gd", true], ["res://characters/actor.gd", true],
+	["res://characters/cast.gd", true], ["res://world/settlements.gd", true], ["res://characters/hero_create.gd", true],
+	["res://city/city_world.gd", true], ["res://battle/battle_scene.gd", true],
 ]
 const SCENES: Array = [
 	["res://main_menu.tscn", true], ["res://game.tscn", true], ["res://game_clock.tscn", true],
-	["res://world_physics.tscn", true],
+	["res://world_physics.tscn", true], ["res://city/city_world.tscn", true], ["res://battle/battle.tscn", true],
+]
+# Глобальные классы (class_name): их список лежит в game/.godot/global_script_class_cache.cfg.
+# Нет кэша (архив без game/.godot) — скрипты не компилируются: так не запустилась сборка 2D 07
+const CLASSES: Array = ["Actor", "GameClock", "DiceRoller", "BattleConfig", "BattleWeapon", "BattleCreature"]
+# Файлы данных JSON: путь, критично ли
+const JSONS: Array = [
+	["res://data/cities/items.json", true], ["res://data/cities/s001.json", true], ["res://data/world/settlements.json", true],
+	["res://data/characters/characteristics.json", true], ["res://data/characters/conditions.json", true],
+	["res://data/characters/skills.json", true], ["res://data/characters/movement.json", true],
+	["res://data/characters/creation.json", true], ["res://data/characters/rules.json", true],
+	["res://data/characters/names.json", false], ["res://art/map/map_names.json", false],
+	["res://data/weather/weather.json", true],
 ]
 # Картинки данных: путь, ширина, высота (0: любой размер), критично ли отсутствие
 const IMAGES: Array = [
@@ -45,12 +62,10 @@ const IMAGES: Array = [
 	["res://art/terrain/t10_rad_wasteland.png", 512, 512, false],
 	["res://art/terrain/t11_rad_swamp.png", 512, 512, false],
 	["res://art/terrain/t12_glow.png", 512, 512, false],
-	["res://art/map/atmo_static.png", 144, 72, false],
 	["res://art/menu_bg.jpg", 0, 0, false],
 ]
 # Двоичные файлы: путь, точный размер, критично ли
 const BINS: Array = [
-	["res://art/map/atmo_state.bin", 207360, false],
 ]
 
 var lines: Array = []
@@ -88,12 +103,15 @@ func _ready() -> void:
 		if ResourceLoader.exists(it[0]):
 			ResourceLoader.load_threaded_request(it[0])
 	# Задачи проверки
+	_jobs.append({"kind": "classes"})
 	for sp in SCRIPTS:
 		_jobs.append({"kind": "script", "path": sp[0], "critical": sp[1]})
 	for sc in SCENES:
 		_jobs.append({"kind": "scene", "path": sc[0], "critical": sc[1]})
 	for it2 in IMAGES:
 		_jobs.append({"kind": "image", "path": it2[0], "w": it2[1], "h": it2[2], "critical": it2[3]})
+	for js in JSONS:
+		_jobs.append({"kind": "json", "path": js[0], "critical": js[1]})
 	_jobs.append({"kind": "raw"})
 	_jobs.append({"kind": "log"})
 	# Ролик
@@ -242,16 +260,33 @@ func _process(_delta: float) -> void:
 
 func _job_name(job: Dictionary) -> String:
 	match String(job["kind"]):
-		"script", "scene", "image":
+		"script", "scene", "image", "json":
 			return String(job["path"]).get_file()
 		"raw":
 			return "файлы данных"
+		"classes":
+			return "классы скриптов"
 	return "журнал"
 
 
 # Возвращает true, когда задача выполнена. false: ждём фоновое чтение
 func _run_job(job: Dictionary) -> bool:
 	var kind: String = job["kind"]
+	if kind == "classes":
+		var known: Dictionary = {}
+		for c in ProjectSettings.get_global_class_list():
+			known[String(c["class"])] = true
+		var lost: Array = CLASSES.filter(func(n): return not known.has(n))
+		if not lost.is_empty():
+			_err("Нет кэша классов скриптов (папка game/.godot): %s. Распакуйте архив целиком или запустите Start_HEX.cmd — он заново импортирует проект" % ", ".join(PackedStringArray(lost)))
+		return true
+	if kind == "json":
+		var jpath: String = job["path"]
+		if not FileAccess.file_exists(jpath):
+			_miss("Нет файла данных: " + jpath, job["critical"])
+		elif not (JSON.parse_string(FileAccess.get_file_as_string(jpath)) is Dictionary):
+			_miss("Файл данных не читается как JSON: " + jpath, job["critical"])
+		return true
 	if kind == "script":
 		var path: String = job["path"]
 		var res: Resource = null
@@ -402,4 +437,10 @@ func _decide() -> void:
 
 func _go_to_menu() -> void:
 	set_process(false)
-	get_tree().change_scene_to_file(MENU_SCENE)
+	var err: Error = get_tree().change_scene_to_file(MENU_SCENE)
+	if err != OK:
+		set_process(true)
+		report_title.text = "Игра не может запуститься"
+		report_text.text = "Не открывается главное меню %s (%s).\n\nПодробный журнал: %s" % [MENU_SCENE, error_string(err), ProjectSettings.globalize_path(LOG_FILE)]
+		go_button.visible = false
+		report_panel.visible = true

@@ -12,6 +12,7 @@ const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
 const Trade := preload("res://city/trade.gd")
 const Inv := preload("res://characters/inventory_view.gd")
+const ComicUI := preload("res://ui/comic_ui.gd")
 const BATTLE_CONFIG := "res://data/battle/config.tres"
 
 const TABS: Array = ["stats", "skills", "traits", "bag"]
@@ -55,15 +56,9 @@ func _ready() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_STOP   # окно модальное: клик мимо не ведёт героя (hero_route.gd)
 	add_child(root)
 	_panel = PanelContainer.new()
-	# рамка из синего мрамора с заклёпками, внутри тёмная мраморная доска (Huzzah 2026-10-23)
-	var st := StyleBoxFlat.new()
-	st.bg_color = Inv.MARBLE
-	st.border_color = Inv.INK
-	st.set_border_width_all(3)
-	st.set_corner_radius_all(3)
-	st.set_content_margin_all(22.0)
-	_panel.add_theme_stylebox_override("panel", st)
-	_panel.draw.connect(_draw_frame)
+	# рамка комикса: тёмная сталь с заклёпками, внутри уголь, сверху янтарная линза (Q08 D, Q24 A, 2026-10-24)
+	_panel.add_theme_stylebox_override("panel", ComicUI.panel(26.0))
+	ComicUI.tech_plate(_panel)
 	_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_panel.custom_minimum_size = Vector2(960.0, 700.0)
 	root.add_child(_panel)
@@ -101,42 +96,9 @@ func _ready() -> void:
 	v.add_child(_note)
 
 
-## Красный флажок — выбранная вкладка, стальная табличка — остальные
+## Вкладки — стальные таблички комикса; выбранная (нажатая) — с янтарным отливом
 func _style_tab(b: Button) -> void:
-	b.add_theme_font_size_override("font_size", 16)
-	b.add_theme_color_override("font_color", COL_TEXT)
-	b.add_theme_color_override("font_pressed_color", Color("f3ead6"))
-	b.add_theme_color_override("font_hover_color", Color.WHITE)
-	b.add_theme_color_override("font_hover_pressed_color", Color.WHITE)
-	b.add_theme_color_override("font_pressed_color", Inv.INK)
-	b.add_theme_color_override("font_hover_pressed_color", Inv.INK)
-	b.add_theme_constant_override("outline_size", 3)
-	b.add_theme_color_override("font_outline_color", Inv.INK)
-	for n in ["normal", "hover", "pressed", "hover_pressed"]:
-		var on: bool = n.begins_with("pressed") or n == "hover_pressed"
-		var s: StyleBoxTexture = Inv.marble_box(on, n.begins_with("hover"))
-		s.content_margin_top = 6.0
-		s.content_margin_bottom = 6.0
-		b.add_theme_stylebox_override(n, s)
-
-
-func _draw_frame() -> void:
-	var r := Rect2(Vector2.ZERO, _panel.size)
-	_panel.draw_texture_rect(Inv.marble(false), r, true)
-	_panel.draw_rect(r, Inv.INK, false, 3.0)
-	_panel.draw_rect(r.grow(-4.0), Color(Inv.EDGE, 0.7), false, 1.5)
-	var inner: Rect2 = r.grow(-12.0)
-	_panel.draw_texture_rect(Inv.marble(false), inner, true, Color(0.55, 0.58, 0.66))
-	_panel.draw_rect(inner, Inv.INK, false, 2.0)
-	# заклёпки по углам и вдоль краёв
-	for x in [7.0, r.size.x - 7.0]:
-		var n: int = int(r.size.y / 90.0)
-		for k in n + 1:
-			Inv.rivet(_panel, Vector2(x, lerpf(8.0, r.size.y - 8.0, float(k) / n)))
-	for y in [6.0, r.size.y - 6.0]:
-		var n: int = int(r.size.x / 110.0)
-		for k in range(1, n):
-			Inv.rivet(_panel, Vector2(lerpf(8.0, r.size.x - 8.0, float(k) / n), y))
+	ComicUI.button_styles(b, 16)
 
 
 func is_open() -> bool:
@@ -289,7 +251,7 @@ func _fill_stats(a: Actor) -> void:
 		cond.append("+ %s (%.0f ч)" % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])])
 	_body.add_child(_wrap("Травмы, болезни, эффекты: " + (", ".join(cond) if not cond.is_empty() else "нет"), 14, COL_TEXT))
 	var dv: Dictionary = a.derived()
-	_body.add_child(_wrap("Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от радиации %d %% · Пройдено %.1f км" % [
+	_body.add_child(_wrap("Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от проклятья %d %% · Пройдено %.1f км" % [
 		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0), a.distance_m / 1000.0], 14, COL_DIM))
 
 
@@ -360,15 +322,20 @@ func _loadout_max() -> int:
 	return 3
 
 
+## Доспех в бою — из надетого на «Тело» (items.json wear.armor), иначе без доспеха
 func _hero_armor() -> Resource:
-	if ResourceLoader.exists(BATTLE_CONFIG):
-		var cfg: Resource = load(BATTLE_CONFIG)
-		var h: Variant = cfg.get("hero") if cfg != null else null
-		if h is Dictionary:
-			var p: String = "res://data/battle/armor/%s.tres" % String(h.get("armor", "none"))
-			if ResourceLoader.exists(p):
-				return load(p)
+	var id: String = armor_of(_bag())
+	var p: String = "res://data/battle/armor/%s.tres" % id
+	if id != "none" and ResourceLoader.exists(p):
+		return load(p)
 	return null
+
+
+static func armor_of(bag: Dictionary) -> String:
+	var body: String = String(bag.get("equipped", {}).get("body", ""))
+	if body == "" or Trade.count(bag, body) <= 0:
+		return "none"
+	return String(Trade.item(body).get("wear", {}).get("armor", "none"))
 
 
 ## Кукла персонажа: слоты, герой, сумка клетками (characters/inventory_view.gd)
@@ -453,6 +420,8 @@ func drop_all() -> void:
 	inv_drop_armed = false
 	var n: int = 0
 	for id in bag.get("items", {}).keys():
+		if Trade.item(id).has("transport"):
+			continue   # лошадь и повозку не выбросить (characters/transport.gd)
 		if inv_filter == "all" or Inv.cat_of(id, _item_weapons()) == inv_filter:
 			n += Trade.count(bag, id)
 			Trade.add(bag, id, -Trade.count(bag, id))

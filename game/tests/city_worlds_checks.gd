@@ -94,6 +94,6 @@ func _run() -> void:
 	ok(await W.enter_city("s001", {"return_pos": outside, "entry": "sneak", "side": "east"}), "пролез через стену")
 	await frames(3)
 	city = W.current_node()
-	ok(city.is_intruder() and city.hero_pos.x > 230.0, "у восточной стены, чужак: %s" % city.hero_pos)
+	ok(city.is_intruder() and city.hero_pos.x > city.map.size_m().x * 0.85, "у восточной стены, чужак: %s" % city.hero_pos)
 	print("city_worlds_checks: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)

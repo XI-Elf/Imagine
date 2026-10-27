@@ -35,7 +35,11 @@ const OUTLINE_CELL_PX: float = 28.0 # с такой клетки на экран
 const ROAD_W_M: float = 14.0
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталов в ряд на клетку
-const MINI_MIN_PX: float = 18.0     # радиус миниатюры издали не меньше этого (город остаётся точкой интереса)
+const MEDAL_MIN_PX: float = 30.0    # радиус медальона издали не меньше этого (город остаётся точкой интереса)
+const MEDALLION_DIR := "res://art/medallion/"
+const MEDALLIONS: Array = ["m0_camp", "m1_ostrog", "m2_sloboda", "m3_posad", "m4_gorod", "m5_bolshoy_gorod"]
+const SIZE_LEVEL: Dictionary = {"hamlet": 0, "village": 2, "town": 3, "city": 4, "capital": 5}
+var _medallions: Dictionary = {}
 const CITY_DIR := "res://data/cities/"
 
 var game: Node2D
@@ -57,6 +61,18 @@ var _panel: PanelContainer
 var _title: Label
 var _info: Label
 var _act_btn: Button
+# Панель места, как в Day R (видео Huzzah 2026-10-23): картинка поселения, «Искать», «Набрать воды»
+var _pic: TextureRect
+var _result: Label
+var _search_btn: Button
+var _water_btn: Button
+var searched_until: Dictionary = {}  # id -> игровые секунды, до которых окрестности уже обысканы
+const SEARCH_MIN: float = 40.0       # обыск окрестностей, игровых минут
+const WATER_MIN: float = 10.0
+const SEARCH_LOOT: Dictionary = {    # id -> [от, до, шанс] [ВРЕМЕННО]
+	"scrap": [1, 3, 0.6], "charcoal": [1, 2, 0.35], "rope": [1, 1, 0.15], "hide": [1, 1, 0.15],
+	"old_coin": [1, 2, 0.2], "money": [1, 4, 0.3],
+}
 
 
 func setup(g: Node2D) -> void:
@@ -138,18 +154,22 @@ func _plan_now(s: Dictionary) -> Dictionary:
 	var d: Dictionary = s["_plan"]
 	if not Growth.has_growth(d):
 		return d
-	var g: Dictionary = Growth.new_state()
+	var k: int = Growth.stage(d, _growth_of(s))
+	if int(s.get("_plan_stage", -1)) != k:
+		s["_plan_stage"] = k
+		s["_plan_view"] = Growth.view(d, k)
+	return s["_plan_view"]
+
+
+## Состояние роста города из Worlds.city_states (новая игра — начальное)
+func _growth_of(s: Dictionary) -> Dictionary:
 	var w: Node = get_node_or_null("/root/Worlds")
 	var states: Variant = w.get("city_states") if w != null else null
 	if states is Dictionary:
 		var st: Variant = states.get(String(s.get("city_id", s.get("id", ""))), {})
 		if st is Dictionary and st.get("growth") is Dictionary:
-			g = st["growth"]
-	var k: int = Growth.stage(d, g)
-	if int(s.get("_plan_stage", -1)) != k:
-		s["_plan_stage"] = k
-		s["_plan_view"] = Growth.view(d, k)
-	return s["_plan_view"]
+			return st["growth"]
+	return Growth.new_state()
 
 
 func radial(s: Dictionary) -> bool:
@@ -361,6 +381,11 @@ func _open_prompt(s: Dictionary, kind: String, side: String) -> void:
 	game.cast.hold_hero = true
 	var sn: String = size_name(s)
 	_title.text = "%s%s %s" % [sn.left(1).to_upper(), sn.substr(1), s["name"]]
+	_pic.texture = medallion_texture(dev_level(s))
+	_result.text = ""
+	_result.visible = false
+	_water_btn.visible = kind == "gate"
+	_refresh_search()
 	if kind == "gate":
 		var place: String = game.province_name(int(s.get("province", 0)))
 		_info.text = "Ворота. Дорога ведёт внутрь%s" % (("   ·   " + place) if place != "" else "")
@@ -473,6 +498,81 @@ func choose_continue() -> void:
 	_close_prompt()
 
 
+## «Искать»: обыскать окрестности поселения (лом, уголь, монеты); время идёт, раз в сутки на место
+func choose_search() -> void:
+	if prompt_for.is_empty() or _search_btn.disabled:
+		return
+	var h: Dictionary = _hero()
+	if h.is_empty():
+		return
+	var a: Actor = h["actor"]
+	var id: String = String(prompt_for["id"])
+	_pass_minutes(SEARCH_MIN)
+	searched_until[id] = game.clock.total_seconds + 86400.0
+	var bag: Dictionary = _bag()
+	var eff: float = float(a.derived()["search_efficiency"])
+	var found: Array = []
+	for item in SEARCH_LOOT:
+		var l: Array = SEARCH_LOOT[item]
+		if _rng.randf() >= float(l[2]) * eff:
+			continue
+		var k: int = _rng.randi_range(int(l[0]), int(l[1]))
+		if item == "money":
+			bag["money"] = int(bag.get("money", 0)) + k
+			found.append("%d монет" % k)
+		else:
+			TradeRef.add(bag, item, k)
+			found.append("%s ×%d" % [TradeRef.item_name(item), k])
+	a.add_xp("survival", 2.0)
+	_show_result("Обыскал окрестности (%d мин): %s" % [int(SEARCH_MIN), "ничего" if found.is_empty() else ", ".join(PackedStringArray(found))])
+	_refresh_search()
+
+
+## «Набрать воды» у колодца перед воротами: напиться вдоволь и наполнить флягу (не больше двух в сумке)
+func choose_water() -> void:
+	if prompt_for.is_empty() or prompt_kind != "gate":
+		return
+	var h: Dictionary = _hero()
+	if h.is_empty():
+		return
+	var a: Actor = h["actor"]
+	_pass_minutes(WATER_MIN)
+	a.drink(100.0, "clean")
+	var bag: Dictionary = _bag()
+	var t: String = "Напился у колодца"
+	if TradeRef.count(bag, "water_flask") < 2:
+		TradeRef.add(bag, "water_flask", 1)
+		t += " и наполнил флягу"
+	_show_result(t)
+
+
+func _refresh_search() -> void:
+	var left: float = float(searched_until.get(String(prompt_for.get("id", "")), -1.0)) - game.clock.total_seconds
+	_search_btn.disabled = left > 0.0
+	_search_btn.text = "Искать  [F]" if left <= 0.0 else "Обыскано (ещё %d ч)" % int(ceil(left / 3600.0))
+
+
+func _show_result(t: String) -> void:
+	_result.text = t
+	_result.visible = true
+	_event(t)
+	_layout()
+
+
+func _pass_minutes(m: float) -> void:
+	game.clock._set_total(game.clock.total_seconds + m * 60.0)
+
+
+func _bag() -> Dictionary:
+	var w: Node = get_node_or_null("/root/Worlds")
+	if w != null and w.get("inventory") is Dictionary:
+		return w.inventory
+	var a: Actor = _hero().get("actor")
+	if a != null and a.has_meta("inventory"):
+		return a.get_meta("inventory")
+	return {"money": 0, "items": {}}
+
+
 func _event(text: String) -> void:
 	game.event_text = text
 	game.event_timer = 5.0
@@ -492,6 +592,11 @@ func _input(event: InputEvent) -> void:
 	match event.physical_keycode:
 		KEY_E, KEY_ENTER, KEY_KP_ENTER:
 			choose_act()
+		KEY_F:
+			choose_search()
+		KEY_R:
+			if _water_btn.visible:
+				choose_water()
 		KEY_ESCAPE, KEY_Q, KEY_W, KEY_A, KEY_S, KEY_D, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT:
 			choose_continue()
 		_:
@@ -500,6 +605,7 @@ func _input(event: InputEvent) -> void:
 
 
 const WorldEnvRef := preload("res://characters/world_env.gd")
+const TradeRef := preload("res://city/trade.gd")
 
 
 # =====================================================================
@@ -510,18 +616,18 @@ func _build_ui() -> void:
 	_ui.layer = 11
 	add_child(_ui)
 	_panel = PanelContainer.new()
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.07, 0.065, 0.05, 0.92)
-	st.border_color = Color("b89a5a")
-	st.set_border_width_all(2)
-	st.set_content_margin_all(14.0)
-	st.set_corner_radius_all(6)
-	_panel.add_theme_stylebox_override("panel", st)
+	_panel.add_theme_stylebox_override("panel", preload("res://ui/comic_ui.gd").panel(22.0, 0.96))   # рамка комикса (Q24)
 	_panel.visible = false
 	_ui.add_child(_panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	_panel.add_child(box)
+	_pic = TextureRect.new()
+	_pic.custom_minimum_size = Vector2(200, 200)
+	_pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_pic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(_pic)
 	_title = Label.new()
 	_title.add_theme_font_size_override("font_size", 20)
 	_title.add_theme_color_override("font_color", Color("f0dca0"))
@@ -538,6 +644,20 @@ func _build_ui() -> void:
 	box.add_child(row)
 	_act_btn = _button(row, "Войти  [E]", choose_act)
 	_button(row, "Продолжить путь  [Esc]", choose_continue)
+	var row2 := HBoxContainer.new()
+	row2.alignment = BoxContainer.ALIGNMENT_CENTER
+	row2.add_theme_constant_override("separation", 12)
+	box.add_child(row2)
+	_search_btn = _button(row2, "Искать  [F]", choose_search)
+	_water_btn = _button(row2, "Набрать воды  [R]", choose_water)
+	_result = Label.new()
+	_result.add_theme_font_size_override("font_size", 14)
+	_result.add_theme_color_override("font_color", Color("e8d8a8"))
+	_result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_result.custom_minimum_size = Vector2(460, 0)
+	_result.visible = false
+	box.add_child(_result)
 
 
 func _button(parent: Node, text: String, cb: Callable) -> Button:
@@ -554,7 +674,8 @@ func _button(parent: Node, text: String, cb: Callable) -> Button:
 func _layout() -> void:
 	_panel.reset_size()
 	var vp: Vector2 = get_viewport_rect().size
-	_panel.position = Vector2((vp.x - _panel.size.x) * 0.5, vp.y - _panel.size.y - 70.0)
+	# Карточка места справа, как в Day R: герой и карта у ворот остаются на виду
+	_panel.position = Vector2(vp.x - _panel.size.x - 24.0, maxf((vp.y - _panel.size.y) * 0.5, 12.0))
 
 
 # =====================================================================
@@ -574,11 +695,11 @@ func _draw() -> void:
 		var hl: bool = s == prompt_for or s == mouse_s
 		if cs >= 3.0:
 			_draw_road(s, z, vp)
-		if radial(s) and not s["_plan"].is_empty():
+		if radial(s):
 			var c0: Vector2 = game.world_to_screen(s["_center"])
-			var rp: float = maxf(s["_radius"] * z, MINI_MIN_PX)
-			if vp.grow(rp).has_point(c0):
-				_draw_miniature(s, c0, rp, hl)
+			var rp: float = maxf(s["_radius"] * z, MEDAL_MIN_PX)
+			if vp.grow(rp * 1.6).has_point(c0):
+				_draw_medallion(s, c0, rp, hl)
 				_draw_name(s, c0 + Vector2(0, rp + 18.0), font, hl, rp > 80.0)
 		elif cs >= OUTLINE_CELL_PX:
 			if vp.intersects(sr):
@@ -639,8 +760,11 @@ func _draw_shield(c: Vector2, w: float, em: Dictionary, hl: bool) -> void:
 	loop.append(pts[0])
 	draw_polyline(loop, Color(1.0, 0.9, 0.55) if hl else tint, maxf(1.5, w * 0.07), true)
 	draw_polyline(loop, Color(0, 0, 0, 0.8), 1.0, true)
-	var u: float = w * 0.1
-	var m: Vector2 = Vector2(c.x, top + h * 0.47)
+	_draw_charge(Vector2(c.x, top + h * 0.47), w * 0.1, em, field, tint)
+
+
+## Фигура герба (щиток и знамя): башня, корона, дерево, ключ; u — единица размера
+func _draw_charge(m: Vector2, u: float, em: Dictionary, field: Color, tint: Color) -> void:
 	match String(em.get("charge", "tower")):
 		"crown":
 			draw_rect(Rect2(m + Vector2(-3.0 * u, 0.5 * u), Vector2(6.0 * u, 1.6 * u)), tint)
@@ -740,71 +864,70 @@ func _draw_outline(s: Dictionary, cs: float, z: float) -> void:
 		draw_circle(gw + along * gh * sgn, wid * 1.5, gate_col)
 
 
-# Миниатюра радиального города: план мира города в масштабе карты, ворота повёрнуты к точке "gate".
-# Издали радиус не меньше MINI_MIN_PX; дома — спрайты Storybook, пока они крупнее пары пикселей
-func _draw_miniature(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:
-	var d: Dictionary = _plan_now(s)
-	var cc := Vector2(d["center"][0], d["center"][1])
-	var k: float = rp / (float(d["wall_r"]) + 1.0)          # пикселей на клетку плана
-	var rot: float = (s["_gate"] - s["_center"]).angle() - PI * 0.5   # в плане ворота на юге
-	var f := func(p: Vector2) -> Vector2: return c0 + (p - cc).rotated(rot) * k
-	# Ореол и земля внутри стены
-	draw_circle(c0 + Vector2(2, 3), rp * 1.04, Color(0, 0, 0, 0.30))
-	draw_circle(c0, rp, Color(0.46, 0.52, 0.30))
-	for fl in d.get("fields", []):
-		var r: Array = fl["rect"]
-		var pts := PackedVector2Array()
-		for q in [Vector2(r[0], r[1]), Vector2(r[0] + r[2], r[1]), Vector2(r[0] + r[2], r[1] + r[3]), Vector2(r[0], r[1] + r[3])]:
-			pts.append(f.call(q))
-		draw_colored_polygon(pts, Color(0.62, 0.49, 0.25))
-	# Улицы и площадь
-	var road_col := Color(0.76, 0.64, 0.42)
-	for rd in d.get("roads", []):
-		var w: float = float(rd.get("w", 1))
-		var a: Vector2 = f.call(Vector2(rd["from"][0], rd["from"][1]) + Vector2.ONE * w * 0.5)
-		var b: Vector2 = f.call(Vector2(rd["to"][0], rd["to"][1]) + Vector2.ONE * w * 0.5)
-		draw_line(a, b, road_col, maxf(w * k, 0.6), true)
-	for sq in d.get("squares", []):
-		if sq.has("circle"):
-			draw_circle(f.call(Vector2(sq["circle"][0], sq["circle"][1])), float(sq["circle"][2]) * k, Color(0.70, 0.67, 0.60))
-	# Деревья и дома по глубине (снизу экрана — ближе)
-	var items: Array = []
-	for p in d.get("props", []):
-		if p["kind"] == "tree" and k >= 1.2:
-			for v in p["cells"]:
-				var foot: Vector2 = f.call(Vector2(v[0], v[1]) + Vector2(0.5, 0.5))
-				items.append({"key": "tree_oak", "foot": foot, "h": 3.2 * k, "tree": true})
-	for b in d.get("buildings", []):
-		var r: Array = b["rect"]
-		var kind: String = String(b.get("kind", "house"))
-		var mid: Vector2 = f.call(Vector2(r[0] + r[2] * 0.5, r[1] + r[3] * 0.5))
-		var size: float = maxf(r[2], r[3]) * k
-		if kind == "ruins":
-			items.append({"key": "rock", "foot": mid + Vector2(0, size * 0.3), "h": size * 0.6, "tree": false})
-		else:
-			var key: String = kind if kind in ["inn", "hall", "temple", "smithy", "healer"] else "house"
-			items.append({"key": key, "foot": mid + Vector2(0, size * 0.35), "h": size * 0.95, "tree": false, "size": size})
-	items.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["foot"].y < b["foot"].y)
-	for it in items:
-		if it["h"] >= 3.0:
-			Art.sprite(self, it["key"], it["foot"], it["h"])
-		elif not it["tree"]:
-			var sz: float = float(it.get("size", it["h"]))
-			draw_rect(Rect2(it["foot"] - Vector2(sz, sz * 1.4) * 0.45, Vector2(sz, sz) * 0.8), Color(0.62, 0.30, 0.22))
-	# Стена, башни, ворота
-	var stone: bool = String(d.get("wall", "stone")) == "stone"
-	var wall_col: Color = Color(1.0, 0.85, 0.4) if prompt_for == s and prompt_kind == "wall" else (Color(0.66, 0.63, 0.57) if stone else Color(0.52, 0.38, 0.22))
-	var ww: float = maxf(2.0 * k, 2.0)
-	draw_arc(c0, float(d["wall_r"]) * k, 0.0, TAU, 96, Color(0.1, 0.08, 0.06, 0.85), ww + 2.0, true)
-	draw_arc(c0, float(d["wall_r"]) * k, 0.0, TAU, 96, wall_col, ww, true)
-	for t in d.get("towers", []) if stone else []:
-		var q: Vector2 = f.call(Vector2(t[0], t[1]) + Vector2(0.5, 0.5))
-		draw_circle(q, ww * 1.3 + 1.0, Color(0.1, 0.08, 0.06, 0.85))
-		draw_circle(q, ww * 1.3, wall_col.darkened(0.1))
-	for g in d.get("gates", []):
-		var gc := Vector2.ZERO
-		for v in g["cells"]:
-			gc += Vector2(v[0], v[1]) + Vector2(0.5, 0.5)
-		gc /= float(g["cells"].size())
-		var gate_col: Color = Color(1.0, 0.85, 0.4) if (prompt_for == s and prompt_kind == "gate") or hl else Color(0.36, 0.24, 0.14)
-		draw_circle(f.call(gc), maxf(2.2 * k, 3.0), gate_col)
+# Медальон поселения (Huzzah 2026-10-23, референс Day R): круглая картинка в рамке, сверху знамя с гербом.
+# Картинка — по уровню развития (art/medallion, tools/make_settlement_medallions.py): город с ростом (city_growth.gd) —
+# по этапу, остальные — по размеру. Медальон занимает круг поселения на карте; издали радиус не меньше MEDAL_MIN_PX
+func _draw_medallion(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:
+	var tex: Texture2D = medallion_texture(dev_level(s))
+	draw_circle(c0 + Vector2(3, 5), rp * 1.02, Color(0, 0, 0, 0.35))
+	if tex != null:
+		# Рамка картинки — на 314 из 320 px от центра (см. генератор)
+		var half: float = rp * 320.0 / 314.0
+		draw_texture_rect(tex, Rect2(c0 - Vector2(half, half), Vector2(half, half) * 2.0), false)
+	else:
+		draw_circle(c0, rp, Color(0.55, 0.44, 0.30))
+	var near: bool = prompt_for == s and prompt_kind == "wall"
+	if hl or near:
+		draw_arc(c0, rp + 2.0, 0.0, TAU, 96, Color(1.0, 0.85, 0.4), maxf(2.0, rp * 0.03), true)
+	# Ворота: точка на кольце со стороны ворот на карте
+	var gd: Vector2 = (s["_gate"] - s["_center"]).normalized()
+	var gate_col: Color = Color(1.0, 0.85, 0.4) if (prompt_for == s and prompt_kind == "gate") or hl else Color(0.30, 0.20, 0.12)
+	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0) + 1.5, Color(0.1, 0.07, 0.05, 0.9))
+	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0), gate_col)
+	_draw_banner(c0 + Vector2(0, -rp * 0.86), rp * 0.46, s.get("emblem", {}), hl)
+
+
+## Знамя с гербом: перекладина, полотнище цвета поля с ласточкиным хвостом, фигура герба
+func _draw_banner(top: Vector2, w: float, em: Dictionary, hl: bool) -> void:
+	var h: float = w * 1.4
+	var field := Color(String(em.get("field", "#26262c")))
+	var tint := Color(String(em.get("tint", "#e2b84c")))
+	var x0: float = top.x - w * 0.5
+	var x1: float = top.x + w * 0.5
+	var y0: float = top.y - h * 0.35
+	var cloth := PackedVector2Array([Vector2(x0, y0), Vector2(x1, y0), Vector2(x1, y0 + h),
+		Vector2(top.x, y0 + h * 0.82), Vector2(x0, y0 + h)])
+	var sh := PackedVector2Array()
+	for q in cloth:
+		sh.append(q + Vector2(2, 3))
+	draw_colored_polygon(sh, Color(0, 0, 0, 0.4))
+	draw_colored_polygon(cloth, field)
+	# Складки: светлее у краёв
+	draw_colored_polygon(PackedVector2Array([Vector2(x0, y0), Vector2(x0 + w * 0.12, y0), Vector2(x0 + w * 0.12, y0 + h * 0.96), Vector2(x0, y0 + h)]), field.lightened(0.12))
+	var loop := cloth.duplicate()
+	loop.append(cloth[0])
+	draw_polyline(loop, Color(1.0, 0.9, 0.55) if hl else tint, maxf(1.5, w * 0.05), true)
+	draw_polyline(loop, Color(0, 0, 0, 0.8), 1.0, true)
+	# Перекладина с навершиями
+	var bar: float = maxf(2.0, w * 0.06)
+	draw_line(Vector2(x0 - w * 0.12, y0), Vector2(x1 + w * 0.12, y0), Color(0.25, 0.17, 0.10), bar + 2.0)
+	draw_line(Vector2(x0 - w * 0.12, y0), Vector2(x1 + w * 0.12, y0), Color(0.62, 0.48, 0.28), bar)
+	for x in [x0 - w * 0.12, x1 + w * 0.12]:
+		draw_circle(Vector2(x, y0), bar * 0.9, tint)
+	_draw_charge(Vector2(top.x, y0 + h * 0.42), w * 0.11, em, field, tint)
+
+
+## Уровень развития поселения для медальона: 0 стоянка … 5 большой город
+func dev_level(s: Dictionary) -> int:
+	var plan: Dictionary = s.get("_plan", {})
+	if Growth.has_growth(plan):
+		var g: Dictionary = _growth_of(s)
+		return clampi(Growth.stage(plan, g) + 1, 1, MEDALLIONS.size() - 1)
+	return int(SIZE_LEVEL.get(String(s.get("size", "")), 2))
+
+
+func medallion_texture(level: int) -> Texture2D:
+	var path: String = MEDALLION_DIR + MEDALLIONS[clampi(level, 0, MEDALLIONS.size() - 1)] + ".png"
+	if not _medallions.has(path):
+		_medallions[path] = load(path) if ResourceLoader.exists(path) else null
+	return _medallions[path]

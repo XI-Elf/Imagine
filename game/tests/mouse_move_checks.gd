@@ -85,6 +85,7 @@ func _run() -> void:
 	while not game.ready_done and Time.get_ticks_msec() - t0 < 120000:
 		await process_frame
 	ok(game.ready_done, "карта загрузилась")
+	game.physics.travel_weather = false   # дождь и гроза замедляют ход: шаги проверяются без погоды
 	var cast: Node2D = game.cast
 	var st: Node2D = game.settlements
 	var city: Dictionary = st.list[0]

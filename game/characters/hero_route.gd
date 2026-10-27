@@ -259,7 +259,7 @@ func steer(pos: Vector2) -> Vector2:
 	var reach: float = maxf(6.0, _plan_cell * 0.5)
 	while points.size() > 1 and pos.distance_to(points[0]) < reach:
 		points.remove_at(0)
-	if points.size() == 1 and pos.distance_to(points[0]) < 3.0:
+	if points.size() == 1 and pos.distance_to(points[0]) < 0.05:
 		cancel()
 		return Vector2.ZERO
 	# Ближе к цели — путь мельче (крупная сетка не видит узкие места)
@@ -271,6 +271,11 @@ func steer(pos: Vector2) -> Vector2:
 			return Vector2.ZERO
 		goal_city = keep
 	return (points[0] - pos).normalized()
+
+
+## Последняя точка пути (INF — путь не на последнем отрезке)
+func final_point() -> Vector2:
+	return points[0] if active() and points.size() == 1 else Vector2.INF
 
 
 ## Итог шага за кадр: застрял — пересчитать, второй раз — бросить путь
