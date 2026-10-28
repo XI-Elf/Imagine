@@ -218,6 +218,28 @@ func _run() -> void:
 	ok(W.city_states.is_empty() and W.battles_won == 0 and W.inventory == W.start_inventory(), "новый мир: города, победы и сумка с нуля")
 	ok(not game.cast.death.active, "в новом мире экрана нет")
 
+	# ---- Q32: лошадь погибает с героем, повозка с вещами остаётся на месте гибели три дня
+	var now: float = game.clock.total_seconds
+	W.inventory = {"money": 40, "items": {"horse": 1, "cart": 1, "leather_jacket": 1, "scrap": 5, "hide": 2}, "equipped": {"body": "leather_jacket"}}
+	W.left_carts = []
+	var spot := Vector2(1234.0, 5678.0)
+	ok(HeroDeath.leave_cart(W, spot, now) and W.left_carts.size() == 1, "Q32: повозка осталась на месте гибели")
+	var cart: Dictionary = W.left_carts[0]
+	ok(not cart["items"].has("horse") and not cart["items"].has("leather_jacket") and cart["items"].get("cart", 0) == 1 and cart["items"].get("scrap", 0) == 5 and cart["items"].get("hide", 0) == 2, "Q32: в повозке вещи без лошади и надетого: %s" % [cart["items"]])
+	ok(is_equal_approx(float(cart["until"]), now + 3.0 * 86400.0), "Q32: повозка пропадёт через 3 дня")
+	ok(W.to_dict().get("left_carts", []).size() == 1, "Q32: повозка в сохранении мира")
+	HeroDeath.forget_hero(W)
+	ok(Trade.count(W.inventory, "horse") == 0 and Trade.count(W.inventory, "cart") == 0, "Q32: у нового героя нет ни лошади, ни повозки")
+	ok(HeroDeath.cart_near(W, spot + Vector2(200.0, 0.0), now) == -1, "Q32: далеко от места гибели повозки нет")
+	ok(HeroDeath.cart_near(W, spot + Vector2(10.0, 0.0), now + 2.9 * 86400.0) == 0, "Q32: через 2,9 дня повозка на месте")
+	var said: String = HeroDeath.take_cart(W, 0)
+	ok(Trade.count(W.inventory, "cart") == 1 and Trade.count(W.inventory, "scrap") == 5 and W.left_carts.is_empty(), "Q32: новый герой забрал повозку: %s" % said)
+	HeroDeath.leave_cart(W, spot, now)
+	ok(HeroDeath.cart_near(W, spot, now + 3.01 * 86400.0) == -1 and W.left_carts.is_empty(), "Q32: через 3 дня повозка исчезла вместе с вещами")
+	W.inventory = {"money": 0, "items": {"horse": 1}, "equipped": {}}
+	ok(not HeroDeath.leave_cart(W, spot, now) and W.left_carts.is_empty(), "Q32: без повозки ничего не остаётся (лошадь погибла)")
+	W.inventory = W.start_inventory()
+
 	# ---- forget_hero без Worlds не падает
 	HeroDeath.forget_hero(null)
 	ok(true, "forget_hero(null) без ошибок")

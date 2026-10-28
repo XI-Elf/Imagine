@@ -187,7 +187,7 @@ func _battle_hides() -> void:
 
 
 func _button(city: Node, prefix: String) -> Button:
-	for b in city._buttons:
+	for b in city._buttons + city._tab_buttons:
 		if b.text.find(prefix) >= 0:
 			return b
 	return null
@@ -211,7 +211,7 @@ func _city() -> void:
 	ok(city._npc_on_duty_here(tanner), "кожевник на работе (%.1f ч)" % city.clock.hour_of_day())
 	city.talk(tanner)
 	var b: Button = _button(city, "Мастерская")
-	ok(b != null, "в разговоре с кожевником есть «Мастерская»")
+	ok(b != null and city._tab_buttons.has(b), "в разговоре с кожевником есть вкладка «Мастерская» (Q34)")
 	if b == null:
 		return
 	b.pressed.emit()

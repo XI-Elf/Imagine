@@ -24,7 +24,7 @@ const SHADOW: float = 0.12             # доля высоты под ногам
 
 ## Ключ спрайта -> высота ячейки атласа (пикс.)
 const KEYS: Array = ["tree_oak", "tree_light", "tree_crooked", "mountain_gray", "ridge_gray", "peak_gray", "cliff_gray",
-	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock"]
+	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock", "tech_tower"]
 const CELL_PX: int = 288
 const PAD: int = 16
 
@@ -132,6 +132,10 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 			var up: float = game.height_at(p) / game.HEIGHT_MAX_M if game.has_method("height_at") else 0.5
 			var key: String = ["mountain_hot", "mesa_hot", "ridge_hot"][int(n * 17.0) % 3] if hot else ("peak_gray" if up > 0.75 and n > 0.4 else ["mountain_gray", "ridge_gray", "peak_gray", "cliff_gray"][int(n * 19.0) % 4])
 			big.append([p, key, (8.0 + fposmod(n * 9.1, 1.0) * 7.0) * (0.65 + 0.8 * up), Color.WHITE]))
+	# Техно-артефакты (Q31 B): редкие сигнальные вышки 16–24 м — около одной на 2 км² суши, кроме гор и болот
+	_grid(o, 64.0, 5, func(p: Vector2, n: float, b: int):
+		if b in [2, 3, 4, 7, 8] and n > 0.993:
+			big.append([p, "tech_tower", 16.0 + fposmod(n * 911.0, 1.0) * 8.0, Color.WHITE]))
 	# Мелочь: кусты и камни по 4 м
 	_grid(o, 4.0, 4, func(p: Vector2, n: float, b: int):
 		if (b == 3 or b == 7) and _clearing(p) and n > 0.8:

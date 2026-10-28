@@ -840,6 +840,7 @@ func _build() -> void:
 	view = Layer.new()
 	view.fn = _draw_field
 	add_child(view)
+	add_child(preload("res://ui/world_grade.gd").rect())   # тёмная палитра мира (Q31 B): поле — да, панели — нет
 	hud = Layer.new()
 	hud.fn = _draw_hud
 	add_child(hud)

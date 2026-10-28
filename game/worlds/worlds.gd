@@ -50,6 +50,7 @@ var _hero_controlled: bool = false
 var _autosave_t: float = 0.0
 var inventory: Dictionary = {"money": 0, "items": {}}
 var city_states: Dictionary = {}   # city_id -> to_dict() города после последнего визита
+var left_carts: Array = []         # Q32: повозки погибших героев на карте [{pos: [x, y], until: с игры, items}] (hero_death.gd)
 var battles_won: int = 0           # победы героя в боях за игру (поручения «победить» в городах, city_growth.gd)
 var _km_actor: Actor = null
 var _rng := RandomNumberGenerator.new()
@@ -139,6 +140,7 @@ func _attach(g: Node2D) -> void:
 	# умирал за ~22 реальных минуты; скорость нужд не меняем)
 	inventory = start_inventory()
 	city_states = {}
+	left_carts = []
 	battles_won = 0
 	g.tree_exiting.connect(_on_game_exiting.bind(g))
 
@@ -302,6 +304,8 @@ func _start_battle_now(req: Dictionary, state: Variant = null) -> Node:
 		r["night"] = game.physics.sun_elevation_deg_at(deg_to_rad(game.MAP_LAT_DEG), 0.0) < 0.0
 	if not r.has("allies"):
 		r["allies"] = _allies_near_hero()
+	if not r.has("starter"):
+		r["starter"] = _starter_zone(here)
 	r["inventory"] = inventory
 	if not r.has("enemies"):
 		r["enemies"] = []
@@ -339,6 +343,14 @@ func _allies_near_hero() -> Array:
 
 
 # Где герой на общей карте (для города — точка у его ворот)
+## Q30: у растущего города на этапе «Острог» (в STARTER_KM) бандиты нападают по одному (battle/encounters.gd)
+func _starter_zone(p: Vector2) -> bool:
+	var st: Node = game.get("settlements") if game != null else null
+	if st == null or not st.has_method("growth_stage_near") or not ResourceLoader.exists(ENCOUNTERS):
+		return false
+	return st.growth_stage_near(p, float(load(ENCOUNTERS).STARTER_KM) * 1000.0) == 0
+
+
 func _overworld_pos() -> Vector2:
 	for i in range(stack.size() - 1, -1, -1):
 		if stack[i]["kind"] == "city":
@@ -534,7 +546,7 @@ func to_dict() -> Dictionary:
 			list.append({"kind": "battle", "req": r, "state": state, "clock_was_paused": _clock_was_paused})
 	var cities: Dictionary = city_states.duplicate()
 	return {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
-		"inventory": inventory, "city_states": cities, "battles_won": battles_won}
+		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true)}
 
 
 # После загрузки карты (world_save.apply_late): заново входит в сохранённые города и бой, без затемнения
@@ -551,6 +563,7 @@ func load_dict(d: Dictionary) -> void:
 		inventory = inv
 	city_states = d.get("city_states", {}) if d.get("city_states") is Dictionary else {}
 	battles_won = int(d.get("battles_won", 0))
+	left_carts = d.get("left_carts", []).duplicate(true) if d.get("left_carts") is Array else []
 	if not list.is_empty() and game.get("cast") != null:
 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))
 	for e in list:

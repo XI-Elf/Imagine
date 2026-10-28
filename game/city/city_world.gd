@@ -125,6 +125,8 @@ var _panel_title: Label
 var _panel_text: Label
 var _panel_box: VBoxContainer
 var _buttons: Array = []
+var _tabs: HBoxContainer               # вкладки разговора (Q34): Разговор / Поручения / Торговля / Мастерская
+var _tab_buttons: Array = []
 var _panel_kind: String = ""           # "", "talk", "trade", "craft", "bag", "note"
 var _talk_npc: Dictionary = {}
 var craft_rng := RandomNumberGenerator.new()   # удача работы своими руками в мастерской (craft.gd)
@@ -826,22 +828,14 @@ func talk(n: Dictionary) -> void:
 		text = "«%s»" % lines[int(n["line_i"]) % lines.size()]
 		opts.append(["Поговорить", func(): n["line_i"] += 1; talk(n)])
 		var qs: Array = Growth.available(full_def, growth, String(nd["id"]))
-		for q in qs:
-			if Growth.taken(growth, q):
-				var done: bool = Growth.ready(growth, q, bag, hero_km(), battles_won())
-				opts.append(["%s: %s (%s)" % ["Сдать поручение" if done else "Поручение", q["title"], quest_status(q)], func(): turn_in(n, q)])
-			else:
-				opts.append(["Работа: %s" % q["title"], func(): quest_offer(n, q)])
-		if qs.is_empty() and Growth.waiting(full_def, growth, String(nd["id"])):
+		if not qs.is_empty():
+			var ready_n: int = qs.filter(func(q): return Growth.taken(growth, q) and Growth.ready(growth, q, bag, hero_km(), battles_won())).size()
+			text += "\n\nПоручения: %d%s — вкладка «Поручения»." % [qs.size(), ", можно сдать: %d" % ready_n if ready_n > 0 else ""]
+		elif Growth.waiting(full_def, growth, String(nd["id"])):
 			text += "\n\nДругих поручений пока нет: пусть город подрастёт."
 		var working: bool = _npc_on_duty_here(n)
-		if not n["stock"].is_empty() or not n["buys"].is_empty():
-			if working:
-				opts.append(["Торговать", func(): open_trade(n)])
-				if Craft.skill_of(role) != "":
-					opts.append(["Мастерская", func(): open_craft(n)])
-			else:
-				text += "\n\nСейчас не торгует: приходите в часы работы (%d–%d)." % [int(nd["hours"][0]), int(nd["hours"][1])]
+		if (not n["stock"].is_empty() or not n["buys"].is_empty()) and not working:
+			text += "\n\nСейчас не торгует: приходите в часы работы (%d–%d)." % [int(nd["hours"][0]), int(nd["hours"][1])]
 		var sv: Dictionary = nd.get("services", {})
 		if sv.has("room") and working:
 			opts.append(["Снять комнату до утра (%d)" % int(sv["room"]), func(): rent_room(n)])
@@ -852,7 +846,41 @@ func talk(n: Dictionary) -> void:
 		if role == "elder" and not discovered.has("_plan"):
 			opts.append(["Расспросить о посёлке", func(): ask_plan(n)])
 	opts.append(["Уйти", _close_panel])
-	_open_panel("talk", title, text, opts)
+	_open_panel("talk", title, text, opts, _talk_tabs(n, "talk"))
+
+
+## Вкладки разговора (Q34, Huzzah 2026-10-27, вариант B): у мастеров много действий, и «Мастерская»
+## уходила под прокрутку. Вкладка есть, только если в ней есть дело: поручения — когда они есть,
+## торговля и мастерская — в часы работы
+func _talk_tabs(n: Dictionary, cur: String) -> Array:
+	if n["actor"].sleeping:
+		return []
+	var tabs: Array = [["talk", "Разговор", func(): talk(n)]]
+	var qs: Array = Growth.available(full_def, growth, String(n["def"]["id"]))
+	if not qs.is_empty():
+		tabs.append(["quests", "Поручения (%d)" % qs.size(), func(): open_quests(n)])
+	if _npc_on_duty_here(n) and (not n["stock"].is_empty() or not n["buys"].is_empty()):
+		tabs.append(["trade", "Торговля", func(): open_trade(n)])
+		if Craft.skill_of(String(n["def"].get("role", ""))) != "":
+			tabs.append(["craft", "Мастерская", func(): open_craft(n)])
+	if tabs.size() < 2:
+		return []
+	return tabs.map(func(t): return [t[1], t[2], t[0] == cur])
+
+
+## Вкладка «Поручения»: взять, посмотреть, сдать
+func open_quests(n: Dictionary) -> void:
+	_talk_npc = n
+	var opts: Array = []
+	var qs: Array = Growth.available(full_def, growth, String(n["def"]["id"]))
+	for q in qs:
+		if Growth.taken(growth, q):
+			var done: bool = Growth.ready(growth, q, bag, hero_km(), battles_won())
+			opts.append(["%s: %s (%s)" % ["Сдать поручение" if done else "Поручение", q["title"], quest_status(q)], func(): turn_in(n, q)])
+		else:
+			opts.append(["Работа: %s" % q["title"], func(): quest_offer(n, q)])
+	opts.append(["Назад", func(): talk(n)])
+	_open_panel("quests", "Поручения: %s" % n["actor"].display_name, "" if not qs.is_empty() else "Поручений нет.", opts, _talk_tabs(n, "quests"))
 
 
 func open_trade(n: Dictionary) -> void:
@@ -869,7 +897,7 @@ func open_trade(n: Dictionary) -> void:
 				func(): _trade_result(n, Trade.sell(bag, n["stock"], n["buys"], id, hero))])
 	opts.append(["Назад", func(): talk(n)])
 	_open_panel("trade", "Торговля: %s" % a.display_name, "Деньги: %d   Груз: %.1f / %.0f кг" % [
-		int(bag["money"]), Trade.weight(bag), hero.carry_capacity()], opts)
+		int(bag["money"]), Trade.weight(bag), hero.carry_capacity()], opts, _talk_tabs(n, "trade"))
 
 
 func _trade_result(n: Dictionary, err: String) -> void:
@@ -893,7 +921,7 @@ func open_craft(n: Dictionary) -> void:
 		opts.append(["Учиться у мастера (%d)" % Craft.lesson_fee(hero, sk), func(): _craft_result(n, "", Craft.lesson(bag, hero, master, sk), "Урок пройден")])
 	opts.append(["Назад", func(): talk(n)])
 	_open_panel("craft", "%s: %s" % [Craft.workshop_name(role), master.display_name], "%s\nДеньги: %d   Выносливость: %d" % [
-		_craft_skill_line(sk, master), int(bag["money"]), int(hero.res["stamina"])], opts)
+		_craft_skill_line(sk, master), int(bag["money"]), int(hero.res["stamina"])], opts, _talk_tabs(n, "craft"))
 
 
 func _craft_skill_line(sk: String, master: Actor) -> String:
@@ -1273,7 +1301,7 @@ func _draw_roofs(l: Node2D) -> void:
 			for v in prop["cells"]:
 				foot += map.center_of(Vector2i(v[0], v[1])) * PX
 			foot /= float(prop["cells"].size())
-			entries.append({"type": "prop", "key": prop["kind"], "foot": foot, "height": cs * 1.8, "y": foot.y, "sway": false})
+			entries.append({"type": "prop", "key": prop["kind"], "foot": foot, "height": cs * float(prop.get("h", 1.8)), "y": foot.y, "sway": false})
 	# Small garden plants, deterministic and kept off all paths and door cells.
 	for pos in def.get("art_gardens", []):
 		if map.at(pos[0], pos[1]) != T.GRASS:
@@ -1417,6 +1445,10 @@ func _build_ui() -> void:
 	_panel_title.add_theme_font_size_override("font_size", 18)
 	_panel_title.add_theme_color_override("font_color", Color("f0d890"))
 	v.add_child(_panel_title)
+	_tabs = HBoxContainer.new()
+	_tabs.add_theme_constant_override("separation", 4)
+	_tabs.visible = false
+	v.add_child(_tabs)
 	_panel_text = Label.new()
 	_panel_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_panel_text.custom_minimum_size = Vector2(420, 0)
@@ -1441,9 +1473,22 @@ func _mk_label(size: int, col: Color) -> Label:
 	return l
 
 
-func _open_panel(kind: String, title: String, text: String, opts: Array) -> void:
+func _open_panel(kind: String, title: String, text: String, opts: Array, tabs: Array = []) -> void:
 	_panel_kind = kind
 	_panel_title.text = title
+	for b in _tab_buttons:
+		b.queue_free()
+	_tab_buttons.clear()
+	for t in tabs:
+		var tb := Button.new()
+		tb.text = t[0]
+		tb.toggle_mode = true
+		tb.button_pressed = bool(t[2])
+		tb.focus_mode = Control.FOCUS_NONE
+		tb.pressed.connect(t[1])
+		_tabs.add_child(tb)
+		_tab_buttons.append(tb)
+	_tabs.visible = not tabs.is_empty()
 	_panel_text.text = text
 	_panel_text.visible = text != ""
 	for b in _buttons:
@@ -1458,7 +1503,9 @@ func _open_panel(kind: String, title: String, text: String, opts: Array) -> void
 		_panel_box.add_child(b)
 		_buttons.append(b)
 	var sc: ScrollContainer = _panel_box.get_parent()
-	sc.custom_minimum_size.y = minf(opts.size() * 34.0, get_viewport_rect().size.y * 0.55)
+	# Высота списка по настоящей высоте кнопок: у рамок комикса (Q24) кнопка выше прежних 34 px
+	var row: float = (_buttons[0].get_combined_minimum_size().y if not _buttons.is_empty() else 34.0) + float(_panel_box.get_theme_constant("separation"))
+	sc.custom_minimum_size.y = minf(opts.size() * row, get_viewport_rect().size.y * 0.55)
 	_panel.visible = true
 	_panel.reset_size()
 	var vp: Vector2 = get_viewport_rect().size
@@ -1558,18 +1605,18 @@ func _quest_reward(q: Dictionary) -> String:
 
 func quest_offer(n: Dictionary, q: Dictionary) -> void:
 	_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], "«%s»\n\n%s" % [q["ask"], _quest_reward(q)], [
-		["Взяться", func(): take_quest(n, q)], ["Назад", func(): talk(n)]])
+		["Взяться", func(): take_quest(n, q)], ["Назад", func(): open_quests(n)]])
 
 
 func take_quest(n: Dictionary, q: Dictionary) -> void:
 	Growth.take(growth, q, hero_km(), battles_won())
 	_say("Поручение: %s" % q["title"])
-	talk(n)
+	open_quests(n)
 
 
 func turn_in(n: Dictionary, q: Dictionary) -> void:
 	if not Growth.ready(growth, q, bag, hero_km(), battles_won()):
-		_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], "«%s»\n\nСейчас: %s." % [q["ask"], quest_status(q)], [["Назад", func(): talk(n)]])
+		_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], "«%s»\n\nСейчас: %s." % [q["ask"], quest_status(q)], [["Назад", func(): open_quests(n)]])
 		return
 	var was: int = stage
 	var nb: int = def.get("buildings", []).size()
@@ -1591,7 +1638,7 @@ func turn_in(n: Dictionary, q: Dictionary) -> void:
 	for m in npcs:
 		if String(m["def"]["id"]) == id:
 			n = m
-	_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], text, [["Назад", func(): talk(n)]])
+	_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], text, [["Назад", func(): open_quests(n)]])
 
 
 ## Перестроить город по нынешнему этапу: новые дома и жители появляются сразу, прежние жители сохраняют состояние
