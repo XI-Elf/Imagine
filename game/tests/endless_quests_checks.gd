@@ -130,6 +130,7 @@ func _run() -> void:
 	# Тридцать поручений у каждого: все сдаются, объёмы растут с потолком, вещи только добываемые
 	var kinds: Dictionary = {}
 	var items: Dictionary = {}
+	var by_npc: Dictionary = {}
 	var bad: Array = []
 	var max_km: int = 0
 	var max_n: int = 0
@@ -143,6 +144,9 @@ func _run() -> void:
 			kinds[q["kind"]] = true
 			if q["kind"] == "bring":
 				items[q["item"]] = true
+				if not by_npc.has(id):
+					by_npc[id] = {}
+				by_npc[id][q["item"]] = true
 				if not String(q["ask"]).contains(Endless._count(int(q["n"]), String(q["item"]))):
 					bad.append("%s текст не про %s" % [q["id"], q["item"]])
 			if q["kind"] == "bring" and not Endless.PRICE.has(String(q["item"])):
@@ -158,7 +162,8 @@ func _run() -> void:
 				bad.append("%s не сдалось" % q["id"])
 	ok(bad.is_empty(), "180 поручений сданы: %s" % [bad])
 	ok(kinds.has("walk") and kinds.has("win") and kinds.has("bring") and not kinds.has("pay"), "виды: пройти, победить, принести (без «заплатить»): %s" % [kinds.keys()])
-	ok(items.size() == Endless.PRICE.size(), "приносить просят лом, монеты и овощи: %s" % [items.keys()])
+	ok(items.size() == Endless.PRICE.size(), "приносить просят лом, монеты, овощи и шкуры: %s" % [items.keys()])
+	ok(by_npc.get("tanner", {}).keys() == ["hide"] and by_npc.get("smith", {}).keys() == ["scrap"], "Q33: кожевник просит только шкуры, кузнец только лом: %s" % [by_npc])
 	ok(max_km <= 8 and max_n <= 6 and max_w <= 2, "потолок объёма: до %d км, %d шт., %d побед" % [max_km, max_n, max_w])
 	ok(Growth.points(city.growth) == 18 and Growth.stage(city.full_def, city.growth) == 4, "после 181 бесконечного очков 18, этап Чёрнославль")
 

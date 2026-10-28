@@ -73,6 +73,12 @@ func open(a: Actor) -> void:
 	_title.text = "%s погиб%s" % [dead_name, _ending(a)]
 	_cause.text = "Причина: %s. Вещи и деньги пропали. Мир остаётся прежним: время, города, сданные поручения, обысканные руины." % \
 		Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
+	var w: Node = get_node_or_null("/root/Worlds")
+	var bag: Variant = w.get("inventory") if w != null else null
+	if bag is Dictionary and int(bag.get("items", {}).get("horse", 0)) > 0:
+		_cause.text += "\nЛошадь погибла вместе с героем."
+	if bag is Dictionary and int(bag.get("items", {}).get("cart", 0)) > 0:
+		_cause.text += " Повозка с вещами осталась на месте гибели и пропадёт через %d дня." % int(CART_DAYS)
 	_bio.text = P.biography(params)
 	var parts: Dictionary = P.stat_parts(params)
 	var st: PackedStringArray = []
@@ -98,11 +104,63 @@ func _ending(a: Actor) -> String:
 func continue_as_new() -> void:
 	if not active:
 		return
-	forget_hero(get_node_or_null("/root/Worlds"))
+	var w: Node = get_node_or_null("/root/Worlds")
+	var now: float = cast.game.clock.total_seconds if cast.game.get("clock") != null else 0.0
+	leave_cart(w, cast.hero.get("pos", Vector2.ZERO), now)
+	forget_hero(w)
 	var p: Dictionary = params
 	_close()
 	cast.create_hero(p)
 	cast._event("Новый герой: %s" % String(p.get("name", "")))
+
+
+# ---------------------------------------------------------------------
+# Q32 (Huzzah 2026-10-27, свой ответ): лошадь погибает вместе с героем, повозка с вещами остаётся
+# на месте гибели и через три дня игры исчезает вместе с содержимым. На карте её не рисуем:
+# новый герой находит её сам (F рядом, cast.gd). Надетое на погибшем в повозку не попадает.
+# ---------------------------------------------------------------------
+const CART_DAYS: float = 3.0
+const CART_REACH_M: float = 25.0
+
+
+## Перед forget_hero: если у погибшего была повозка, она с вещами остаётся в Worlds.left_carts
+static func leave_cart(w: Node, pos: Vector2, now_s: float) -> bool:
+	if w == null or not (w.get("inventory") is Dictionary) or int(w.inventory.get("items", {}).get("cart", 0)) <= 0:
+		return false
+	var items: Dictionary = w.inventory["items"].duplicate()
+	items.erase("horse")
+	for slot in w.inventory.get("equipped", {}):
+		var id: String = String(w.inventory["equipped"][slot])
+		if items.has(id):
+			items[id] = int(items[id]) - 1
+			if int(items[id]) <= 0:
+				items.erase(id)
+	w.left_carts.append({"pos": [pos.x, pos.y], "until": now_s + CART_DAYS * 86400.0, "items": items})
+	return true
+
+
+## Повозка в CART_REACH_M от точки, ещё не исчезнувшая; исчезнувшие убираются. -1 — нет
+static func cart_near(w: Node, pos: Vector2, now_s: float) -> int:
+	if w == null or not (w.get("left_carts") is Array):
+		return -1
+	w.left_carts = w.left_carts.filter(func(c): return float(c.get("until", 0.0)) > now_s)
+	for i in w.left_carts.size():
+		var p: Array = w.left_carts[i].get("pos", [0.0, 0.0])
+		if Vector2(float(p[0]), float(p[1])).distance_to(pos) <= CART_REACH_M:
+			return i
+	return -1
+
+
+## Забрать повозку i в сумку героя: вещи и сама повозка (тянуть её нужна лошадь). Ответ — текст события
+static func take_cart(w: Node, i: int) -> String:
+	var c: Dictionary = w.left_carts[i]
+	w.left_carts.remove_at(i)
+	var bag: Dictionary = w.inventory
+	var n: int = 0
+	for id in c.get("items", {}):
+		bag["items"][id] = int(bag["items"].get(id, 0)) + int(c["items"][id])
+		n += int(c["items"][id])
+	return "Повозка прежнего героя: забрано вещей %d (с повозкой)" % n
 
 
 ## Забыть всё, что связано с погибшим героем; прогресс поселений (growth.done, лавки, тайники) остаётся

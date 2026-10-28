@@ -127,21 +127,24 @@ func _run() -> void:
 	ok(Trade.count(W.inventory, "scrap") - scrap0 >= 2, "в руинах найден лом: %d" % (Trade.count(W.inventory, "scrap") - scrap0))
 	cast.hero["pos"] = hp
 
-	# ---- Снова в город: сдать поручения на ходьбу и купить нож
+	# ---- Снова в город: сдать два самых дорогих поручения (лом посаднику и «пройти» травнице: 20 монет,
+	# 2 очка — город ещё «Острог», Q30) и купить нож. Нож стоит 15 × (1,3 − 0,03 × (Хар − 4)): при Харизме
+	# ниже 4 (случайные черты) 20 монет не хватает, поэтому бот берёт героя хотя бы с Харизмой 4
 	city = await enter_city(W, game)
-	for q in Growth.available(city.full_def, city.growth, "posadnik") + Growth.available(city.full_def, city.growth, "healer") + Growth.available(city.full_def, city.growth, "tanner"):
-		if q["kind"] in ["walk", "bring"] and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won()):
-			for id in ["posadnik", "healer", "tanner"]:
-				if Growth.chain(city.full_def, id).has(q):
-					city.turn_in(npc(city, id), q)
-	ok(Growth.points(city.growth) >= 3, "сданы поручения «пройти» и «принести»: очков %d, денег %d" % [Growth.points(city.growth), W.inventory["money"]])
-	ok(city.stage >= 1, "город вырос до «Слободы» без боя (запасные поручения, Q03)")
+	if a.stat("cha") < 4:
+		a.set_stat("cha", 4)
+	var first_ids: Array = ["elder_1", "healer_1"]
+	for id in ["posadnik", "healer"]:
+		for q in Growth.available(city.full_def, city.growth, id):
+			if first_ids.has(q["id"]) and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won()):
+				city.turn_in(npc(city, id), q)
+	ok(Growth.points(city.growth) == 2 and city.stage == 0, "сданы лом и «пройти»: очков %d, денег %d, нож за %d, этап «Острог»" % [Growth.points(city.growth), W.inventory["money"], Trade.buy_price("knife", a)])
 	ok(Trade.buy(W.inventory, npc(city, "tanner")["stock"], "knife", a) == "" and Trade.count(W.inventory, "knife") == 1, "куплен нож у кожевника")
 	await W.leave()
 	await wait_worlds(W)
 
-	# ---- Бой с бандитами и ножом: ИИ ведёт героя, до победы (не больше 6 боёв).
-	# Бой случаен (с ножом бандиты побеждают примерно в 3 боях из 10): после гибели бот, как игрок, загружает сохранение
+	# ---- Бой с бандитами и ножом у «Острога»: бандит один (Q30 B), ИИ ведёт героя, до победы (не больше 6 боёв).
+	# После гибели бот, как игрок, загружает сохранение
 	ok(WorldSave.write(game, true), "сохранение перед боем")
 	var pre: String = WorldSave.latest_slot()
 	var wins0: int = W.battles_won
@@ -157,6 +160,8 @@ func _run() -> void:
 		await wait_worlds(W)
 		var b: Node = W.current_node()
 		ok(W.is_battle() and b.has_method("prep_confirm"), "бой %d начался" % tries)
+		if tries == 1:
+			ok(b.core.all.filter(func(c): return c.team == 1).size() == 1, "у «Острога» бандит один (Q30): %d" % b.core.all.filter(func(c): return c.team == 1).size())
 		# ИИ боя ходит за всех сразу, без пауз интерфейса
 		b.core.auto_ai = true
 		for c in b.core.all:
@@ -183,8 +188,16 @@ func _run() -> void:
 	# Добыча — только с убитых (сбежавший или сдавшийся ничего не оставляет)
 	ok(killed == 0 or int(W.inventory["money"]) > money_b, "убито %d, с бандитов — деньги: +%d, лом: +%d (Q04)" % [killed, int(W.inventory["money"]) - money_b, Trade.count(W.inventory, "scrap") - scrap_b])
 
-	# ---- Сдать бой кожевнику
+	# ---- Сдать остальные «пройти» и «принести»: город растёт до «Слободы» без поручений на бой (Q03)
 	city = await enter_city(W, game)
+	for id in ["posadnik", "healer", "tanner"]:
+		for q in Growth.available(city.full_def, city.growth, id):
+			if q["kind"] in ["walk", "bring"] and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won()):
+				city.turn_in(npc(city, id), q)
+	ok(Growth.points(city.growth) >= 3, "сданы поручения «пройти» и «принести»: очков %d, денег %d" % [Growth.points(city.growth), W.inventory["money"]])
+	ok(city.stage >= 1, "город вырос до «Слободы» без поручений на бой (запасные поручения, Q03)")
+
+	# ---- Сдать бой кожевнику
 	var tq: Dictionary = Growth.current(city.full_def, city.growth, "tanner")
 	var pts: int = Growth.points(city.growth)
 	if not tq.is_empty() and tq["kind"] == "win":
