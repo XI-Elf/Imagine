@@ -1,76 +1,40 @@
 {
- "_note": "Создание героя: правила сборки 09 (character_balance.gd), переложенные на 2D. Навыки — уровни навыков пака (data/characters/skills.json, 0–10). effects — ключи эффектов пака (доли, как в conditions.json) и свои: xp (опыт), disease_chance (шанс заболеть), fall_chance (травмы в пути), food_water_chance (болезни от сырой воды и еды), sneak (проникновение в город), cold_resist_c / heat_resist_c (°C), sleep_energy (восстановление сна). Числа эффектов [ВРЕМЕННО].",
- "points": 10,
- "stat_base": 4,
- "stat_min": 4,
+ "_note": "Создание героя: пол, возраст, происхождение, профессия, черты характера и биография — из сборки 09; характеристики и навыки — по Fallout (special.json): SPECIAL от 5, 5 свободных очков (можно опустить до 1 и взять очки), 3 отмеченных навыка (профессия предлагает свои), до 2 черт Fallout. Пол, возраст, происхождение, профессия и черты характера больше не меняют SPECIAL; их «skills» (уровни старых навыков пака) дают +5 % за уровень к навыку Fallout. effects черт характера — ключи пака, как раньше.",
+ "points": 5,
+ "stat_base": 5,
+ "stat_min": 1,
  "age_min": 18,
  "age_max": 60,
  "trait_max": 10,
- "trait_luck_limit": 10,
- "background_limits": {
-  "min": -5,
-  "max": 5,
-  "luck_min": -5,
-  "luck_max": 2
- },
  "genders": {
   "female": {
-   "title": "Женщина",
-   "stats": {
-    "cha": 1
-   }
+   "title": "Женщина"
   },
   "male": {
-   "title": "Мужчина",
-   "stats": {
-    "str": 1
-   }
+   "title": "Мужчина"
   }
  },
  "age_groups": [
   [
    18,
    29,
-   {
-    "agi": 1,
-    "end": 1,
-    "int": -1,
-    "per": -1,
-    "wis": -1
-   }
+   {}
   ],
   [
    30,
    45,
-   {
-    "cha": 1,
-    "str": 1
-   }
+   {}
   ],
   [
    46,
    60,
-   {
-    "int": 1,
-    "per": 1,
-    "wis": 1,
-    "str": -1,
-    "agi": -1,
-    "end": -1
-   }
+   {}
   ]
  ],
  "origins": {
   "peasant": {
    "title": "Крестьянин",
    "text": "Вырос в деревне, с детства в поле.",
-   "stats": {
-    "str": 2,
-    "end": 2,
-    "int": -1,
-    "cha": -1
-   },
-   "luck": 0,
    "skills": {
     "survival": 1,
     "cookery": 1
@@ -79,13 +43,6 @@
   "townsman": {
    "title": "Горожанин",
    "text": "Вырос среди лавок и цехов.",
-   "stats": {
-    "int": 1,
-    "cha": 2,
-    "per": 1,
-    "end": -1
-   },
-   "luck": 0,
    "skills": {
     "cookery": 1,
     "sewing": 1
@@ -94,13 +51,6 @@
   "poor_noble": {
    "title": "Обедневший дворянин",
    "text": "Имя громче кошелька.",
-   "stats": {
-    "cha": 2,
-    "int": 2,
-    "str": -1,
-    "end": -1
-   },
-   "luck": 1,
    "skills": {
     "riding": 2
    }
@@ -108,12 +58,6 @@
   "forester": {
    "title": "Лесной житель",
    "text": "Вырос на хуторе в глуши.",
-   "stats": {
-    "per": 2,
-    "agi": 2,
-    "cha": -2
-   },
-   "luck": 0,
    "skills": {
     "survival": 2
    }
@@ -121,13 +65,6 @@
   "vagrant": {
    "title": "Бродяга",
    "text": "Нигде не задерживался надолго.",
-   "stats": {
-    "agi": 1,
-    "wis": 1,
-    "end": 1,
-    "cha": -2
-   },
-   "luck": -1,
    "skills": {
     "survival": 1,
     "cookery": 1
@@ -138,86 +75,79 @@
   "smith": {
    "title": "Кузнец",
    "text": "Работа с металлом.",
-   "stats": {
-    "str": 2,
-    "end": 1,
-    "agi": -1
-   },
-   "luck": 0,
    "skills": {
     "blacksmith": 3
-   }
+   },
+   "tags": [
+    "repair",
+    "melee",
+    "barter"
+   ]
   },
   "hunter": {
    "title": "Охотник",
    "text": "Выслеживание и добыча зверя.",
-   "stats": {
-    "per": 1,
-    "wis": 1,
-    "agi": 1,
-    "cha": -1
-   },
-   "luck": 0,
    "skills": {
     "survival": 2,
     "cookery": 1
-   }
+   },
+   "tags": [
+    "bows",
+    "outdoorsman",
+    "sneak"
+   ]
   },
   "healer": {
    "title": "Знахарь",
    "text": "Травы, перевязки, снадобья.",
-   "stats": {
-    "int": 1,
-    "wis": 1,
-    "per": 1,
-    "str": -1
-   },
-   "luck": 0,
    "skills": {
     "medicine": 2,
     "alchemy": 1
-   }
+   },
+   "tags": [
+    "doctor",
+    "first_aid",
+    "science"
+   ]
   },
   "soldier": {
    "title": "Солдат",
    "text": "Служил в отряде.",
-   "stats": {
-    "str": 1,
-    "end": 2,
-    "int": -1
-   },
-   "luck": 0,
    "skills": {
     "survival": 1,
     "medicine": 1,
     "riding": 1
-   }
+   },
+   "tags": [
+    "melee",
+    "bows",
+    "first_aid"
+   ]
   },
   "tailor": {
    "title": "Портной",
    "text": "Шьёт и чинит одежду.",
-   "stats": {
-    "agi": 2,
-    "per": 1,
-    "str": -1
-   },
-   "luck": 0,
    "skills": {
     "sewing": 3
-   }
+   },
+   "tags": [
+    "repair",
+    "barter",
+    "speech"
+   ]
   },
   "leatherworker": {
    "title": "Кожевник",
    "text": "Выделка кожи и шорное дело.",
-   "stats": {
-    "str": 1,
-    "agi": 1
-   },
-   "luck": 0,
    "skills": {
     "sewing": 2,
     "riding": 1
-   }
+   },
+   "tags": [
+    "repair",
+    "outdoorsman",
+    "barter"
+   ]
   }
  },
  "traits": {
@@ -245,9 +175,6 @@
    "cost": 2,
    "text": "Говорит как есть",
    "opp": "liar",
-   "stats": {
-    "cha": 1
-   },
    "moral": 1,
    "order": 1
   },
@@ -285,9 +212,6 @@
    "cost": 3,
    "text": "Редко болеет",
    "opp": "sickly",
-   "stats": {
-    "end": 1
-   },
    "effects": {
     "disease_chance": -0.2
    }
@@ -297,9 +221,6 @@
    "cost": -3,
    "text": "Хвори цепляются чаще",
    "opp": "hardy",
-   "stats": {
-    "end": -1
-   },
    "effects": {
     "disease_chance": 0.25
    }
@@ -308,37 +229,25 @@
    "title": "Крепкое сложение",
    "cost": 3,
    "text": "Широк в плечах",
-   "opp": "frail",
-   "stats": {
-    "str": 1
-   }
+   "opp": "frail"
   },
   "frail": {
    "title": "Хилый",
    "cost": -3,
    "text": "Слабое тело",
-   "opp": "strong_build",
-   "stats": {
-    "str": -1
-   }
+   "opp": "strong_build"
   },
   "nimble": {
    "title": "Проворный",
    "cost": 3,
    "text": "Быстрые руки и ноги",
-   "opp": "clumsy",
-   "stats": {
-    "agi": 1
-   }
+   "opp": "clumsy"
   },
   "clumsy": {
    "title": "Неуклюжий",
    "cost": -3,
    "text": "Чаще падает и спотыкается в пути",
    "opp": "nimble",
-   "stats": {
-    "agi": -1
-   },
    "effects": {
     "fall_chance": 0.5
    }
@@ -347,28 +256,19 @@
    "title": "Сообразительный",
    "cost": 3,
    "text": "Быстро схватывает",
-   "opp": "dull",
-   "stats": {
-    "int": 1
-   }
+   "opp": "dull"
   },
   "dull": {
    "title": "Туповатый",
    "cost": -3,
    "text": "Медленно соображает",
-   "opp": "sharp",
-   "stats": {
-    "int": -1
-   }
+   "opp": "sharp"
   },
   "prudent": {
    "title": "Рассудительный",
    "cost": 3,
    "text": "Сначала думает",
    "opp": "rash",
-   "stats": {
-    "wis": 1
-   },
    "order": 1
   },
   "rash": {
@@ -376,19 +276,13 @@
    "cost": -2,
    "text": "Сначала делает",
    "opp": "prudent",
-   "stats": {
-    "wis": -1
-   },
    "order": -1
   },
   "keen_eye": {
    "title": "Зоркий",
    "cost": 2,
    "text": "Видит далеко",
-   "opp": "nearsighted",
-   "stats": {
-    "per": 1
-   }
+   "opp": "nearsighted"
   },
   "nearsighted": {
    "title": "Близорукий",
@@ -403,19 +297,13 @@
    "title": "Обаятельный",
    "cost": 3,
    "text": "Располагает к себе",
-   "opp": "repulsive",
-   "stats": {
-    "cha": 1
-   }
+   "opp": "repulsive"
   },
   "repulsive": {
    "title": "Отталкивающий",
    "cost": -3,
    "text": "Неприятен людям",
-   "opp": "charming",
-   "stats": {
-    "cha": -1
-   }
+   "opp": "charming"
   },
   "pious": {
    "title": "Набожный",
@@ -471,9 +359,6 @@
    "cost": 2,
    "text": "Не теряет самообладания",
    "opp": "hot_tempered",
-   "stats": {
-    "wis": 1
-   },
    "order": 1
   },
   "hot_tempered": {
@@ -481,9 +366,6 @@
    "cost": -2,
    "text": "Легко выходит из себя",
    "opp": "calm",
-   "stats": {
-    "cha": -1
-   },
    "effects": {
     "power": 0.05
    },
@@ -663,8 +545,21 @@
   ]
  },
  "biography": {
-  "origins_short": {"peasant": "Родом из деревни", "townsman": "Родом из города", "poor_noble": "Из обедневшего знатного рода", "forester": "Родом с лесного хутора", "vagrant": "Без родного дома, с детства в дороге"},
-  "professions_short": {"smith": "кузнечное дело", "hunter": "охота", "healer": "знахарство", "soldier": "солдатская служба", "tailor": "портновское дело", "leatherworker": "выделка кожи"},
+  "origins_short": {
+   "peasant": "Родом из деревни",
+   "townsman": "Родом из города",
+   "poor_noble": "Из обедневшего знатного рода",
+   "forester": "Родом с лесного хутора",
+   "vagrant": "Без родного дома, с детства в дороге"
+  },
+  "professions_short": {
+   "smith": "кузнечное дело",
+   "hunter": "охота",
+   "healer": "знахарство",
+   "soldier": "солдатская служба",
+   "tailor": "портновское дело",
+   "leatherworker": "выделка кожи"
+  },
   "origins": {
    "peasant": "Детство прошло среди полей, тесных изб и долгих зим, когда хлеб берегли до последней крошки. В родном дворе цену человеку определяли не речами, а тем, сколько работы оставалось после него.",
    "townsman": "Детство прошло за городскими стенами, под звон мастерских и крики торговцев. Узкие улицы рано научили различать обещание и выгоду, а за нарядной вывеской замечать руки, которые держат дело.",

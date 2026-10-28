@@ -1,26 +1,97 @@
 {
   "_note": "Правила Амбера поверх пака Day R. Все числа [ВРЕМЕННО], кроме помеченных в actor_rules.gd. Время — игровые часы, если не сказано иначе.",
   "terrain": {
-    "0": {"name": "за краем мира", "speed": 0.0, "energy": 1.0, "radiation_h": 0.0, "temp": 0.0},
-    "1": {"name": "вода", "speed": 0.0, "energy": 2.0, "radiation_h": 0.0, "temp": -4.0, "swim": true},
-    "2": {"name": "берег", "speed": 0.9, "energy": 1.1, "radiation_h": 0.0, "temp": 0.0},
-    "3": {"name": "лес", "speed": 0.75, "energy": 1.2, "radiation_h": 0.0, "temp": -1.5},
-    "4": {"name": "пустошь", "speed": 1.0, "energy": 1.0, "radiation_h": 0.0, "temp": 2.5},
-    "5": {"name": "болото", "speed": 0.45, "energy": 1.6, "radiation_h": 0.0, "temp": 0.0, "wet": true,
-          "catch": {"black_scabies": 0.004}},
-    "6": {"name": "горы", "speed": 0.5, "energy": 2.0, "radiation_h": 0.0, "temp": -6.0,
-          "fall_per_km": 0.01},
-    "7": {"name": "проклятый лес", "speed": 0.75, "energy": 1.2, "radiation_h": 4.0, "temp": -1.5},
-    "8": {"name": "проклятая пустошь", "speed": 1.0, "energy": 1.0, "radiation_h": 6.0, "temp": 2.5},
-    "9": {"name": "проклятое болото", "speed": 0.45, "energy": 1.6, "radiation_h": 5.0, "temp": 0.0, "wet": true,
-          "catch": {"black_scabies": 0.006}}
+    "0": {
+      "name": "за краем мира",
+      "speed": 0.0,
+      "energy": 1.0,
+      "radiation_h": 0.0,
+      "temp": 0.0
+    },
+    "1": {
+      "name": "вода",
+      "speed": 0.0,
+      "energy": 2.0,
+      "radiation_h": 0.0,
+      "temp": -4.0,
+      "swim": true
+    },
+    "2": {
+      "name": "берег",
+      "speed": 0.9,
+      "energy": 1.1,
+      "radiation_h": 0.0,
+      "temp": 0.0
+    },
+    "3": {
+      "name": "лес",
+      "speed": 0.75,
+      "energy": 1.2,
+      "radiation_h": 0.0,
+      "temp": -1.5
+    },
+    "4": {
+      "name": "пустошь",
+      "speed": 1.0,
+      "energy": 1.0,
+      "radiation_h": 0.0,
+      "temp": 2.5
+    },
+    "5": {
+      "name": "болото",
+      "speed": 0.45,
+      "energy": 1.6,
+      "radiation_h": 0.0,
+      "temp": 0.0,
+      "wet": true,
+      "catch": {
+        "black_scabies": 0.004
+      }
+    },
+    "6": {
+      "name": "горы",
+      "speed": 0.5,
+      "energy": 2.0,
+      "radiation_h": 0.0,
+      "temp": -6.0,
+      "fall_per_km": 0.01
+    },
+    "7": {
+      "name": "проклятый лес",
+      "speed": 0.75,
+      "energy": 1.2,
+      "radiation_h": 4.0,
+      "temp": -1.5
+    },
+    "8": {
+      "name": "проклятая пустошь",
+      "speed": 1.0,
+      "energy": 1.0,
+      "radiation_h": 6.0,
+      "temp": 2.5
+    },
+    "9": {
+      "name": "проклятое болото",
+      "speed": 0.45,
+      "energy": 1.6,
+      "radiation_h": 5.0,
+      "temp": 0.0,
+      "wet": true,
+      "catch": {
+        "black_scabies": 0.006
+      }
+    }
   },
   "movement": {
     "_note": "Шаг пешком, лошадь и повозка — из movement.json пака (3, 8, 5 км/ч); здесь остальное",
     "travel_scale": 8.0,
     "run_mult": 2.1,
     "swim_mps": 0.6,
-    "weather_penalty": {"rain": 0.1, "snow": 0.3, "storm": 0.5},
+    "weather_penalty": {
+      "rain": 0.1,
+      "snow": 0.3,
+      "storm": 0.5
+    },
     "night_bonus": -0.2,
     "night_bonus_per_survival": 0.02,
     "rested_bonus": 0.1,
@@ -61,65 +132,179 @@
   },
   "radiation": {
     "clean_decay_only": true,
-    "stage_effect_mult": [1.0, 1.0, 2.0, 3.0]
+    "stage_effect_mult": [
+      1.0,
+      1.0,
+      2.0,
+      3.0
+    ]
   },
   "causes": {
     "desert_fever_h": 0.02,
     "cadaver_shivers_h": 0.03,
     "blood_poisoning_h": 0.03,
     "wound_infect_after_h": 12.0,
-    "raw_water": {"dysentery": 0.10},
-    "dirty_water": {"dysentery": 0.25, "intoxication": 0.10},
-    "raw_meat": {"worm_parasite": 0.15, "dysentery": 0.05},
-    "spoiled_food": {"intoxication": 0.30, "dysentery": 0.10}
+    "raw_water": {
+      "dysentery": 0.1
+    },
+    "dirty_water": {
+      "dysentery": 0.25,
+      "intoxication": 0.1
+    },
+    "raw_meat": {
+      "worm_parasite": 0.15,
+      "dysentery": 0.05
+    },
+    "spoiled_food": {
+      "intoxication": 0.3,
+      "dysentery": 0.1
+    }
   },
   "durations_h": {
     "intoxication": 24.0,
     "blindness": 48.0,
     "luxation_arm": 0.0
   },
-  "fall_traumas": {"broken_leg": 0.5, "luxation_arm": 0.3, "broken_arm": 0.15, "broken_head": 0.05},
+  "fall_traumas": {
+    "broken_leg": 0.5,
+    "luxation_arm": 0.3,
+    "broken_arm": 0.15,
+    "broken_head": 0.05
+  },
   "treatments": {
-    "luxation_arm": {"items": [], "skill": 1},
-    "broken_arm": {"items": ["splint"], "skill": 3},
-    "broken_leg": {"items": ["splint"], "skill": 3},
-    "broken_head": {"items": ["healing_potion"], "skill": 4},
-    "bullet_wound": {"items": ["bandage"], "skill": 3},
-    "laceration": {"items": ["bandage"], "skill": 1},
-    "burn": {"items": ["salve"], "skill": 1},
-    "blindness": {"items": ["healing_potion"], "skill": 8},
-    "dysentery": {"items": ["herbal_decoction"], "skill": 2},
-    "radiation_sickness": {"items": ["anti_rad_potion"], "skill": 5},
-    "intoxication": {"items": ["charcoal"], "skill": 1},
-    "blood_poisoning": {"items": ["strong_potion"], "skill": 6},
-    "desert_fever": {"items": ["fever_potion"], "skill": 3},
-    "sleeping_sickness": {"items": ["stimulant"], "skill": 4},
-    "intestinal_ulcers": {"items": ["herbal_decoction"], "skill": 4},
-    "black_scabies": {"items": ["salve"], "skill": 2},
-    "cadaver_shivers": {"items": ["warming_potion"], "skill": 2},
-    "worm_parasite": {"items": ["vermifuge"], "skill": 3}
+    "luxation_arm": {
+      "items": [],
+      "skill": 1
+    },
+    "broken_arm": {
+      "items": [
+        "splint"
+      ],
+      "skill": 3
+    },
+    "broken_leg": {
+      "items": [
+        "splint"
+      ],
+      "skill": 3
+    },
+    "broken_head": {
+      "items": [
+        "healing_potion"
+      ],
+      "skill": 4
+    },
+    "bullet_wound": {
+      "items": [
+        "bandage"
+      ],
+      "skill": 3
+    },
+    "laceration": {
+      "items": [
+        "bandage"
+      ],
+      "skill": 1
+    },
+    "burn": {
+      "items": [
+        "salve"
+      ],
+      "skill": 1
+    },
+    "blindness": {
+      "items": [
+        "healing_potion"
+      ],
+      "skill": 8
+    },
+    "dysentery": {
+      "items": [
+        "herbal_decoction"
+      ],
+      "skill": 2
+    },
+    "radiation_sickness": {
+      "items": [
+        "anti_rad_potion"
+      ],
+      "skill": 5
+    },
+    "intoxication": {
+      "items": [
+        "charcoal"
+      ],
+      "skill": 1
+    },
+    "blood_poisoning": {
+      "items": [
+        "strong_potion"
+      ],
+      "skill": 6
+    },
+    "desert_fever": {
+      "items": [
+        "fever_potion"
+      ],
+      "skill": 3
+    },
+    "sleeping_sickness": {
+      "items": [
+        "stimulant"
+      ],
+      "skill": 4
+    },
+    "intestinal_ulcers": {
+      "items": [
+        "herbal_decoction"
+      ],
+      "skill": 4
+    },
+    "black_scabies": {
+      "items": [
+        "salve"
+      ],
+      "skill": 2
+    },
+    "cadaver_shivers": {
+      "items": [
+        "warming_potion"
+      ],
+      "skill": 2
+    },
+    "worm_parasite": {
+      "items": [
+        "vermifuge"
+      ],
+      "skill": 3
+    }
   },
   "medicine": {
     "base_chance": 0.45,
     "per_level": 0.08,
-    "per_wis": 0.005,
     "min_chance": 0.05,
     "max_chance": 0.97,
     "xp_success": 12.0,
     "xp_fail": 3.0
   },
   "stats": {
-    "names": {"str": "Сила", "agi": "Ловкость", "int": "Интеллект", "end": "Выносливость",
-              "per": "Восприятие", "wis": "Мудрость", "cha": "Харизма", "luck": "Удача"},
-    "base": 4, "min": 4, "max": 100, "luck_base": 0,
-    "carry_base_kg": 46.0, "carry_per_str_kg": 1.0,
-    "attack_per_str": 0.03,
-    "speed_per_agi": 0.004,
-    "stamina_per_end": 0.02,
-    "disease_resist_per_end": 0.01,
-    "search_per_per": 0.02,
-    "xp_per_int": 0.02,
-    "radiation_resist_per_end": 0.005,
-    "luck_chance_per_pt": 0.002
+    "_note": "Характеристики — SPECIAL Fallout (characters/special.gd, data/characters/special.json). Здесь только связь SPECIAL с правилами пака: коэффициенты за каждое очко сверх средних 5 [ВРЕМЕННО]. Груз, защита от проклятья и яда, заживление — по формулам Fallout в special.json.",
+    "names": {
+      "str": "Сила",
+      "per": "Восприятие",
+      "end": "Выносливость",
+      "cha": "Харизма",
+      "int": "Интеллект",
+      "agi": "Ловкость",
+      "luck": "Удача"
+    },
+    "base": 5,
+    "min": 1,
+    "max": 10,
+    "attack_per_str": 0.05,
+    "speed_per_agi": 0.02,
+    "stamina_per_end": 0.05,
+    "search_per_per": 0.04,
+    "luck_chance_per_pt": 0.02
   }
 }

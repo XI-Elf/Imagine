@@ -1,22 +1,24 @@
 extends CanvasLayer
 ## Окно героя — одно на всю игру вместо прежнего листа (I) и сумки города (Tab). Вкладки:
-## 1 Характеристики (кто он, 7 характеристик и Удача по частям, шкалы, состояния, производные),
-## 2 Навыки (уровни навыков пака и опыт), 3 Черты (черты характера, мировоззрение, биография),
-## 4 Инвентарь (общая сумка Worlds.inventory: деньги, вещи, вес; использовать, выбросить, взять в бой).
+## 1 Характеристики (кто он, уровень и опыт, SPECIAL, производные Fallout, шкалы, состояния),
+## 2 Навыки (18 навыков Fallout в %, отмеченные, трата очков навыков), 3 Перки (черты Fallout, взятые перки,
+## выбор нового перка), 4 Черты (черты характера, мировоззрение, биография),
+## 5 Инвентарь (общая сумка Worlds.inventory: деньги, вещи, вес; использовать, выбросить, взять в бой).
 ## Хозяин (cast.gd на карте, city_world.gd в городе) зовёт setup(герой, сумка) и open(вкладка).
-## Пока окно открыто, клавиши забирает оно: 1–4 вкладки, I / Tab — закрыть или перейти, Esc — закрыть.
+## Пока окно открыто, клавиши забирает оно: 1–5 вкладки, I / Tab — закрыть или перейти, Esc — закрыть.
 
 signal closed
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
+const S := preload("res://characters/special.gd")
 const Trade := preload("res://city/trade.gd")
 const Inv := preload("res://characters/inventory_view.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
 const BATTLE_CONFIG := "res://data/battle/config.tres"
 
-const TABS: Array = ["stats", "skills", "traits", "bag"]
-const TAB_TITLES: Dictionary = {"stats": "Характеристики", "skills": "Навыки", "traits": "Черты характера", "bag": "Инвентарь"}
+const TABS: Array = ["stats", "skills", "perks", "traits", "bag"]
+const TAB_TITLES: Dictionary = {"stats": "Характеристики", "skills": "Навыки", "perks": "Перки", "traits": "Черты характера", "bag": "Инвентарь"}
 const COL_TEXT := Color("d8cfb0")
 const COL_DIM := Color("9a9078")
 const COL_GOLD := Color("c9a24b")
@@ -41,6 +43,8 @@ var inv_page: int = 0
 var inv_sort: bool = false      # «По типу»
 var inv_drop_armed: bool = false   # «Бросить всё» нажато один раз, ждёт подтверждения
 var _drop_t: float = 0.0
+var _undo: Dictionary = {}       # навык -> сколько раз поднят, пока окно открыто (можно вернуть)
+var perk_sel: String = ""        # перк, выбранный во вкладке «Перки»
 
 
 func setup(get_actor: Callable, get_bag: Callable) -> void:
@@ -92,7 +96,7 @@ func _ready() -> void:
 	_body.add_theme_constant_override("separation", 4)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.add_child(_body)
-	_note = _label("1–4 вкладки · I характеристики · Tab инвентарь · Esc закрыть", 13, COL_DIM)
+	_note = _label("1–5 вкладки · I характеристики · Tab инвентарь · Esc закрыть", 13, COL_DIM)
 	v.add_child(_note)
 
 
@@ -113,6 +117,7 @@ func open(which: String = "") -> void:
 
 
 func close() -> void:
+	_undo = {}
 	if visible:
 		visible = false
 		closed.emit()
@@ -167,7 +172,8 @@ func refresh() -> void:
 	var a: Actor = _actor()
 	var sig: String = tab + "|" + JSON.stringify(_bag())
 	if a != null:
-		sig += "|%s|%s|%s|%d" % [a.display_name, JSON.stringify(a.skills), JSON.stringify(a.traits), int(a.carry_capacity())]
+		sig += "|%s|%s|%s|%d|%s|%d|%d|%d|%d|%s|%s" % [a.display_name, JSON.stringify(a.skills), JSON.stringify(a.traits), int(a.carry_capacity()),
+			JSON.stringify(a.perks), a.skill_points, a.perk_picks, a.level, int(a.xp), JSON.stringify(a.fo_traits), perk_sel]
 		if tab == "bag":   # строка показателей сверху
 			for r in Actor.RESOURCES:
 				sig += "|%d" % int(a.res.get(r, 0.0))
@@ -188,6 +194,8 @@ func refresh() -> void:
 			_fill_stats(a)
 		"skills":
 			_fill_skills(a)
+		"perks":
+			_fill_perks(a)
 		"traits":
 			_fill_traits(a)
 		"bag":
@@ -207,26 +215,23 @@ func _fill_stats(a: Actor) -> void:
 			P.alignment_name(pf.get("alignment", {}))], 15, COL_TEXT))
 	else:
 		_body.add_child(_label("Герой создан до окна персонажа: происхождения и черт нет.", 14, COL_DIM))
-	_body.add_child(_label("Характеристики", 17, COL_GOLD))
+	_body.add_child(_label("Уровень %d · опыт %d / %d · очков навыков: %d · перков к выбору: %d" % [
+		a.level, int(a.xp), S.xp_to_next(a), a.skill_points, a.perk_picks], 16, COL_GOLD if a.skill_points > 0 or a.perk_picks > 0 else COL_TEXT))
+	_body.add_child(_label("SPECIAL", 17, COL_GOLD))
 	var grid := GridContainer.new()
-	grid.columns = 3
+	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 18)
 	_body.add_child(grid)
-	var parts: Dictionary = pf.get("stat_parts", {})
-	for s in P.stats_list() + ["luck"]:
-		grid.add_child(_label(P.stat_name(s), 16, COL_TEXT))
-		grid.add_child(_label(str(int(a.stat(s))), 18, COL_GOLD))
-		var tip: String = ""
-		if parts.has(s):
-			var e: Dictionary = parts[s]
-			var bits: Array = ["очки %d" % int(e.get("base", 4))]
-			for k in [["gender", "пол"], ["age", "возраст"], ["background", "прошлое"], ["traits", "черты"]]:
-				if int(e.get(k[0], 0)) != 0:
-					bits.append("%s %+d" % [k[1], int(e[k[0]])])
-			if int(e.get("total", a.stat(s))) != int(a.stat(s)):
-				bits.append("сейчас %+d" % (int(a.stat(s)) - int(e.get("total", 0))))
-			tip = ", ".join(bits)
-		grid.add_child(_label(tip, 13, COL_DIM))
+	for s in S.stats_list():
+		grid.add_child(_label(S.stat_name(s), 16, COL_TEXT))
+		var v: int = S.special(a, s)
+		grid.add_child(_label(str(v), 18, COL_GOLD))
+		grid.add_child(_label(S.stat_level_name(v), 14, COL_TEXT))
+		var base: int = int(a.stats.get(s, 5))
+		grid.add_child(_label(("база %d, черты и перки %+d" % [base, v - base]) if v != base else String(S.sect("stat_desc").get(s, "")).split(".")[0], 13, COL_DIM))
+	var fd: Dictionary = S.derived(a)
+	_body.add_child(_wrap("Очки здоровья %d (+%d за уровень) · Очки действия %d · Класс брони %d · Груз %d кг · Урон в рукопашной %d · Защита от яда %d %% · от проклятья %d %% · Порядок хода %d · Заживление %d · Шанс крита %d %% · Очков навыков за уровень %d · Спутников до %d" % [
+		fd["hp"], fd["hp_level"], fd["ap"], fd["ac"], int(fd["carry_kg"]), fd["melee"], fd["poison"], fd["rad"], fd["sequence"], fd["healing"], fd["crit"], fd["skill_points"], fd["party"]], 14, COL_TEXT))
 	_body.add_child(HSeparator.new())
 	_body.add_child(_label("Состояние", 17, COL_GOLD))
 	var shown: Dictionary = {"hunger": "Сытость", "thirst": "Вода", "stamina": "Запас сил"}
@@ -259,28 +264,141 @@ func _fill_stats(a: Actor) -> void:
 # НАВЫКИ
 # =====================================================================
 func _fill_skills(a: Actor) -> void:
-	var sk: Dictionary = R.skills()
-	for k in sk:
-		var lv: int = a.skill_level(k)
-		var mx: int = int(sk[k].get("max_level", 10))
-		var table: Array = R.xp_table(k)
-		var xp: float = float(a.skills.get(k, {}).get("xp", 0.0))
+	_body.add_child(_label("Очков навыков: %d · отмеченные (◆) растут на 2 %% за очко · цена растёт после 100, 125, 150, 175, 200 %%" % a.skill_points, 15, COL_GOLD if a.skill_points > 0 else COL_DIM))
+	var groups: Dictionary = S.sect("groups")
+	for g in groups:
+		_body.add_child(_label(String(groups[g]), 16, COL_GOLD))
+		for k in S.skill_list():
+			if String(S.skills()[k].get("group", "")) != g:
+				continue
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			var tag: bool = S.is_tag(a, k)
+			var l := _label("%s %s" % ["◆" if tag else "◇", S.skill_name(k)], 15, COL_GOLD if tag else COL_TEXT)
+			l.custom_minimum_size = Vector2(230.0, 0.0)
+			l.tooltip_text = String(S.skills()[k].get("desc", ""))
+			l.mouse_filter = Control.MOUSE_FILTER_PASS
+			row.add_child(l)
+			var v := _label("%d %%" % S.skill_value(a, k), 16, COL_GOLD)
+			v.custom_minimum_size = Vector2(70.0, 0.0)
+			row.add_child(v)
+			var minus := _small("−", lower_skill.bind(k))
+			minus.disabled = int(_undo.get(k, 0)) <= 0
+			row.add_child(minus)
+			var plus := _small("+", raise_skill.bind(k))
+			plus.disabled = not S.can_raise(a, k)
+			row.add_child(plus)
+			var c: int = S.skill_cost(a, k)
+			row.add_child(_label(("цена %d" % c) if c > 0 else "предел", 13, COL_DIM))
+			if a.tag_left > 0 and not tag:
+				row.add_child(_small("Отметить", tag_skill.bind(k)))
+			var fs: Array = S.skills()[k].get("stats", [])
+			row.add_child(_label("  от %s" % ", ".join(PackedStringArray(fs.map(func(x): return S.stat_short(x)))), 13, COL_DIM))
+			_body.add_child(row)
+	_body.add_child(_wrap("Навыки растут очками навыков: %d + 2 × Интеллект за каждый уровень. Опыт дают бои, поручения, путь, лечение и ремесло. «−» возвращает очки, пока окно открыто." % int(S.d("skill_points_base", 5)), 13, COL_DIM))
+
+
+func tag_skill(k: String) -> void:
+	var a: Actor = _actor()
+	if a != null:
+		S.add_tag(a, k)
+	_sig = ""
+	refresh()
+
+
+func raise_skill(k: String) -> void:
+	var a: Actor = _actor()
+	if a != null and S.raise(a, k):
+		_undo[k] = int(_undo.get(k, 0)) + 1
+	_sig = ""
+	refresh()
+
+
+func lower_skill(k: String) -> void:
+	var a: Actor = _actor()
+	if a != null and int(_undo.get(k, 0)) > 0 and S.lower(a, k):
+		_undo[k] = int(_undo[k]) - 1
+	_sig = ""
+	refresh()
+
+
+# =====================================================================
+# ПЕРКИ И ЧЕРТЫ FALLOUT
+# =====================================================================
+func _fill_perks(a: Actor) -> void:
+	_body.add_child(_label("Черты Fallout", 17, COL_GOLD))
+	if a.fo_traits.is_empty():
+		_body.add_child(_label("Нет.", 14, COL_DIM))
+	for t in a.fo_traits:
 		var row := HBoxContainer.new()
-		var l := _label("%s  %d / %d" % [sk[k].get("name_ru", k), lv, mx], 16, COL_GOLD if lv > 0 else COL_TEXT)
-		l.custom_minimum_size = Vector2(300.0, 0.0)
-		row.add_child(l)
-		var bar := ProgressBar.new()
-		bar.custom_minimum_size = Vector2(240.0, 16.0)
-		bar.show_percentage = false
-		var lo: float = float(table[lv - 1]) if lv > 0 and lv - 1 < table.size() else 0.0
-		var hi: float = float(table[lv]) if lv < mini(mx, table.size()) else lo
-		bar.max_value = maxf(hi - lo, 1.0)
-		bar.value = clampf(xp - lo, 0.0, bar.max_value) if hi > lo else bar.max_value
-		row.add_child(bar)
-		row.add_child(_label("  опыт %d%s" % [int(xp), (" / %d" % int(hi)) if hi > lo else " (предел)"], 13, COL_DIM))
+		row.add_child(_wrap(S.trait_text(t), 14, COL_TEXT))
+		if a.mutate_left > 0:
+			row.add_child(_small("Убрать (Мутация)", mutate_trait.bind(t, "")))
 		_body.add_child(row)
-		_body.add_child(_wrap(String(sk[k].get("description", "")), 13, COL_DIM))
-	_body.add_child(_wrap("Опыт растёт от дела: Выживание — в пути, Медицина — при лечении. Интеллект и черты «Трудолюбивый», «Грамотный» ускоряют рост.", 13, COL_DIM))
+	if a.mutate_left > 0 and a.fo_traits.size() < int(S.data().get("traits_max", 2)):
+		var mg := HFlowContainer.new()
+		for t in S.traits():
+			if not a.fo_traits.has(t):
+				mg.add_child(_small("+ " + String(S.traits()[t]["title"]), mutate_trait.bind("", t)))
+		_body.add_child(_label("Мутация: можно взять черту", 14, COL_GOLD))
+		_body.add_child(mg)
+	_body.add_child(HSeparator.new())
+	_body.add_child(_label("Перки", 17, COL_GOLD))
+	if a.perks.is_empty():
+		_body.add_child(_label("Пока нет. Перк — раз в %d уровня." % S.perk_rate(a), 14, COL_DIM))
+	for id in a.perks:
+		var rk: int = int(a.perks[id])
+		_body.add_child(_wrap("%s%s — %s" % [S.perk_def(id).get("title", id), " ×%d" % rk if rk > 1 else "", S.perk_def(id).get("text", "")], 14, COL_GOOD))
+	_body.add_child(HSeparator.new())
+	if a.perk_picks <= 0:
+		_body.add_child(_label("Новый перк — на уровне %d." % _next_perk_level(a), 15, COL_DIM))
+		return
+	_body.add_child(_label("Выберите перк (можно: %d)" % a.perk_picks, 17, COL_GOLD))
+	var av: Array = S.available_perks(a)
+	if av.is_empty():
+		_body.add_child(_label("Подходящих перков нет: поднимите уровень, характеристики или навыки.", 14, COL_DIM))
+		return
+	if not av.has(perk_sel):
+		perk_sel = av[0]
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 4)
+	flow.add_theme_constant_override("v_separation", 4)
+	for id in av:
+		var b := _small(String(S.perk_def(id).get("title", id)), func() -> void: perk_sel = id; _sig = ""; refresh())
+		b.toggle_mode = true
+		b.button_pressed = id == perk_sel
+		flow.add_child(b)
+	_body.add_child(flow)
+	_body.add_child(_wrap(S.perk_text(perk_sel), 15, COL_TEXT))
+	var take := _small("Взять перк «%s»" % S.perk_def(perk_sel).get("title", perk_sel), pick_perk.bind(perk_sel))
+	take.add_theme_font_size_override("font_size", 16)
+	_body.add_child(take)
+
+
+func _next_perk_level(a: Actor) -> int:
+	var r: int = S.perk_rate(a)
+	return (a.level / r + 1) * r
+
+
+func pick_perk(id: String) -> void:
+	var a: Actor = _actor()
+	if a == null:
+		return
+	var why: String = S.take_perk(a, id)
+	_say("Перк взят: %s" % S.perk_def(id).get("title", id) if why == "" else "Нельзя: " + why)
+	perk_sel = ""
+	_sig = ""
+	refresh()
+
+
+func mutate_trait(remove_id: String, add_id: String) -> void:
+	var a: Actor = _actor()
+	if a == null:
+		return
+	var why: String = S.mutate(a, remove_id, add_id)
+	_say("Мутация: готово" if why == "" else "Нельзя: " + why)
+	_sig = ""
+	refresh()
 
 
 # =====================================================================
@@ -351,7 +469,7 @@ func _fill_bag(a: Actor) -> void:
 	inv_page = clampi(inv_page, 0, view.pages() - 1)
 	_body.add_child(view)
 	if _say_t <= 0.0:
-		_note.text = "Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–4 вкладки · Esc закрыть"
+		_note.text = "Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–5 вкладки · Esc закрыть"
 
 
 func refresh_bag() -> void:
@@ -496,7 +614,7 @@ func _input(event: InputEvent) -> void:
 			toggle("stats")
 		KEY_TAB:
 			toggle("bag")
-		KEY_1, KEY_2, KEY_3, KEY_4:
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
 			show_tab(TABS[event.physical_keycode - KEY_1])
 		_:
 			return

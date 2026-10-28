@@ -5,6 +5,7 @@ extends SceneTree
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
+const Special := preload("res://characters/special.gd")
 const Inv := preload("res://characters/inventory_view.gd")
 const Trade := preload("res://city/trade.gd")
 
@@ -69,36 +70,42 @@ func _rules() -> void:
 	p["age"] = 35
 	p["origin"] = "peasant"
 	p["profession"] = "smith"
-	p["alloc"] = {"str": 4, "agi": 0, "int": 0, "end": 3, "per": 1, "wis": 1, "cha": 1}
+	# SPECIAL по Fallout: от 5, свободных 5; Ловкость опущена до 4 — ещё одно очко
+	p["alloc"] = {"str": 3, "per": 0, "end": 2, "cha": 0, "int": 1, "agi": -1, "luck": 0}
 	p["traits"] = ["strong_build", "glutton", "honest"]
-	ok(P.alloc_valid(p["alloc"]), "10 очков распределены")
+	p["fo_traits"] = ["bruiser"]
+	ok(P.alloc_valid(p["alloc"]), "5 свободных очков распределены (одно взято у Ловкости)")
 	var parts: Dictionary = P.stat_parts(p)
-	# Сила: 4+4 очков, +1 мужчина, +2 крестьянин +2 кузнец = +4 прошлое, +1 возраст 30–45, +1 «Крепкое сложение» = 15
-	ok(int(parts["str"]["total"]) == 15, "Сила по частям: %s" % parts["str"])
-	# Ловкость: 4, кузнец −1, итог не ниже 4
-	ok(int(parts["agi"]["total"]) == 4 and int(parts["agi"]["background"]) == -1, "Ловкость не ниже 4: %s" % parts["agi"])
-	ok(int(parts["cha"]["total"]) == 4 + 1 - 1 + 1 + 1, "Харизма: очки, крестьянин −1, возраст +1, «Честный» +1: %s" % parts["cha"])
-	# Скрытая Удача: недостатки 2 − достоинства (3 + 2) = −3
-	ok(int(parts["luck"]["total"]) == -3, "скрытая Удача из баланса черт: %s" % parts["luck"])
-	var bg: Dictionary = P.background_mods("peasant", "smith")
-	ok(int(bg["stats"]["str"]) == 4 and int(bg["luck"]) == 0, "поправки прошлого: %s" % bg)
+	# Сила: 5 + 3 очка + 2 «Громила» = 10 (предел); прошлое и черты характера SPECIAL не меняют
+	ok(int(parts["str"]["total"]) == 10 and int(parts["str"]["traits"]) == 2, "Сила по частям: %s" % parts["str"])
+	ok(int(parts["agi"]["total"]) == 4, "Ловкость опущена до 4: %s" % parts["agi"])
+	ok(int(parts["cha"]["total"]) == 5 and int(parts["luck"]["total"]) == 5, "Харизма и Удача — 5, как у всех: %s %s" % [parts["cha"], parts["luck"]])
+	ok(not P.alloc_valid({"str": 6, "per": 0, "end": 0, "cha": 0, "int": 0, "agi": -1, "luck": 0}), "выше 10 нельзя")
+	ok(not P.alloc_valid({"str": 2, "per": 0, "end": 0, "cha": 0, "int": 0, "agi": 0, "luck": 0}), "не все очки — нельзя")
+	ok(P.profession_tags("smith") == ["repair", "melee", "barter"], "кузнец отмечает Ремесло, Холодное оружие, Торговлю")
 	ok(P.traits_valid(["brave", "coward"]) != "", "противоположные черты нельзя вместе")
 	var many: Array = ["brave", "honest", "diligent", "hardy", "strong_build", "nimble", "sharp", "prudent", "keen_eye", "charming", "pious"]
 	ok(P.traits_valid(many) != "", "больше 10 черт нельзя (%d)" % many.size())
 	ok(P.alignment_name(P.alignment(["honest", "pious", "compassionate"])) == "Законно-добрый", "мировоззрение из черт")
 	ok(P.alignment_name(P.alignment(["cruel", "liar", "rash"])) == "Хаотично-злой", "злое мировоззрение из черт")
-	var lv: Dictionary = P.skill_levels(p)
-	ok(int(lv.get("blacksmith", 0)) == 3 and int(lv.get("survival", 0)) == 1, "навыки пака от прошлого: %s" % lv)
+	var bonus: Dictionary = P.skill_bonus(p)
+	# кузнец: Кузнечное дело 3 → Ремесло +15 %; крестьянин: Выживание 1 + Кулинария 1 → Выживание +10 %
+	ok(int(bonus.get("repair", 0)) == 15 and int(bonus.get("outdoorsman", 0)) == 10, "добавки к навыкам от прошлого: %s" % bonus)
+	var vals: Dictionary = P.skill_values(p)
+	# Ремесло: 3×ИНТ(6) = 18 + отмечен 20 + прошлое 15 = 53
+	ok(int(vals["repair"]) == 53, "Ремесло героя: %s" % vals["repair"])
 	var bio: String = P.biography(p)
 	ok(bio.begins_with("Конрад, 35 лет.") and bio.contains("Мировоззрение: «") and bio.length() < 260 and bio.count(".") <= 4, "биография короткая и пишется сама: " + bio)
 	ok(P.biography(p) == bio, "биография одинаковая при одинаковом выборе")
 
 	var a := Actor.new("hero", "Герой", false, 7)
 	P.apply(a, p)
-	ok(a.display_name == "Конрад" and int(a.stat("str")) == 15 and int(a.stat("luck")) == -3, "герой получил имя и характеристики")
-	ok(a.skill_level("blacksmith") == 3 and a.traits.size() == 3, "герой получил навыки и черты")
+	ok(a.display_name == "Конрад" and int(a.stat("str")) == 10 and int(a.stat("luck")) == 5, "герой получил имя и SPECIAL")
+	ok(a.skill("repair") == 53 and a.skill_level("blacksmith") == 5 and a.traits.size() == 3 and a.fo_traits == ["bruiser"], "герой получил навыки, черты характера и черту Fallout")
+	ok(a.tags == ["repair", "melee", "barter"] and a.level == 1, "отмечены навыки профессии, уровень 1")
 	var b := Actor.from_dict(a.to_dict())
 	ok(b.traits == a.traits and b.profile.get("origin") == "peasant" and String(b.profile.get("biography", "")) == bio, "черты и профиль в сохранении")
+	ok(b.fo_traits == a.fo_traits and b.tags == a.tags and b.skill("repair") == 53 and int(b.stat("str")) == 10, "SPECIAL, отметки и черты Fallout в сохранении")
 	# Черты работают через эффекты: обжора голодает быстрее
 	var plain := Actor.new("x", "x", false, 1)
 	var env := {"biome": 4, "water": 0.0, "temp_c": 15.0, "rain": 0.0, "night": false}
@@ -113,7 +120,7 @@ func _rules() -> void:
 	var lazy := Actor.new("w", "w", false, 1)
 	lazy.traits = ["lazy"]
 	lazy.add_xp("survival", 100.0)
-	ok(float(dil.skills["survival"]["xp"]) > float(lazy.skills["survival"]["xp"]), "«Трудолюбивый» учится быстрее «Ленивого»")
+	ok(dil.xp > lazy.xp, "«Трудолюбивый» набирает опыт быстрее «Ленивого»")
 	var q := Actor.new("q", "q", false, 1)
 	q.traits = ["quiet"]
 	ok(q.mult("sneak") > 1.0 and plain.mult("sneak") == 1.0, "«Тихий» — выше шанс проникнуть")
@@ -128,7 +135,7 @@ func _rules() -> void:
 	r.seed = 5
 	for i in 30:
 		var rp: Dictionary = P.random_params(r)
-		if not P.alloc_valid(rp["alloc"]) or P.traits_valid(rp["traits"]) != "":
+		if not P.alloc_valid(rp["alloc"]) or P.traits_valid(rp["traits"]) != "" or Special.tags_valid(rp["tags"]) != "" or Special.traits_valid(rp["fo_traits"]) != "":
 			ok(false, "случайный герой допустим: %s" % rp)
 			return
 	ok(true, "30 случайных героев допустимы")
@@ -147,10 +154,22 @@ func _menu() -> void:
 	ok(cr != null and cr.visible, "«Новая игра» открывает создание персонажа")
 	ok(cr.create_btn.disabled, "без имени и очков «Создать» недоступна")
 	cr.name_edit.text = "Ильза"
-	for s in ["agi", "agi", "agi", "per", "per", "per", "end", "end", "cha", "cha"]:
+	for s in ["agi", "agi", "agi", "per", "per"]:
 		cr.change_stat(s, 1)
 	cr.change_stat("str", 1)
-	ok(P.points_spent(cr.alloc) == 10, "больше 10 очков не потратить")
+	ok(P.points_spent(cr.alloc) == 5, "больше 5 очков не потратить")
+	cr.change_stat("cha", -1)
+	cr.change_stat("str", 1)
+	ok(int(cr.alloc["cha"]) == -1 and int(cr.alloc["str"]) == 1, "опустить Харизму до 4 — и очко на Силу")
+	cr.toggle_tag("bows")
+	ok(cr.tags.size() == 3 and not cr.tags.has("bows"), "больше 3 отмеченных навыков нельзя")
+	cr.toggle_tag("melee")
+	cr.toggle_tag("bows")
+	ok(cr.tags.has("bows") and not cr.tags.has("melee"), "отметки можно менять")
+	cr.toggle_fo_trait("small_frame")
+	cr.toggle_fo_trait("finesse")
+	cr.toggle_fo_trait("gifted")
+	ok(cr.fo_traits == ["small_frame", "finesse"], "не больше двух черт Fallout")
 	cr.toggle_trait("nimble")
 	cr.toggle_trait("clumsy")
 	ok(cr.traits == ["nimble"], "противоположную черту не выбрать")
@@ -164,7 +183,9 @@ func _menu() -> void:
 	await shot("h02_create_random.png")
 	cr._set_gender("female")
 	cr.name_edit.text = "Ильза"
-	cr.alloc = {"str": 0, "agi": 3, "int": 0, "end": 2, "per": 3, "wis": 0, "cha": 2}
+	cr.alloc = {"str": 0, "per": 2, "end": 1, "cha": 0, "int": 0, "agi": 2, "luck": 0}
+	cr.tags = ["bows", "sneak", "outdoorsman"]
+	cr.fo_traits = ["small_frame"]
 	cr.traits = ["nimble", "keen_eye", "light_sleeper", "quiet"]
 	cr._refresh()
 	# «Создать» уводит в игру; здесь перехватываем, чтобы не менять сцену в тесте
@@ -213,7 +234,11 @@ func _game() -> void:
 	await shot("h04_window_skills.png")
 	key(KEY_3)
 	await frames(3)
-	ok(cast.window.tab == "traits", "3 — черты характера")
+	ok(cast.window.tab == "perks", "3 — перки и черты Fallout")
+	await shot("h05_window_perks.png")
+	key(KEY_4)
+	await frames(3)
+	ok(cast.window.tab == "traits", "4 — черты характера")
 	await shot("h05_window_traits.png")
 	key(KEY_TAB)
 	await frames(3)

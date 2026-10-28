@@ -5,6 +5,7 @@ extends RefCounted
 ## Числа [ВРЕМЕННО].
 
 const Data := preload("res://battle/battle_data.gd")
+const Special := preload("res://characters/special.gd")
 const TERRAINS: Array = ["", "water", "coast", "forest", "wasteland", "swamp", "mountains", "rad_forest", "rad_wasteland", "rad_swamp"]
 const PER_KM: float = 0.06
 const NIGHT_MULT: float = 1.5
@@ -56,7 +57,16 @@ static func roll_on_km(hero: Actor, env: Dictionary, rng: RandomNumberGenerator 
 	if hero == null or not hero.alive:
 		return false
 	var r: float = rng.randf() if rng != null else randf()
-	return r < chance_per_km(env)
+	# перки Fallout: «Странник» — реже нападают, «Друг зверей» — реже звери (по их доле в местности)
+	var w: Dictionary = BY_TERRAIN.get(terrain_key(int(env.get("biome", 4))), {})
+	var total: float = 0.0
+	var beasts: float = 0.0
+	for k in w:
+		total += float(w[k])
+		if k in ["wolves", "boar", "hounds"]:
+			beasts += float(w[k])
+	var m: float = 1.0 + Special.eff(hero, "encounter") + Special.eff(hero, "encounter_beast") * (beasts / total if total > 0.0 else 0.0)
+	return r < chance_per_km(env) * maxf(m, 0.0)
 
 
 static func pick_group(terrain: String, rng: RandomNumberGenerator) -> String:

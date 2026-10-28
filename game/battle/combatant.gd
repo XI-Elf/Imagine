@@ -4,10 +4,12 @@ extends RefCounted
 ## Лист строится из Actor (герой, НПС) или из шаблона BattleCreature (враги, питомцы).
 
 const Data := preload("res://battle/battle_data.gd")
+const Special := preload("res://characters/special.gd")
 const STATS: Array = ["str", "dex", "con", "int", "wis", "cha", "lck"]
-const STAT_NAMES: Dictionary = {"str": "СИЛ", "dex": "ЛОВ", "con": "ВЫН", "int": "ИНТ", "wis": "МДР", "cha": "ХАР", "lck": "УДЧ"}
-# Характеристики Амбера -> D&D (Восприятие — отдельно, в инициативу и внимательность)
-const FROM_AMBER: Dictionary = {"str": "str", "dex": "agi", "con": "end", "int": "int", "wis": "wis", "cha": "cha"}
+const STAT_NAMES: Dictionary = {"str": "СИЛ", "dex": "ЛВК", "con": "ВЫН", "int": "ИНТ", "wis": "ВОС", "cha": "ХАР", "lck": "УДЧ"}
+# SPECIAL -> D&D (решение Huzzah 2026-10-28: бой D&D от SPECIAL): характеристика боя = SPECIAL × 2.
+# Мудрость D&D — это Восприятие (внимательность, спасброски воли), Удача — своя седьмая
+const FROM_AMBER: Dictionary = {"str": "str", "dex": "agi", "con": "end", "int": "int", "wis": "per", "cha": "cha", "lck": "luck"}
 
 var actor: Actor
 var team: int = 0
@@ -57,19 +59,27 @@ var dead: bool = false
 var fled: bool = false
 var hp_at_start: int = 0
 var new_traumas: Array = []
+# Fallout: у героя и людей из Actor мастерство атаки — от навыка оружия, бонусы черт и перков (special.gd)
+var fo: bool = false
+var dr_pct: float = 0.0             # «Крепкий»: доля урона, которую не получает
 
 
 func build_from_actor(a: Actor, t: int, cfg: BattleConfig, loadout: Dictionary) -> void:
 	actor = a
 	team = t
 	title = a.display_name
+	fo = true
+	var bt: Dictionary = Special.sect("battle")
 	for k in FROM_AMBER:
-		scores[k] = int(a.stats.get(FROM_AMBER[k], 4)) + cfg.stat_offset
-	scores["lck"] = int(a.stat("luck")) + cfg.luck_offset
-	per_bonus = int(floor((float(a.stats.get("per", 4)) - 4.0) / float(maxi(cfg.per_initiative_div, 1))))
-	level = cfg.party_level
-	var die_hp: int = int(loadout.get("hp_die", 8))
-	max_hp = maxi(1, die_hp + mod("con") + (level - 1) * (die_hp / 2 + 1 + mod("con")))
+		scores[k] = Special.special(a, FROM_AMBER[k]) * int(bt.get("score_mult", 2))
+	# Порядок хода Fallout (2×ВОС + перки) → прибавка к инициативе
+	per_bonus = int(floor((Special.sequence(a) - float(bt.get("init_ref", 10))) / maxf(float(bt.get("init_div", 2)), 1.0))) + int(fx("b_init"))
+	level = maxi(a.level, cfg.party_level)
+	# ОЗ — по Fallout: 15 + СИЛ + 2×ВЫН + за уровни
+	max_hp = maxi(1, Special.hp_max(a))
+	# Ход — от очков действия Fallout: 30 фт при 7 ОД, ±5 фт за каждое
+	speed_ft = maxi(int(bt.get("speed_min_ft", 15)), int(bt.get("speed_base_ft", 30)) + int(bt.get("speed_per_ap_ft", 5)) * (Special.ap(a) - int(bt.get("speed_ap_ref", 7))) + int(fx("b_speed_ft")))
+	dr_pct = clampf(fx("b_dr_pct") / 100.0, 0.0, 0.9)
 	armor = Data.armor(String(loadout.get("armor", "none")))
 	for w in loadout.get("weapons", ["fists"]):
 		_add_weapon(String(w))
@@ -95,9 +105,9 @@ func build_from_creature(c: BattleCreature, a: Actor, t: int, cfg: BattleConfig,
 	level = c.level
 	for k in STATS:
 		scores[k] = int(c.scores.get(k, 10))
-	# Лист и Actor согласованы: характеристики Амбера = D&D − сдвиг (для сохранения через Actor.to_dict)
+	# Лист и Actor согласованы: SPECIAL = характеристика D&D / 2 (для сохранения через Actor.to_dict)
 	for k in FROM_AMBER:
-		a.stats[FROM_AMBER[k]] = int(scores[k]) - cfg.stat_offset
+		a.stats[FROM_AMBER[k]] = clampi(int(round(int(scores[k]) / float(Special.sect("battle").get("score_mult", 2)))), 1, 10)
 	var r: Dictionary = roller.roll(c.hp_dice, {"extra_mod": mod("con") * level, "label": "HP " + c.title, "silent": true})
 	max_hp = maxi(1, int(r["total"]))
 	armor = Data.armor(c.armor) if c.armor != "" else null
@@ -157,7 +167,80 @@ static func ability_mod(score: int) -> int:
 
 
 func mod(stat: String) -> int:
-	return ability_mod(int(scores.get(stat, 10)))
+	var sc: int = int(scores.get(stat, 10))
+	# «Ярость раненого»: +1 СИЛ (×2 в бою), когда здоровья меньше половины
+	if fo and stat == "str" and hp * 2 < max_hp and fx("adrenaline") > 0.0:
+		sc += int(Special.sect("battle").get("score_mult", 2))
+	return ability_mod(sc)
+
+
+## Эффект черт Fallout и перков героя (0 у зверей и врагов из шаблонов)
+func fx(key: String) -> float:
+	return Special.eff(actor, key) if fo and actor != null else 0.0
+
+
+## Навык Fallout, которым бьёт это оружие: натуральное и кулаки — Рукопашный бой, стрелковое — Стрельба,
+## метательное — Метание, остальное — Холодное оружие
+static func weapon_skill(w: BattleWeapon) -> String:
+	if w == null:
+		return "unarmed"
+	if w.proficiency == "natural" or w.id == "fists":
+		return "unarmed"
+	if w.ranged:
+		return "throwing" if w.icon in ["knife", "axe"] else "bows"
+	return "melee"
+
+
+## Мастерство атаки: у героя и людей — навык оружия / 20 (0–6), у шаблонов — по уровню (5e)
+func attack_prof(w: BattleWeapon) -> int:
+	if not fo:
+		return prof()
+	var bt: Dictionary = Special.sect("battle")
+	return clampi(int(floor(Special.skill_value(actor, weapon_skill(w)) / maxf(float(bt.get("prof_div", 20)), 1.0))),
+		int(bt.get("prof_min", 0)), int(bt.get("prof_max", 6)))
+
+
+## Бонус попадания от черт и перков: стрелковое/ближнее, одноручное/двуручное
+func fo_attack_bonus(w: BattleWeapon) -> int:
+	if not fo or w == null:
+		return 0
+	var b: float = fx("b_atk_ranged") if w.ranged else fx("b_atk_melee")
+	if w.two_handed:
+		b += fx("b_atk_two")
+	elif w.proficiency != "natural":
+		b += fx("b_atk_one")
+	return int(b)
+
+
+## Бонус урона от черт и перков к компоненту оружия
+func fo_damage_bonus(w: BattleWeapon) -> int:
+	if not fo or w == null:
+		return 0
+	var b: float = fx("b_dmg_all")
+	if w.ranged:
+		b += fx("b_dmg_ranged")
+	else:
+		b += fx("melee_dmg")
+	return int(b)
+
+
+## Шире окно крита: Fallout крит % / 5 клеток d20 (Удача 5 → только 20), «Снайпер» +3 из стрелкового
+func crit_extra(w: BattleWeapon) -> int:
+	if not fo:
+		return 0
+	var n: int = int(floor(Special.crit_pct(actor) / maxf(float(Special.sect("battle").get("crit_div", 5)), 1.0))) - 1
+	if w != null and w.ranged:
+		n += int(fx("b_crit_ranged"))
+	return maxi(0, n)
+
+
+## Можно ли этим оружием ударить ещё раз бонусным действием («Быстрый выстрел», «Скорострел», «Шквал ударов»)
+func bonus_attack_ok(w: BattleWeapon) -> bool:
+	if not fo or w == null:
+		return false
+	if w.ranged:
+		return fx("fast_shot") > 0.0 or fx("bonus_attack_ranged") > 0.0
+	return fx("bonus_attack_melee") > 0.0
 
 
 static func prof_for_level(lv: int) -> int:
@@ -218,6 +301,11 @@ func has_effect(id: String) -> bool:
 func add_effect(id: String, rounds_override: int = 0) -> bool:
 	var r: BattleEffect = Data.effect(id)
 	if r == null:
+		return false
+	# «Скала» — не сбить с ног (без сознания всё равно падает); «Ясный ум» — не напугать
+	if id == "prone" and not down and fx("stonewall") > 0.0:
+		return false
+	if id == "frightened" and fx("mental_block") > 0.0:
 		return false
 	var left: int = rounds_override if rounds_override != 0 else r.duration_rounds
 	for e in effects:

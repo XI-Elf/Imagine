@@ -1,12 +1,13 @@
 extends RefCounted
-## Создание героя по правилам сборки 09 (character.gd / character_balance.gd / character_biography.gd),
-## переложенным на общий класс Actor: 10 очков на 7 характеристик (база 4), пол, возраст, происхождение,
-## профессия (сумма их поправок в пределах ±5, Удача −5…+2), до 10 черт характера без противоположностей
-## (скрытая Удача из баланса черт, не больше ±10), мировоззрение из черт, биография.
-## Навыки — уровни навыков пака (0–10). Все данные — res://data/characters/creation.json.
-## params: {name, gender, age, origin, profession, alloc: {stat: очки}, traits: [id]}
+## Создание героя. Кто он — по правилам сборки 09 (пол, возраст, происхождение, профессия, до 10 черт
+## характера без противоположностей, мировоззрение, биография). Характеристики и навыки — по Fallout
+## (characters/special.gd): SPECIAL от 5, 5 свободных очков, можно опустить до 1; 3 отмеченных навыка
+## (профессия предлагает свои); до 2 черт Fallout. Прошлое и черты характера SPECIAL не меняют, их «skills»
+## (уровни старых навыков пака) дают +5 % за уровень к навыку Fallout. Данные — creation.json, special.json.
+## params: {name, gender, age, origin, profession, alloc: {stat: от 5}, tags: [навык], fo_traits: [id], traits: [id]}
 
 const R := preload("res://characters/actor_rules.gd")
+const S := preload("res://characters/special.gd")
 
 
 static func C() -> Dictionary:
@@ -14,19 +15,24 @@ static func C() -> Dictionary:
 
 
 static func stats_list() -> Array:
-	return ["str", "agi", "int", "end", "per", "wis", "cha"]
+	return S.stats_list()
 
 
 static func stat_name(s: String) -> String:
-	return String(R.section("stats").get("names", {}).get(s, s))
+	return S.stat_name(s)
+
+
+static func profession_tags(p: String) -> Array:
+	return C()["professions"].get(p, {}).get("tags", []).duplicate()
 
 
 static func default_params() -> Dictionary:
 	var alloc: Dictionary = {}
 	for s in stats_list():
 		alloc[s] = 0
+	var pr: String = C()["professions"].keys()[0]
 	return {"name": "", "gender": "female", "age": 25, "origin": C()["origins"].keys()[0],
-		"profession": C()["professions"].keys()[0], "alloc": alloc, "traits": []}
+		"profession": pr, "alloc": alloc, "tags": profession_tags(pr), "fo_traits": [], "traits": []}
 
 
 # =====================================================================
@@ -35,36 +41,6 @@ static func default_params() -> Dictionary:
 static func _add(into: Dictionary, src: Dictionary, k: float = 1.0) -> void:
 	for s in src:
 		into[s] = int(into.get(s, 0)) + int(round(float(src[s]) * k))
-
-
-## Происхождение + профессия: сумма по каждой характеристике в пределах ±5, Удача −5…+2 (правило 09)
-static func background_mods(o: String, p: String) -> Dictionary:
-	var lim: Dictionary = C().get("background_limits", {})
-	var od: Dictionary = C()["origins"].get(o, {})
-	var pd: Dictionary = C()["professions"].get(p, {})
-	var st: Dictionary = {}
-	_add(st, od.get("stats", {}))
-	_add(st, pd.get("stats", {}))
-	for s in st.keys():
-		st[s] = clampi(int(st[s]), int(lim.get("min", -5)), int(lim.get("max", 5)))
-		if int(st[s]) == 0:
-			st.erase(s)
-	var luck: int = clampi(int(od.get("luck", 0)) + int(pd.get("luck", 0)), int(lim.get("luck_min", -5)), int(lim.get("luck_max", 2)))
-	return {"stats": st, "luck": luck}
-
-
-static func age_mods(age: int) -> Dictionary:
-	for g in C().get("age_groups", []):
-		if age >= int(g[0]) and age <= int(g[1]):
-			return g[2]
-	return {}
-
-
-static func trait_mods(list: Array) -> Dictionary:
-	var st: Dictionary = {}
-	for t in list:
-		_add(st, R.trait_def(t).get("stats", {}))
-	return st
 
 
 # =====================================================================
@@ -100,13 +76,6 @@ static func traits_cost(list: Array) -> Dictionary:
 	return {"positive": pos, "negative": neg}
 
 
-## Скрытая поправка Удачи: негативные черты её добавляют, позитивные отнимают (правило 09)
-static func hidden_luck(list: Array) -> int:
-	var c: Dictionary = traits_cost(list)
-	var lim: int = int(C().get("trait_luck_limit", 10))
-	return clampi(int(c["negative"]) - int(c["positive"]), -lim, lim)
-
-
 static func random_traits(r: RandomNumberGenerator) -> Array:
 	var keys: Array = C()["traits"].keys()
 	var want: int = r.randi_range(2, 6)
@@ -125,10 +94,8 @@ static func random_traits(r: RandomNumberGenerator) -> Array:
 static func trait_text(t: String) -> String:
 	var d: Dictionary = R.trait_def(t)
 	var parts: Array = []
-	for k in d.get("stats", {}):
-		parts.append("%s %+d" % [stat_name(k), int(d["stats"][k])])
 	for k in d.get("skills", {}):
-		parts.append("%s %+d ур." % [R.skills().get(k, {}).get("name_ru", k), int(d["skills"][k])])
+		parts.append("%s %+d %%" % [S.skill_name(k), int(d["skills"][k]) * legacy_pct()])
 	for k in d.get("effects", {}):
 		parts.append(effect_text(k, float(d["effects"][k])))
 	if d.has("moral") or d.has("order"):
@@ -140,7 +107,7 @@ static func trait_text(t: String) -> String:
 
 
 const EFFECT_NAMES: Dictionary = {
-	"power": "сила удара", "speed": "скорость", "loot": "поиск", "xp": "опыт навыков",
+	"power": "сила удара", "speed": "скорость", "loot": "поиск", "xp": "опыт",
 	"disease_chance": "шанс заболеть", "fall_chance": "травмы в пути", "food_water_chance": "болезни от еды и сырой воды",
 	"sneak": "шанс проникнуть в город", "sleep_energy": "отдых во сне",
 }
@@ -196,41 +163,55 @@ static func points_spent(alloc: Dictionary) -> int:
 
 
 static func alloc_valid(alloc: Dictionary) -> bool:
-	for s in alloc:
-		if not stats_list().has(s) or int(alloc[s]) < 0:
-			return false
-	return points_spent(alloc) == int(C().get("points", 10))
+	return S.alloc_valid(alloc) == ""
 
 
-## Характеристики по частям: {stat: {base, gender, background, age, traits, total}}; luck: {background, hidden, total}
+static func legacy_pct() -> int:
+	return int(S.data().get("legacy_level_pct", 5))
+
+
+## Временный герой из выбора — чтобы посчитать SPECIAL с чертами Fallout и навыки
+static func preview_actor(p: Dictionary) -> Actor:
+	var a := Actor.new("preview", String(p.get("name", "")), false, 1)
+	S.apply_creation(a, p.get("alloc", {}), p.get("tags", []), p.get("fo_traits", []))
+	var b: Dictionary = skill_bonus(p)
+	for k in b:
+		a.skills[k]["bonus"] = int(b[k])
+	return a
+
+
+## Характеристики по частям: {stat: {base (5 + очки), traits (черты Fallout), total}}
 static func stat_parts(p: Dictionary) -> Dictionary:
-	var base: int = int(C().get("stat_base", 4))
-	var mn: int = int(C().get("stat_min", 4))
-	var bg: Dictionary = background_mods(String(p.get("origin", "")), String(p.get("profession", "")))
-	var gm: Dictionary = C()["genders"].get(String(p.get("gender", "female")), {}).get("stats", {})
-	var am: Dictionary = age_mods(int(p.get("age", 25)))
-	var tm: Dictionary = trait_mods(p.get("traits", []))
+	var a: Actor = preview_actor(p)
 	var out: Dictionary = {}
 	for s in stats_list():
-		var e: Dictionary = {"base": base + int(p.get("alloc", {}).get(s, 0)), "gender": int(gm.get(s, 0)),
-			"background": int(bg["stats"].get(s, 0)), "age": int(am.get(s, 0)), "traits": int(tm.get(s, 0))}
-		e["total"] = maxi(mn, int(e["base"]) + int(e["gender"]) + int(e["background"]) + int(e["age"]) + int(e["traits"]))
-		out[s] = e
-	var hl: int = hidden_luck(p.get("traits", []))
-	out["luck"] = {"background": int(bg["luck"]), "hidden": hl, "total": int(bg["luck"]) + hl}
+		var base: int = int(S.data().get("base", 5)) + int(p.get("alloc", {}).get(s, 0))
+		var tot: int = S.special(a, s)
+		out[s] = {"base": base, "traits": tot - base, "total": tot}
 	return out
 
 
-## Начальные уровни навыков пака от происхождения, профессии и черт
-static func skill_levels(p: Dictionary) -> Dictionary:
-	var out: Dictionary = {}
-	_add(out, C()["origins"].get(String(p.get("origin", "")), {}).get("skills", {}))
-	_add(out, C()["professions"].get(String(p.get("profession", "")), {}).get("skills", {}))
+## Добавка к навыкам Fallout от происхождения, профессии и черт характера: {навык: %}
+static func skill_bonus(p: Dictionary) -> Dictionary:
+	var lv: Dictionary = {}
+	_add(lv, C()["origins"].get(String(p.get("origin", "")), {}).get("skills", {}))
+	_add(lv, C()["professions"].get(String(p.get("profession", "")), {}).get("skills", {}))
 	for t in p.get("traits", []):
-		_add(out, R.trait_def(t).get("skills", {}))
-	for k in out.keys():
-		if not R.skills().has(k) or int(out[k]) <= 0:
-			out.erase(k)
+		_add(lv, R.trait_def(t).get("skills", {}))
+	var out: Dictionary = {}
+	for k in lv:
+		var nk: String = S.canon(String(k))
+		if S.skills().has(nk) and int(lv[k]) > 0:
+			out[nk] = int(out.get(nk, 0)) + int(lv[k]) * legacy_pct()
+	return out
+
+
+## Начальные навыки Fallout в процентах: {навык: значение}
+static func skill_values(p: Dictionary) -> Dictionary:
+	var a: Actor = preview_actor(p)
+	var out: Dictionary = {}
+	for k in S.skill_list():
+		out[k] = S.skill_value(a, k)
 	return out
 
 
@@ -283,27 +264,35 @@ static func random_params(r: RandomNumberGenerator) -> Dictionary:
 	var pr: Array = C()["professions"].keys()
 	p["origin"] = o[r.randi() % o.size()]
 	p["profession"] = pr[r.randi() % pr.size()]
-	for _i in int(C().get("points", 10)):
+	p["tags"] = profession_tags(p["profession"])
+	var guard: int = 0
+	while S.alloc_left(p["alloc"]) > 0 and guard < 100:
+		guard += 1
 		var s: String = stats_list()[r.randi() % stats_list().size()]
-		p["alloc"][s] = int(p["alloc"][s]) + 1
+		if int(p["alloc"][s]) + int(S.data().get("base", 5)) < int(S.data().get("max", 10)):
+			p["alloc"][s] = int(p["alloc"][s]) + 1
+	var ft: Array = S.traits().keys()
+	p["fo_traits"] = [] if r.randi() % 3 == 0 else [ft[r.randi() % ft.size()]]
 	p["traits"] = random_traits(r)
 	return p
 
 
-## Записать выбор в персонажа: имя, характеристики, Удача, черты, навыки, профиль для окна героя
+## Записать выбор в персонажа: имя, SPECIAL, отмеченные навыки, черты Fallout и характера, добавки
+## к навыкам от прошлого, профиль для окна героя
 static func apply(a: Actor, p: Dictionary) -> void:
-	var parts: Dictionary = stat_parts(p)
-	for s in stats_list():
-		a.set_stat(s, int(parts[s]["total"]))
-	a.set_stat("luck", int(parts["luck"]["total"]))
 	var tl: Array = p.get("traits", [])
 	a.traits = tl.duplicate() if traits_valid(tl) == "" else []
-	var lv: Dictionary = skill_levels(p)
-	for k in lv:
-		a.set_skill_level(k, int(lv[k]))
+	var tags: Array = p.get("tags", [])
+	if S.tags_valid(tags) != "":
+		tags = profession_tags(String(p.get("profession", "")))
+	S.apply_creation(a, p.get("alloc", {}), tags, p.get("fo_traits", []))
+	var b: Dictionary = skill_bonus(p)
+	for k in a.skills:
+		a.skills[k]["bonus"] = int(b.get(k, 0))
 	var nm: String = String(p.get("name", "")).strip_edges()
 	if nm != "":
 		a.display_name = nm
+	var parts: Dictionary = stat_parts(p)
 	var mods: Dictionary = {}
 	for s in stats_list():
 		mods[s] = parts[s].duplicate()

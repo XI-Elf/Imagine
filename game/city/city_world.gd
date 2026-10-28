@@ -25,6 +25,7 @@ const Craft := preload("res://city/craft.gd")
 const CityRoute := preload("res://city/city_route.gd")
 const WorldEnv := preload("res://characters/world_env.gd")
 const R := preload("res://characters/actor_rules.gd")
+const Special := preload("res://characters/special.gd")
 const ClockScene := preload("res://game_clock.tscn")
 const T = CityMap.T
 const Art := preload("res://storybook/art.gd")
@@ -413,10 +414,11 @@ func _spawn_npcs() -> void:
 	npcs.clear()
 	for nd in def.get("npcs", []):
 		var a := Actor.new(String(nd["id"]), String(nd["name"]), true, hash(city_id + String(nd["id"])))
+		# SPECIAL горожан 3–7; навык мастера — уровень, который давали прежние 400 опыта навыка пака
 		for s in Actor.STATS:
-			a.set_stat(s, 4 + int(abs(hash(String(nd["id"]) + s)) % 5))
+			a.set_stat(s, 3 + int(abs(hash(String(nd["id"]) + s)) % 5))
 		if nd.has("skill"):
-			a.add_xp(String(nd["skill"]), 400.0)
+			a.set_skill_level(String(nd["skill"]), _legacy_level(String(nd["skill"]), 400.0))
 		var n: Dictionary = {
 			"def": nd, "actor": a, "path": PackedVector2Array(), "path_i": 0, "goal": Vector2.INF,
 			"stock": nd.get("stock", {}).duplicate(), "buys": nd.get("buys", []), "line_i": 0, "wander_t": 0.0,
@@ -428,6 +430,14 @@ func _spawn_npcs() -> void:
 
 
 # Свободная клетка пола в доме (своя для каждого НПС), иначе fallback
+static func _legacy_level(skill: String, xp: float) -> int:
+	var lv: int = 0
+	for t in R.xp_table(skill):
+		if xp >= float(t):
+			lv += 1
+	return lv
+
+
 func _spot_in(bid: String, fallback: Vector2) -> Vector2:
 	var b: Dictionary = map.building_by_id(bid)
 	if b.is_empty() or b["floor"].is_empty():
@@ -826,6 +836,12 @@ func talk(n: Dictionary) -> void:
 	else:
 		var lines: Array = nd.get("lines", ["…"])
 		text = "«%s»" % lines[int(n["line_i"]) % lines.size()]
+		# Fallout: при Интеллекте 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
+		var dlg: Dictionary = Special.sect("dialogue")
+		if hero != null and Special.dumb(hero):
+			text += String(dlg.get("dumb_suffix", ""))
+		elif hero != null and Special.smart(hero) and int(n["line_i"]) == 0:
+			text += String(dlg.get("smart_suffix", ""))
 		opts.append(["Поговорить", func(): n["line_i"] += 1; talk(n)])
 		var qs: Array = Growth.available(full_def, growth, String(nd["id"]))
 		if not qs.is_empty():
@@ -889,15 +905,15 @@ func open_trade(n: Dictionary) -> void:
 	var opts: Array = []
 	for id in n["stock"]:
 		if int(n["stock"][id]) > 0:
-			opts.append(["Купить: %s ×%d — %d" % [Trade.item_name(id), int(n["stock"][id]), Trade.buy_price(id, hero)],
-				func(): _trade_result(n, Trade.buy(bag, n["stock"], id, hero))])
+			opts.append(["Купить: %s ×%d — %d" % [Trade.item_name(id), int(n["stock"][id]), Trade.buy_price(id, hero, a)],
+				func(): _trade_result(n, Trade.buy(bag, n["stock"], id, hero, a))])
 	for id in bag["items"]:
 		if n["buys"].has(id) or n["stock"].has(id):
-			opts.append(["Продать: %s ×%d — %d" % [Trade.item_name(id), Trade.count(bag, id), Trade.sell_price(id, hero)],
-				func(): _trade_result(n, Trade.sell(bag, n["stock"], n["buys"], id, hero))])
+			opts.append(["Продать: %s ×%d — %d" % [Trade.item_name(id), Trade.count(bag, id), Trade.sell_price(id, hero, a)],
+				func(): _trade_result(n, Trade.sell(bag, n["stock"], n["buys"], id, hero, a))])
 	opts.append(["Назад", func(): talk(n)])
-	_open_panel("trade", "Торговля: %s" % a.display_name, "Деньги: %d   Груз: %.1f / %.0f кг" % [
-		int(bag["money"]), Trade.weight(bag), hero.carry_capacity()], opts, _talk_tabs(n, "trade"))
+	_open_panel("trade", "Торговля: %s" % a.display_name, "Деньги: %d   Груз: %.1f / %.0f кг   Торговля: у вас %d %%, у торговца %d %%" % [
+		int(bag["money"]), Trade.weight(bag), hero.carry_capacity(), hero.skill("barter"), a.skill("barter")], opts, _talk_tabs(n, "trade"))
 
 
 func _trade_result(n: Dictionary, err: String) -> void:
@@ -917,7 +933,7 @@ func open_craft(n: Dictionary) -> void:
 		var r: Dictionary = Craft.recipe(id)
 		var mark: String = "" if Craft.missing(bag, r).is_empty() else "  (нет материалов)"
 		opts.append(["%s: %s%s" % [Trade.item_name(String(r["out"])), Craft.inputs_text(r), mark], func(): open_recipe(n, id)])
-	if hero.skill_level(sk) < master.skill_level(sk):
+	if hero.skill(sk) < master.skill(sk):
 		opts.append(["Учиться у мастера (%d)" % Craft.lesson_fee(hero, sk), func(): _craft_result(n, "", Craft.lesson(bag, hero, master, sk), "Урок пройден")])
 	opts.append(["Назад", func(): talk(n)])
 	_open_panel("craft", "%s: %s" % [Craft.workshop_name(role), master.display_name], "%s\nДеньги: %d   Выносливость: %d" % [
@@ -926,7 +942,7 @@ func open_craft(n: Dictionary) -> void:
 
 func _craft_skill_line(sk: String, master: Actor) -> String:
 	var nm: String = String(R.skills().get(sk, {}).get("name_ru", sk))
-	return "%s: у вас %d (опыт %d), у мастера %d" % [nm, hero.skill_level(sk), int(hero.skills.get(sk, {}).get("xp", 0)), master.skill_level(sk)]
+	return "%s: у вас %d %% (ур. %d), у мастера %d %% (ур. %d)" % [nm, hero.skill(sk), hero.skill_level(sk), master.skill(sk), master.skill_level(sk)]
 
 
 func open_recipe(n: Dictionary, id: String) -> void:
@@ -1596,8 +1612,13 @@ func quest_status(q: Dictionary) -> String:
 	return ""
 
 
+## Добавка Красноречия к деньгам за поручение (Fallout: уговорить заплатить больше)
+func _speech_extra(q: Dictionary) -> int:
+	return int(floor(float(q.get("reward", 0)) * Special.quest_bonus(hero))) if hero != null else 0
+
+
 func _quest_reward(q: Dictionary) -> String:
-	var r: int = int(q.get("reward", 0))
+	var r: int = int(q.get("reward", 0)) + _speech_extra(q)
 	if q.get("endless", false):
 		return "Награда: %d монет." % r
 	return "Награда: %d монет. Город вырастет." % r if r > 0 else "Город вырастет."
@@ -1622,10 +1643,22 @@ func turn_in(n: Dictionary, q: Dictionary) -> void:
 	var nb: int = def.get("buildings", []).size()
 	var nn: int = npcs.size()
 	var id: String = String(n["def"]["id"])
+	var extra: int = _speech_extra(q)
 	Growth.complete(full_def, growth, q, bag)
 	var text: String = "«%s»" % q["done"]
 	if int(q.get("reward", 0)) > 0:
 		text += "\n\nПолучено %d монет." % int(q["reward"])
+	if extra > 0:
+		bag["money"] = int(bag["money"]) + extra
+		text += " Красноречие выторговало ещё %d." % extra
+	# Опыт за поручение (Fallout): основа + за каждую монету награды [ВРЕМЕННО]
+	if hero != null:
+		var lv: int = hero.level
+		var gx: float = Special.num("xp", "quest_base", 50) + Special.num("xp", "quest_per_coin", 2) * float(q.get("reward", 0))
+		Special.gain_xp(hero, gx)
+		text += "\n\nОпыт +%d." % int(gx)
+		if hero.level > lv:
+			text += " Новый уровень: %d! Очки навыков и перки — в окне героя (I)." % hero.level
 	if Growth.stage(full_def, growth) != was:
 		_rebuild_stage()
 		text += "\n\n%s растёт: теперь это %s. Новых домов: %d, новых жителей: %d." % [

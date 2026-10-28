@@ -3,7 +3,8 @@
  "cell_m": 250.0,
  "sneak": {
   "base": 0.3,
-  "per_agi": 0.05,
+  "per_sneak": 0.005,
+  "sneak_ref": 20.0,
   "per_per": 0.02,
   "per_luck": 0.01,
   "night": 0.2,

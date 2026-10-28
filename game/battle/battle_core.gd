@@ -16,6 +16,7 @@ const Combatant := preload("res://battle/combatant.gd")
 const Grid := preload("res://battle/battle_grid.gd")
 const Enc := preload("res://battle/encounters.gd")
 const Trade := preload("res://city/trade.gd")
+const Special := preload("res://characters/special.gd")
 const ROUND_S: float = 6.0
 
 var cfg: BattleConfig
@@ -29,6 +30,8 @@ var turn_i: int = -1
 var round_n: int = 0
 var outcome: String = ""
 var killed: int = 0
+var killed_levels: int = 0           # сумма уровней убитых врагов — опыт Fallout после победы
+var xp_gained: int = 0
 var loot: Dictionary = {}
 var log_lines: Array = []
 var fleeing: Dictionary = {}       # участник -> true: дрогнул и уходит
@@ -277,6 +280,10 @@ func _finish_turn(c) -> void:
 # Начало хода: эффекты, длительности, опасные клетки. false — ход пропущен
 func _start_turn(c) -> bool:
 	c.start_turn_reset()
+	# «Быстро на ноги»: встаёт в начале хода, не теряя движения
+	if c.has_effect("prone") and not c.down and c.fx("quick_recovery") > 0.0:
+		c.remove_effect("prone")
+		log_line("%s мигом на ногах." % c.title, "info")
 	# помощь против врага держится до следующего хода помогавшего
 	for o in all:
 		if o.helped_by == c.team and o.get_meta("help_src", null) == c:
@@ -438,7 +445,8 @@ func can_attack(c, t, wi: int = -1) -> Dictionary:
 	var w: BattleWeapon = c.weapons[wi] if wi < c.weapons.size() and wi >= 0 else c.weapon()
 	var d: int = grid.dist_ft(c.cell, t.cell)
 	var cov: String = grid.cover(c.cell, t.cell, _creature_cells([c, t]))
-	if not c.has_action:
+	# «Быстрый выстрел», «Скорострел», «Шквал ударов»: ещё одна атака бонусным действием
+	if not c.has_action and not (c.has_bonus and c.bonus_attack_ok(w)):
 		return {"ok": false, "why": "действие уже потрачено"}
 	if not t.active() or t.team == c.team:
 		return {"ok": false, "why": "не цель"}
@@ -487,7 +495,11 @@ func attack(c, t, wi: int = -1) -> bool:
 		return false
 	if wi >= 0:
 		c.wi = wi
-	c.has_action = false
+	if c.has_action:
+		c.has_action = false
+	else:
+		c.has_bonus = false
+		log_line("%s атакует ещё раз (бонусное действие)." % c.title, "info")
 	_weapon_attack(c, t, c.wi, false)
 	_check_end()
 	return true
@@ -514,6 +526,17 @@ func _weapon_attack(c, t, wi: int, reaction: bool) -> void:
 		_apply_damage(t, res["damage"], c, res["crit"])
 		if w.on_hit_effect != "" and t.standing():
 			_effect_with_save(c, t, w.on_hit_effect, w.on_hit_save, w.on_hit_dc)
+	elif _jinxed() and c.standing() and roller.rng.randf() < 0.5:
+		# черта «Невезучий»: промах любого рядом с героем — с шансом 50 % падение
+		if c.add_effect("prone"):
+			log_line("%s спотыкается и падает (невезение)." % c.title, "miss")
+
+
+func _jinxed() -> bool:
+	for o in all:
+		if o.team == 0 and o.fx("jinxed") > 0.0:
+			return true
+	return false
 
 
 func _after_attack(c, t) -> void:
@@ -610,8 +633,22 @@ func _kill(t, src) -> void:
 	t.actor.die("wounds")
 	if t.team == 1:
 		killed += 1
+		killed_levels += maxi(1, t.level)
 	log_line("%s погиб%s." % [t.title, "" if src == null else " (%s)" % src.title], "hit")
+	if src != null and src.team == 0 and _bloody(src):
+		log_line("Кровавая баня: от %s мало что осталось." % t.title, "hit")
 	_check_end()
+
+
+func _hero_c():
+	for c in all:
+		if c.is_hero:
+			return c
+	return null
+
+
+func _bloody(src) -> bool:
+	return src.fx("bloody_mess") > 0.0
 
 
 func dash(c) -> bool:
@@ -695,12 +732,17 @@ func hide(c) -> bool:
 func use_object(c, t = null) -> bool:
 	if t == null:
 		t = c
-	if not c.has_action or not c.standing() or c.potions <= 0 or grid.dist_ft(c.cell, t.cell) > 5 or t.dead:
+	# «Быстрые карманы»: зелье — бонусным действием
+	var quick: bool = c.fx("quick_pockets") > 0.0 and c.has_bonus
+	if not (c.has_action or quick) or not c.standing() or c.potions <= 0 or grid.dist_ft(c.cell, t.cell) > 5 or t.dead:
 		return false
-	c.has_action = false
+	if quick:
+		c.has_bonus = false
+	else:
+		c.has_action = false
 	c.potions -= 1
 	var r: Dictionary = roller.roll(cfg.potion_dice, {"label": "Зелье"})
-	_heal(t, int(r["total"]), "зелье: " + r["text"])
+	_heal(t, int(r["total"]) + int(c.fx("b_heal")), "зелье: " + r["text"] + (" +%d (целитель)" % int(c.fx("b_heal")) if c.fx("b_heal") > 0.0 else ""))
 	return true
 
 
@@ -787,7 +829,7 @@ func use_ability(c, ab: BattleAbility, target = null) -> bool:
 				_ability_save(c, t, ab)
 		"heal":
 			var t = c if ab.target == "self" else target
-			var r: Dictionary = roller.roll(ab.heal_dice, {"label": ab.title, "extra_mod": (c.level if ab.heal_add_level else 0) + (c.mod(ab.stat) if ab.target == "ally" else 0)})
+			var r: Dictionary = roller.roll(ab.heal_dice, {"label": ab.title, "extra_mod": (c.level if ab.heal_add_level else 0) + (c.mod(ab.stat) if ab.target == "ally" else 0) + int(c.fx("b_heal"))})
 			_heal(t, int(r["total"]), r["text"])
 		"self":
 			for t in all:
@@ -1106,6 +1148,25 @@ func _finish(o: String) -> void:
 			elif c.team == 1 and c.dead and not c.is_pet:
 				# Шкуры со зверей — материал для кожевника (вопрос Q18): 1–2 с каждого [ВРЕМЕННО]
 				hides += roller.rng.randi_range(1, 2)
+		# «Искатель удачи» — вдвое больше денег, «Добытчик» — на вещь больше (Fallout)
+		var hero_c = _hero_c()
+		if hero_c != null:
+			money = int(round(money * (1.0 + hero_c.fx("battle_money"))))
+			if hero_c.fx("battle_loot") > 0.0:
+				if scrap > 0 or money > 0:
+					scrap += int(hero_c.fx("battle_loot"))
+				elif hides > 0:
+					hides += int(hero_c.fx("battle_loot"))
+		# Опыт Fallout: за каждого убитого — kill_per_level × уровень, всем живым людям стороны героя
+		xp_gained = int(Special.num("xp", "kill_per_level", 40) * killed_levels)
+		if xp_gained > 0:
+			for c in all:
+				if c.team == 0 and not c.is_pet and not c.dead and c.fo:
+					var lv: int = c.actor.level
+					Special.gain_xp(c.actor, xp_gained)
+					if c.actor.level > lv:
+						log_line("%s: новый уровень %d!" % [c.title, c.actor.level], "head")
+			log_line("Опыт: +%d." % xp_gained, "info")
 		if money > 0:
 			loot["money"] = money
 		var got: Dictionary = {}
@@ -1135,7 +1196,7 @@ func result() -> Dictionary:
 		if c.team == 0 and not c.new_traumas.is_empty():
 			traumas[c.actor.actor_id] = c.new_traumas.duplicate()
 	return {"outcome": outcome, "origin": req.get("origin", "overworld"), "return_pos": req.get("return_pos", Vector2.ZERO),
-		"game_minutes": maxf(round_n, 1) * ROUND_S / 60.0, "rounds": round_n, "dead": dead, "killed": killed, "loot": loot,
+		"game_minutes": maxf(round_n, 1) * ROUND_S / 60.0, "rounds": round_n, "dead": dead, "killed": killed, "loot": loot, "xp": xp_gained,
 		"traumas": traumas}
 
 
@@ -1151,7 +1212,7 @@ func log_line(t: String, kind: String = "info") -> void:
 # =====================================================================
 func to_dict() -> Dictionary:
 	return {"round": round_n, "turn": turn_i, "order": order.map(func(c): return c.actor.actor_id),
-		"all": all.map(func(c): return c.to_dict()), "killed": killed, "log": log_lines.slice(maxi(0, log_lines.size() - 60)),
+		"all": all.map(func(c): return c.to_dict()), "killed": killed, "killed_levels": killed_levels, "log": log_lines.slice(maxi(0, log_lines.size() - 60)),
 		"fleeing": fleeing.keys().map(func(c): return c.actor.actor_id)}
 
 
@@ -1176,4 +1237,5 @@ func load_dict(d: Dictionary) -> void:
 	round_n = int(d.get("round", 1))
 	turn_i = int(d.get("turn", 0))
 	killed = int(d.get("killed", 0))
+	killed_levels = int(d.get("killed_levels", killed))
 	log_lines = d.get("log", []).duplicate()

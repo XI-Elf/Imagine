@@ -1,6 +1,7 @@
 extends Node2D
 const Art := preload("res://storybook/art.gd")
 const Growth := preload("res://city/city_growth.gd")
+const Special := preload("res://characters/special.gd")
 ## Города и поселения на общей карте. Реестр — data/world/settlements.json (tools/make_settlements.py,
 ## можно править руками). Сейчас по решению Huzzah город один на весь мир, герой появляется у его ворот.
 ##
@@ -297,11 +298,14 @@ func sneak_chance(a: Actor, env: Dictionary) -> float:
 	if a.mount != "" or not a.can_move():
 		return 0.0
 	var c: float = _rule("base", 0.3)
-	c += _rule("per_agi", 0.05) * (a.stat("agi") - 5.0)
+	# Fallout: решает навык Скрытности (Ловкость в нём уже есть), Восприятие и Удача — понемногу
+	c += _rule("per_sneak", 0.005) * (float(a.skill("sneak")) - _rule("sneak_ref", 20.0))
 	c += _rule("per_per", 0.02) * (a.stat("per") - 5.0)
 	c += _rule("per_luck", 0.01) * (a.stat("luck") - 5.0)
 	if bool(env.get("night", false)):
 		c += _rule("night", 0.2)
+		if Special.has(a, "ghost"):
+			c += 0.2   # перк «Призрак»
 	c -= _rule("per_kg_over", 0.01) * maxf(a.carried_kg - _rule("free_kg", 15.0), 0.0)
 	c *= a.mult("sneak")   # черты «Тихий» / «Шумный» (data/characters/creation.json)
 	for id in sneak_rules.get("hurt_conditions", ["luxation_arm", "broken_arm", "broken_leg", "blindness"]):

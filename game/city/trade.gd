@@ -3,6 +3,7 @@ extends RefCounted
 ## Сумка — простой словарь, чтобы её мог держать кто угодно (Worlds, город) и писать в сохранение.
 ## Цены: покупка дороже базовой, продажа дешевле; Харизма двигает обе [ВРЕМЕННО].
 
+const Special := preload("res://characters/special.gd")
 const ITEMS_FILE := "res://data/cities/items.json"
 
 static var _items: Dictionary = {}
@@ -59,21 +60,21 @@ static func remedies(bag: Dictionary) -> Array:
 	return bag["items"].keys().filter(func(id): return bool(item(id).get("treat", false)))
 
 
-# Харизма 4 — без скидки; каждое очко сверху — 3 % в пользу покупателя
-static func _cha_bonus(buyer: Actor) -> float:
-	return clampf((buyer.stat("cha") - 4.0) * 0.03, -0.15, 0.3) if buyer != null else 0.0
+# Цены по Fallout: решает разница навыков Торговли героя и торговца (Харизма даёт стартовую Торговлю),
+# перки «Купец» (−25 % к покупке), «Культ личности». Числа — data/characters/special.json «trade»
+static func buy_price(id: String, buyer: Actor, trader: Actor = null) -> int:
+	var p: float = float(item(id).get("price", 1)) * (1.3 - Special.trade_bonus(buyer, trader, true))
+	if buyer != null:
+		p *= maxf(1.0 - Special.eff(buyer, "trade_buy"), 0.1)
+	return maxi(1, int(round(p)))
 
 
-static func buy_price(id: String, buyer: Actor) -> int:
-	return maxi(1, int(round(float(item(id).get("price", 1)) * (1.3 - _cha_bonus(buyer)))))
-
-
-static func sell_price(id: String, seller: Actor) -> int:
-	return maxi(1, int(round(float(item(id).get("price", 1)) * (0.45 + _cha_bonus(seller)))))
+static func sell_price(id: String, seller: Actor, trader: Actor = null) -> int:
+	return maxi(1, int(round(float(item(id).get("price", 1)) * (0.45 + Special.trade_bonus(seller, trader, false)))))
 
 
 ## Купить одну вещь у торговца (его запас stock: {id: count}). Ответ: текст для игрока, "" — удалось
-static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor) -> String:
+static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor, trader: Actor = null) -> String:
 	if int(stock.get(id, 0)) <= 0:
 		return "Нет в наличии"
 	# Лошадь и повозка (Q16): одна на героя, повозке нужна лошадь
@@ -82,7 +83,7 @@ static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor) ->
 	var need: String = String(item(id).get("requires", ""))
 	if need != "" and count(bag, need) <= 0:
 		return "Сначала нужна %s" % item_name(need).to_lower()
-	var price: int = buy_price(id, buyer)
+	var price: int = buy_price(id, buyer, trader)
 	if int(bag["money"]) < price:
 		return "Не хватает денег"
 	bag["money"] = int(bag["money"]) - price
@@ -92,12 +93,12 @@ static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor) ->
 
 
 ## Продать одну вещь торговцу, если он такое берёт (buys) или уже им торгует
-static func sell(bag: Dictionary, stock: Dictionary, buys: Array, id: String, seller: Actor) -> String:
+static func sell(bag: Dictionary, stock: Dictionary, buys: Array, id: String, seller: Actor, trader: Actor = null) -> String:
 	if count(bag, id) <= 0:
 		return "Нечего продать"
 	if not buys.has(id) and not stock.has(id):
 		return "Такое здесь не берут"
-	bag["money"] = int(bag["money"]) + sell_price(id, seller)
+	bag["money"] = int(bag["money"]) + sell_price(id, seller, trader)
 	add(bag, id, -1)
 	stock[id] = int(stock.get(id, 0)) + 1
 	return ""

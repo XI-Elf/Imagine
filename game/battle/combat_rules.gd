@@ -30,6 +30,8 @@ static func cfg() -> BattleConfig:
 static func ac(t, cover: String = "none") -> Dictionary:
 	var base: int
 	var dex_eff: int = t.mod("dex")
+	if t.fx("no_agi_ac") > 0.0:
+		dex_eff = 0   # черта «Безрассудный»: Ловкость не защищает
 	var sh: int = 0
 	if t.armor != null:
 		base = t.armor.base_ac
@@ -40,7 +42,9 @@ static func ac(t, cover: String = "none") -> Dictionary:
 		sh = t.armor.shield_bonus
 	else:
 		base = t.creature.natural_ac if t.creature != null else 10
-	var ab: int = 0
+	var ab: int = int(t.fx("b_ac"))
+	if t.fx("b_ac_unarmed") > 0.0 and t.weapon().proficiency == "natural":
+		ab += int(t.fx("b_ac_unarmed"))
 	for e in t.effects:
 		ab += int(e["res"].ac_bonus)
 	var cv: int = int(cfg().cover_ac.get(cover, 0))
@@ -67,9 +71,10 @@ static func attack_terms(att, w: BattleWeapon, ab: BattleAbility = null) -> Dict
 		stat = w.stat
 		if stat == "finesse":
 			stat = "dex" if att.mod("dex") >= att.mod("str") else "str"
-		w_atk = w.attack_bonus
+		w_atk = w.attack_bonus + att.fo_attack_bonus(w)
 	var m: int = att.mod(stat)
-	var pb: int = att.prof() if proficient else 0
+	# мастерство: у героя и людей — от навыка оружия Fallout (combatant.attack_prof), у шаблонов — от уровня
+	var pb: int = (att.attack_prof(w) if ab == null else att.prof()) if proficient else 0
 	var lu: int = att.mod("lck")
 	var pen: int = att.attack_penalty()
 	return {"stat": stat, "M_ATK": m, "PB": pb, "W_ATK": w_atk, "A_ATK": a_atk, "LU_ATK": lu, "PEN_ATK": pen,
@@ -108,7 +113,7 @@ static func adv_dis(att, tgt, ctx: Dictionary) -> Dictionary:
 	if tgt.helped_by == att.team:
 		adv.append("помощь союзника")
 	if ranged:
-		if dist > int(ctx.get("normal_range", 1 << 20)):
+		if dist > int(ctx.get("normal_range", 1 << 20)) and att.fx("sharpshooter") <= 0.0:
 			dis.append("дальше обычной дистанции")
 		for o in ctx.get("all", []):
 			if o.team != att.team and o.standing() and not o.incapacitated() and ctx["grid"].dist_ft(o.cell, att.cell) <= 5:
@@ -142,7 +147,10 @@ static func attack(roller, att, tgt, w: BattleWeapon, ab: BattleAbility, ctx: Di
 	var H: int = c.attack_die
 	var atk: int = int(r["total"])
 	var hit: bool = R != L and (R == H or atk >= int(act["total"]))
-	var crit: bool = hit and R == H
+	# окно крита шире от Удачи и перков (Fallout: крит % = Удача); «Убийца» — каждое попадание вблизи крит
+	var crit: bool = hit and R >= H - (att.crit_extra(w) if ab == null else 0)
+	if hit and ab == null and not w.ranged and att.fx("slayer") > 0.0:
+		crit = true
 	# По тому, кто без сознания, вплотную — всегда крит (5e)
 	if hit and tgt.down and not bool(ctx.get("ranged", false)) and int(ctx.get("dist_ft", 5)) <= 5:
 		crit = true
@@ -156,7 +164,14 @@ static func attack(roller, att, tgt, w: BattleWeapon, ab: BattleAbility, ctx: Di
 	if hit:
 		var comps: Array = components(att, w, ab)
 		var pen: Dictionary = ab.penetration if ab != null else w.penetration
-		out["damage"] = damage(roller, tgt, comps, pen, c.k_crit if crit else 1)
+		var rep: int = 1
+		if crit:
+			# «Лучшие криты» — ещё один набор костей, «Тяжёлая рука» — на один меньше
+			rep = maxi(1, c.k_crit + (1 if att.fx("strong_crits") > 0.0 else 0) - (1 if att.fx("weak_crits") > 0.0 else 0))
+		var scale: float = maxf(0.0, 1.0 + att.fx("b_dmg_pct") / 100.0)
+		if att.has_effect("hidden") and att.fx("b_hidden_mult") > 0.0:
+			scale *= 1.0 + att.fx("b_hidden_mult")   # «Тихая смерть»
+		out["damage"] = damage(roller, tgt, comps, pen, rep, false, scale)
 		out["text"] += " " + out["damage"]["text"]
 	return out
 
@@ -181,14 +196,17 @@ static func components(att, w: BattleWeapon, ab: BattleAbility = null) -> Array:
 	var out: Array = []
 	if ab != null:
 		for d in ab.damage:
-			out.append({"type": String(d.get("type", "bludgeoning")), "dice": String(d.get("dice", "")), "F": int(d.get("bonus", 0))})
+			var ty: String = String(d.get("type", "bludgeoning"))
+			out.append({"type": ty, "dice": String(d.get("dice", "")), "F": int(d.get("bonus", 0)) + int(att.fx("b_dmg_abil")) + (int(att.fx("b_dmg_fire")) if ty == "fire" else 0)})
 		return out
 	var stat: String = attack_terms(att, w)["stat"]
 	for i in w.damage.size():
 		var d: Dictionary = w.damage[i]
 		var f: int = int(d.get("bonus", 0))
 		if i == w.mod_component:
-			f += att.mod(stat)
+			f += att.mod(stat) + att.fo_damage_bonus(w)
+		if String(d.get("type", "")) == "fire":
+			f += int(att.fx("b_dmg_fire"))
 		out.append({"type": String(d.get("type", "bludgeoning")), "dice": String(d.get("dice", "")), "F": f})
 	return out
 
@@ -196,7 +214,8 @@ static func components(att, w: BattleWeapon, ab: BattleAbility = null) -> Array:
 # =====================================================================
 # УРОН: броня, пробитие, сопротивление, уязвимость, иммунитет (разделы D–F, H)
 # =====================================================================
-static func damage(roller, tgt, comps: Array, penetration: Dictionary, repeat: int, half: bool = false) -> Dictionary:
+## scale — множитель урона атакующего («Изящество» −30 %, «Тихая смерть» ×2); tgt.dr_pct — «Крепкий» цели
+static func damage(roller, tgt, comps: Array, penetration: Dictionary, repeat: int, half: bool = false, scale: float = 1.0) -> Dictionary:
 	var parts: Array = []
 	var total: int = 0
 	var texts: Array = []
@@ -220,7 +239,7 @@ static func damage(roller, tgt, comps: Array, penetration: Dictionary, repeat: i
 			float(tgt.armor.resist.get(j, 0.0)) if tgt.armor != null else 0.0)), 0.0, 1.0)
 		var v: float = maxf(0.0, maxf(float(tgt.vulnerable.get(j, 0.0)), float(tgt.armor.vulnerable.get(j, 0.0)) if tgt.armor != null else 0.0))
 		var imm: bool = tgt.immune.has(j)
-		var mult: float = (1.0 - s) * (1.0 + v)
+		var mult: float = (1.0 - s) * (1.0 + v) * scale * (1.0 - float(tgt.dr_pct))
 		var fin: int = 0 if imm else int(floor(after * mult + 1e-9))
 		total += fin
 		parts.append({"type": j, "Q": q, "F": f, "BASE": base, "DR": dr, "P": p, "DR_EFF": dr_eff, "AFTER": after,
@@ -230,7 +249,7 @@ static func damage(roller, tgt, comps: Array, penetration: Dictionary, repeat: i
 			t += " − броня %d%s = %d" % [dr_eff, " (пробито %d%%)" % int(p * 100) if p > 0.0 else "", after]
 		if imm:
 			t += " → иммунитет 0"
-		elif s > 0.0 or v > 0.0:
+		elif s > 0.0 or v > 0.0 or not is_equal_approx(mult, 1.0):
 			t += " × %.2f%s%s → %d" % [mult, " (сопр. %d%%)" % int(s * 100) if s > 0.0 else "", " (уязв. +%d%%)" % int(v * 100) if v > 0.0 else "", fin]
 		texts.append(t)
 	return {"parts": parts, "total": total, "text": "Урон: %s. Итого %d." % ["; ".join(PackedStringArray(texts)), total]}
@@ -271,7 +290,7 @@ static func initiative(roller, c) -> Dictionary:
 
 
 static func passive_perception(c) -> int:
-	return 10 + c.mod("wis") + (c.prof() if c.perception_prof else 0) + c.per_bonus
+	return 10 + c.mod("wis") + (c.prof() if c.perception_prof else 0) + c.per_bonus + int(c.fx("b_perception"))
 
 
 # =====================================================================

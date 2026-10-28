@@ -13,6 +13,7 @@ const Art := preload("res://storybook/art.gd")
 
 const WorldEnv := preload("res://characters/world_env.gd")
 const R := preload("res://characters/actor_rules.gd")
+const Special := preload("res://characters/special.gd")
 const HeroProfile := preload("res://characters/hero_profile.gd")
 const HeroCreateScript := preload("res://characters/hero_create.gd")
 const HeroWindowScript := preload("res://characters/hero_window.gd")
@@ -141,6 +142,8 @@ func _add(actor: Actor, pos: Vector2, is_hero: bool) -> Dictionary:
 		"wait": 0.0, "acc_s": 0.0, "drowning": false, "hero": is_hero, "kit": [], "heal_cd": 0.0}
 	bodies.append(b)
 	actor.died.connect(func(cause: String) -> void: _on_died(b, cause))
+	if is_hero:
+		actor.leveled_up.connect(func(lv: int) -> void: _event("Новый уровень %d: очки навыков%s — окно героя (I)" % [lv, " и перк" if actor.perk_picks > 0 else ""]))
 	return b
 
 
@@ -172,12 +175,12 @@ func _spawn_npcs(center: Vector2) -> void:
 	for i in NPC_COUNT:
 		var a := Actor.new("npc_%d" % i, names.pop_at(_rng.randi() % names.size()), true, _rng.randi())
 		for s in Actor.STATS:
-			a.set_stat(s, 4 + _rng.randi_range(0, 6))
+			a.set_stat(s, _rng.randi_range(3, 8))
 		a.res["hunger"] = _rng.randf_range(40.0, 90.0)
 		a.res["thirst"] = _rng.randf_range(40.0, 90.0)
-		# У каждого НПС свой ремесленный навык: знахарь, кузнец, повар...
-		var sk: Array = R.skills().keys()
-		a.add_xp(sk[i % sk.size()], _rng.randf_range(100.0, 600.0))
+		# У каждого НПС свое ремесло (навык пака → навык Fallout): знахарь, кузнец, повар...
+		var sk: Array = R.pack_skills().keys()
+		a.set_skill_level(sk[i % sk.size()], _rng.randi_range(2, 5))
 		var p: Vector2 = _find_land(center + Vector2.from_angle(_rng.randf() * TAU) * _rng.randf_range(150.0, NPC_RADIUS_M * 1.5), 3000.0, true)
 		var b: Dictionary = _add(a, p, false)
 		# Знахарь носит всё для лечения: инвентаря пока нет [ВРЕМЕННО]
@@ -645,7 +648,7 @@ func sheet_text(a: Actor) -> String:
 		t += "%s: %d / %d\n" % [shown.get(r, ch.get(r, {}).get("name_ru", r)), int(a.res[r]), int(a.max_of(r))]
 	var names: Dictionary = R.section("stats").get("names", {})
 	t += "\n"
-	for s in Actor.STATS + ["luck"]:
+	for s in Actor.STATS:
 		t += "%s %d   " % [names.get(s, s), int(a.stat(s))]
 	t += "\n\nСостояния:"
 	if a.conditions.is_empty() and a.buffs.is_empty():
@@ -658,10 +661,11 @@ func sheet_text(a: Actor) -> String:
 	var dv: Dictionary = a.derived()
 	t += "\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n" % [
 		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0)]
+	t += "\nУровень %d, опыт %d / %d" % [a.level, int(a.xp), Special.xp_to_next(a)]
 	t += "\nНавыки:"
 	var sk: Dictionary = R.skills()
 	for k in sk:
-		t += "\n  %s %d (опыт %d)" % [sk[k].get("name_ru", k), a.skill_level(k), int(a.skills[k]["xp"])]
+		t += "\n  %s %d %%%s" % [sk[k].get("name_ru", k), a.skill(k), " ◆" if a.tags.has(k) else ""]
 	t += "\n\nПройдено %.1f км" % (a.distance_m / 1000.0)
 	t += "\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T знахарь, R верхом / пешком, I персонаж, Tab сумка"
 	return t

@@ -39,7 +39,21 @@ static func buffs() -> Dictionary:
 	return _load("conditions.json").get("positive_effects", {})
 
 
+## Навыки — 18 навыков Fallout (special.json) в виде {ключ: {name_ru, description, max_level}}.
+## Старые навыки пака (skills.json) — только справка: их ключи переводит Special.canon
 static func skills() -> Dictionary:
+	if _cache.has("_skills"):
+		return _cache["_skills"]
+	var out: Dictionary = {}
+	var sp: Dictionary = _load("special.json").get("skills", {})
+	for k in sp:
+		out[k] = {"name_ru": String(sp[k].get("name", k)), "name_en": String(sp[k].get("fo", k)),
+			"description": String(sp[k].get("desc", "")), "group": String(sp[k].get("group", "")), "max_level": 10}
+	_cache["_skills"] = out
+	return out
+
+
+static func pack_skills() -> Dictionary:
 	return _load("skills.json").get("skills", {})
 
 
@@ -108,7 +122,7 @@ static func terrain(biome: int) -> Dictionary:
 
 # Таблица опыта навыка: у навыков без своей таблицы — таблица Выживания [ВРЕМЕННО]
 static func xp_table(skill: String) -> Array:
-	var s: Dictionary = skills().get(skill, {})
+	var s: Dictionary = pack_skills().get(skill, {})
 	if s.has("xp_table"):
 		return s["xp_table"]
-	return skills().get("survival", {}).get("xp_table", [])
+	return pack_skills().get("survival", {}).get("xp_table", [])

@@ -2,9 +2,11 @@ extends RefCounted
 ## Крафт в мастерских (вопрос Q18, Huzzah 2026-10-24): кожевник и кузнец делают снаряжение из шкур и лома.
 ## Заказ — мастер делает из ваших материалов за плату, если сам умеет (его навык ≥ уровня рецепта).
 ## Своими руками — нужен свой навык, тратится выносливость, есть шанс неудачи, за работу идёт опыт навыка.
-## Урок — опыт навыка за деньги, но не выше уровня мастера. Рецепты и числа — res://data/cities/recipes.json.
+## Урок — +10 % к навыку (Ремесло по Fallout) за деньги, но не выше навыка мастера. Опыт за работу идёт герою
+## (уровни и очки навыков, characters/special.gd). Рецепты и числа — res://data/cities/recipes.json.
 
 const Trade := preload("res://city/trade.gd")
+const Special := preload("res://characters/special.gd")
 const RECIPES_FILE := "res://data/cities/recipes.json"
 
 static var _data: Dictionary = {}
@@ -142,14 +144,14 @@ static func lesson_fee(hero: Actor, sk: String) -> int:
 static func lesson(bag: Dictionary, hero: Actor, master: Actor, sk: String) -> String:
 	if sk == "" or hero == null or master == null:
 		return "Здесь не учат"
-	if hero.skill_level(sk) >= master.skill_level(sk):
+	if hero.skill(sk) >= master.skill(sk):
 		return "Мастеру больше нечему вас учить"
 	var fee: int = lesson_fee(hero, sk)
 	if int(bag["money"]) < fee:
 		return "Не хватает денег"
 	bag["money"] = int(bag["money"]) - fee
-	hero.add_xp(sk, float(data().get("lesson", {}).get("xp", 40)))
-	# Выше мастера урок не поднимает
-	if hero.skill_level(sk) > master.skill_level(sk):
-		hero.set_skill_level(sk, master.skill_level(sk))
+	# Выше мастера урок не поднимает; перк «Вдумчивость» — урок на 50 % больше
+	var pct: int = int(round(float(data().get("lesson", {}).get("pct", 10)) * (1.0 + Special.eff(hero, "lesson_mult"))))
+	Special.train(hero, sk, pct, master.skill(sk))
+	hero.add_xp(sk, float(data().get("lesson", {}).get("xp", 40)) * 0.25)
 	return ""

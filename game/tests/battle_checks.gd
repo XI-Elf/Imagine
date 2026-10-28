@@ -88,8 +88,8 @@ func _stats() -> void:
 	a.set_stat("str", 8)
 	var c = Combatant.new()
 	c.build_from_actor(a, 0, Data.config(), Data.config().hero)
-	ok(c.scores["dex"] == 16 and c.scores["str"] == 14 and c.scores["con"] == 10 and c.scores["lck"] == 10, "Амбер + 6: Ловкость 10 → DEX 16, база 4 → 10, Удача 0 → LCK 10")
-	ok(c.max_hp == 10 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: HP 10 (к10 + ВЫН 0), меч и праща, кожаная броня")
+	ok(c.scores["dex"] == 20 and c.scores["str"] == 16 and c.scores["con"] == 10 and c.scores["lck"] == 10 and c.scores["wis"] == 10, "SPECIAL × 2: Ловкость 10 → DEX 20, Сила 8 → STR 16, 5 → 10")
+	ok(c.max_hp == 33 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: HP 33 (Fallout: 15 + СИЛ 8 + 2×ВЫН 5), меч и праща, кожаная броня")
 
 
 func mk(scores: Dictionary, armor: String = "none") -> Object:

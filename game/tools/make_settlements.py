@@ -351,12 +351,12 @@ out = {
 		'gate — точка выхода из города на общую карту. city_id — ключ мира города (data/cities/<city_id>.json, '
 		'нет файла — data/cities/<template>.json).' % SEED,
 	'cell_m': CELL_M,
-	# Проникновение через стену [ВРЕМЕННО]: шанс = base + per_agi*(Ловк-5) + per_per*(Восп-5) + per_luck*(Удача-5)
+	# Проникновение через стену [ВРЕМЕННО]: шанс = base + per_sneak*(Скрытность% - sneak_ref) + per_per*(Восп-5) + per_luck*(Удача-5)
 	# + night (ночью) - per_kg_over*(кг сверх free_kg); ×hurt_mult при травме рук/ног, ×low_mult при здоровье
 	# или силах ниже трети; верхом нельзя. Неудача: «заметили» с шансом caught_day/caught_night
 	# (минус per_agi_caught за Ловкость сверх 5), иначе стража настороже cooldown_h игровых часов.
 	# Сорвался со стены: fall_chance — травма fall_condition. Попытка тратит stamina_cost сил.
-	'sneak': {'base': 0.3, 'per_agi': 0.05, 'per_per': 0.02, 'per_luck': 0.01, 'night': 0.2,
+	'sneak': {'base': 0.3, 'per_sneak': 0.005, 'sneak_ref': 20.0, 'per_per': 0.02, 'per_luck': 0.01, 'night': 0.2,
 		'free_kg': 15.0, 'per_kg_over': 0.01, 'hurt_mult': 0.3, 'low_mult': 0.5,
 		'hurt_conditions': ['luxation_arm', 'broken_arm', 'broken_leg', 'blindness'],
 		'min': 0.05, 'max': 0.9, 'caught_day': 0.5, 'caught_night': 0.25, 'per_agi_caught': 0.03,

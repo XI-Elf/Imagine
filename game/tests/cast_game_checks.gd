@@ -161,7 +161,7 @@ func _run() -> void:
 				healed = true
 				break
 		ok(healed, "знахарь вылечил рану героя: " + game.event_text)
-		ok(healer["actor"].skills["medicine"]["xp"] > 0.0, "знахарь получил опыт")
+		ok(healer["actor"].xp > 0.0, "знахарь получил опыт")
 
 	# Жаркие горы (ветка terrain): температура из карты, жажда в жару быстрее
 	if game.has_method("is_hot"):

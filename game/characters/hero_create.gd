@@ -1,13 +1,15 @@
 extends CanvasLayer
-## Экран создания героя (из сборки 09, character_create.gd): слева — имя, пол, возраст, происхождение
-## и профессия; по центру — биография, она переписывается при каждом изменении; справа — 10 очков на
-## семь характеристик и черты характера. Правила — characters/hero_profile.gd.
+## Экран создания героя (из сборки 09, character_create.gd, характеристики — по Fallout): слева — имя, пол,
+## возраст, происхождение, профессия и 3 отмеченных навыка; по центру — биография, она переписывается при
+## каждом изменении; справа — SPECIAL (от 5, 5 свободных очков, можно опустить до 1), производные, до 2 черт
+## Fallout и черты характера. Правила — characters/hero_profile.gd и characters/special.gd.
 ## Сигнал finished отдаёт params для HeroProfile.apply или пустой словарь при отмене (Esc, «Назад»).
 
 signal finished(params: Dictionary)
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
+const S := preload("res://characters/special.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
 
 const COL_TEXT := Color("d8cfb0")
@@ -19,6 +21,12 @@ const COL_BAD := Color("e08a7a")
 var gender: String = "female"
 var alloc: Dictionary = {}
 var traits: Array = []
+var tags: Array = []
+var fo_traits: Array = []
+var _tag_btns: Dictionary = {}
+var _fo_btns: Dictionary = {}
+var _derived_label: Label
+var _tags_label: Label
 var name_edit: LineEdit
 var age_spin: SpinBox
 var origin_opt: OptionButton
@@ -46,6 +54,7 @@ func _ready() -> void:
 	_rng.randomize()
 	for s in P.stats_list():
 		alloc[s] = 0
+	tags = P.profession_tags(String(P.C()["professions"].keys()[0]))
 	var root := Control.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -152,10 +161,6 @@ func _build_left() -> Control:
 		var gd: Dictionary = P.C()["genders"][g]
 		var b := Button.new()
 		b.text = String(gd["title"])
-		var mods: Array = []
-		for s in gd.get("stats", {}):
-			mods.append("%s %+d" % [P.stat_name(s), int(gd["stats"][s])])
-		b.tooltip_text = ", ".join(mods)
 		b.toggle_mode = true
 		b.focus_mode = Control.FOCUS_NONE
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -181,11 +186,30 @@ func _build_left() -> Control:
 	v.add_child(origin_text)
 	v.add_child(_label("Профессия", 16, COL_DIM))
 	prof_opt = _keyed_options(P.C()["professions"])
+	prof_opt.item_selected.connect(func(_i: int) -> void: _on_profession())
 	v.add_child(prof_opt)
 	prof_text = _wrap_label(13, COL_DIM)
 	v.add_child(prof_text)
 	v.add_child(HSeparator.new())
-	skills_label = _wrap_label(13, COL_TEXT)
+	_tags_label = _label("", 16, COL_GOLD)
+	v.add_child(_tags_label)
+	var tg := GridContainer.new()
+	tg.columns = 1
+	tg.add_theme_constant_override("v_separation", 2)
+	v.add_child(tg)
+	for k in S.skill_list():
+		var b := Button.new()
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.custom_minimum_size = Vector2(250.0, 24.0)
+		b.add_theme_font_size_override("font_size", 13)
+		b.add_theme_color_override("font_pressed_color", COL_GOLD)
+		b.tooltip_text = String(S.skills()[k].get("desc", ""))
+		b.pressed.connect(toggle_tag.bind(k))
+		_tag_btns[k] = b
+		tg.add_child(b)
+	skills_label = _wrap_label(12, COL_DIM)
 	v.add_child(skills_label)
 	var bag := _wrap_label(12, COL_DIM)
 	bag.text = "Вещей с собой нет: сумка пустая, всё нужное покупается или находится в пути."
@@ -218,11 +242,14 @@ func _build_right() -> Control:
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 3)
 	v.add_child(grid)
-	for h in ["", "", "Очки", "", "Бонус", "Итог"]:
+	for h in ["SPECIAL", "", "Очки", "", "Черты", "Итог"]:
 		grid.add_child(_label(h, 12, COL_DIM))
 	for s in P.stats_list():
 		var row: Dictionary = {}
-		grid.add_child(_label(P.stat_name(s), 15, COL_TEXT))
+		var nl := _label(P.stat_name(s), 15, COL_TEXT)
+		nl.tooltip_text = String(S.sect("stat_desc").get(s, ""))
+		nl.mouse_filter = Control.MOUSE_FILTER_PASS
+		grid.add_child(nl)
 		row["minus"] = _small_button("−", change_stat.bind(s, -1))
 		grid.add_child(row["minus"])
 		row["base"] = _label("", 15, COL_TEXT, true)
@@ -236,8 +263,31 @@ func _build_right() -> Control:
 		grid.add_child(row["total"])
 		stat_rows[s] = row
 	var note := _wrap_label(12, COL_DIM)
-	note.text = "Бонус — пол, возраст, происхождение, профессия и черты. Удача складывается из происхождения, профессии и черт и в начале скрыта."
+	note.text = "Все характеристики начинаются с 5. Можно опустить любую до 1 и забрать очко. Наведите на название, чтобы узнать, на что она влияет."
 	v.add_child(note)
+	_derived_label = _wrap_label(13, COL_TEXT)
+	v.add_child(_derived_label)
+	v.add_child(HSeparator.new())
+	v.add_child(_label("Черты Fallout (до %d)" % int(S.data().get("traits_max", 2)), 17, COL_GOLD))
+	var fg := GridContainer.new()
+	fg.columns = 2
+	fg.add_theme_constant_override("h_separation", 4)
+	fg.add_theme_constant_override("v_separation", 3)
+	v.add_child(fg)
+	for t in S.traits():
+		var b := Button.new()
+		b.text = String(S.traits()[t]["title"])
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(160.0, 26.0)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.add_theme_font_size_override("font_size", 13)
+		b.add_theme_color_override("font_pressed_color", COL_GOLD)
+		b.tooltip_text = S.trait_text(t)
+		b.pressed.connect(toggle_fo_trait.bind(t))
+		b.mouse_entered.connect(func() -> void: _trait_desc.text = S.trait_text(t))
+		_fo_btns[t] = b
+		fg.add_child(b)
 	v.add_child(HSeparator.new())
 	v.add_child(_label("Черты характера", 17, COL_GOLD))
 	_trait_info = _wrap_label(13, COL_TEXT)
@@ -291,14 +341,41 @@ func profession() -> String:
 
 func params() -> Dictionary:
 	return {"name": name_edit.text.strip_edges(), "gender": gender, "age": int(age_spin.value),
-		"origin": origin(), "profession": profession(), "alloc": alloc.duplicate(), "traits": traits.duplicate()}
+		"origin": origin(), "profession": profession(), "alloc": alloc.duplicate(), "traits": traits.duplicate(),
+		"tags": tags.duplicate(), "fo_traits": fo_traits.duplicate()}
 
 
+## SPECIAL: от 5 вверх тратит свободное очко, вниз (до 1) — возвращает
 func change_stat(s: String, d: int) -> void:
 	var nv: int = int(alloc[s]) + d
-	if nv < 0 or (d > 0 and P.points_spent(alloc) >= int(P.C().get("points", 10))):
+	var v: int = int(S.data().get("base", 5)) + nv
+	if v < int(S.data().get("min", 1)) or v > int(S.data().get("max", 10)):
+		return
+	if d > 0 and S.alloc_left(alloc) <= 0:
 		return
 	alloc[s] = nv
+	_refresh()
+
+
+func toggle_tag(k: String) -> void:
+	if tags.has(k):
+		tags.erase(k)
+	elif tags.size() < int(S.data().get("tags", 3)):
+		tags.append(k)
+	_refresh()
+
+
+func toggle_fo_trait(t: String) -> void:
+	if fo_traits.has(t):
+		fo_traits.erase(t)
+	elif fo_traits.size() < int(S.data().get("traits_max", 2)):
+		fo_traits.append(t)
+	_refresh()
+
+
+## Новая профессия — её навыки становятся отмеченными (можно поменять)
+func _on_profession() -> void:
+	tags = P.profession_tags(profession())
 	_refresh()
 
 
@@ -348,6 +425,8 @@ func randomize_all() -> void:
 	_select_key(prof_opt, p["profession"])
 	alloc = p["alloc"]
 	traits = p["traits"]
+	tags = p["tags"]
+	fo_traits = p["fo_traits"]
 	_refresh()
 
 
@@ -361,9 +440,12 @@ func problems() -> Array:
 	var out: Array = []
 	if name_edit.text.strip_edges() == "":
 		out.append("введите имя")
-	var left: int = int(P.C().get("points", 10)) - P.points_spent(alloc)
-	if left > 0:
-		out.append("распределите очки (%d)" % left)
+	var why: String = S.alloc_valid(alloc)
+	if why != "":
+		out.append(why)
+	var tw: String = S.tags_valid(tags)
+	if tw != "":
+		out.append(tw)
 	return out
 
 
@@ -372,18 +454,33 @@ func _refresh() -> void:
 		return
 	var p: Dictionary = params()
 	var parts: Dictionary = P.stat_parts(p)
-	var left: int = int(P.C().get("points", 10)) - P.points_spent(alloc)
-	points_label.text = "Свободные очки: %d из %d" % [left, int(P.C().get("points", 10))]
+	var left: int = S.alloc_left(alloc)
+	points_label.text = "Свободные очки: %d из %d" % [left, int(S.data().get("points", 5))]
 	for s in P.stats_list():
 		var row: Dictionary = stat_rows[s]
 		var e: Dictionary = parts[s]
 		row["base"].text = str(int(e["base"]))
-		var diff: int = int(e["total"]) - int(e["base"])
+		var diff: int = int(e["traits"])
 		row["bg"].text = ("%+d" % diff) if diff != 0 else "·"
 		row["bg"].add_theme_color_override("font_color", COL_GOOD if diff > 0 else (COL_BAD if diff < 0 else COL_DIM))
-		row["total"].text = str(int(e["total"]))
-		row["minus"].disabled = int(alloc[s]) <= 0
-		row["plus"].disabled = left <= 0
+		row["total"].text = "%d %s" % [int(e["total"]), S.stat_level_name(int(e["total"]))]
+		row["minus"].disabled = int(e["base"]) <= int(S.data().get("min", 1))
+		row["plus"].disabled = left <= 0 or int(e["base"]) >= int(S.data().get("max", 10))
+	var pa: Actor = P.preview_actor(p)
+	var dv: Dictionary = S.derived(pa)
+	_derived_label.text = "ОЗ %d · ОД %d · Класс брони %d · Груз %d кг · Урон в рукопашной %d · Яд %d %% · Проклятье %d %% · Порядок хода %d · Заживление %d · Крит %d %% · Очков навыков за уровень %d · Спутников до %d" % [
+		dv["hp"], dv["ap"], dv["ac"], int(dv["carry_kg"]), dv["melee"], dv["poison"], dv["rad"], dv["sequence"], dv["healing"], dv["crit"], dv["skill_points"], dv["party"]]
+	var vals: Dictionary = P.skill_values(p)
+	_tags_label.text = "Отмеченные навыки: %d из %d" % [tags.size(), int(S.data().get("tags", 3))]
+	for k in _tag_btns:
+		var b: Button = _tag_btns[k]
+		b.set_pressed_no_signal(tags.has(k))
+		b.text = "%s %s  %d %%" % ["◆" if tags.has(k) else "◇", S.skill_name(k), int(vals[k])]
+		b.disabled = not tags.has(k) and tags.size() >= int(S.data().get("tags", 3))
+	for t in _fo_btns:
+		var b: Button = _fo_btns[t]
+		b.set_pressed_no_signal(fo_traits.has(t))
+		b.disabled = not fo_traits.has(t) and fo_traits.size() >= int(S.data().get("traits_max", 2))
 	var c: Dictionary = P.traits_cost(traits)
 	var al: String = P.alignment_name(P.alignment(traits))
 	_trait_info.text = "Выбрано %d из %d · достоинства %d · недостатки %d · мировоззрение: %s" % [
@@ -397,10 +494,10 @@ func _refresh() -> void:
 	origin_text.text = _describe(P.C()["origins"][origin()])
 	prof_text.text = _describe(P.C()["professions"][profession()])
 	var sk: Array = []
-	var lv: Dictionary = P.skill_levels(p)
-	for k in lv:
-		sk.append("%s %d" % [R.skills()[k].get("name_ru", k), int(lv[k])])
-	skills_label.text = "Навыки: " + (", ".join(sk) if not sk.is_empty() else "нет")
+	var bonus: Dictionary = P.skill_bonus(p)
+	for k in bonus:
+		sk.append("%s +%d %%" % [S.skill_name(k), int(bonus[k])])
+	skills_label.text = "Отмеченный навык: +20 % сразу и вдвое быстрее растёт. От прошлого и черт: " + (", ".join(sk) if not sk.is_empty() else "ничего")
 	var story: String = P.biography(p)
 	if _bio.text != story:
 		_bio.text = story
@@ -414,12 +511,10 @@ func _refresh() -> void:
 
 func _describe(d: Dictionary) -> String:
 	var parts: Array = []
-	for s in d.get("stats", {}):
-		parts.append("%s %+d" % [P.stat_name(s), int(d["stats"][s])])
-	if int(d.get("luck", 0)) != 0:
-		parts.append("Удача %+d" % int(d["luck"]))
 	for k in d.get("skills", {}):
-		parts.append("%s %d" % [R.skills().get(k, {}).get("name_ru", k), int(d["skills"][k])])
+		parts.append("%s +%d %%" % [S.skill_name(k), int(d["skills"][k]) * P.legacy_pct()])
+	if d.has("tags"):
+		parts.append("отмечает: " + ", ".join(PackedStringArray(d["tags"].map(func(x): return S.skill_name(x)))))
 	return "%s %s" % [String(d.get("text", "")), "; ".join(parts)]
 
 

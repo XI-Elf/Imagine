@@ -127,7 +127,7 @@ func _speed_and_load() -> void:
 	ok(c.res["energy"] > b.res["energy"], "час в седле — энергии меньше трат: %.1f против %.1f" % [c.res["energy"], b.res["energy"]])
 	c.note_travel(3000.0, env)
 	b.note_travel(3000.0, env)
-	ok(float(c.skills["riding"]["xp"]) > 0.0 and float(b.skills["riding"]["xp"]) == 0.0, "3 км верхом — опыт верховой езды")
+	ok(c.xp > 0.0 and b.xp > 0.0, "3 км пути — опыт персонажу и верхом, и пешком")
 
 
 func _in_game() -> void:

@@ -155,7 +155,7 @@ func _run() -> void:
 	ok(cast.hero["pos"].distance_to(spawn) < 200.0, "появился у ворот города")
 	ok(W.inventory == W.start_inventory(), "сумка как в новой игре: деньги и лом пропали")
 	ok(W.battles_won == 0, "счётчик побед сброшен")
-	ok(b.skill_level("medicine") == int(P.skill_levels(p).get("medicine", 0)), "навыки прежнего героя не перешли")
+	ok(b.skill("doctor") == int(P.skill_values(p)["doctor"]) and b.level == 1 and b.xp == 0.0, "навыки и уровень прежнего героя не перешли")
 	ok(game.clock.total_seconds >= t_before, "время мира не сброшено")
 	ok(cast.ruins_looted.has("1:1"), "обысканные руины помнятся")
 	st = W.city_states.get("s001", {})
