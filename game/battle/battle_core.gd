@@ -1,7 +1,7 @@
 extends Node
 ## Ход боя без интерфейса: участники, инициатива, очередь ходов, действия, реакции, ИИ, итог.
 ## Интерфейс (battle_scene.gd) только показывает и передаёт сюда приказы игрока; тесты гоняют ядро напрямую.
-## Раунд = 6 игровых секунд (5e).
+## Раунд = 6 игровых секунд.
 
 signal logged(text: String, kind: String)
 signal turn_started(c)
@@ -16,7 +16,7 @@ const Combatant := preload("res://battle/combatant.gd")
 const Grid := preload("res://battle/battle_grid.gd")
 const Enc := preload("res://battle/encounters.gd")
 const Trade := preload("res://city/trade.gd")
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const ROUND_S: float = 6.0
 
 var cfg: BattleConfig
@@ -30,7 +30,7 @@ var turn_i: int = -1
 var round_n: int = 0
 var outcome: String = ""
 var killed: int = 0
-var killed_levels: int = 0           # сумма уровней убитых врагов — опыт Fallout после победы
+var killed_levels: int = 0           # сумма уровней убитых врагов — опыт после победы
 var xp_gained: int = 0
 var loot: Dictionary = {}
 var log_lines: Array = []
@@ -1148,7 +1148,7 @@ func _finish(o: String) -> void:
 			elif c.team == 1 and c.dead and not c.is_pet:
 				# Шкуры со зверей — материал для кожевника (вопрос Q18): 1–2 с каждого [ВРЕМЕННО]
 				hides += roller.rng.randi_range(1, 2)
-		# «Искатель удачи» — вдвое больше денег, «Добытчик» — на вещь больше (Fallout)
+		# «Искатель удачи» — вдвое больше денег, «Добытчик» — на вещь больше
 		var hero_c = _hero_c()
 		if hero_c != null:
 			money = int(round(money * (1.0 + hero_c.fx("battle_money"))))
@@ -1157,13 +1157,13 @@ func _finish(o: String) -> void:
 					scrap += int(hero_c.fx("battle_loot"))
 				elif hides > 0:
 					hides += int(hero_c.fx("battle_loot"))
-		# Опыт Fallout: за каждого убитого — kill_per_level × уровень, всем живым людям стороны героя
-		xp_gained = int(Special.num("xp", "kill_per_level", 40) * killed_levels)
+		# Опыт: за каждого убитого — kill_per_level × уровень, всем живым людям стороны героя
+		xp_gained = int(Sheet.num("xp", "kill_per_level", 40) * killed_levels)
 		if xp_gained > 0:
 			for c in all:
-				if c.team == 0 and not c.is_pet and not c.dead and c.fo:
+				if c.team == 0 and not c.is_pet and not c.dead and c.on_sheet:
 					var lv: int = c.actor.level
-					Special.gain_xp(c.actor, xp_gained)
+					Sheet.gain_xp(c.actor, xp_gained)
 					if c.actor.level > lv:
 						log_line("%s: новый уровень %d!" % [c.title, c.actor.level], "head")
 			log_line("Опыт: +%d." % xp_gained, "info")

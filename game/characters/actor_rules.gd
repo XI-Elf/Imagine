@@ -1,5 +1,5 @@
 extends RefCounted
-## Данные правил персонажа: пак Day R (характеристики-ресурсы, состояния, навыки) и правила Амбера
+## Данные правил персонажа: пак (характеристики-ресурсы, состояния, навыки) и правила Амбера
 ## (местность, движение, лечение, характеристики 09). Читаются один раз из res://data/characters/.
 ## Логика (actor.gd) берёт числа только отсюда.
 
@@ -39,13 +39,13 @@ static func buffs() -> Dictionary:
 	return _load("conditions.json").get("positive_effects", {})
 
 
-## Навыки — 18 навыков Fallout (special.json) в виде {ключ: {name_ru, description, max_level}}.
-## Старые навыки пака (skills.json) — только справка: их ключи переводит Special.canon
+## Навыки — 18 навыков (sheet.json) в виде {ключ: {name_ru, description, max_level}}.
+## Старые навыки пака (skills.json) — только справка: их ключи переводит Sheet.canon
 static func skills() -> Dictionary:
 	if _cache.has("_skills"):
 		return _cache["_skills"]
 	var out: Dictionary = {}
-	var sp: Dictionary = _load("special.json").get("skills", {})
+	var sp: Dictionary = _load("sheet.json").get("skills", {})
 	for k in sp:
 		out[k] = {"name_ru": String(sp[k].get("name", k)), "name_en": String(sp[k].get("fo", k)),
 			"description": String(sp[k].get("desc", "")), "group": String(sp[k].get("group", "")), "max_level": 10}

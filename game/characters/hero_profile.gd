@@ -1,13 +1,13 @@
 extends RefCounted
 ## Создание героя. Кто он — по правилам сборки 09 (пол, возраст, происхождение, профессия, до 10 черт
-## характера без противоположностей, мировоззрение, биография). Характеристики и навыки — по Fallout
-## (characters/special.gd): SPECIAL от 5, 5 свободных очков, можно опустить до 1; 3 отмеченных навыка
-## (профессия предлагает свои); до 2 черт Fallout. Черты характера меняют SPECIAL (stats, ±1), прошлое — нет; «skills»
-## (уровни старых навыков пака) дают +5 % за уровень к навыку Fallout. Данные — creation.json, special.json.
-## params: {name, gender, age, origin, profession, alloc: {stat: от 5}, tags: [навык], fo_traits: [id], traits: [id]}
+## характера без противоположностей, мировоззрение, биография). Характеристики и навыки —
+## characters/sheet.gd: характеристики от 5, 5 свободных очков, можно опустить до 1; 3 отмеченных навыка
+## (профессия предлагает свои); до 2 особенностей. Черты характера меняют характеристики (stats, ±1), прошлое — нет; «skills»
+## (уровни старых навыков пака) дают +5 % за уровень к навыку. Данные — creation.json, sheet.json.
+## params: {name, gender, age, origin, profession, alloc: {stat: от 5}, tags: [навык], quirks: [id], traits: [id]}
 
 const R := preload("res://characters/actor_rules.gd")
-const S := preload("res://characters/special.gd")
+const S := preload("res://characters/sheet.gd")
 
 
 static func C() -> Dictionary:
@@ -32,7 +32,7 @@ static func default_params() -> Dictionary:
 		alloc[s] = 0
 	var pr: String = C()["professions"].keys()[0]
 	return {"name": "", "gender": "female", "age": 25, "origin": C()["origins"].keys()[0],
-		"profession": pr, "alloc": alloc, "tags": profession_tags(pr), "fo_traits": [], "traits": []}
+		"profession": pr, "alloc": alloc, "tags": profession_tags(pr), "quirks": [], "traits": []}
 
 
 # =====================================================================
@@ -172,10 +172,10 @@ static func legacy_pct() -> int:
 	return int(S.data().get("legacy_level_pct", 5))
 
 
-## Временный герой из выбора — чтобы посчитать SPECIAL с чертами Fallout и навыки
+## Временный герой из выбора — чтобы посчитать характеристики с особенностями и навыки
 static func preview_actor(p: Dictionary) -> Actor:
 	var a := Actor.new("preview", String(p.get("name", "")), false, 1)
-	S.apply_creation(a, p.get("alloc", {}), p.get("tags", []), p.get("fo_traits", []))
+	S.apply_creation(a, p.get("alloc", {}), p.get("tags", []), p.get("quirks", []))
 	var tl: Array = p.get("traits", [])
 	a.traits = tl.duplicate() if traits_valid(tl) == "" else []
 	var b: Dictionary = skill_bonus(p)
@@ -184,18 +184,18 @@ static func preview_actor(p: Dictionary) -> Actor:
 	return a
 
 
-## Характеристики по частям: {stat: {base (5 + очки), traits (черты характера и черты Fallout), total}}
+## Характеристики по частям: {stat: {base (5 + очки), traits (черты характера и особенности), total}}
 static func stat_parts(p: Dictionary) -> Dictionary:
 	var a: Actor = preview_actor(p)
 	var out: Dictionary = {}
 	for s in stats_list():
 		var base: int = int(S.data().get("base", 5)) + int(p.get("alloc", {}).get(s, 0))
-		var tot: int = S.special(a, s)
+		var tot: int = S.stat_value(a, s)
 		out[s] = {"base": base, "traits": tot - base, "total": tot}
 	return out
 
 
-## Добавка к навыкам Fallout от происхождения, профессии и черт характера: {навык: %}
+## Добавка к навыкам от происхождения, профессии и черт характера: {навык: %}
 static func skill_bonus(p: Dictionary) -> Dictionary:
 	var lv: Dictionary = {}
 	_add(lv, C()["origins"].get(String(p.get("origin", "")), {}).get("skills", {}))
@@ -210,7 +210,7 @@ static func skill_bonus(p: Dictionary) -> Dictionary:
 	return out
 
 
-## Начальные навыки Fallout в процентах: {навык: значение}
+## Начальные навыки в процентах: {навык: значение}
 static func skill_values(p: Dictionary) -> Dictionary:
 	var a: Actor = preview_actor(p)
 	var out: Dictionary = {}
@@ -276,12 +276,12 @@ static func random_params(r: RandomNumberGenerator) -> Dictionary:
 		if int(p["alloc"][s]) + int(S.data().get("base", 5)) < int(S.data().get("max", 10)):
 			p["alloc"][s] = int(p["alloc"][s]) + 1
 	var ft: Array = S.traits().keys()
-	p["fo_traits"] = [] if r.randi() % 3 == 0 else [ft[r.randi() % ft.size()]]
+	p["quirks"] = [] if r.randi() % 3 == 0 else [ft[r.randi() % ft.size()]]
 	p["traits"] = random_traits(r)
 	return p
 
 
-## Записать выбор в персонажа: имя, SPECIAL, отмеченные навыки, черты Fallout и характера, добавки
+## Записать выбор в персонажа: имя, характеристики, отмеченные навыки, особенности и черты характера, добавки
 ## к навыкам от прошлого, профиль для окна героя
 static func apply(a: Actor, p: Dictionary) -> void:
 	var tl: Array = p.get("traits", [])
@@ -289,7 +289,7 @@ static func apply(a: Actor, p: Dictionary) -> void:
 	var tags: Array = p.get("tags", [])
 	if S.tags_valid(tags) != "":
 		tags = profession_tags(String(p.get("profession", "")))
-	S.apply_creation(a, p.get("alloc", {}), tags, p.get("fo_traits", []))
+	S.apply_creation(a, p.get("alloc", {}), tags, p.get("quirks", []))
 	var b: Dictionary = skill_bonus(p)
 	for k in a.skills:
 		a.skills[k]["bonus"] = int(b.get(k, 0))

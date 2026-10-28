@@ -1,9 +1,9 @@
 extends SceneTree
-## Система Fallout (characters/special.gd, Huzzah 2026-10-28): SPECIAL, производные, 18 навыков, отметки,
-## цена очков, уровни и опыт, перки, черты, создание, старые сохранения, торговля, перевод в бой D&D.
-## godot --headless --path game -s res://tests/special_checks.gd
+## Система персонажа (characters/sheet.gd, Huzzah 2026-10-28): характеристики, производные, 18 навыков, отметки,
+## цена очков, уровни и опыт, перки, черты, создание, старые сохранения, торговля, перевод в бой.
+## godot --headless --path game -s res://tests/sheet_checks.gd
 
-const S := preload("res://characters/special.gd")
+const S := preload("res://characters/sheet.gd")
 const Data := preload("res://battle/battle_data.gd")
 const Combatant := preload("res://battle/combatant.gd")
 
@@ -29,20 +29,20 @@ func _init() -> void:
 	_legacy()
 	_trade()
 	_battle()
-	print("special_checks: %d/%d ok" % [checks - fails, checks])
+	print("sheet_checks: %d/%d ok" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)
 
 
 func _data() -> void:
-	ok(S.stats_list() == ["str", "per", "end", "cha", "int", "agi", "luck"], "SPECIAL по порядку")
-	ok(S.skill_list().size() == 18, "18 навыков Fallout")
+	ok(S.stats_list() == ["str", "per", "end", "cha", "int", "agi", "luck"], "характеристики по порядку")
+	ok(S.skill_list().size() == 18, "18 навыков")
 	ok(S.traits().size() == 17 and S.perks().size() >= 75, "черт 17, перков %d" % S.perks().size())
 	for k in S.skill_list():
-		ok(String(S.skills()[k].get("fo", "")) != "" and String(S.skills()[k].get("desc", "")) != "", "навык описан: " + k)
+		ok(String(S.skills()[k].get("on_sheet", "")) != "" and String(S.skills()[k].get("desc", "")) != "", "навык описан: " + k)
 	for id in S.perks():
 		var e: Dictionary = S.perk_def(id)
 		ok(int(e.get("level", 0)) >= 1 and String(e.get("title", "")) != "", "перк описан: " + id)
-	ok(S.canon("survival") == "outdoorsman" and S.canon("medicine") == "doctor" and S.canon("blacksmith") == "repair", "старые навыки пака → Fallout")
+	ok(S.canon("survival") == "outdoorsman" and S.canon("medicine") == "doctor" and S.canon("blacksmith") == "repair", "старые навыки пака → новые")
 
 
 func _derived() -> void:
@@ -61,7 +61,7 @@ func _derived() -> void:
 
 func _skills() -> void:
 	var a := Actor.new("a", "Ученик")
-	ok(S.skill_value(a, "bows") == 25 and S.skill_value(a, "unarmed") == 50 and S.skill_value(a, "gambling") == 25, "база Fallout 2: стрельба 25, рукопашный 50, азарт 25")
+	ok(S.skill_value(a, "bows") == 25 and S.skill_value(a, "unarmed") == 50 and S.skill_value(a, "gambling") == 25, "база стрельба 25, рукопашный 50, азарт 25")
 	ok(S.skill_value(a, "doctor") == 15 and S.skill_value(a, "outdoorsman") == 20, "знахарство 15, выживание 20")
 	a.tags = ["bows"]
 	ok(S.skill_value(a, "bows") == 45, "отмеченный: +20 %")
@@ -88,7 +88,7 @@ func _levels() -> void:
 	ok(S.gain_xp(a, 3000.0) == 2 and a.level == 3 and got == [2, 3], "3000 опыта — 3 уровень")
 	ok(a.skill_points == 30 and a.perk_picks == 1, "30 очков навыков и перк на 3 уровне")
 	var b := Actor.new("b", "Мастер")
-	b.fo_traits = ["skilled"]
+	b.quirks = ["skilled"]
 	S.gain_xp(b, 6000.0)
 	ok(b.skill_points == 60 and b.perk_picks == 1, "«Мастер на все руки»: +5 очков, перк раз в 4 уровня: %d %d" % [b.skill_points, b.perk_picks])
 
@@ -112,22 +112,22 @@ func _perks() -> void:
 	ok(S.take_perk(t, "tag") == "" and t.tag_left == 1, "«Ещё один конёк»: отметка")
 	ok(S.add_tag(t, "sneak") == "" and S.skill_value(t, "sneak") == 40 and t.tag_left == 0, "отмечена скрытность: 20 + 20")
 	var m := Actor.new("m", "Мутант")
-	m.fo_traits = ["bruiser"]
+	m.quirks = ["bruiser"]
 	m.mutate_left = 1
-	ok(S.mutate(m, "bruiser", "finesse") == "" and m.fo_traits == ["finesse"], "«Мутация»: Громила → Изящество")
+	ok(S.mutate(m, "bruiser", "finesse") == "" and m.quirks == ["finesse"], "«Мутация»: Громила → Изящество")
 
 
 func _traits() -> void:
 	var a := Actor.new("a", "Громила")
-	a.fo_traits = ["bruiser"]
+	a.quirks = ["bruiser"]
 	ok(int(a.stat("str")) == 7 and S.ap(a) == 5, "Громила: СИЛ +2, ОД −2")
 	var g := Actor.new("g", "Одарённый")
-	g.fo_traits = ["gifted"]
+	g.quirks = ["gifted"]
 	ok(int(g.stat("luck")) == 6 and S.skill_value(g, "gambling") == 20 and S.skill_points_per_level(g) == 12, "Одарённый: +1 ко всем, −10 % навыкам, −5 очков")
 	var c := Actor.new("c", "Характер")
 	c.traits = ["strong_build", "prudent", "repulsive"]
-	ok(int(c.stat("str")) == 6 and int(c.stat("per")) == 6 and int(c.stat("cha")) == 4, "черты характера меняют SPECIAL (Мудрость → Восприятие)")
-	c.fo_traits = ["bruiser"]
+	ok(int(c.stat("str")) == 6 and int(c.stat("per")) == 6 and int(c.stat("cha")) == 4, "черты характера меняют характеристики (Мудрость → Восприятие)")
+	c.quirks = ["bruiser"]
 	c.stats["str"] = 9
 	ok(int(c.stat("str")) == 10, "итог не выше 10")
 	ok(S.traits_valid(["bruiser", "gifted"]) == "" and S.traits_valid(["bruiser", "gifted", "jinxed"]) != "", "не больше двух черт")
@@ -141,9 +141,9 @@ func _creation() -> void:
 	ok(S.tags_valid(["bows", "sneak", "speech"]) == "" and S.tags_valid(["bows", "sneak"]) != "", "ровно 3 отметки")
 	var a := Actor.new("a", "Новичок")
 	S.apply_creation(a, {"str": 3, "agi": 2}, ["bows", "sneak", "speech"], ["small_frame"])
-	ok(int(a.stat("str")) == 8 and int(a.stat("agi")) == 8 and a.tags.size() == 3 and a.fo_traits == ["small_frame"], "создание записано в героя")
+	ok(int(a.stat("str")) == 8 and int(a.stat("agi")) == 8 and a.tags.size() == 3 and a.quirks == ["small_frame"], "создание записано в героя")
 	var b := Actor.from_dict(JSON.parse_string(JSON.stringify(a.to_dict())))
-	ok(int(b.stat("agi")) == 8 and b.tags == a.tags and b.fo_traits == a.fo_traits and b.level == 1, "новое сохранение читается без перевода")
+	ok(int(b.stat("agi")) == 8 and b.tags == a.tags and b.quirks == a.quirks and b.level == 1, "новое сохранение читается без перевода")
 
 
 func _legacy() -> void:
@@ -172,7 +172,7 @@ func _battle() -> void:
 	var a := Actor.new("hero", "Герой")
 	var c = Combatant.new()
 	c.build_from_actor(a, 0, Data.config(), Data.config().hero)
-	ok(c.fo and c.scores["str"] == 10 and c.scores["dex"] == 10 and c.scores["lck"] == 10, "SPECIAL 5 → 10 в бою")
+	ok(c.on_sheet and c.scores["str"] == 10 and c.scores["dex"] == 10 and c.scores["lck"] == 10, "характеристика 5 → 10 в бою")
 	ok(c.max_hp == 30 and c.speed_ft == 30 and c.per_bonus == 0, "ОЗ 30, скорость 30 фт, инициатива +0")
 	ok(c.crit_extra(null) == 0, "Удача 5: крит только на 20")
 	var w = c.weapons[0]

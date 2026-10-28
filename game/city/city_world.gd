@@ -25,7 +25,7 @@ const Craft := preload("res://city/craft.gd")
 const CityRoute := preload("res://city/city_route.gd")
 const WorldEnv := preload("res://characters/world_env.gd")
 const R := preload("res://characters/actor_rules.gd")
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const ClockScene := preload("res://game_clock.tscn")
 const T = CityMap.T
 const Art := preload("res://storybook/art.gd")
@@ -414,7 +414,7 @@ func _spawn_npcs() -> void:
 	npcs.clear()
 	for nd in def.get("npcs", []):
 		var a := Actor.new(String(nd["id"]), String(nd["name"]), true, hash(city_id + String(nd["id"])))
-		# SPECIAL горожан 3–7; навык мастера — уровень, который давали прежние 400 опыта навыка пака
+		# Характеристики горожан 3–7; навык мастера — уровень, который давали прежние 400 опыта навыка пака
 		for s in Actor.STATS:
 			a.set_stat(s, 3 + int(abs(hash(String(nd["id"]) + s)) % 5))
 		if nd.has("skill"):
@@ -836,11 +836,11 @@ func talk(n: Dictionary) -> void:
 	else:
 		var lines: Array = nd.get("lines", ["…"])
 		text = "«%s»" % lines[int(n["line_i"]) % lines.size()]
-		# Fallout: при Интеллекте 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
-		var dlg: Dictionary = Special.sect("dialogue")
-		if hero != null and Special.dumb(hero):
+		# при Интеллекте 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
+		var dlg: Dictionary = Sheet.sect("dialogue")
+		if hero != null and Sheet.dumb(hero):
 			text += String(dlg.get("dumb_suffix", ""))
-		elif hero != null and Special.smart(hero) and int(n["line_i"]) == 0:
+		elif hero != null and Sheet.smart(hero) and int(n["line_i"]) == 0:
 			text += String(dlg.get("smart_suffix", ""))
 		opts.append(["Поговорить", func(): n["line_i"] += 1; talk(n)])
 		var qs: Array = Growth.available(full_def, growth, String(nd["id"]))
@@ -1612,9 +1612,9 @@ func quest_status(q: Dictionary) -> String:
 	return ""
 
 
-## Добавка Красноречия к деньгам за поручение (Fallout: уговорить заплатить больше)
+## Добавка Красноречия к деньгам за поручение (уговорить заплатить больше)
 func _speech_extra(q: Dictionary) -> int:
-	return int(floor(float(q.get("reward", 0)) * Special.quest_bonus(hero))) if hero != null else 0
+	return int(floor(float(q.get("reward", 0)) * Sheet.quest_bonus(hero))) if hero != null else 0
 
 
 func _quest_reward(q: Dictionary) -> String:
@@ -1651,11 +1651,11 @@ func turn_in(n: Dictionary, q: Dictionary) -> void:
 	if extra > 0:
 		bag["money"] = int(bag["money"]) + extra
 		text += " Красноречие выторговало ещё %d." % extra
-	# Опыт за поручение (Fallout): основа + за каждую монету награды [ВРЕМЕННО]
+	# Опыт за поручение: основа + за каждую монету награды [ВРЕМЕННО]
 	if hero != null:
 		var lv: int = hero.level
-		var gx: float = Special.num("xp", "quest_base", 50) + Special.num("xp", "quest_per_coin", 2) * float(q.get("reward", 0))
-		Special.gain_xp(hero, gx)
+		var gx: float = Sheet.num("xp", "quest_base", 50) + Sheet.num("xp", "quest_per_coin", 2) * float(q.get("reward", 0))
+		Sheet.gain_xp(hero, gx)
 		text += "\n\nОпыт +%d." % int(gx)
 		if hero.level > lv:
 			text += " Новый уровень: %d! Очки навыков и перки — в окне героя (I)." % hero.level

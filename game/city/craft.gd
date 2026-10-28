@@ -2,11 +2,11 @@ extends RefCounted
 ## Крафт в мастерских (вопрос Q18, Huzzah 2026-10-24): кожевник и кузнец делают снаряжение из шкур и лома.
 ## Заказ — мастер делает из ваших материалов за плату, если сам умеет (его навык ≥ уровня рецепта).
 ## Своими руками — нужен свой навык, тратится выносливость, есть шанс неудачи, за работу идёт опыт навыка.
-## Урок — +10 % к навыку (Ремесло по Fallout) за деньги, но не выше навыка мастера. Опыт за работу идёт герою
-## (уровни и очки навыков, characters/special.gd). Рецепты и числа — res://data/cities/recipes.json.
+## Урок — +10 % к навыку (Ремесло) за деньги, но не выше навыка мастера. Опыт за работу идёт герою
+## (уровни и очки навыков, characters/sheet.gd). Рецепты и числа — res://data/cities/recipes.json.
 
 const Trade := preload("res://city/trade.gd")
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const RECIPES_FILE := "res://data/cities/recipes.json"
 
 static var _data: Dictionary = {}
@@ -151,7 +151,7 @@ static func lesson(bag: Dictionary, hero: Actor, master: Actor, sk: String) -> S
 		return "Не хватает денег"
 	bag["money"] = int(bag["money"]) - fee
 	# Выше мастера урок не поднимает; перк «Вдумчивость» — урок на 50 % больше
-	var pct: int = int(round(float(data().get("lesson", {}).get("pct", 10)) * (1.0 + Special.eff(hero, "lesson_mult"))))
-	Special.train(hero, sk, pct, master.skill(sk))
+	var pct: int = int(round(float(data().get("lesson", {}).get("pct", 10)) * (1.0 + Sheet.eff(hero, "lesson_mult"))))
+	Sheet.train(hero, sk, pct, master.skill(sk))
 	hero.add_xp(sk, float(data().get("lesson", {}).get("xp", 40)) * 0.25)
 	return ""

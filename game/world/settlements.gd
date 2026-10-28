@@ -1,7 +1,7 @@
 extends Node2D
 const Art := preload("res://storybook/art.gd")
 const Growth := preload("res://city/city_growth.gd")
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 ## Города и поселения на общей карте. Реестр — data/world/settlements.json (tools/make_settlements.py,
 ## можно править руками). Сейчас по решению Huzzah город один на весь мир, герой появляется у его ворот.
 ##
@@ -62,7 +62,7 @@ var _panel: PanelContainer
 var _title: Label
 var _info: Label
 var _act_btn: Button
-# Панель места, как в Day R (видео Huzzah 2026-10-23): картинка поселения, «Искать», «Набрать воды»
+# Панель места, как в  (видео Huzzah 2026-10-23): картинка поселения, «Искать», «Набрать воды»
 var _pic: TextureRect
 var _result: Label
 var _search_btn: Button
@@ -298,13 +298,13 @@ func sneak_chance(a: Actor, env: Dictionary) -> float:
 	if a.mount != "" or not a.can_move():
 		return 0.0
 	var c: float = _rule("base", 0.3)
-	# Fallout: решает навык Скрытности (Ловкость в нём уже есть), Восприятие и Удача — понемногу
+	# решает навык Скрытности (Ловкость в нём уже есть), Восприятие и Удача — понемногу
 	c += _rule("per_sneak", 0.005) * (float(a.skill("sneak")) - _rule("sneak_ref", 20.0))
 	c += _rule("per_per", 0.02) * (a.stat("per") - 5.0)
 	c += _rule("per_luck", 0.01) * (a.stat("luck") - 5.0)
 	if bool(env.get("night", false)):
 		c += _rule("night", 0.2)
-		if Special.has(a, "ghost"):
+		if Sheet.has(a, "ghost"):
 			c += 0.2   # перк «Призрак»
 	c -= _rule("per_kg_over", 0.01) * maxf(a.carried_kg - _rule("free_kg", 15.0), 0.0)
 	c *= a.mult("sneak")   # черты «Тихий» / «Шумный» (data/characters/creation.json)
@@ -693,7 +693,7 @@ func _button(parent: Node, text: String, cb: Callable) -> Button:
 func _layout() -> void:
 	_panel.reset_size()
 	var vp: Vector2 = get_viewport_rect().size
-	# Карточка места справа, как в Day R: герой и карта у ворот остаются на виду
+	# Карточка места справа, как в : герой и карта у ворот остаются на виду
 	_panel.position = Vector2(vp.x - _panel.size.x - 24.0, maxf((vp.y - _panel.size.y) * 0.5, 12.0))
 
 
@@ -883,7 +883,7 @@ func _draw_outline(s: Dictionary, cs: float, z: float) -> void:
 		draw_circle(gw + along * gh * sgn, wid * 1.5, gate_col)
 
 
-# Медальон поселения (Huzzah 2026-10-23, референс Day R): круглая картинка в рамке, сверху знамя с гербом.
+# Медальон поселения (Huzzah 2026-10-23, референс ): круглая картинка в рамке, сверху знамя с гербом.
 # Картинка — по уровню развития (art/medallion, tools/make_settlement_medallions.py): город с ростом (city_growth.gd) —
 # по этапу, остальные — по размеру. Медальон занимает круг поселения на карте; издали радиус не меньше MEDAL_MIN_PX
 func _draw_medallion(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:

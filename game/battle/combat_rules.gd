@@ -6,7 +6,7 @@ extends RefCounted
 ##   DR_EFF_j = floor(max(0, DR_j) × (1 − P_j)); AFTER_ARMOR_j = max(0, BASE_j − DR_EFF_j)
 ##   MULT_j = (1 − S_j) × (1 + V_j); FINAL_j = 0 при иммунитете, иначе floor(AFTER_ARMOR_j × MULT_j)
 ##   AC_TARGET = AC_BASE + DEX_EFF + SH_AC + AB_AC + CV_AC
-## Прочее (спасброски, инициатива, 0 HP) — по ТЗ D&D 5e и документу Combat_System_Claude_Instructions.
+## Прочее (спасброски, инициатива, 0 HP) — по ТЗ пошагового боя и документу Combat_System_Claude_Instructions.
 ## Числа берутся из BattleConfig и ресурсов, в формулах их нет.
 
 const Data := preload("res://battle/battle_data.gd")
@@ -73,7 +73,7 @@ static func attack_terms(att, w: BattleWeapon, ab: BattleAbility = null) -> Dict
 			stat = "dex" if att.mod("dex") >= att.mod("str") else "str"
 		w_atk = w.attack_bonus + att.fo_attack_bonus(w)
 	var m: int = att.mod(stat)
-	# мастерство: у героя и людей — от навыка оружия Fallout (combatant.attack_prof), у шаблонов — от уровня
+	# мастерство: у героя и людей — от навыка оружия (combatant.attack_prof), у шаблонов — от уровня
 	var pb: int = (att.attack_prof(w) if ab == null else att.prof()) if proficient else 0
 	var lu: int = att.mod("lck")
 	var pen: int = att.attack_penalty()
@@ -147,11 +147,11 @@ static func attack(roller, att, tgt, w: BattleWeapon, ab: BattleAbility, ctx: Di
 	var H: int = c.attack_die
 	var atk: int = int(r["total"])
 	var hit: bool = R != L and (R == H or atk >= int(act["total"]))
-	# окно крита шире от Удачи и перков (Fallout: крит % = Удача); «Убийца» — каждое попадание вблизи крит
+	# окно крита шире от Удачи и перков (крит % = Удача); «Убийца» — каждое попадание вблизи крит
 	var crit: bool = hit and R >= H - (att.crit_extra(w) if ab == null else 0)
 	if hit and ab == null and not w.ranged and att.fx("slayer") > 0.0:
 		crit = true
-	# По тому, кто без сознания, вплотную — всегда крит (5e)
+	# По тому, кто без сознания, вплотную — всегда крит
 	if hit and tgt.down and not bool(ctx.get("ranged", false)) and int(ctx.get("dist_ft", 5)) <= 5:
 		crit = true
 	var out: Dictionary = {"R": R, "L": L, "H": H, "terms": terms, "ATK": atk, "AC": act, "adv": ad["adv"], "dis": ad["dis"],

@@ -3,7 +3,7 @@ extends RefCounted
 ## Сумка — простой словарь, чтобы её мог держать кто угодно (Worlds, город) и писать в сохранение.
 ## Цены: покупка дороже базовой, продажа дешевле; Харизма двигает обе [ВРЕМЕННО].
 
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const ITEMS_FILE := "res://data/cities/items.json"
 
 static var _items: Dictionary = {}
@@ -60,17 +60,17 @@ static func remedies(bag: Dictionary) -> Array:
 	return bag["items"].keys().filter(func(id): return bool(item(id).get("treat", false)))
 
 
-# Цены по Fallout: решает разница навыков Торговли героя и торговца (Харизма даёт стартовую Торговлю),
-# перки «Купец» (−25 % к покупке), «Культ личности». Числа — data/characters/special.json «trade»
+# Цены: решает разница навыков Торговли героя и торговца (Харизма даёт стартовую Торговлю),
+# перки «Купец» (−25 % к покупке), «Культ личности». Числа — data/characters/sheet.json «trade»
 static func buy_price(id: String, buyer: Actor, trader: Actor = null) -> int:
-	var p: float = float(item(id).get("price", 1)) * (1.3 - Special.trade_bonus(buyer, trader, true))
+	var p: float = float(item(id).get("price", 1)) * (1.3 - Sheet.trade_bonus(buyer, trader, true))
 	if buyer != null:
-		p *= maxf(1.0 - Special.eff(buyer, "trade_buy"), 0.1)
+		p *= maxf(1.0 - Sheet.eff(buyer, "trade_buy"), 0.1)
 	return maxi(1, int(round(p)))
 
 
 static func sell_price(id: String, seller: Actor, trader: Actor = null) -> int:
-	return maxi(1, int(round(float(item(id).get("price", 1)) * (0.45 + Special.trade_bonus(seller, trader, false)))))
+	return maxi(1, int(round(float(item(id).get("price", 1)) * (0.45 + Sheet.trade_bonus(seller, trader, false)))))
 
 
 ## Купить одну вещь у торговца (его запас stock: {id: count}). Ответ: текст для игрока, "" — удалось

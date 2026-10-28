@@ -13,7 +13,7 @@ const Art := preload("res://storybook/art.gd")
 
 const WorldEnv := preload("res://characters/world_env.gd")
 const R := preload("res://characters/actor_rules.gd")
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const HeroProfile := preload("res://characters/hero_profile.gd")
 const HeroCreateScript := preload("res://characters/hero_create.gd")
 const HeroWindowScript := preload("res://characters/hero_window.gd")
@@ -178,7 +178,7 @@ func _spawn_npcs(center: Vector2) -> void:
 			a.set_stat(s, _rng.randi_range(3, 8))
 		a.res["hunger"] = _rng.randf_range(40.0, 90.0)
 		a.res["thirst"] = _rng.randf_range(40.0, 90.0)
-		# У каждого НПС свое ремесло (навык пака → навык Fallout): знахарь, кузнец, повар...
+		# У каждого НПС свое ремесло (навык пака → навык): знахарь, кузнец, повар...
 		var sk: Array = R.pack_skills().keys()
 		a.set_skill_level(sk[i % sk.size()], _rng.randi_range(2, 5))
 		var p: Vector2 = _find_land(center + Vector2.from_angle(_rng.randf() * TAU) * _rng.randf_range(150.0, NPC_RADIUS_M * 1.5), 3000.0, true)
@@ -661,7 +661,7 @@ func sheet_text(a: Actor) -> String:
 	var dv: Dictionary = a.derived()
 	t += "\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n" % [
 		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0)]
-	t += "\nУровень %d, опыт %d / %d" % [a.level, int(a.xp), Special.xp_to_next(a)]
+	t += "\nУровень %d, опыт %d / %d" % [a.level, int(a.xp), Sheet.xp_to_next(a)]
 	t += "\nНавыки:"
 	var sk: Dictionary = R.skills()
 	for k in sk:

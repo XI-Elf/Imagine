@@ -1,7 +1,7 @@
 extends CanvasLayer
 ## Окно героя — одно на всю игру вместо прежнего листа (I) и сумки города (Tab). Вкладки:
-## 1 Характеристики (кто он, уровень и опыт, SPECIAL, производные Fallout, шкалы, состояния),
-## 2 Навыки (18 навыков Fallout в %, отмеченные, трата очков навыков), 3 Перки (черты Fallout, взятые перки,
+## 1 Характеристики (кто он, уровень и опыт, характеристики, производные, шкалы, состояния),
+## 2 Навыки (18 навыков в %, отмеченные, трата очков навыков), 3 Перки (особенности, взятые перки,
 ## выбор нового перка), 4 Черты (черты характера, мировоззрение, биография),
 ## 5 Инвентарь (общая сумка Worlds.inventory: деньги, вещи, вес; использовать, выбросить, взять в бой).
 ## Хозяин (cast.gd на карте, city_world.gd в городе) зовёт setup(герой, сумка) и open(вкладка).
@@ -11,7 +11,7 @@ signal closed
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
-const S := preload("res://characters/special.gd")
+const S := preload("res://characters/sheet.gd")
 const Trade := preload("res://city/trade.gd")
 const Inv := preload("res://characters/inventory_view.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
@@ -173,7 +173,7 @@ func refresh() -> void:
 	var sig: String = tab + "|" + JSON.stringify(_bag())
 	if a != null:
 		sig += "|%s|%s|%s|%d|%s|%d|%d|%d|%d|%s|%s" % [a.display_name, JSON.stringify(a.skills), JSON.stringify(a.traits), int(a.carry_capacity()),
-			JSON.stringify(a.perks), a.skill_points, a.perk_picks, a.level, int(a.xp), JSON.stringify(a.fo_traits), perk_sel]
+			JSON.stringify(a.perks), a.skill_points, a.perk_picks, a.level, int(a.xp), JSON.stringify(a.quirks), perk_sel]
 		if tab == "bag":   # строка показателей сверху
 			for r in Actor.RESOURCES:
 				sig += "|%d" % int(a.res.get(r, 0.0))
@@ -217,14 +217,14 @@ func _fill_stats(a: Actor) -> void:
 		_body.add_child(_label("Герой создан до окна персонажа: происхождения и черт нет.", 14, COL_DIM))
 	_body.add_child(_label("Уровень %d · опыт %d / %d · очков навыков: %d · перков к выбору: %d" % [
 		a.level, int(a.xp), S.xp_to_next(a), a.skill_points, a.perk_picks], 16, COL_GOLD if a.skill_points > 0 or a.perk_picks > 0 else COL_TEXT))
-	_body.add_child(_label("SPECIAL", 17, COL_GOLD))
+	_body.add_child(_label("Характеристики", 17, COL_GOLD))
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 18)
 	_body.add_child(grid)
 	for s in S.stats_list():
 		grid.add_child(_label(S.stat_name(s), 16, COL_TEXT))
-		var v: int = S.special(a, s)
+		var v: int = S.stat_value(a, s)
 		grid.add_child(_label(str(v), 18, COL_GOLD))
 		grid.add_child(_label(S.stat_level_name(v), 14, COL_TEXT))
 		var base: int = int(a.stats.get(s, 5))
@@ -326,19 +326,19 @@ func lower_skill(k: String) -> void:
 # ПЕРКИ И ЧЕРТЫ FALLOUT
 # =====================================================================
 func _fill_perks(a: Actor) -> void:
-	_body.add_child(_label("Черты Fallout", 17, COL_GOLD))
-	if a.fo_traits.is_empty():
+	_body.add_child(_label("Особенности", 17, COL_GOLD))
+	if a.quirks.is_empty():
 		_body.add_child(_label("Нет.", 14, COL_DIM))
-	for t in a.fo_traits:
+	for t in a.quirks:
 		var row := HBoxContainer.new()
 		row.add_child(_wrap(S.trait_text(t), 14, COL_TEXT))
 		if a.mutate_left > 0:
 			row.add_child(_small("Убрать (Мутация)", mutate_trait.bind(t, "")))
 		_body.add_child(row)
-	if a.mutate_left > 0 and a.fo_traits.size() < int(S.data().get("traits_max", 2)):
+	if a.mutate_left > 0 and a.quirks.size() < int(S.data().get("traits_max", 2)):
 		var mg := HFlowContainer.new()
 		for t in S.traits():
-			if not a.fo_traits.has(t):
+			if not a.quirks.has(t):
 				mg.add_child(_small("+ " + String(S.traits()[t]["title"]), mutate_trait.bind("", t)))
 		_body.add_child(_label("Мутация: можно взять черту", 14, COL_GOLD))
 		_body.add_child(mg)

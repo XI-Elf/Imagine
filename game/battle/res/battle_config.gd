@@ -1,6 +1,6 @@
 class_name BattleConfig
 extends Resource
-## Общие числа боя. Все [ВРЕМЕННО], кроме формул 5e.
+## Общие числа боя. Все [ВРЕМЕННО], кроме базовых формул.
 
 ## Combat_Formulas: параметры, которые не зашиты в формулы. Значения — из ТЗ и документа пользователя
 ## (d20, крит — второй бросок костей, укрытие +2/+5, сопротивление половина, уязвимость вдвое)
@@ -17,7 +17,7 @@ extends Resource
 ## Тяжёлый удар: урон ≥ доли максимума HP — проверка травмы по зоне (так же на крите)
 @export var heavy_hit_frac: float = 0.5
 @export var injury_dc: int = 12
-@export var stat_offset: int = 6                 # D&D = значение Амбера + 6 (база 4 → 10)
+@export var stat_offset: int = 6                 # боевое = значение Амбера + 6 (база 4 → 10)
 @export var luck_offset: int = 10                # LCK = Удача Амбера + 10
 @export var per_initiative_div: int = 4          # Восприятие сверх базы / 4 — к инициативе и внимательности
 @export var flanking: bool = true

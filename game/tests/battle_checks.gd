@@ -1,5 +1,5 @@
 extends SceneTree
-## Проверки боя без карты: DiceRoller, формулы (Combat_Formulas, раздел I), правила 5e, сетка, ход боя.
+## Проверки боя без карты: DiceRoller, формулы (Combat_Formulas, раздел I), правила боя, сетка, ход боя.
 ## godot --headless --path game -s res://tests/battle_checks.gd
 
 const Data := preload("res://battle/battle_data.gd")
@@ -88,8 +88,8 @@ func _stats() -> void:
 	a.set_stat("str", 8)
 	var c = Combatant.new()
 	c.build_from_actor(a, 0, Data.config(), Data.config().hero)
-	ok(c.scores["dex"] == 20 and c.scores["str"] == 16 and c.scores["con"] == 10 and c.scores["lck"] == 10 and c.scores["wis"] == 10, "SPECIAL × 2: Ловкость 10 → DEX 20, Сила 8 → STR 16, 5 → 10")
-	ok(c.max_hp == 33 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: HP 33 (Fallout: 15 + СИЛ 8 + 2×ВЫН 5), меч и праща, кожаная броня")
+	ok(c.scores["dex"] == 20 and c.scores["str"] == 16 and c.scores["con"] == 10 and c.scores["lck"] == 10 and c.scores["wis"] == 10, "характеристика × 2: Ловкость 10 → DEX 20, Сила 8 → STR 16, 5 → 10")
+	ok(c.max_hp == 33 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: HP 33 (15 + СИЛ 8 + 2×ВЫН 5), меч и праща, кожаная броня")
 
 
 func mk(scores: Dictionary, armor: String = "none") -> Object:
@@ -155,7 +155,7 @@ func _formulas() -> void:
 	ok(mid2["text"].contains("Атака: 11 (d20)") and mid2["text"].contains("против AC 16") and mid2["text"].contains("Урон:"), "лог в формате «Атака: 11 (d20) … против AC 16 → … Урон: …»")
 
 
-# --- Правила 5e -------------------------------------------------------------
+# --- Правила боя -----------------------------------------------------------
 func _rules() -> void:
 	var t = mk({"dex": 16}, "leather")
 	ok(int(Rules.ac(t)["total"]) == 15, "кожаная: 12 + ЛОВ 3 = 15")

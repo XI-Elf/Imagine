@@ -1,9 +1,8 @@
 {
- "_note": "Перки Fallout 2 (и четыре только из Fallout 1), переложенные на сеттинг Amber Game. level — с какого уровня, ranks — сколько раз можно взять, req — минимум SPECIAL, req_skill — минимум навыка %, max_stat — характеристика должна быть не выше. effects — ключи characters/special.gd (умножаются на ранг). Требования — как в Fallout 2; действие — в правилах этой игры, бой — D&D [ВРЕМЕННО].",
+ "_note": "Перки (дары) Amber Game. level — с какого уровня, ranks — сколько раз можно взять, req — минимум характеристик, req_skill — минимум навыка %, max_stat — характеристика должна быть не выше. effects — ключи characters/sheet.gd (умножаются на ранг). Требования и действие [ВРЕМЕННО].",
  "perks": {
   "awareness": {
    "title": "Чутьё",
-   "fo": "Awareness",
    "level": 3,
    "ranks": 1,
    "text": "Вы замечаете затаившихся врагов: +3 к пассивному восприятию в бою.",
@@ -16,7 +15,6 @@
   },
   "bonus_hth_attacks": {
    "title": "Шквал ударов",
-   "fo": "Bonus HtH Attacks",
    "level": 15,
    "ranks": 1,
    "text": "Второй удар врукопашную или холодным оружием за ход — бонусным действием.",
@@ -29,7 +27,6 @@
   },
   "bonus_hth_damage": {
    "title": "Тяжёлый кулак",
-   "fo": "Bonus HtH Damage",
    "level": 3,
    "ranks": 3,
    "text": "+2 к урону в ближнем бою за ранг.",
@@ -43,7 +40,6 @@
   },
   "bonus_move": {
    "title": "Быстрые ноги",
-   "fo": "Bonus Move",
    "level": 6,
    "ranks": 2,
    "text": "+10 футов хода в бою за ранг.",
@@ -56,7 +52,6 @@
   },
   "bonus_ranged_damage": {
    "title": "Меткий урон",
-   "fo": "Bonus Ranged Damage",
    "level": 6,
    "ranks": 2,
    "text": "+2 к урону стрелами, болтами, камнями и метательным за ранг.",
@@ -70,7 +65,6 @@
   },
   "bonus_rate_of_fire": {
    "title": "Скорострел",
-   "fo": "Bonus Rate of Fire",
    "level": 15,
    "ranks": 1,
    "text": "Второй выстрел за ход бонусным действием, без штрафа.",
@@ -85,7 +79,6 @@
   },
   "earlier_sequence": {
    "title": "Быстрая реакция",
-   "fo": "Earlier Sequence",
    "level": 3,
    "ranks": 3,
    "text": "+2 к порядку хода за ранг.",
@@ -98,7 +91,6 @@
   },
   "faster_healing": {
    "title": "Быстрое заживление",
-   "fo": "Faster Healing",
    "level": 3,
    "ranks": 3,
    "text": "+2 к заживлению за ранг: здоровье само восстанавливается быстрее.",
@@ -111,7 +103,6 @@
   },
   "more_criticals": {
    "title": "Больше критов",
-   "fo": "More Criticals",
    "level": 6,
    "ranks": 3,
    "text": "+5 % к шансу крита за ранг.",
@@ -124,7 +115,6 @@
   },
   "night_vision": {
    "title": "Ночное зрение",
-   "fo": "Night Vision",
    "level": 3,
    "ranks": 1,
    "text": "Ночь вам не помеха: в темноте шаг не замедляется.",
@@ -137,7 +127,6 @@
   },
   "presence": {
    "title": "Внушительность",
-   "fo": "Presence",
    "level": 3,
    "ranks": 3,
    "text": "Люди охотнее вас слушают: +5 % к Красноречию и Торговле за ранг.",
@@ -151,7 +140,6 @@
   },
   "rad_resistance": {
    "title": "Защита от проклятья",
-   "fo": "Rad Resistance",
    "level": 6,
    "ranks": 2,
    "text": "+15 % защиты от проклятья за ранг.",
@@ -165,7 +153,6 @@
   },
   "toughness": {
    "title": "Крепкий",
-   "fo": "Toughness",
    "level": 3,
    "ranks": 3,
    "text": "В бою получаете на 10 % меньше урона за ранг.",
@@ -179,7 +166,6 @@
   },
   "strong_back": {
    "title": "Крепкая спина",
-   "fo": "Strong Back",
    "level": 3,
    "ranks": 3,
    "text": "+50 фунтов (~23 кг) груза за ранг.",
@@ -193,7 +179,6 @@
   },
   "sharpshooter": {
    "title": "Зоркий стрелок",
-   "fo": "Sharpshooter",
    "level": 9,
    "ranks": 1,
    "text": "+2 к попаданию из стрелкового, на дальней дистанции нет помехи.",
@@ -208,7 +193,6 @@
   },
   "silent_running": {
    "title": "Бесшумный бег",
-   "fo": "Silent Running",
    "level": 6,
    "ranks": 1,
    "text": "Крадётесь на бегу: +20 % к шансу пробраться в город.",
@@ -224,7 +208,6 @@
   },
   "survivalist": {
    "title": "Следопыт",
-   "fo": "Survivalist",
    "level": 3,
    "ranks": 3,
    "text": "+25 % к Выживанию за ранг.",
@@ -241,7 +224,6 @@
   },
   "master_trader": {
    "title": "Купец",
-   "fo": "Master Trader",
    "level": 12,
    "ranks": 1,
    "text": "Покупать у торговцев на 25 % дешевле.",
@@ -257,7 +239,6 @@
   },
   "educated": {
    "title": "Начитанный",
-   "fo": "Educated",
    "level": 6,
    "ranks": 3,
    "text": "+2 очка навыков за уровень за ранг.",
@@ -270,7 +251,6 @@
   },
   "healer": {
    "title": "Целитель",
-   "fo": "Healer",
    "level": 3,
    "ranks": 2,
    "text": "+10 % к шансу вылечить за ранг, зелья и второе дыхание в бою лечат на 3 больше.",
@@ -289,7 +269,6 @@
   },
   "fortune_finder": {
    "title": "Искатель удачи",
-   "fo": "Fortune Finder",
    "level": 6,
    "ranks": 1,
    "text": "Вдвое больше денег с побеждённых.",
@@ -302,7 +281,6 @@
   },
   "better_criticals": {
    "title": "Лучшие криты",
-   "fo": "Better Criticals",
    "level": 9,
    "ranks": 1,
    "text": "Криты сильнее: кости урона бросаются ещё раз.",
@@ -317,7 +295,6 @@
   },
   "empathy": {
    "title": "Сопереживание",
-   "fo": "Empathy",
    "level": 6,
    "ranks": 1,
    "text": "Вы чувствуете, чего хотят люди: +10 % к Красноречию, +5 % к наградам за поручения.",
@@ -332,7 +309,6 @@
   },
   "slayer": {
    "title": "Убийца",
-   "fo": "Slayer",
    "level": 24,
    "ranks": 1,
    "text": "Каждое попадание в ближнем бою — крит.",
@@ -349,7 +325,6 @@
   },
   "sniper": {
    "title": "Снайпер",
-   "fo": "Sniper",
    "level": 24,
    "ranks": 1,
    "text": "Окно крита из стрелкового шире на 3 (+15 %).",
@@ -366,7 +341,6 @@
   },
   "silent_death": {
    "title": "Тихая смерть",
-   "fo": "Silent Death",
    "level": 18,
    "ranks": 1,
    "text": "Удар из укрытия (спрятавшись) — двойной урон.",
@@ -383,7 +357,6 @@
   },
   "action_boy": {
    "title": "Расторопный",
-   "fo": "Action Boy",
    "level": 12,
    "ranks": 2,
    "text": "+1 очко действия за ранг (в бою +5 футов хода).",
@@ -396,7 +369,6 @@
   },
   "cautious_nature": {
    "title": "Осторожность",
-   "fo": "Cautious Nature",
    "level": 3,
    "ranks": 1,
    "text": "Вы первыми замечаете засаду: +3 к инициативе.",
@@ -409,7 +381,6 @@
   },
   "comprehension": {
    "title": "Вдумчивость",
-   "fo": "Comprehension",
    "level": 3,
    "ranks": 1,
    "text": "Уроки у мастеров дают на 50 % больше.",
@@ -422,7 +393,6 @@
   },
   "demolition_expert": {
    "title": "Подрывник",
-   "fo": "Demolition Expert",
    "level": 9,
    "ranks": 1,
    "text": "+4 к урону горшков с огнём, ядовитых дротиков и прочих приёмов.",
@@ -438,7 +408,6 @@
   },
   "gambler": {
    "title": "Игрок",
-   "fo": "Gambler",
    "level": 6,
    "ranks": 1,
    "text": "+20 % к Азартным играм.",
@@ -451,7 +420,6 @@
   },
   "gain_str": {
    "title": "Развить Силу",
-   "fo": "Gain Strength",
    "level": 12,
    "ranks": 1,
    "text": "+1 к Силе навсегда.",
@@ -464,7 +432,6 @@
   },
   "gain_per": {
    "title": "Развить Восприятие",
-   "fo": "Gain Perception",
    "level": 12,
    "ranks": 1,
    "text": "+1 к Восприятию навсегда.",
@@ -477,7 +444,6 @@
   },
   "gain_end": {
    "title": "Развить Выносливость",
-   "fo": "Gain Endurance",
    "level": 12,
    "ranks": 1,
    "text": "+1 к Выносливости навсегда.",
@@ -490,7 +456,6 @@
   },
   "gain_cha": {
    "title": "Развить Харизму",
-   "fo": "Gain Charisma",
    "level": 12,
    "ranks": 1,
    "text": "+1 к Харизме навсегда.",
@@ -503,7 +468,6 @@
   },
   "gain_int": {
    "title": "Развить Интеллект",
-   "fo": "Gain Intelligence",
    "level": 12,
    "ranks": 1,
    "text": "+1 к Интеллекту навсегда.",
@@ -516,7 +480,6 @@
   },
   "gain_agi": {
    "title": "Развить Ловкость",
-   "fo": "Gain Agility",
    "level": 12,
    "ranks": 1,
    "text": "+1 к Ловкости навсегда.",
@@ -529,7 +492,6 @@
   },
   "gain_luck": {
    "title": "Развить Удачу",
-   "fo": "Gain Luck",
    "level": 12,
    "ranks": 1,
    "text": "+1 к Удаче навсегда.",
@@ -542,7 +504,6 @@
   },
   "harmless": {
    "title": "Безобидный",
-   "fo": "Harmless",
    "level": 6,
    "ranks": 1,
    "text": "Никто не ждёт подвоха: +20 % к Воровству.",
@@ -555,7 +516,6 @@
   },
   "here_and_now": {
    "title": "Здесь и сейчас",
-   "fo": "Here and Now",
    "level": 3,
    "ranks": 1,
    "text": "Сразу следующий уровень.",
@@ -565,7 +525,6 @@
   },
   "hth_evade": {
    "title": "Уклонист",
-   "fo": "HtH Evade",
    "level": 12,
    "ranks": 1,
    "text": "Без оружия в руках +2 к защите.",
@@ -578,7 +537,6 @@
   },
   "kama_sutra": {
    "title": "Знаток утех",
-   "fo": "Kama Sutra Master",
    "level": 3,
    "ranks": 1,
    "text": "Ночь в тепле и компании бодрит: сон восстанавливает на 25 % больше.",
@@ -592,7 +550,6 @@
   },
   "karma_beacon": {
    "title": "Громкая слава",
-   "fo": "Karma Beacon",
    "level": 9,
    "ranks": 1,
    "text": "О ваших делах говорят: +10 % к наградам за поручения.",
@@ -605,7 +562,6 @@
   },
   "light_step": {
    "title": "Лёгкая поступь",
-   "fo": "Light Step",
    "level": 9,
    "ranks": 1,
    "text": "Вдвое меньше травм в пути.",
@@ -619,7 +575,6 @@
   },
   "living_anatomy": {
    "title": "Знание тела",
-   "fo": "Living Anatomy",
    "level": 12,
    "ranks": 1,
    "text": "+10 % к Знахарству, +2 к урону по живым.",
@@ -633,7 +588,6 @@
   },
   "magnetic_personality": {
    "title": "Притягательность",
-   "fo": "Magnetic Personality",
    "level": 3,
    "ranks": 1,
    "text": "+1 спутник сверх предела Харизмы.",
@@ -646,7 +600,6 @@
   },
   "negotiator": {
    "title": "Переговорщик",
-   "fo": "Negotiator",
    "level": 6,
    "ranks": 1,
    "text": "+10 % к Торговле и Красноречию.",
@@ -661,7 +614,6 @@
   },
   "pack_rat": {
    "title": "Барахольщик",
-   "fo": "Pack Rat",
    "level": 6,
    "ranks": 1,
    "text": "Вещи уложены плотно: +10 кг груза.",
@@ -671,7 +623,6 @@
   },
   "pyromaniac": {
    "title": "Поджигатель",
-   "fo": "Pyromaniac",
    "level": 9,
    "ranks": 1,
    "text": "+3 к урону огнём.",
@@ -684,7 +635,6 @@
   },
   "quick_recovery": {
    "title": "Быстро на ноги",
-   "fo": "Quick Recovery",
    "level": 3,
    "ranks": 1,
    "text": "Сбитый с ног, встаёте в начале хода без потери движения.",
@@ -697,7 +647,6 @@
   },
   "salesman": {
    "title": "Торгаш",
-   "fo": "Salesman",
    "level": 6,
    "ranks": 1,
    "text": "+20 % к Торговле.",
@@ -710,7 +659,6 @@
   },
   "stonewall": {
    "title": "Скала",
-   "fo": "Stonewall",
    "level": 3,
    "ranks": 1,
    "text": "Вас не сбить с ног.",
@@ -723,7 +671,6 @@
   },
   "thief": {
    "title": "Вор",
-   "fo": "Thief",
    "level": 3,
    "ranks": 1,
    "text": "+10 % к Скрытности, Отмычкам, Воровству и Ловушкам.",
@@ -736,7 +683,6 @@
   },
   "weapon_handling": {
    "title": "Крепкая хватка",
-   "fo": "Weapon Handling",
    "level": 12,
    "ranks": 1,
    "text": "+2 к попаданию тяжёлым двуручным оружием.",
@@ -749,7 +695,6 @@
   },
   "mutate": {
    "title": "Мутация",
-   "fo": "Mutate!",
    "level": 9,
    "ranks": 1,
    "text": "Можно один раз убрать одну черту или взять новую.",
@@ -759,7 +704,6 @@
   },
   "lifegiver": {
    "title": "Живучий",
-   "fo": "Lifegiver",
    "level": 12,
    "ranks": 2,
    "text": "+4 ОЗ за каждый уровень за ранг (и за прошлые).",
@@ -772,7 +716,6 @@
   },
   "dodger": {
    "title": "Увёртливый",
-   "fo": "Dodger",
    "level": 9,
    "ranks": 1,
    "text": "+1 к защите в бою.",
@@ -785,7 +728,6 @@
   },
   "snakeater": {
    "title": "Змееед",
-   "fo": "Snakeater",
    "level": 6,
    "ranks": 1,
    "text": "+25 % защиты от яда и хворей.",
@@ -798,7 +740,6 @@
   },
   "mr_fixit": {
    "title": "Мастер на все руки",
-   "fo": "Mr. Fixit",
    "level": 12,
    "ranks": 1,
    "text": "+10 % к Учёности и Ремеслу.",
@@ -809,7 +750,6 @@
   },
   "medic": {
    "title": "Лекарь",
-   "fo": "Medic",
    "level": 12,
    "ranks": 1,
    "text": "+10 % к Перевязке и Знахарству.",
@@ -824,7 +764,6 @@
   },
   "master_thief": {
    "title": "Вор-виртуоз",
-   "fo": "Master Thief",
    "level": 12,
    "ranks": 1,
    "text": "+15 % к Воровству и Отмычкам.",
@@ -839,7 +778,6 @@
   },
   "speaker": {
    "title": "Оратор",
-   "fo": "Speaker",
    "level": 9,
    "ranks": 1,
    "text": "+20 % к Красноречию.",
@@ -852,7 +790,6 @@
   },
   "heave_ho": {
    "title": "Сильный бросок",
-   "fo": "Heave Ho!",
    "level": 6,
    "ranks": 1,
    "text": "+15 % к Метанию.",
@@ -865,7 +802,6 @@
   },
   "pickpocket": {
    "title": "Ловкие пальцы",
-   "fo": "Pickpocket",
    "level": 15,
    "ranks": 1,
    "text": "+25 % к Воровству.",
@@ -881,7 +817,6 @@
   },
   "ghost": {
    "title": "Призрак",
-   "fo": "Ghost",
    "level": 6,
    "ranks": 1,
    "text": "Ночью +20 % к шансу пробраться в город.",
@@ -894,7 +829,6 @@
   },
   "cult_of_personality": {
    "title": "Культ личности",
-   "fo": "Cult of Personality",
    "level": 12,
    "ranks": 1,
    "text": "Все хотят быть с вами заодно: +10 % к наградам, цены на 5 % выгоднее.",
@@ -908,7 +842,6 @@
   },
   "explorer": {
    "title": "Искатель",
-   "fo": "Explorer",
    "level": 9,
    "ranks": 1,
    "text": "Находите больше в руинах и тайниках: +20 % к поиску.",
@@ -918,7 +851,6 @@
   },
   "pathfinder": {
    "title": "Знаток дорог",
-   "fo": "Pathfinder",
    "level": 6,
    "ranks": 2,
    "text": "На 25 % быстрее в пути за ранг.",
@@ -934,7 +866,6 @@
   },
   "scout": {
    "title": "Разведчик",
-   "fo": "Scout",
    "level": 3,
    "ranks": 1,
    "text": "Замечаете то, что другие пропускают: +15 % к поиску.",
@@ -947,7 +878,6 @@
   },
   "mysterious_stranger": {
    "title": "Таинственный незнакомец",
-   "fo": "Mysterious Stranger",
    "level": 9,
    "ranks": 1,
    "text": "Иногда в бою появляется незнакомец и помогает. Пока без действия: в бою нет случайных союзников.",
@@ -960,7 +890,6 @@
   },
   "ranger": {
    "title": "Странник",
-   "fo": "Ranger",
    "level": 6,
    "ranks": 1,
    "text": "+15 % к Выживанию, на 15 % реже нападают в пути.",
@@ -974,7 +903,6 @@
   },
   "quick_pockets": {
    "title": "Быстрые карманы",
-   "fo": "Quick Pockets",
    "level": 3,
    "ranks": 1,
    "text": "Зелье в бою пьётся бонусным действием.",
@@ -987,7 +915,6 @@
   },
   "smooth_talker": {
    "title": "Сладкоречивый",
-   "fo": "Smooth Talker",
    "level": 3,
    "ranks": 3,
    "text": "+1 к Интеллекту в разговорах за ранг.",
@@ -1000,7 +927,6 @@
   },
   "swift_learner": {
    "title": "Быстро учится",
-   "fo": "Swift Learner",
    "level": 3,
    "ranks": 3,
    "text": "+5 % опыта за ранг.",
@@ -1013,7 +939,6 @@
   },
   "tag": {
    "title": "Ещё один конёк",
-   "fo": "Tag!",
    "level": 12,
    "ranks": 1,
    "text": "Отметьте ещё один навык.",
@@ -1023,7 +948,6 @@
   },
   "adrenaline_rush": {
    "title": "Ярость раненого",
-   "fo": "Adrenaline Rush",
    "level": 6,
    "ranks": 1,
    "text": "Когда в бою здоровья меньше половины, +1 к Силе.",
@@ -1036,7 +960,6 @@
   },
   "mental_block": {
    "title": "Ясный ум",
-   "fo": "Mental Block (Fallout 1)",
    "level": 15,
    "ranks": 1,
    "text": "Вас не напугать: иммунитет к страху.",
@@ -1046,7 +969,6 @@
   },
   "scrounger": {
    "title": "Добытчик",
-   "fo": "Scrounger (Fallout 1)",
    "level": 9,
    "ranks": 1,
    "text": "С побеждённых — на 1 вещь больше (лом, шкуры).",
@@ -1059,7 +981,6 @@
   },
   "flower_child": {
    "title": "Дитя цветов",
-   "fo": "Flower Child (Fallout 1)",
    "level": 9,
    "ranks": 1,
    "text": "Снадобья и сытная еда действуют на 50 % дольше.",
@@ -1072,7 +993,6 @@
   },
   "animal_friend": {
    "title": "Друг зверей",
-   "fo": "Animal Friend (Fallout 1)",
    "level": 9,
    "ranks": 1,
    "text": "Звери вдвое реже нападают в пути.",

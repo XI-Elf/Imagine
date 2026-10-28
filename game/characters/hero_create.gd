@@ -1,15 +1,15 @@
 extends CanvasLayer
-## Экран создания героя (из сборки 09, character_create.gd, характеристики — по Fallout): слева — имя, пол,
+## Экран создания героя (из сборки 09, character_create.gd, характеристики и навыки — новые): слева — имя, пол,
 ## возраст, происхождение, профессия и 3 отмеченных навыка; по центру — биография, она переписывается при
-## каждом изменении; справа — SPECIAL (от 5, 5 свободных очков, можно опустить до 1), производные, до 2 черт
-## Fallout и черты характера. Правила — characters/hero_profile.gd и characters/special.gd.
+## каждом изменении; справа — характеристики (от 5, 5 свободных очков, можно опустить до 1), производные, до 2 особенностей
+## и черты характера. Правила — characters/hero_profile.gd и characters/sheet.gd.
 ## Сигнал finished отдаёт params для HeroProfile.apply или пустой словарь при отмене (Esc, «Назад»).
 
 signal finished(params: Dictionary)
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
-const S := preload("res://characters/special.gd")
+const S := preload("res://characters/sheet.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
 
 const COL_TEXT := Color("d8cfb0")
@@ -22,7 +22,7 @@ var gender: String = "female"
 var alloc: Dictionary = {}
 var traits: Array = []
 var tags: Array = []
-var fo_traits: Array = []
+var quirks: Array = []
 var _tag_btns: Dictionary = {}
 var _fo_btns: Dictionary = {}
 var _derived_label: Label
@@ -242,7 +242,7 @@ func _build_right() -> Control:
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 3)
 	v.add_child(grid)
-	for h in ["SPECIAL", "", "Очки", "", "Черты", "Итог"]:
+	for h in ["Характеристика", "", "Очки", "", "Черты", "Итог"]:
 		grid.add_child(_label(h, 12, COL_DIM))
 	for s in P.stats_list():
 		var row: Dictionary = {}
@@ -268,7 +268,7 @@ func _build_right() -> Control:
 	_derived_label = _wrap_label(13, COL_TEXT)
 	v.add_child(_derived_label)
 	v.add_child(HSeparator.new())
-	v.add_child(_label("Черты Fallout (до %d)" % int(S.data().get("traits_max", 2)), 17, COL_GOLD))
+	v.add_child(_label("Особенности (до %d)" % int(S.data().get("traits_max", 2)), 17, COL_GOLD))
 	var fg := GridContainer.new()
 	fg.columns = 2
 	fg.add_theme_constant_override("h_separation", 4)
@@ -284,7 +284,7 @@ func _build_right() -> Control:
 		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_color_override("font_pressed_color", COL_GOLD)
 		b.tooltip_text = S.trait_text(t)
-		b.pressed.connect(toggle_fo_trait.bind(t))
+		b.pressed.connect(toggle_quirk.bind(t))
 		b.mouse_entered.connect(func() -> void: _trait_desc.text = S.trait_text(t))
 		_fo_btns[t] = b
 		fg.add_child(b)
@@ -342,10 +342,10 @@ func profession() -> String:
 func params() -> Dictionary:
 	return {"name": name_edit.text.strip_edges(), "gender": gender, "age": int(age_spin.value),
 		"origin": origin(), "profession": profession(), "alloc": alloc.duplicate(), "traits": traits.duplicate(),
-		"tags": tags.duplicate(), "fo_traits": fo_traits.duplicate()}
+		"tags": tags.duplicate(), "quirks": quirks.duplicate()}
 
 
-## SPECIAL: от 5 вверх тратит свободное очко, вниз (до 1) — возвращает
+## Характеристика: от 5 вверх тратит свободное очко, вниз (до 1) — возвращает
 func change_stat(s: String, d: int) -> void:
 	var nv: int = int(alloc[s]) + d
 	var v: int = int(S.data().get("base", 5)) + nv
@@ -365,11 +365,11 @@ func toggle_tag(k: String) -> void:
 	_refresh()
 
 
-func toggle_fo_trait(t: String) -> void:
-	if fo_traits.has(t):
-		fo_traits.erase(t)
-	elif fo_traits.size() < int(S.data().get("traits_max", 2)):
-		fo_traits.append(t)
+func toggle_quirk(t: String) -> void:
+	if quirks.has(t):
+		quirks.erase(t)
+	elif quirks.size() < int(S.data().get("traits_max", 2)):
+		quirks.append(t)
 	_refresh()
 
 
@@ -426,7 +426,7 @@ func randomize_all() -> void:
 	alloc = p["alloc"]
 	traits = p["traits"]
 	tags = p["tags"]
-	fo_traits = p["fo_traits"]
+	quirks = p["quirks"]
 	_refresh()
 
 
@@ -479,8 +479,8 @@ func _refresh() -> void:
 		b.disabled = not tags.has(k) and tags.size() >= int(S.data().get("tags", 3))
 	for t in _fo_btns:
 		var b: Button = _fo_btns[t]
-		b.set_pressed_no_signal(fo_traits.has(t))
-		b.disabled = not fo_traits.has(t) and fo_traits.size() >= int(S.data().get("traits_max", 2))
+		b.set_pressed_no_signal(quirks.has(t))
+		b.disabled = not quirks.has(t) and quirks.size() >= int(S.data().get("traits_max", 2))
 	var c: Dictionary = P.traits_cost(traits)
 	var al: String = P.alignment_name(P.alignment(traits))
 	_trait_info.text = "Выбрано %d из %d · достоинства %d · недостатки %d · мировоззрение: %s" % [

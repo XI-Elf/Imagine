@@ -1,9 +1,9 @@
 extends RefCounted
-## Система персонажа по Fallout 1–2 (запрос Huzzah 2026-10-28): SPECIAL 1–10, производные параметры по
-## формулам Fallout, 18 навыков в процентах (стартовые формулы Fallout 2, отмеченные навыки, лестница цены
-## очков), уровни по таблице опыта Fallout, очки навыков 5 + 2×ИНТ за уровень, черты Fallout (не больше двух)
-## и перки раз в 3 уровня. Всё — статические функции над Actor; числа — data/characters/special.json и perks.json.
-## В Actor хранится только выбор игрока: stats (база SPECIAL), skills {k: {pts, bonus}}, tags, fo_traits,
+## Система персонажа (запрос Huzzah 2026-10-28): характеристики 1–10, производные параметры
+## по формулам, 18 навыков в процентах (стартовые формулы, отмеченные навыки, лестница цены
+## очков), уровни по таблице опыта, очки навыков 5 + 2×ИНТ за уровень, особенности (не больше двух)
+## и перки раз в 3 уровня. Всё — статические функции над Actor; числа — data/characters/sheet.json и perks.json.
+## В Actor хранится только выбор игрока: stats (база характеристик), skills {k: {pts, bonus}}, tags, quirks,
 ## perks {id: ранг}, level, xp, skill_points, perk_picks. Остальное считается здесь.
 
 const DIR := "res://data/characters/"
@@ -22,13 +22,13 @@ static func _load(file: String) -> Dictionary:
 		if v is Dictionary:
 			d = v
 	if d.is_empty():
-		push_error("special: не прочитан " + DIR + file)
+		push_error("sheet: не прочитан " + DIR + file)
 	_cache[file] = d
 	return d
 
 
 static func data() -> Dictionary:
-	return _load("special.json")
+	return _load("sheet.json")
 
 
 static func sect(k: String) -> Dictionary:
@@ -68,14 +68,14 @@ static func skill_name(k: String) -> String:
 	return String(skills().get(canon(k), {}).get("name", k))
 
 
-## Старый ключ навыка пака (survival, medicine…) → навык Fallout; новый ключ — как есть
+## Старый ключ навыка пака (survival, medicine…) → навык; новый ключ — как есть
 static func canon(k: String) -> String:
 	if skills().has(k):
 		return k
 	return String(sect("legacy_skills").get(k, k))
 
 
-## Черты характера сборки 09 (creation.json): их stats добавляются к SPECIAL
+## Черты характера сборки 09 (creation.json): их stats добавляются к характеристикам
 static func char_traits() -> Dictionary:
 	return _load("creation.json").get("traits", {})
 
@@ -93,13 +93,13 @@ static func perk_def(id: String) -> Dictionary:
 
 
 # =====================================================================
-# ЭФФЕКТЫ черт Fallout и перков (перк — × ранг)
+# ЭФФЕКТЫ особенностей и перков (перк — × ранг)
 # =====================================================================
 static func eff(a: Actor, key: String) -> float:
 	if a == null:
 		return 0.0
 	var t: float = 0.0
-	for id in a.fo_traits:
+	for id in a.quirks:
 		t += float(traits().get(id, {}).get("effects", {}).get(key, 0.0))
 	for id in a.perks:
 		t += float(perk_def(id).get("effects", {}).get(key, 0.0)) * int(a.perks[id])
@@ -113,7 +113,7 @@ static func has(a: Actor, key: String) -> bool:
 ## Все эффекты черт и перков списком [{ключ: значение}] — для общих множителей Actor.mult()
 static func effect_dicts(a: Actor) -> Array:
 	var out: Array = []
-	for id in a.fo_traits:
+	for id in a.quirks:
 		out.append(traits().get(id, {}).get("effects", {}))
 	for id in a.perks:
 		var e: Dictionary = perk_def(id).get("effects", {})
@@ -129,11 +129,11 @@ static func effect_dicts(a: Actor) -> Array:
 
 
 # =====================================================================
-# SPECIAL
+# ХАРАКТЕРИСТИКИ
 # =====================================================================
-## Действующее значение: база + черты характера (creation.json, stats) + черты Fallout и перки
+## Действующее значение: база + черты характера (creation.json, stats) + особенности и перки
 ## («Громила», «Развить…») + ночь для «Ночного создания»; 1–10
-static func special(a: Actor, s: String) -> int:
+static func stat_value(a: Actor, s: String) -> int:
 	var v: float = float(a.stats.get(s, int(data().get("base", 5))))
 	v += eff(a, "stat_" + s) + eff(a, "stats_all")
 	for t in a.traits:
@@ -145,11 +145,11 @@ static func special(a: Actor, s: String) -> int:
 
 ## Харизма и Интеллект в разговоре (черта «Привлекательность», перк «Сладкоречивый»)
 static func talk_cha(a: Actor) -> int:
-	return special(a, "cha") + int(eff(a, "talk_cha"))
+	return stat_value(a, "cha") + int(eff(a, "talk_cha"))
 
 
 static func talk_int(a: Actor) -> int:
-	return special(a, "int") + int(eff(a, "talk_int"))
+	return stat_value(a, "int") + int(eff(a, "talk_int"))
 
 
 static func dumb(a: Actor) -> bool:
@@ -161,32 +161,32 @@ static func smart(a: Actor) -> bool:
 
 
 # =====================================================================
-# ПРОИЗВОДНЫЕ (Fallout 1–2)
+# ПРОИЗВОДНЫЕ
 # =====================================================================
 static func d(k: String, def: float = 0.0) -> float:
 	return num("derived", k, def)
 
 
 static func hp_per_level(a: Actor) -> int:
-	return int(d("hp_level_base", 2)) + int(floor(special(a, "end") / maxf(d("hp_level_end_div", 2), 1.0))) + int(eff(a, "hp_per_level"))
+	return int(d("hp_level_base", 2)) + int(floor(stat_value(a, "end") / maxf(d("hp_level_end_div", 2), 1.0))) + int(eff(a, "hp_per_level"))
 
 
 static func hp_max(a: Actor) -> int:
-	var hp: int = int(d("hp_base", 15)) + int(d("hp_per_str", 1)) * special(a, "str") + int(d("hp_per_end", 2)) * special(a, "end")
+	var hp: int = int(d("hp_base", 15)) + int(d("hp_per_str", 1)) * stat_value(a, "str") + int(d("hp_per_end", 2)) * stat_value(a, "end")
 	return hp + (a.level - 1) * hp_per_level(a) + int(eff(a, "hp_bonus"))
 
 
 static func ap(a: Actor) -> int:
-	return maxi(1, int(d("ap_base", 5)) + int(floor(special(a, "agi") / maxf(d("ap_agi_div", 2), 1.0))) + int(eff(a, "ap")))
+	return maxi(1, int(d("ap_base", 5)) + int(floor(stat_value(a, "agi") / maxf(d("ap_agi_div", 2), 1.0))) + int(eff(a, "ap")))
 
 
 static func armor_class(a: Actor) -> int:
-	return 0 if has(a, "no_agi_ac") else special(a, "agi")
+	return 0 if has(a, "no_agi_ac") else stat_value(a, "agi")
 
 
 static func carry_lb(a: Actor) -> float:
 	var per: float = d("carry_lb_per_str", 25) + eff(a, "carry_lb_per_str")
-	return d("carry_lb_base", 25) + per * special(a, "str") + eff(a, "carry_lb")
+	return d("carry_lb_base", 25) + per * stat_value(a, "str") + eff(a, "carry_lb")
 
 
 static func carry_kg(a: Actor) -> float:
@@ -194,35 +194,35 @@ static func carry_kg(a: Actor) -> float:
 
 
 static func melee_damage(a: Actor) -> int:
-	return maxi(int(d("melee_min", 1)), special(a, "str") + int(d("melee_base", -5))) + int(eff(a, "melee_dmg"))
+	return maxi(int(d("melee_min", 1)), stat_value(a, "str") + int(d("melee_base", -5))) + int(eff(a, "melee_dmg"))
 
 
 static func poison_resist(a: Actor) -> int:
 	if has(a, "poison_resist_zero"):
 		return int(eff(a, "poison_resist"))
-	return clampi(int(d("poison_per_end", 5)) * special(a, "end") + int(eff(a, "poison_resist")), 0, int(d("resist_max", 90)))
+	return clampi(int(d("poison_per_end", 5)) * stat_value(a, "end") + int(eff(a, "poison_resist")), 0, int(d("resist_max", 90)))
 
 
 static func rad_resist(a: Actor) -> int:
 	if has(a, "rad_resist_zero"):
 		return clampi(int(eff(a, "rad_resist")), 0, int(d("resist_max", 90)))
-	return clampi(int(d("rad_per_end", 2)) * special(a, "end") + int(eff(a, "rad_resist")), 0, int(d("resist_max", 90)))
+	return clampi(int(d("rad_per_end", 2)) * stat_value(a, "end") + int(eff(a, "rad_resist")), 0, int(d("resist_max", 90)))
 
 
 static func sequence(a: Actor) -> int:
-	return int(d("sequence_per_per", 2)) * special(a, "per") + int(eff(a, "sequence"))
+	return int(d("sequence_per_per", 2)) * stat_value(a, "per") + int(eff(a, "sequence"))
 
 
 static func healing_rate(a: Actor) -> int:
-	return maxi(int(d("healing_min", 1)), int(floor(special(a, "end") / maxf(d("healing_end_div", 3), 1.0)))) + int(eff(a, "healing_rate"))
+	return maxi(int(d("healing_min", 1)), int(floor(stat_value(a, "end") / maxf(d("healing_end_div", 3), 1.0)))) + int(eff(a, "healing_rate"))
 
 
 static func crit_pct(a: Actor) -> int:
-	return special(a, "luck") + int(eff(a, "crit_pct"))
+	return stat_value(a, "luck") + int(eff(a, "crit_pct"))
 
 
 static func skill_points_per_level(a: Actor) -> int:
-	return maxi(0, int(d("skill_points_base", 5)) + int(d("skill_points_per_int", 2)) * special(a, "int") + int(eff(a, "skill_points")))
+	return maxi(0, int(d("skill_points_base", 5)) + int(d("skill_points_per_int", 2)) * stat_value(a, "int") + int(eff(a, "skill_points")))
 
 
 static func perk_rate(a: Actor) -> int:
@@ -231,7 +231,7 @@ static func perk_rate(a: Actor) -> int:
 
 
 static func party_limit(a: Actor) -> int:
-	return int(floor(special(a, "cha") / maxf(float(sect("party").get("cha_div", 2)), 1.0))) + int(eff(a, "party"))
+	return int(floor(stat_value(a, "cha") / maxf(float(sect("party").get("cha_div", 2)), 1.0))) + int(eff(a, "party"))
 
 
 static func derived(a: Actor) -> Dictionary:
@@ -243,12 +243,12 @@ static func derived(a: Actor) -> Dictionary:
 # =====================================================================
 # НАВЫКИ
 # =====================================================================
-## Стартовое значение по формуле Fallout 2: база + множитель × сумма характеристик
+## Стартовое значение по формуле: база + множитель × сумма характеристик
 static func skill_base(a: Actor, k: String) -> int:
 	var s: Dictionary = skills().get(k, {})
 	var sum: int = 0
 	for st in s.get("stats", []):
-		sum += special(a, String(st))
+		sum += stat_value(a, String(st))
 	return int(s.get("base", 0)) + int(s.get("mult", 1)) * sum
 
 
@@ -288,7 +288,7 @@ static func set_level_equiv(a: Actor, k: String, lv: int) -> void:
 	e["bonus"] = maxi(0, want - skill_value(a, k))
 
 
-## Цена следующего 1 % (лестница Fallout 2)
+## Цена следующего 1 % (лестница цены)
 static func skill_cost(a: Actor, k: String) -> int:
 	var v: int = skill_value(a, k)
 	for t in data().get("cost_tiers", [[100, 1]]):
@@ -353,7 +353,7 @@ static func empty_skills() -> Dictionary:
 # =====================================================================
 # УРОВНИ И ОПЫТ
 # =====================================================================
-## Сколько опыта всего нужно для уровня n (Fallout: n×(n−1)/2 × 1000)
+## Сколько опыта всего нужно для уровня n (n×(n−1)/2 × 1000)
 static func xp_for_level(n: int) -> int:
 	return n * (n - 1) / 2 * int(sect("levels").get("xp_step", 1000))
 
@@ -398,11 +398,11 @@ static func perk_blocker(a: Actor, id: String) -> String:
 		return "нужен уровень %d" % int(p.get("level", 1))
 	var r: Dictionary = p.get("req", {})
 	for s in r:
-		if special(a, s) < int(r[s]):
+		if stat_value(a, s) < int(r[s]):
 			return "нужно: %s %d" % [stat_short(s), int(r[s])]
 	var mx: Dictionary = p.get("max_stat", {})
 	for s in mx:
-		if special(a, s) > int(mx[s]):
+		if stat_value(a, s) > int(mx[s]):
 			return "%s должна быть не выше %d" % [stat_short(s), int(mx[s])]
 	var sk: Dictionary = p.get("req_skill", {})
 	for k in sk:
@@ -486,7 +486,7 @@ static func trait_text(id: String) -> String:
 static func mutate(a: Actor, remove_id: String, add_id: String) -> String:
 	if a.mutate_left <= 0:
 		return "мутации нет"
-	var test: Array = a.fo_traits.duplicate()
+	var test: Array = a.quirks.duplicate()
 	if remove_id != "":
 		test.erase(remove_id)
 	if add_id != "":
@@ -494,13 +494,13 @@ static func mutate(a: Actor, remove_id: String, add_id: String) -> String:
 	var why: String = traits_valid(test)
 	if why != "":
 		return why
-	a.fo_traits = test
+	a.quirks = test
 	a.mutate_left -= 1
 	return ""
 
 
 # =====================================================================
-# СОЗДАНИЕ: распределение SPECIAL (от 5, свободных 5, можно опускать до 1), 3 отмеченных навыка
+# СОЗДАНИЕ: распределение характеристик (от 5, свободных 5, можно опускать до 1), 3 отмеченных навыка
 # =====================================================================
 static func alloc_left(alloc: Dictionary) -> int:
 	var n: int = int(data().get("points", 5))
@@ -534,12 +534,12 @@ static func tags_valid(list: Array, extra: int = 0) -> String:
 	return ""
 
 
-## Записать в Actor: база SPECIAL, отмеченные навыки, черты Fallout. Уровень 1, очков навыков 0
+## Записать в Actor: база характеристик, отмеченные навыки, особенности. Уровень 1, очков навыков 0
 static func apply_creation(a: Actor, alloc: Dictionary, tag_list: Array, trait_list: Array) -> void:
 	for s in stats_list():
 		a.stats[s] = clampi(int(data().get("base", 5)) + int(alloc.get(s, 0)), int(data().get("min", 1)), int(data().get("max", 10)))
 	a.tags = tag_list.filter(func(k): return skills().has(k)).slice(0, int(data().get("tags", 3)))
-	a.fo_traits = trait_list.duplicate() if traits_valid(trait_list) == "" else []
+	a.quirks = trait_list.duplicate() if traits_valid(trait_list) == "" else []
 	a.level = 1
 	a.xp = 0.0
 	a.skill_points = 0
@@ -552,12 +552,12 @@ static func apply_creation(a: Actor, alloc: Dictionary, tag_list: Array, trait_l
 # =====================================================================
 # ТОРГОВЛЯ, ПОРУЧЕНИЯ
 # =====================================================================
-## Бонус цены в пользу героя: разница навыков Торговли героя и торговца (Fallout), перки «Купец», «Культ личности»
+## Бонус цены в пользу героя: разница навыков Торговли героя и торговца, перки «Купец», «Культ личности»
 static func trade_bonus(hero: Actor, trader: Actor = null, buying: bool = true) -> float:
 	var t: Dictionary = sect("trade")
 	var tb: float = float(skill_value(trader, "barter")) if trader != null else float(t.get("trader_default", 40))
 	var hb: float = float(skill_value(hero, "barter")) if hero != null else tb
-	# «Привлекательность»: +2 ХАР в торговле = +8 % Торговли (4 × ХАР по Fallout 2)
+	# «Привлекательность»: +2 ХАР в торговле = +8 % Торговли (4 × ХАР)
 	if hero != null:
 		hb += 4.0 * eff(hero, "talk_cha")
 	var b: float = clampf((hb - tb) * float(t.get("per_point", 0.003)), float(t.get("min", -0.15)), float(t.get("max", 0.3)))
@@ -581,13 +581,13 @@ static func quest_bonus(hero: Actor) -> float:
 # СТАРЫЕ СОХРАНЕНИЯ: 7 характеристик 09 (база 4, Мудрость) и навыки пака уровнями
 # =====================================================================
 static func is_legacy(d: Dictionary) -> bool:
-	if d.has("special"):
+	if d.has("sheet"):
 		return false
 	return d.get("stats", {}).has("wis") or not d.has("level")
 
 
 ## Перевод старого персонажа: характеристика − 4 + 5 (в пределах 1–10), Мудрость уходит, Удача 5 + старая;
-## уровни старых навыков — как уровень навыка Fallout (значение ≈ уровень × 10 + 5), опыт навыков → опыт героя
+## уровни старых навыков — как уровень навыка (значение ≈ уровень × 10 + 5), опыт навыков → опыт героя
 static func migrate(a: Actor, d: Dictionary) -> void:
 	var st: Dictionary = d.get("stats", {})
 	for s in stats_list():

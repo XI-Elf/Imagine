@@ -9,7 +9,7 @@ const Data := preload("res://battle/battle_data.gd")
 const Core := preload("res://battle/battle_core.gd")
 const Enc := preload("res://battle/encounters.gd")
 const R := preload("res://characters/actor_rules.gd")
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 
 var fails: int = 0
 var checks: int = 0
@@ -108,7 +108,7 @@ func _order() -> void:
 
 
 func _self() -> void:
-	# Ремесло Fallout = 3×ИНТ; при ИНТ 1 — 3 %, «уровень 0»
+	# Ремесло = 3×ИНТ; при ИНТ 1 — 3 %, «уровень 0»
 	var hero := Actor.new("hero", "Герой", false, 7)
 	hero.set_stat("int", 1)
 	var bag: Dictionary = Trade.new_bag(0)
@@ -146,8 +146,8 @@ func _self() -> void:
 	ok(Trade.count(bag, "hide") == hides, "при порче пропадает половина материалов: осталось %d шкур" % Trade.count(bag, "hide"))
 	ok(lv_seen.is_empty(), "опыт идёт за каждую попытку")
 	ok(hero.level >= 2 and hero.skill_points > 0, "40 попыток — опыт персонажа: %d уровень, %d очков навыков" % [hero.level, hero.skill_points])
-	# По Fallout навык растёт очками, уроками и книгами, а не повторением
-	Special.train(hero, "repair", 30)
+	# Навык растёт очками, уроками и книгами, а не повторением
+	Sheet.train(hero, "repair", 30)
 	ok(hero.skill_level("sewing") == 3, "Ремесло 33 %% — «уровень 3»: %d" % hero.skill_level("sewing"))
 	ok(Craft.chance(vest, hero) > 0.7 and Craft.chance(vest, hero) <= 0.95, "с навыком шанс растёт, но не выше 95 %%: %.2f" % Craft.chance(vest, hero))
 	ok(Craft.chance(jacket, hero) > 0.0, "с навыком %d открылась кожаная куртка" % hero.skill_level("sewing"))

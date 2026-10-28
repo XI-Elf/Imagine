@@ -1,6 +1,6 @@
 class_name Actor
 extends RefCounted
-## Общий персонаж для игрока и НПС: SPECIAL и навыки Fallout 1–2 (characters/special.gd), ресурсы пака Day R (здоровье, голод, жажда,
+## Общий персонаж для игрока и НПС: характеристики и навыки (characters/sheet.gd), ресурсы пака (здоровье, голод, жажда,
 ## энергия, радиация, запас сил), травмы, болезни, полезные эффекты, навыки, движение по местности.
 ## Правила одни для всех: игрок и НПС различаются только тем, кто решает, куда идти (actor_body.gd).
 ## Нужды идут в игровом времени (tick), запас сил и шаги — в реальном (travel_speed, exert):
@@ -16,8 +16,8 @@ signal died(cause: String)
 signal km_passed(total_km: int)
 
 const R := preload("res://characters/actor_rules.gd")
-const S := preload("res://characters/special.gd")
-# SPECIAL (Fallout): Сила, Восприятие, Выносливость, Харизма, Интеллект, Ловкость, Удача
+const S := preload("res://characters/sheet.gd")
+# Семь характеристик: Сила, Восприятие, Выносливость, Харизма, Интеллект, Ловкость, Удача
 const STATS: Array = ["str", "per", "end", "cha", "int", "agi", "luck"]
 const RESOURCES: Array = ["health", "hunger", "thirst", "energy", "radiation", "stamina"]
 # Длинный шаг времени режется на куски, чтобы пороги не перескакивались
@@ -31,13 +31,13 @@ const DEATH_CAUSES: Dictionary = {
 var actor_id: String = ""
 var display_name: String = ""
 var is_npc: bool = false
-var stats: Dictionary = {}          # SPECIAL: база (выбор при создании), 1–10; черты и перки — в special.gd
+var stats: Dictionary = {}          # характеристики: база (выбор при создании), 1–10; черты и перки — в sheet.gd
 var res: Dictionary = {}            # ресурс -> значение
 var conditions: Array = []          # {id, age_h, left_h (0 — пока не вылечат), stage}
 var buffs: Array = []               # {id, left_h}
-var skills: Dictionary = {}         # навык Fallout -> {pts (куплено очками, %), bonus (уроки, прошлое, %), spent}
-var tags: Array = []                # отмеченные навыки (Fallout: 3)
-var fo_traits: Array = []           # черты Fallout («особенности», не больше двух)
+var skills: Dictionary = {}         # навык -> {pts (куплено очками, %), bonus (уроки, прошлое, %), spent}
+var tags: Array = []                # отмеченные навыки (3)
+var quirks: Array = []              # особенности, не больше двух
 var perks: Dictionary = {}          # перк -> ранг
 var level: int = 1
 var xp: float = 0.0
@@ -80,9 +80,9 @@ func _init(id: String = "", name: String = "", npc: bool = false, seed_value: in
 # =====================================================================
 # ХАРАКТЕРИСТИКИ
 # =====================================================================
-# Действующее значение SPECIAL 1–10 (с чертами и перками). Удача теперь у всех, как в Fallout
+# Действующая характеристика 1–10 (с чертами и перками). Удача теперь у всех
 func stat(s: String) -> float:
-	return float(S.special(self, s))
+	return float(S.stat_value(self, s))
 
 
 func set_stat(s: String, v: int) -> void:
@@ -168,7 +168,7 @@ func mult(key: String) -> float:
 		var e: Dictionary = R.trait_def(t).get("effects", {})
 		if e.has(key):
 			m *= 1.0 + float(e[key])
-	# черты Fallout и перки: общие ключи пака (loot, sneak, move_speed, fall_chance, sleep_energy…)
+	# особенности и перки: общие ключи пака (loot, sneak, move_speed, fall_chance, sleep_energy…)
 	for e in S.effect_dicts(self):
 		if e.has(key):
 			m *= 1.0 + float(e[key])
@@ -213,7 +213,7 @@ func remove_condition(id: String) -> void:
 func try_catch(id: String, p: float) -> bool:
 	if has_condition(id):
 		return false
-	# Fallout: защита от яда 5×ВЫН % — половина её режет шанс хвори; Удача сверх 5 тоже
+	# защита от яда 5×ВЫН % — половина её режет шанс хвори; Удача сверх 5 тоже
 	p *= clampf(1.0 - float(S.poison_resist(self)) / 200.0, 0.1, 2.0)
 	p *= clampf(1.0 - float(R.section("stats").get("luck_chance_per_pt", 0.0)) * _over("luck"), 0.5, 1.5)
 	p *= mult("disease_chance")
@@ -309,7 +309,7 @@ func _step(h: float, env: Dictionary) -> void:
 		add_res("energy", -R.num("needs", "thirst_zero_energy_h", 2.0) * h)
 	var regen: float = _sum("health_regen")
 	if res["hunger"] > 0.0 and res["thirst"] > 0.0 and not is_bleeding():
-		# Заживление Fallout (ВЫН/3, мин. 1): 1 — как было, каждая единица сверху +50 %
+		# Заживление (ВЫН/3, мин. 1): 1 — как было, каждая единица сверху +50 %
 		regen += float(ch["health"].get("regen_per_hour", 0.5)) * (0.5 + 0.5 * float(S.healing_rate(self)))
 	add_res("health", (regen - dmg) * h)
 
@@ -435,17 +435,17 @@ func _roll_causes(key: String) -> void:
 # =====================================================================
 # НАВЫКИ
 # =====================================================================
-## Уровень 0–10 для старых правил (навык Fallout % / 10); ключ — новый или старый навык пака
+## Уровень 0–10 для старых правил (навык % / 10); ключ — новый или старый навык пака
 func skill_level(k: String) -> int:
 	return S.level_equiv(self, k)
 
 
-## Навык Fallout в процентах
+## Навык в процентах
 func skill(k: String) -> int:
 	return S.skill_value(self, k)
 
 
-## Опыт за дело (путь, лечение, ремесло): по Fallout растёт не навык, а опыт героя — уровни и очки навыков
+## Опыт за дело (путь, лечение, ремесло): растёт не навык, а опыт героя — уровни и очки навыков
 func add_xp(k: String, amount: float) -> void:
 	if amount <= 0.0:
 		return
@@ -467,7 +467,7 @@ func treat_chance(id: String, healer: Actor) -> float:
 	var t: Dictionary = R.section("treatments").get(id, {})
 	var m: Dictionary = R.section("medicine")
 	var c: float = float(m.get("base_chance", 0.45))
-	# Знахарство Fallout %: каждые 10 % — уровень старого правила (дробно)
+	# Знахарство %: каждые 10 % — уровень старого правила (дробно)
 	c += float(m.get("per_level", 0.08)) * (float(healer.skill("doctor")) / 10.0 - float(t.get("skill", 1)))
 	c += float(R.section("stats").get("luck_chance_per_pt", 0.0)) * healer._over("luck")
 	c += S.eff(healer, "treat")
@@ -503,18 +503,18 @@ func treat(id: String, healer: Actor, items: Array = []) -> Dictionary:
 # =====================================================================
 # ПРОИЗВОДНЫЕ
 # =====================================================================
-## Груз по Fallout: 25 + 25×СИЛ фунтов (в кг), меньше при усталости
+## Груз: 25 + 25×СИЛ фунтов (в кг), меньше при усталости
 func carry_capacity() -> float:
 	var kg: float = S.carry_kg(self)
 	return kg * (0.5 + 0.5 * res["stamina"] / max_of("stamina")) * mult("power") + pack_kg
 
 
-## Защита от проклятья (радиации Fallout): 2×ВЫН % + перки
+## Защита от проклятья (радиации): 2×ВЫН % + перки
 func radiation_resist() -> float:
 	return clampf(float(S.rad_resist(self)) / 100.0, 0.0, 0.9)
 
 
-## Производные: старые ключи пака + параметры Fallout (special.gd: hp, ap, ac, carry_kg, melee, poison, rad,
+## Производные: старые ключи пака + новые параметры (sheet.gd: hp, ap, ac, carry_kg, melee, poison, rad,
 ## sequence, healing, crit, skill_points, party)
 func derived() -> Dictionary:
 	var sr: Dictionary = R.section("stats")
@@ -701,7 +701,7 @@ func to_dict() -> Dictionary:
 		"skills": skills.duplicate(true), "alive": alive, "death_cause": death_cause,
 		"sleeping": sleeping, "sleep_h": sleep_h, "wet_h": wet_h, "carried_kg": carried_kg, "mount": mount,
 		"distance_m": distance_m, "rng_state": rng.state, "traits": traits.duplicate(), "profile": profile.duplicate(true),
-		"special": 1, "tags": tags.duplicate(), "fo_traits": fo_traits.duplicate(), "perks": perks.duplicate(),
+		"sheet": 1, "tags": tags.duplicate(), "quirks": quirks.duplicate(), "perks": perks.duplicate(),
 		"level": level, "xp": xp, "skill_points": skill_points, "perk_picks": perk_picks, "mutate_left": mutate_left, "tag_left": tag_left,
 	}
 
@@ -709,7 +709,7 @@ func to_dict() -> Dictionary:
 static func from_dict(d: Dictionary) -> Actor:
 	var a := Actor.new(str(d.get("id", "")), str(d.get("name", "")), bool(d.get("npc", false)))
 	if S.is_legacy(d):
-		S.migrate(a, d)   # сохранение до SPECIAL: 7 характеристик 09 и навыки пака уровнями
+		S.migrate(a, d)   # сохранение до новой системы: 7 характеристик 09 и навыки пака уровнями
 	else:
 		for s in d.get("stats", {}):
 			a.stats[s] = int(d["stats"][s])
@@ -717,7 +717,7 @@ static func from_dict(d: Dictionary) -> Actor:
 			var e: Dictionary = d["skills"][k]
 			a.skills[String(k)] = {"pts": int(e.get("pts", 0)), "bonus": int(e.get("bonus", 0)), "spent": int(e.get("spent", 0))}
 		a.tags = d.get("tags", []).duplicate()
-		a.fo_traits = d.get("fo_traits", []).duplicate()
+		a.quirks = d.get("quirks", []).duplicate()
 		a.perks = d.get("perks", {}).duplicate()
 		a.level = int(d.get("level", 1))
 		a.xp = float(d.get("xp", 0.0))

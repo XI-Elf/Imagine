@@ -5,7 +5,7 @@ extends SceneTree
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
-const Special := preload("res://characters/special.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const Inv := preload("res://characters/inventory_view.gd")
 const Trade := preload("res://city/trade.gd")
 
@@ -70,13 +70,13 @@ func _rules() -> void:
 	p["age"] = 35
 	p["origin"] = "peasant"
 	p["profession"] = "smith"
-	# SPECIAL по Fallout: от 5, свободных 5; Ловкость опущена до 4 — ещё одно очко
+	# Характеристики: от 5, свободных 5; Ловкость опущена до 4 — ещё одно очко
 	p["alloc"] = {"str": 2, "per": 1, "end": 2, "cha": 0, "int": 1, "agi": -1, "luck": 0}
 	p["traits"] = ["strong_build", "glutton", "honest"]
-	p["fo_traits"] = ["bruiser"]
+	p["quirks"] = ["bruiser"]
 	ok(P.alloc_valid(p["alloc"]), "5 свободных очков распределены (одно взято у Ловкости)")
 	var parts: Dictionary = P.stat_parts(p)
-	# Сила: 5 + 2 очка + 1 «Крепкое сложение» + 2 «Громила» = 10 (предел); прошлое SPECIAL не меняет
+	# Сила: 5 + 2 очка + 1 «Крепкое сложение» + 2 «Громила» = 10 (предел); прошлое характеристики не меняет
 	ok(int(parts["str"]["total"]) == 10 and int(parts["str"]["traits"]) == 3, "Сила по частям: %s" % parts["str"])
 	ok(int(parts["agi"]["total"]) == 4, "Ловкость опущена до 4: %s" % parts["agi"])
 	ok(int(parts["cha"]["total"]) == 6 and int(parts["luck"]["total"]) == 5, "«Честный»: Харизма 6; Удача 5: %s %s" % [parts["cha"], parts["luck"]])
@@ -100,12 +100,12 @@ func _rules() -> void:
 
 	var a := Actor.new("hero", "Герой", false, 7)
 	P.apply(a, p)
-	ok(a.display_name == "Конрад" and int(a.stat("str")) == 10 and int(a.stat("luck")) == 5, "герой получил имя и SPECIAL")
-	ok(a.skill("repair") == 53 and a.skill_level("blacksmith") == 5 and a.traits.size() == 3 and a.fo_traits == ["bruiser"], "герой получил навыки, черты характера и черту Fallout")
+	ok(a.display_name == "Конрад" and int(a.stat("str")) == 10 and int(a.stat("luck")) == 5, "герой получил имя и характеристики")
+	ok(a.skill("repair") == 53 and a.skill_level("blacksmith") == 5 and a.traits.size() == 3 and a.quirks == ["bruiser"], "герой получил навыки, черты характера и особенность")
 	ok(a.tags == ["repair", "melee", "barter"] and a.level == 1, "отмечены навыки профессии, уровень 1")
 	var b := Actor.from_dict(a.to_dict())
 	ok(b.traits == a.traits and b.profile.get("origin") == "peasant" and String(b.profile.get("biography", "")) == bio, "черты и профиль в сохранении")
-	ok(b.fo_traits == a.fo_traits and b.tags == a.tags and b.skill("repair") == 53 and int(b.stat("str")) == 10, "SPECIAL, отметки и черты Fallout в сохранении")
+	ok(b.quirks == a.quirks and b.tags == a.tags and b.skill("repair") == 53 and int(b.stat("str")) == 10, "характеристики, отметки и особенности в сохранении")
 	# Черты работают через эффекты: обжора голодает быстрее
 	var plain := Actor.new("x", "x", false, 1)
 	var env := {"biome": 4, "water": 0.0, "temp_c": 15.0, "rain": 0.0, "night": false}
@@ -135,7 +135,7 @@ func _rules() -> void:
 	r.seed = 5
 	for i in 30:
 		var rp: Dictionary = P.random_params(r)
-		if not P.alloc_valid(rp["alloc"]) or P.traits_valid(rp["traits"]) != "" or Special.tags_valid(rp["tags"]) != "" or Special.traits_valid(rp["fo_traits"]) != "":
+		if not P.alloc_valid(rp["alloc"]) or P.traits_valid(rp["traits"]) != "" or Sheet.tags_valid(rp["tags"]) != "" or Sheet.traits_valid(rp["quirks"]) != "":
 			ok(false, "случайный герой допустим: %s" % rp)
 			return
 	ok(true, "30 случайных героев допустимы")
@@ -166,10 +166,10 @@ func _menu() -> void:
 	cr.toggle_tag("melee")
 	cr.toggle_tag("bows")
 	ok(cr.tags.has("bows") and not cr.tags.has("melee"), "отметки можно менять")
-	cr.toggle_fo_trait("small_frame")
-	cr.toggle_fo_trait("finesse")
-	cr.toggle_fo_trait("gifted")
-	ok(cr.fo_traits == ["small_frame", "finesse"], "не больше двух черт Fallout")
+	cr.toggle_quirk("small_frame")
+	cr.toggle_quirk("finesse")
+	cr.toggle_quirk("gifted")
+	ok(cr.quirks == ["small_frame", "finesse"], "не больше двух особенностей")
 	cr.toggle_trait("nimble")
 	cr.toggle_trait("clumsy")
 	ok(cr.traits == ["nimble"], "противоположную черту не выбрать")
@@ -185,7 +185,7 @@ func _menu() -> void:
 	cr.name_edit.text = "Ильза"
 	cr.alloc = {"str": 0, "per": 2, "end": 1, "cha": 0, "int": 0, "agi": 2, "luck": 0}
 	cr.tags = ["bows", "sneak", "outdoorsman"]
-	cr.fo_traits = ["small_frame"]
+	cr.quirks = ["small_frame"]
 	cr.traits = ["nimble", "keen_eye", "light_sleeper", "quiet"]
 	cr._refresh()
 	# «Создать» уводит в игру; здесь перехватываем, чтобы не менять сцену в тесте
@@ -234,7 +234,7 @@ func _game() -> void:
 	await shot("h04_window_skills.png")
 	key(KEY_3)
 	await frames(3)
-	ok(cast.window.tab == "perks", "3 — перки и черты Fallout")
+	ok(cast.window.tab == "perks", "3 — перки и особенности")
 	await shot("h05_window_perks.png")
 	key(KEY_4)
 	await frames(3)

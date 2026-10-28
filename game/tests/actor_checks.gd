@@ -16,7 +16,7 @@ func ok(cond: bool, what: String) -> void:
 		print("FAIL: ", what)
 
 
-# Выживание по Fallout стартует с 2×(ВЫН+ИНТ) = 20 % — уже «2 уровень» пака. Для эталонных
+# Выживание стартует с 2×(ВЫН+ИНТ) = 20 % — уже «2 уровень» пака. Для эталонных
 # скоростей пака — путник с Выживанием 4 % (уровень 0)
 func plain(id: String, name: String) -> Actor:
 	var a := Actor.new(id, name)
@@ -48,7 +48,7 @@ func _init() -> void:
 func _data() -> void:
 	ok(R.characteristics().size() == 6, "6 ресурсов пака")
 	ok(R.traumas().size() == 8 and R.diseases().size() == 10 and R.buffs().size() == 5, "состояния пака")
-	ok(R.skills().size() == 18, "18 навыков Fallout")
+	ok(R.skills().size() == 18, "18 навыков")
 	ok(R.pack_skills().size() == 7, "7 навыков пака остались для таблиц опыта")
 	for id in R.traumas().keys() + R.diseases().keys():
 		ok(R.section("treatments").has(id), "лечение описано: " + id)
@@ -205,7 +205,7 @@ func _conditions_and_treatment() -> void:
 
 
 func _skills() -> void:
-	# Fallout: опыт за дело идёт персонажу (×3), уровень n при n(n−1)/2 × 1000
+	# опыт за дело идёт персонажу (×3), уровень n при n(n−1)/2 × 1000
 	var a := Actor.new("p", "Ученик")
 	var levels: Array = []
 	a.leveled_up.connect(func(l): levels.append(l))
@@ -234,7 +234,7 @@ func _stats() -> void:
 	var f := Actor.new("f", "Ловкач")
 	f.set_stat("agi", 10)
 	ok(f.travel_speed(env(4)) > a.travel_speed(env(4)), "Ловкость: быстрее")
-	ok(absf(a.carry_capacity() - 150.0 * 0.4536) < 0.01, "Fallout: 25 + 25×СИЛ фунтов = 68 кг: %.2f" % a.carry_capacity())
+	ok(absf(a.carry_capacity() - 150.0 * 0.4536) < 0.01, "25 + 25×СИЛ фунтов = 68 кг: %.2f" % a.carry_capacity())
 	a.carried_kg = a.carry_capacity() * 1.5
 	ok(is_equal_approx(a.calculate_speed(env(4)), 3.0 * 0.5), "перегруз 50 %% → скорость ×0,5: %.2f" % a.calculate_speed(env(4)))
 	a.carried_kg = a.carry_capacity() * 2.0
@@ -243,7 +243,7 @@ func _stats() -> void:
 	npc.set_stat("luck", 50)
 	ok(npc.stat("luck") == 10.0, "Удача у НПС есть, предел 10")
 	var d: Dictionary = Actor.new("d", "d").derived()
-	ok(d.has("attack_power") and d.has("carry_weight") and int(d["hp"]) == 30 and int(d["ap"]) == 7, "производные пака и Fallout: %s" % d)
+	ok(d.has("attack_power") and d.has("carry_weight") and int(d["hp"]) == 30 and int(d["ap"]) == 7, "производные пака и %s" % d)
 
 
 func _same_rules_for_npc() -> void:

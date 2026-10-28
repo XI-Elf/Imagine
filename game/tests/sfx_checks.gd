@@ -246,7 +246,7 @@ func _game(S: Node) -> void:
 			bs.core.run_ai_turn()
 			g += 1
 		# Взмахи звучат сразу, удары — с задержкой из очереди; played хранит последние 64,
-		# поэтому взмахи смотрим до очереди (бой от SPECIAL длиннее: у героя 30 ОЗ)
+		# поэтому взмахи смотрим до очереди (бой от характеристик длиннее: у героя 30 ОЗ)
 		var swung: bool = S.played.any(func(x): return String(x) == "swing" or String(x).begins_with("whoosh_"))
 		S._run_queue(2.0)
 		await create_timer(0.5).timeout
