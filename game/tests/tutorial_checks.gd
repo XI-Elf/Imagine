@@ -146,7 +146,7 @@ func _run() -> void:
 	if T._card.visible:
 		T.dismiss()
 	T._gap_t = 0.0
-	ok(await W.enter_city("s001", {"return_pos": game.cast.hero["pos"]}), "вход в Чёрнославль")
+	ok(await W.enter_city("s001", {"return_pos": game.cast.hero["pos"]}), "вход в Эшвик")
 	while W.busy:
 		await process_frame
 	ok(T.context() == "city", "контекст — город")

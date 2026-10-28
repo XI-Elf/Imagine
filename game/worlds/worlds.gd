@@ -343,7 +343,7 @@ func _allies_near_hero() -> Array:
 
 
 # Где герой на общей карте (для города — точка у его ворот)
-## Q30: у растущего города на этапе «Острог» (в STARTER_KM) бандиты нападают по одному (battle/encounters.gd)
+## Q30: у растущего города на этапе «Форт» (в STARTER_KM) бандиты нападают по одному (battle/encounters.gd)
 func _starter_zone(p: Vector2) -> bool:
 	var st: Node = game.get("settlements") if game != null else null
 	if st == null or not st.has_method("growth_stage_near") or not ResourceLoader.exists(ENCOUNTERS):

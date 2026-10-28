@@ -19,7 +19,7 @@ const BY_TERRAIN: Dictionary = {
 	"rad_wasteland": {"hounds": 3, "bandits": 1},
 	"rad_swamp": {"hounds": 3},
 }
-## Q30 (Huzzah 2026-10-27, вариант B): пока растущий город на этапе «Острог», в STARTER_KM от него
+## Q30 (Huzzah 2026-10-27, вариант B): пока растущий город на этапе «Форт», в STARTER_KM от него
 ## бандиты ходят по одному — первый бой с ножом по силам. Флаг starter ставит Worlds._start_battle_now
 const STARTER_KM: float = 8.0
 const STARTER_GROUPS: Array = ["bandits", "gang"]

@@ -1,5 +1,5 @@
 extends SceneTree
-## Снимки растущего Чёрнославля (city/city_growth.gd): общий дом и лачуга в начале, план города на каждом этапе.
+## Снимки растущего Эшвика (city/city_growth.gd): общий дом и лачуга в начале, план города на каждом этапе.
 ## godot --path game --rendering-driver opengl3 -s res://qa/shots_growth.gd  (папка — AMBER_QA_OUT)
 const Growth := preload("res://city/city_growth.gd")
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://growth_shots/"

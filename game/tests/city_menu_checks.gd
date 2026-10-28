@@ -126,9 +126,9 @@ func _run() -> void:
 		for c in t.get_children():
 			if c is CanvasItem or c is CanvasLayer:
 				c.visible = false
-	ok(city.menu._name.text == city.display_name and city.menu._sub.text.contains("Острог"), "шапка: имя и этап «%s»" % city.menu._sub.text)
+	ok(city.menu._name.text == city.display_name and city.menu._sub.text.contains("Форт"), "шапка: имя и этап «%s»" % city.menu._sub.text)
 	ok(city.menu._info.text.contains("Гость") and city.menu._info.text.contains("Поручений сдано: 0"), "шапка: статус и поручения")
-	ok(city.menu._pic.texture != null and city.menu._pic.texture.resource_path.ends_with("m1_ostrog.png"), "картинка шапки — Острог, как на карте")
+	ok(city.menu._pic.texture != null and city.menu._pic.texture.resource_path.ends_with("m1_ostrog.png"), "картинка шапки — Форт, как на карте")
 	var kinds: Array = city.menu._cards.map(func(c): return c["kind"])
 	ok(kinds.has("quests") and kinds.has("walk") and kinds.has("leave") and kinds.has("sleep"), "карточки: поручения, ночлег, прогулка, выход: %s" % [kinds])
 	for id in ["posadnik", "healer", "tanner"]:
@@ -177,7 +177,7 @@ func _run() -> void:
 	city._close_panel()
 	city.menu.press(card(city, "quests"))
 	await frames(2)
-	ok(city._panel.visible and city._panel_text.text.contains("Острог"), "«Поручения» — доска объявлений")
+	ok(city._panel.visible and city._panel_text.text.contains("Форт"), "«Поручения» — доска объявлений")
 	city._close_panel()
 
 	# Ночлег в лачуге
@@ -212,7 +212,7 @@ func _run() -> void:
 				g["done"].append(q["id"])
 	city._rebuild_stage()
 	city.menu.refresh(false)
-	ok(not card(city, "npc", "smith").is_empty() and city.menu._sub.text.contains("Слобода"), "Слобода: карточка кузнеца, этап в шапке")
+	ok(not card(city, "npc", "smith").is_empty() and city.menu._sub.text.contains("Деревня"), "Деревня: карточка кузнеца, этап в шапке")
 	ok(city.menu._pic.texture.resource_path.ends_with("m2_sloboda.png"), "картинка шапки выросла вместе с городом")
 	await shot("cm07_sloboda.png")
 

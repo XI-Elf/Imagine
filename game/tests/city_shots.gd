@@ -1,5 +1,5 @@
 extends SceneTree
-## Снимки Чёрнославля для обзора (под xvfb, --rendering-driver opengl3):
+## Снимки Эшвика для обзора (под xvfb, --rendering-driver opengl3):
 ## godot --path game --rendering-driver opengl3 -s res://tests/city_shots.gd -- папка
 
 var dir: String = ""

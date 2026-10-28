@@ -152,12 +152,12 @@ func _conditions_and_treatment() -> void:
 	var hp: float = a.res["health"]
 	a.tick(3600.0, env(4))
 	ok(a.res["health"] < hp - 5.0, "рана отнимает ~6 здоровья в час")
-	var healer := Actor.new("h", "Знахарь", true)
+	var healer := Actor.new("h", "Лекарь", true)
 	var r: Dictionary = a.treat("laceration", healer, [])
 	ok(not r["ok"] and r["reason"].begins_with("нужно"), "без бинта не лечится")
 	healer.skills["medicine"]["level"] = 10
 	r = a.treat("laceration", healer, ["bandage"])
-	ok(r["chance"] > 0.9, "знахарь 10 уровня почти наверняка: %.2f" % r["chance"])
+	ok(r["chance"] > 0.9, "лекарь 10 уровня почти наверняка: %.2f" % r["chance"])
 	var tries := 0
 	while a.has_condition("laceration") and tries < 20:
 		a.treat("laceration", healer, ["bandage"])

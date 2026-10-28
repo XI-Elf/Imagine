@@ -15,8 +15,8 @@ const ROLE_ICON: Dictionary = {
 	"healer": "woman", "trader": "woman", "guard": "guard",
 }
 const ROLE_TITLE: Dictionary = {
-	"elder": "Глава", "healer": "Знахарка", "tanner": "Кожевник", "smith": "Кузнец", "trader": "Торговля",
-	"innkeeper": "Трактир", "guard": "Стража",
+	"elder": "Глава", "healer": "Травница", "tanner": "Кожевник", "smith": "Кузнец", "trader": "Торговля",
+	"innkeeper": "Таверна", "guard": "Стража",
 }
 const ComicUI := preload("res://ui/comic_ui.gd")
 ## Рамки комикса и тёмная палитра (Q24 A, Q08 D): светлый текст на угле вместо чернил на бумаге

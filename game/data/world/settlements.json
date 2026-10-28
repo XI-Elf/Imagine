@@ -29,7 +29,7 @@
  },
  "sizes": {
   "hamlet": {
-   "name": "хутор",
+   "name": "усадьба",
    "cells": 1,
    "template": "tpl_hamlet",
    "radius_m": 60.0
@@ -41,7 +41,7 @@
    "radius_m": 90.0
   },
   "town": {
-   "name": "посёлок",
+   "name": "городок",
    "cells": 4,
    "template": "tpl_town",
    "radius_m": 140.0
@@ -62,7 +62,7 @@
  "settlements": [
   {
    "id": "s001",
-   "name": "Чёрнославль",
+   "name": "Эшвик",
    "size": "city",
    "cells": [
     [

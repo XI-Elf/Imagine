@@ -286,12 +286,12 @@ func _run() -> void:
 
 	ok(game.place_line(city["_center"]).contains(city["name"]), "подсказка: %s" % game.place_line(city["_center"]))
 
-	# Медальон на карте (знамя и картинка по развитию): Чёрнославль — по этапу роста, другие — по размеру
+	# Медальон на карте (знамя и картинка по развитию): Эшвик — по этапу роста, другие — по размеру
 	var W2: Node = root.get_node_or_null("Worlds")
 	var saved_states: Dictionary = W2.city_states.duplicate() if W2 != null else {}
 	if W2 != null:
 		W2.city_states.erase(String(city.get("city_id", city["id"])))
-	ok(st.dev_level(city) == 1 and st.medallion_texture(1) != null, "новая игра: медальон «острог»")
+	ok(st.dev_level(city) == 1 and st.medallion_texture(1) != null, "новая игра: медальон «форт»")
 	var done: Array = []
 	for id in city["_plan"]["growth"]["quests"]:
 		for q in city["_plan"]["growth"]["quests"][id]:

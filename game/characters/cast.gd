@@ -8,7 +8,7 @@ const Art := preload("res://storybook/art.gd")
 ## НПС далеко от героя и камеры считаются кусками по FAR_TICK_S игровых секунд, по тем же правилам.
 ##
 ## Клавиши: G — создать героя (у ворот города) / взять или отпустить управление, WASD — идти, Shift — бежать,
-## Z — спать/проснуться, E — пить у воды, F — искать еду, T — лечиться у знахаря рядом, I — лист персонажа.
+## Z — спать/проснуться, E — пить у воды, F — искать еду, T — лечиться у лекаря рядом, I — лист персонажа.
 ## Мышь (characters/hero_route.gd): ЛКМ — идти в точку (по городу — к воротам), держать ЛКМ — за курсором, ПКМ — стоп.
 
 const WorldEnv := preload("res://characters/world_env.gd")
@@ -32,8 +32,8 @@ const WATER_SEARCH_M: float = 1500.0
 const FORAGE_COOLDOWN_S: float = 3.0
 const HEAL_REACH_M: float = 30.0
 const HEAL_RETRY_S: float = 20.0        # реальных секунд между попытками лечения у одного НПС
-const NPC_NAMES: Array = ["Агата", "Борислав", "Ведана", "Горан", "Добрыня", "Есения", "Ждан", "Зорина",
-	"Ивар", "Лада", "Мирон", "Нежана", "Остромир", "Прася", "Радим", "Слава"]
+const NPC_NAMES: Array = ["Эйвинд", "Сигрид", "Кормак", "Айсте", "Годрик", "Ингрид", "Ниалл", "Милда",
+	"Хокон", "Эдит", "Фергус", "Расма", "Леофрик", "Тора", "Витаутас", "Сорха"]
 
 var game: Node2D
 var bodies: Array = []          # {actor, pos, home, target, plan, wait, acc_s, drowning, hero, kit, heal_cd}
@@ -175,12 +175,12 @@ func _spawn_npcs(center: Vector2) -> void:
 			a.set_stat(s, 4 + _rng.randi_range(0, 6))
 		a.res["hunger"] = _rng.randf_range(40.0, 90.0)
 		a.res["thirst"] = _rng.randf_range(40.0, 90.0)
-		# У каждого НПС свой ремесленный навык: знахарь, кузнец, повар...
+		# У каждого НПС свой ремесленный навык: лекарь, кузнец, повар...
 		var sk: Array = R.skills().keys()
 		a.add_xp(sk[i % sk.size()], _rng.randf_range(100.0, 600.0))
 		var p: Vector2 = _find_land(center + Vector2.from_angle(_rng.randf() * TAU) * _rng.randf_range(150.0, NPC_RADIUS_M * 1.5), 3000.0, true)
 		var b: Dictionary = _add(a, p, false)
-		# Знахарь носит всё для лечения: инвентаря пока нет [ВРЕМЕННО]
+		# Лекарь носит всё для лечения: инвентаря пока нет [ВРЕМЕННО]
 		if sk[i % sk.size()] == "medicine":
 			b["kit"] = all_remedies()
 
@@ -195,7 +195,7 @@ static func all_remedies() -> Array:
 	return out
 
 
-# Ближайший живой знахарь (у кого есть набор), кроме самого b
+# Ближайший живой лекарь (у кого есть набор), кроме самого b
 func _nearest_healer(b: Dictionary) -> Dictionary:
 	var best: Dictionary = {}
 	var best_d: float = INF
@@ -209,7 +209,7 @@ func _nearest_healer(b: Dictionary) -> Dictionary:
 	return best
 
 
-## Лечение у знахаря: первое из состояний пациента, что знахарь берётся лечить. Для героя и НПС одно
+## Лечение у лекаря: первое из состояний пациента, что лекарь берётся лечить. Для героя и НПС одно
 func heal_at(patient: Dictionary, healer: Dictionary) -> Dictionary:
 	var a: Actor = patient["actor"]
 	for c in a.conditions:
@@ -377,7 +377,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _hero_alive():
 				var h: Dictionary = _nearest_healer(hero)
 				if h.is_empty() or h["pos"].distance_to(hero["pos"]) > HEAL_REACH_M:
-					_event("Знахаря рядом нет")
+					_event("Лекаря рядом нет")
 				else:
 					var r: Dictionary = heal_at(hero, h)
 					if r["id"] == "":
@@ -482,7 +482,7 @@ func _npc_think(b: Dictionary, env: Dictionary, delta: float) -> void:
 			b["target"] = w
 	elif not a.conditions.is_empty() and b["heal_cd"] <= 0.0 and b["plan"] in ["idle", "walk"]:
 		if not b["kit"].is_empty():
-			# Знахарь лечит себя сам
+			# Лекарь лечит себя сам
 			heal_at(b, b)
 			b["heal_cd"] = HEAL_RETRY_S
 		elif not _nearest_healer(b).is_empty():
@@ -663,7 +663,7 @@ func sheet_text(a: Actor) -> String:
 	for k in sk:
 		t += "\n  %s %d (опыт %d)" % [sk[k].get("name_ru", k), a.skill_level(k), int(a.skills[k]["xp"])]
 	t += "\n\nПройдено %.1f км" % (a.distance_m / 1000.0)
-	t += "\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T знахарь, R верхом / пешком, I персонаж, Tab сумка"
+	t += "\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I персонаж, Tab сумка"
 	return t
 
 

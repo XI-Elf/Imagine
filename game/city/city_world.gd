@@ -11,7 +11,7 @@ extends Node2D
 ## сам заводит часы и сам считает героя (actor.tick).
 ##
 ## Клавиши: WASD — идти, Shift — бежать, E — говорить / осмотреть / обыскать, I — окно героя, Tab — сумка (вкладка окна героя),
-## M — план посёлка, колесо — масштаб, 1–9 — выбор в разговоре, Esc — закрыть окно.
+## M — план города, колесо — масштаб, 1–9 — выбор в разговоре, Esc — закрыть окно.
 ## Рост города (city_growth.gd): def — город на нынешнем этапе, full_def — всё описание с пулом будущих домов и жителей;
 ## задания шести НПС в разговоре, сданное задание — очко роста, новый этап перестраивает город сразу.
 ## Мышь (city_route.gd): ЛКМ — идти в точку / к жителю (заговорить) / к колодцу, тайнику (как E) / в ворота;
@@ -52,8 +52,8 @@ const START_ZOOM: float = 2.2
 const TALK_M: float = 2.4
 const LOOK_M: float = 3.4
 const ROLE_NAMES: Dictionary = {
-	"innkeeper": "трактирщик", "trader": "торговка", "healer": "знахарка", "smith": "кузнец",
-	"guard": "стражник", "elder": "староста", "citizen": "житель", "tanner": "кожевник",
+	"innkeeper": "хозяин таверны", "trader": "торговка", "healer": "травница", "smith": "кузнец",
+	"guard": "стражник", "elder": "олдермен", "citizen": "житель", "tanner": "кожевник",
 }
 const ROLE_COLORS: Dictionary = {
 	"innkeeper": Color(0.95, 0.6, 0.3), "trader": Color(0.3, 0.85, 0.85), "healer": Color(0.55, 0.9, 0.55),
@@ -142,7 +142,7 @@ class DrawLayer extends Node2D:
 func _ready() -> void:
 	_setup_nodes()
 	craft_rng.randomize()
-	# Запуск сцены отдельно (F6 в редакторе): Чёрнославль и новый герой
+	# Запуск сцены отдельно (F6 в редакторе): Эшвик и новый герой
 	await get_tree().process_frame
 	if not entered:
 		enter("s001", null, {})
@@ -844,7 +844,7 @@ func talk(n: Dictionary) -> void:
 		if nd.has("gate") and map.closed_gates.has(String(nd["gate"])):
 			opts.append(["Выпусти меня (%d)" % int(rules.get("night_pass_fee", 5)), func(): pay_gate(n)])
 		if role == "elder" and not discovered.has("_plan"):
-			opts.append(["Расспросить о посёлке", func(): ask_plan(n)])
+			opts.append(["Расспросить о городе", func(): ask_plan(n)])
 	opts.append(["Уйти", _close_panel])
 	_open_panel("talk", title, text, opts, _talk_tabs(n, "talk"))
 
