@@ -2,7 +2,7 @@ extends RefCounted
 ## Создание героя. Кто он — по правилам сборки 09 (пол, возраст, происхождение, профессия, до 10 черт
 ## характера без противоположностей, мировоззрение, биография). Характеристики и навыки — по Fallout
 ## (characters/special.gd): SPECIAL от 5, 5 свободных очков, можно опустить до 1; 3 отмеченных навыка
-## (профессия предлагает свои); до 2 черт Fallout. Прошлое и черты характера SPECIAL не меняют, их «skills»
+## (профессия предлагает свои); до 2 черт Fallout. Черты характера меняют SPECIAL (stats, ±1), прошлое — нет; «skills»
 ## (уровни старых навыков пака) дают +5 % за уровень к навыку Fallout. Данные — creation.json, special.json.
 ## params: {name, gender, age, origin, profession, alloc: {stat: от 5}, tags: [навык], fo_traits: [id], traits: [id]}
 
@@ -94,6 +94,8 @@ static func random_traits(r: RandomNumberGenerator) -> Array:
 static func trait_text(t: String) -> String:
 	var d: Dictionary = R.trait_def(t)
 	var parts: Array = []
+	for k in d.get("stats", {}):
+		parts.append("%s %+d" % [S.stat_name(k), int(d["stats"][k])])
 	for k in d.get("skills", {}):
 		parts.append("%s %+d %%" % [S.skill_name(k), int(d["skills"][k]) * legacy_pct()])
 	for k in d.get("effects", {}):
@@ -174,13 +176,15 @@ static func legacy_pct() -> int:
 static func preview_actor(p: Dictionary) -> Actor:
 	var a := Actor.new("preview", String(p.get("name", "")), false, 1)
 	S.apply_creation(a, p.get("alloc", {}), p.get("tags", []), p.get("fo_traits", []))
+	var tl: Array = p.get("traits", [])
+	a.traits = tl.duplicate() if traits_valid(tl) == "" else []
 	var b: Dictionary = skill_bonus(p)
 	for k in b:
 		a.skills[k]["bonus"] = int(b[k])
 	return a
 
 
-## Характеристики по частям: {stat: {base (5 + очки), traits (черты Fallout), total}}
+## Характеристики по частям: {stat: {base (5 + очки), traits (черты характера и черты Fallout), total}}
 static func stat_parts(p: Dictionary) -> Dictionary:
 	var a: Actor = preview_actor(p)
 	var out: Dictionary = {}

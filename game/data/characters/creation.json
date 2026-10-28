@@ -1,5 +1,5 @@
 {
- "_note": "Создание героя: пол, возраст, происхождение, профессия, черты характера и биография — из сборки 09; характеристики и навыки — по Fallout (special.json): SPECIAL от 5, 5 свободных очков (можно опустить до 1 и взять очки), 3 отмеченных навыка (профессия предлагает свои), до 2 черт Fallout. Пол, возраст, происхождение, профессия и черты характера больше не меняют SPECIAL; их «skills» (уровни старых навыков пака) дают +5 % за уровень к навыку Fallout. effects черт характера — ключи пака, как раньше.",
+ "_note": "Создание героя: пол, возраст, происхождение, профессия, черты характера и биография — из сборки 09; характеристики и навыки — по Fallout (special.json): SPECIAL от 5, 5 свободных очков (можно опустить до 1 и взять очки), 3 отмеченных навыка (профессия предлагает свои), до 2 черт Fallout. Черты характера меняют SPECIAL (поле stats, ±1; бывшая Мудрость → Восприятие), итог в пределах 1–10. Пол, возраст, происхождение и профессия SPECIAL не меняют; их «skills» (уровни старых навыков пака) дают +5 % за уровень к навыку Fallout. effects черт характера — ключи пака, как раньше.",
  "points": 5,
  "stat_base": 5,
  "stat_min": 1,
@@ -176,7 +176,10 @@
    "text": "Говорит как есть",
    "opp": "liar",
    "moral": 1,
-   "order": 1
+   "order": 1,
+   "stats": {
+    "cha": 1
+   }
   },
   "liar": {
    "title": "Лживый",
@@ -214,6 +217,9 @@
    "opp": "sickly",
    "effects": {
     "disease_chance": -0.2
+   },
+   "stats": {
+    "end": 1
    }
   },
   "sickly": {
@@ -223,25 +229,37 @@
    "opp": "hardy",
    "effects": {
     "disease_chance": 0.25
+   },
+   "stats": {
+    "end": -1
    }
   },
   "strong_build": {
    "title": "Крепкое сложение",
    "cost": 3,
    "text": "Широк в плечах",
-   "opp": "frail"
+   "opp": "frail",
+   "stats": {
+    "str": 1
+   }
   },
   "frail": {
    "title": "Хилый",
    "cost": -3,
    "text": "Слабое тело",
-   "opp": "strong_build"
+   "opp": "strong_build",
+   "stats": {
+    "str": -1
+   }
   },
   "nimble": {
    "title": "Проворный",
    "cost": 3,
    "text": "Быстрые руки и ноги",
-   "opp": "clumsy"
+   "opp": "clumsy",
+   "stats": {
+    "agi": 1
+   }
   },
   "clumsy": {
    "title": "Неуклюжий",
@@ -250,39 +268,57 @@
    "opp": "nimble",
    "effects": {
     "fall_chance": 0.5
+   },
+   "stats": {
+    "agi": -1
    }
   },
   "sharp": {
    "title": "Сообразительный",
    "cost": 3,
    "text": "Быстро схватывает",
-   "opp": "dull"
+   "opp": "dull",
+   "stats": {
+    "int": 1
+   }
   },
   "dull": {
    "title": "Туповатый",
    "cost": -3,
    "text": "Медленно соображает",
-   "opp": "sharp"
+   "opp": "sharp",
+   "stats": {
+    "int": -1
+   }
   },
   "prudent": {
    "title": "Рассудительный",
    "cost": 3,
    "text": "Сначала думает",
    "opp": "rash",
-   "order": 1
+   "order": 1,
+   "stats": {
+    "per": 1
+   }
   },
   "rash": {
    "title": "Опрометчивый",
    "cost": -2,
    "text": "Сначала делает",
    "opp": "prudent",
-   "order": -1
+   "order": -1,
+   "stats": {
+    "per": -1
+   }
   },
   "keen_eye": {
    "title": "Зоркий",
    "cost": 2,
    "text": "Видит далеко",
-   "opp": "nearsighted"
+   "opp": "nearsighted",
+   "stats": {
+    "per": 1
+   }
   },
   "nearsighted": {
    "title": "Близорукий",
@@ -297,13 +333,19 @@
    "title": "Обаятельный",
    "cost": 3,
    "text": "Располагает к себе",
-   "opp": "repulsive"
+   "opp": "repulsive",
+   "stats": {
+    "cha": 1
+   }
   },
   "repulsive": {
    "title": "Отталкивающий",
    "cost": -3,
    "text": "Неприятен людям",
-   "opp": "charming"
+   "opp": "charming",
+   "stats": {
+    "cha": -1
+   }
   },
   "pious": {
    "title": "Набожный",
@@ -359,7 +401,10 @@
    "cost": 2,
    "text": "Не теряет самообладания",
    "opp": "hot_tempered",
-   "order": 1
+   "order": 1,
+   "stats": {
+    "per": 1
+   }
   },
   "hot_tempered": {
    "title": "Вспыльчивый",
@@ -369,7 +414,10 @@
    "effects": {
     "power": 0.05
    },
-   "order": -1
+   "order": -1,
+   "stats": {
+    "cha": -1
+   }
   },
   "quiet": {
    "title": "Тихий",

@@ -245,9 +245,12 @@ func _game(S: Node) -> void:
 		while bs.core.outcome == "" and g < 600:
 			bs.core.run_ai_turn()
 			g += 1
+		# Взмахи звучат сразу, удары — с задержкой из очереди; played хранит последние 64,
+		# поэтому взмахи смотрим до очереди (бой от SPECIAL длиннее: у героя 30 ОЗ)
+		var swung: bool = S.played.any(func(x): return String(x) == "swing" or String(x).begins_with("whoosh_"))
 		S._run_queue(2.0)
 		await create_timer(0.5).timeout
-		ok(S.played.any(func(x): return String(x) == "swing" or String(x).begins_with("whoosh_")), "в бою звучат взмахи " + str(S.played.slice(0, 8)))
+		ok(swung, "в бою звучат взмахи " + str(S.played.slice(0, 8)))
 		ok(S.played.any(func(x): return String(x).begins_with("step_gravel_")), "в бою шаги по клеткам")
 		await frames(2)
 		bs.leave()

@@ -124,6 +124,12 @@ func _traits() -> void:
 	var g := Actor.new("g", "Одарённый")
 	g.fo_traits = ["gifted"]
 	ok(int(g.stat("luck")) == 6 and S.skill_value(g, "gambling") == 20 and S.skill_points_per_level(g) == 12, "Одарённый: +1 ко всем, −10 % навыкам, −5 очков")
+	var c := Actor.new("c", "Характер")
+	c.traits = ["strong_build", "prudent", "repulsive"]
+	ok(int(c.stat("str")) == 6 and int(c.stat("per")) == 6 and int(c.stat("cha")) == 4, "черты характера меняют SPECIAL (Мудрость → Восприятие)")
+	c.fo_traits = ["bruiser"]
+	c.stats["str"] = 9
+	ok(int(c.stat("str")) == 10, "итог не выше 10")
 	ok(S.traits_valid(["bruiser", "gifted"]) == "" and S.traits_valid(["bruiser", "gifted", "jinxed"]) != "", "не больше двух черт")
 
 
@@ -144,6 +150,9 @@ func _legacy() -> void:
 	var old: Dictionary = {"id": "hero", "name": "Старый", "stats": {"str": 6, "agi": 4, "int": 4, "end": 5, "per": 4, "wis": 7, "cha": 4, "luck": -2},
 		"skills": {"survival": {"level": 3, "xp": 200.0}, "medicine": {"level": 1, "xp": 30.0}}}
 	ok(S.is_legacy(old), "старое сохранение распознано")
+	var old2: Dictionary = old.duplicate(true)
+	old2["traits"] = ["strong_build"]
+	ok(int(Actor.from_dict(old2).stat("str")) == 7, "старая прибавка черты не удваивается")
 	var a := Actor.from_dict(old)
 	ok(int(a.stat("str")) == 7 and int(a.stat("agi")) == 5 and int(a.stat("luck")) == 3, "характеристики: +1, Удача 5 + старая")
 	ok(a.skill_level("survival") == 3 and S.skill_value(a, "outdoorsman") == 35, "Выживание 3 → 35 %")

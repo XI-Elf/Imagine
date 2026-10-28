@@ -75,6 +75,11 @@ static func canon(k: String) -> String:
 	return String(sect("legacy_skills").get(k, k))
 
 
+## Черты характера сборки 09 (creation.json): их stats добавляются к SPECIAL
+static func char_traits() -> Dictionary:
+	return _load("creation.json").get("traits", {})
+
+
 static func traits() -> Dictionary:
 	return sect("traits")
 
@@ -126,10 +131,13 @@ static func effect_dicts(a: Actor) -> Array:
 # =====================================================================
 # SPECIAL
 # =====================================================================
-## Действующее значение: база + черты и перки («Громила», «Развить…») + ночь для «Ночного создания»; 1–10
+## Действующее значение: база + черты характера (creation.json, stats) + черты Fallout и перки
+## («Громила», «Развить…») + ночь для «Ночного создания»; 1–10
 static func special(a: Actor, s: String) -> int:
 	var v: float = float(a.stats.get(s, int(data().get("base", 5))))
 	v += eff(a, "stat_" + s) + eff(a, "stats_all")
+	for t in a.traits:
+		v += float(char_traits().get(t, {}).get("stats", {}).get(s, 0))
 	if has(a, "night_person") and (s == "int" or s == "per"):
 		v += 1.0 if bool(a.last_env.get("night", false)) else -1.0
 	return clampi(int(v), int(data().get("min", 1)), int(data().get("max", 10)))
@@ -587,6 +595,12 @@ static func migrate(a: Actor, d: Dictionary) -> void:
 			a.stats[s] = clampi(5 + int(st.get("luck", 0)), 1, 10)
 		else:
 			a.stats[s] = clampi(int(st.get(s, 4)) + 1, 1, 10)
+	# В старом сохранении прибавки черт характера уже внутри stats — вычесть, их добавит special()
+	for t in d.get("traits", []):
+		var ts: Dictionary = char_traits().get(String(t), {}).get("stats", {})
+		for s in ts:
+			if a.stats.has(s):
+				a.stats[s] = clampi(int(a.stats[s]) - int(ts[s]), 1, 10)
 	a.skills = empty_skills()
 	var xp: float = 0.0
 	var best: Dictionary = {}

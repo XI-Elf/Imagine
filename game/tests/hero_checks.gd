@@ -71,15 +71,15 @@ func _rules() -> void:
 	p["origin"] = "peasant"
 	p["profession"] = "smith"
 	# SPECIAL по Fallout: от 5, свободных 5; Ловкость опущена до 4 — ещё одно очко
-	p["alloc"] = {"str": 3, "per": 0, "end": 2, "cha": 0, "int": 1, "agi": -1, "luck": 0}
+	p["alloc"] = {"str": 2, "per": 1, "end": 2, "cha": 0, "int": 1, "agi": -1, "luck": 0}
 	p["traits"] = ["strong_build", "glutton", "honest"]
 	p["fo_traits"] = ["bruiser"]
 	ok(P.alloc_valid(p["alloc"]), "5 свободных очков распределены (одно взято у Ловкости)")
 	var parts: Dictionary = P.stat_parts(p)
-	# Сила: 5 + 3 очка + 2 «Громила» = 10 (предел); прошлое и черты характера SPECIAL не меняют
-	ok(int(parts["str"]["total"]) == 10 and int(parts["str"]["traits"]) == 2, "Сила по частям: %s" % parts["str"])
+	# Сила: 5 + 2 очка + 1 «Крепкое сложение» + 2 «Громила» = 10 (предел); прошлое SPECIAL не меняет
+	ok(int(parts["str"]["total"]) == 10 and int(parts["str"]["traits"]) == 3, "Сила по частям: %s" % parts["str"])
 	ok(int(parts["agi"]["total"]) == 4, "Ловкость опущена до 4: %s" % parts["agi"])
-	ok(int(parts["cha"]["total"]) == 5 and int(parts["luck"]["total"]) == 5, "Харизма и Удача — 5, как у всех: %s %s" % [parts["cha"], parts["luck"]])
+	ok(int(parts["cha"]["total"]) == 6 and int(parts["luck"]["total"]) == 5, "«Честный»: Харизма 6; Удача 5: %s %s" % [parts["cha"], parts["luck"]])
 	ok(not P.alloc_valid({"str": 6, "per": 0, "end": 0, "cha": 0, "int": 0, "agi": -1, "luck": 0}), "выше 10 нельзя")
 	ok(not P.alloc_valid({"str": 2, "per": 0, "end": 0, "cha": 0, "int": 0, "agi": 0, "luck": 0}), "не все очки — нельзя")
 	ok(P.profession_tags("smith") == ["repair", "melee", "barter"], "кузнец отмечает Ремесло, Холодное оружие, Торговлю")
