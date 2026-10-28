@@ -1,6 +1,6 @@
 extends SceneTree
 ## Система персонажа (characters/sheet.gd, Huzzah 2026-10-28): характеристики, производные, 18 навыков, отметки,
-## цена очков, уровни и опыт, перки, черты, создание, старые сохранения, торговля, перевод в бой.
+## цена очков, уровни и опыт, дары, черты, создание, старые сохранения, торговля, перевод в бой.
 ## godot --headless --path game -s res://tests/sheet_checks.gd
 
 const S := preload("res://characters/sheet.gd")
@@ -36,27 +36,27 @@ func _init() -> void:
 func _data() -> void:
 	ok(S.stats_list() == ["str", "per", "end", "cha", "int", "agi", "luck"], "характеристики по порядку")
 	ok(S.skill_list().size() == 18, "18 навыков")
-	ok(S.traits().size() == 17 and S.perks().size() >= 75, "черт 17, перков %d" % S.perks().size())
+	ok(S.traits().size() == 17 and S.perks().size() >= 75, "черт 17, даров %d" % S.perks().size())
 	for k in S.skill_list():
-		ok(String(S.skills()[k].get("on_sheet", "")) != "" and String(S.skills()[k].get("desc", "")) != "", "навык описан: " + k)
+		ok(String(S.skills()[k].get("name", "")) != "" and String(S.skills()[k].get("desc", "")) != "", "навык описан: " + k)
 	for id in S.perks():
 		var e: Dictionary = S.perk_def(id)
-		ok(int(e.get("level", 0)) >= 1 and String(e.get("title", "")) != "", "перк описан: " + id)
+		ok(int(e.get("level", 0)) >= 1 and String(e.get("title", "")) != "", "дар описан: " + id)
 	ok(S.canon("survival") == "outdoorsman" and S.canon("medicine") == "doctor" and S.canon("blacksmith") == "repair", "старые навыки пака → новые")
 
 
 func _derived() -> void:
 	var a := Actor.new("a", "Средний")
-	ok(S.hp_max(a) == 30 and S.ap(a) == 7 and S.armor_class(a) == 5, "все 5: ОЗ 30, ОД 7, КБ 5")
+	ok(S.hp_max(a) == 30 and S.ap(a) == 7 and S.armor_class(a) == 5, "все 5: здоровье 30, ОД 7, защита 5")
 	ok(absf(S.carry_kg(a) - 68.04) < 0.01 and S.melee_damage(a) == 1, "все 5: 150 фунтов = 68 кг, урон 1")
 	ok(S.sequence(a) == 10 and S.healing_rate(a) == 1 and S.crit_pct(a) == 5, "Реакция 10, лечение 1, крит 5 %")
 	ok(S.poison_resist(a) == 25 and S.rad_resist(a) == 10, "яд 25 %, проклятье 10 %")
-	ok(S.skill_points_per_level(a) == 15 and S.hp_per_level(a) == 4, "15 очков и +4 ОЗ за уровень")
+	ok(S.skill_points_per_level(a) == 15 and S.hp_per_level(a) == 4, "15 очков и +4 здоровья за уровень")
 	a.set_stat("str", 10)
 	a.set_stat("end", 10)
-	ok(S.hp_max(a) == 45 and S.melee_damage(a) == 5, "СИЛ 10 ВЫН 10: ОЗ 45, урон 5")
+	ok(S.hp_max(a) == 45 and S.melee_damage(a) == 5, "СИЛ 10 СТО 10: здоровье 45, урон 5")
 	a.level = 3
-	ok(S.hp_max(a) == 45 + 2 * 7, "по 2 + ВЫН/2 = 7 ОЗ за уровень")
+	ok(S.hp_max(a) == 45 + 2 * 7, "по 2 + СТО/2 = 7 здоровья за уровень")
 
 
 func _skills() -> void:
@@ -86,22 +86,22 @@ func _levels() -> void:
 	var got: Array = []
 	a.leveled_up.connect(func(l): got.append(l))
 	ok(S.gain_xp(a, 3000.0) == 2 and a.level == 3 and got == [2, 3], "3000 опыта — 3 уровень")
-	ok(a.skill_points == 30 and a.perk_picks == 1, "30 очков навыков и перк на 3 уровне")
+	ok(a.skill_points == 30 and a.perk_picks == 1, "30 очков навыков и дар на 3 уровне")
 	var b := Actor.new("b", "Мастер")
 	b.quirks = ["skilled"]
 	S.gain_xp(b, 6000.0)
-	ok(b.skill_points == 60 and b.perk_picks == 1, "«Мастер на все руки»: +5 очков, перк раз в 4 уровня: %d %d" % [b.skill_points, b.perk_picks])
+	ok(b.skill_points == 60 and b.perk_picks == 1, "«Знаток ремёсел»: +5 очков, дар раз в 4 уровня: %d %d" % [b.skill_points, b.perk_picks])
 
 
 func _perks() -> void:
-	var a := Actor.new("a", "Перк")
+	var a := Actor.new("a", "Дар")
 	S.gain_xp(a, 3000.0)
-	ok(S.perk_blocker(a, "toughness") != "", "«Крепкий» требует ВЫН 6 и УДЧ 6")
+	ok(S.perk_blocker(a, "toughness") != "", "«Крепкий» требует СТО 6 и УДА 6")
 	ok(S.perk_blocker(a, "educated") == "нужен уровень 6", "«Начитанный» — с 6 уровня")
-	ok(S.take_perk(a, "awareness") == "" and a.perks == {"awareness": 1} and a.perk_picks == 0, "взят перк «Чутьё»")
-	ok(S.take_perk(a, "here_and_now") != "", "второй перк без права выбора не взять")
+	ok(S.take_perk(a, "awareness") == "" and a.perks == {"awareness": 1} and a.perk_picks == 0, "взят дар «Чутьё»")
+	ok(S.take_perk(a, "here_and_now") != "", "второй дар без права выбора не взять")
 	a.perk_picks = 1
-	ok(S.take_perk(a, "here_and_now") == "" and a.level == 4, "«Здесь и сейчас» — сразу уровень")
+	ok(S.take_perk(a, "here_and_now") == "" and a.level == 4, "«Озарение» — сразу уровень")
 	var g := Actor.new("g", "Сила")
 	g.level = 12
 	g.perk_picks = 1
@@ -109,12 +109,12 @@ func _perks() -> void:
 	var t := Actor.new("t", "Конёк")
 	t.level = 12
 	t.perk_picks = 1
-	ok(S.take_perk(t, "tag") == "" and t.tag_left == 1, "«Ещё один конёк»: отметка")
+	ok(S.take_perk(t, "tag") == "" and t.tag_left == 1, "«Ещё один талант»: отметка")
 	ok(S.add_tag(t, "sneak") == "" and S.skill_value(t, "sneak") == 40 and t.tag_left == 0, "отмечена скрытность: 20 + 20")
 	var m := Actor.new("m", "Мутант")
 	m.quirks = ["bruiser"]
 	m.mutate_left = 1
-	ok(S.mutate(m, "bruiser", "finesse") == "" and m.quirks == ["finesse"], "«Мутация»: Громила → Изящество")
+	ok(S.mutate(m, "bruiser", "finesse") == "" and m.quirks == ["finesse"], "«Перерождение»: Громила → Изящество")
 
 
 func _traits() -> void:
@@ -126,7 +126,7 @@ func _traits() -> void:
 	ok(int(g.stat("luck")) == 6 and S.skill_value(g, "gambling") == 20 and S.skill_points_per_level(g) == 12, "Одарённый: +1 ко всем, −10 % навыкам, −5 очков")
 	var c := Actor.new("c", "Характер")
 	c.traits = ["strong_build", "prudent", "repulsive"]
-	ok(int(c.stat("str")) == 6 and int(c.stat("per")) == 6 and int(c.stat("cha")) == 4, "черты характера меняют характеристики (Мудрость → Восприятие)")
+	ok(int(c.stat("str")) == 6 and int(c.stat("per")) == 6 and int(c.stat("cha")) == 4, "черты характера меняют характеристики (бывшая Мудрость → Чутьё)")
 	c.quirks = ["bruiser"]
 	c.stats["str"] = 9
 	ok(int(c.stat("str")) == 10, "итог не выше 10")
@@ -135,7 +135,7 @@ func _traits() -> void:
 
 func _creation() -> void:
 	ok(S.alloc_valid({"str": 3, "agi": 2}) == "", "5 очков распределены")
-	ok(S.alloc_valid({"str": 5, "agi": 1, "cha": -1}) == "", "Харизма опущена до 4 ради ещё одного очка")
+	ok(S.alloc_valid({"str": 5, "agi": 1, "cha": -1}) == "", "Обаяние опущена до 4 ради ещё одного очка")
 	ok(S.alloc_valid({"str": 6, "agi": -1}) != "", "выше 10 нельзя")
 	ok(S.alloc_valid({"str": 2}) != "", "не все очки — нельзя")
 	ok(S.tags_valid(["bows", "sneak", "speech"]) == "" and S.tags_valid(["bows", "sneak"]) != "", "ровно 3 отметки")
@@ -173,7 +173,7 @@ func _battle() -> void:
 	var c = Combatant.new()
 	c.build_from_actor(a, 0, Data.config(), Data.config().hero)
 	ok(c.on_sheet and c.scores["str"] == 10 and c.scores["dex"] == 10 and c.scores["lck"] == 10, "характеристика 5 → 10 в бою")
-	ok(c.max_hp == 30 and c.speed_ft == 30 and c.per_bonus == 0, "ОЗ 30, скорость 30 фт, инициатива +0")
+	ok(c.max_hp == 11 and c.speed_ft == 30 and c.per_bonus == 0, "здоровье в бою 11 (30 × 0,36), скорость 30 фт (6 клеток), инициатива +0")
 	ok(c.crit_extra(null) == 0, "Удача 5: крит только на 20")
 	var w = c.weapons[0]
 	var sk: String = Combatant.weapon_skill(w)
@@ -184,4 +184,4 @@ func _battle() -> void:
 	b.set_stat("per", 10)
 	var d = Combatant.new()
 	d.build_from_actor(b, 0, Data.config(), Data.config().hero)
-	ok(d.speed_ft == 45 and d.crit_extra(null) == 1 and d.per_bonus == 5, "ЛВК 10 (ОД 10): 45 фт; УДЧ 10: крит 19–20; ВОС 10: инициатива +5")
+	ok(d.speed_ft == 45 and d.crit_extra(null) == 1 and d.per_bonus == 5, "ЛОВ 10 (ОД 10): 45 фт; УДА 10: крит 19–20; ЧУТ 10: инициатива +5")

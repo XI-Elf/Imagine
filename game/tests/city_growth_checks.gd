@@ -59,7 +59,7 @@ func _run() -> void:
 	city.clock.paused = true
 	await frames(3)
 
-	# Форт: лачуга героя и общий дом на троих, развалины довоенные
+	# Форт: лачуга героя и общий дом на троих, развалины древные
 	var houses: Array = city.map.buildings.filter(func(b): return b.get("kind", "") != "ruins")
 	ok(city.stage == 0 and Growth.stage_name(city.full_def, 0) == "Форт", "начальный этап — Форт")
 	ok(houses.size() == 2, "в начале два дома: %s" % [houses.map(func(b): return b["name"])])

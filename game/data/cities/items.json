@@ -25,7 +25,7 @@
     "torch":            {"name": "Факел",                "price": 2,  "weight": 0.5},
     "hide":             {"name": "Шкура",                "price": 7,  "weight": 2.0},
     "scrap":            {"name": "Металлолом",           "price": 3,  "weight": 1.5},
-    "old_coin":         {"name": "Довоенная монета",     "price": 12, "weight": 0.02},
+    "old_coin":         {"name": "Древная монета",     "price": 12, "weight": 0.02},
     "amber":            {"name": "Кусок янтаря",         "price": 20, "weight": 0.1},
     "vegetables":       {"name": "Овощи",                "price": 2,  "weight": 0.5, "use": {"eat": 12, "kind": "cooked"}},
     "horse":            {"name": "Лошадь",               "price": 80, "weight": 0.0, "transport": "horse", "unique": true},

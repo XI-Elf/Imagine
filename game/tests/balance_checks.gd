@@ -1,7 +1,7 @@
 extends SceneTree
 ## Баланс по симуляциям (вопрос Q19, Huzzah: вариант B). Каждое число, которое раньше было [ВРЕМЕННО],
 ## проверяется здесь через целевую метрику: случайные герои (как при «Случайном герое»), бои под ИИ,
-## нужды по часам, цены по Харизме, шанс пролезть в город. Метрика вне цели — FAIL с измеренным значением.
+## нужды по часам, цены по Обаянию, шанс пролезть в город. Метрика вне цели — FAIL с измеренным значением.
 ## godot --path game --rendering-driver opengl3 -s res://tests/balance_checks.gd
 
 const P := preload("res://characters/hero_profile.gd")
@@ -78,7 +78,7 @@ func _trade() -> void:
 		for id in Trade.items():
 			if Trade.sell_price(id, a) >= Trade.buy_price(id, a) and int(Trade.item(id).get("price", 1)) > 1:
 				arb.append("%s@%d" % [id, cha])
-	ok(worst <= int(TARGET["knife_max_price"]), "нож при любой Харизме 1–14 не дороже %d: самый дорогой %d" % [TARGET["knife_max_price"], worst])
+	ok(worst <= int(TARGET["knife_max_price"]), "нож при любой Обаянии 1–14 не дороже %d: самый дорогой %d" % [TARGET["knife_max_price"], worst])
 	ok(arb.is_empty(), "нигде продажа не дороже покупки: %s" % str(arb.slice(0, 5)))
 
 

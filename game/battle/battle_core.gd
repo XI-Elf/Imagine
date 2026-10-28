@@ -454,9 +454,9 @@ func can_attack(c, t, wi: int = -1) -> Dictionary:
 		if w.ammo > 0 and int(c.ammo.get(w.id, 0)) <= 0:
 			return {"ok": false, "why": I18n.t("нет снарядов")}
 		if d > maxi(w.long_range_ft, w.range_ft):
-			return {"ok": false, "why": I18n.t("слишком далеко (%d фт)") % d}
+			return {"ok": false, "why": I18n.t("слишком далеко (%d кл.)") % ceili(d / 5.0)}
 	elif d > w.reach_ft:
-		return {"ok": false, "why": I18n.t("не достать (%d фт)") % d}
+		return {"ok": false, "why": I18n.t("не достать (%d кл.)") % ceili(d / 5.0)}
 	if cov == "full":
 		return {"ok": false, "why": I18n.t("цель за полным укрытием")}
 	return {"ok": true, "dist": d, "cover": cov, "weapon": w}
@@ -570,7 +570,7 @@ func _apply_damage(t, dmg: Dictionary, src, crit: bool) -> void:
 			_kill(t, src)
 		return
 	var h: Dictionary = Rules.apply_hp(t, total)
-	log_line("%s: HP %d → %d%s." % [t.title, h["HP_OLD"], h["HP_NEW"], I18n.t(" (с избытком %d)") % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
+	log_line("%s: здоровье %d → %d%s." % [t.title, h["HP_OLD"], h["HP_NEW"], I18n.t(" (с избытком %d)") % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
 	if t.hp <= 0:
 		if t.team == 0:
 			var z: Dictionary = Rules.zero_hp_check(roller, t)
@@ -636,7 +636,7 @@ func _kill(t, src) -> void:
 		killed_levels += maxi(1, t.level)
 	log_line((I18n.t("%s погиб.") % t.title if src == null else I18n.t("%s погиб (%s).") % [t.title, src.title]), "hit")
 	if src != null and src.team == 0 and _bloody(src):
-		log_line("Кровавая баня: от %s мало что осталось." % t.title, "hit")
+		log_line("Кровавый след: от %s мало что осталось." % t.title, "hit")
 	_check_end()
 
 
@@ -656,7 +656,7 @@ func dash(c) -> bool:
 		return false
 	c.has_action = false
 	c.move_left += c.speed()
-	log_line(I18n.t("%s: рывок (+%d фт движения).") % [c.title, c.speed()], "info")
+	log_line(I18n.t("%s: рывок (+%d кл. движения).") % [c.title, c.speed() / 5], "info")
 	return true
 
 
@@ -687,7 +687,7 @@ func help(c, t) -> bool:
 		t.down = false
 		t.hp = maxi(t.hp, 1)
 		t.remove_effect("unconscious")
-		log_line(I18n.t("%s приводит в чувство %s (1 HP).") % [c.title, t.title], "info")
+		log_line(I18n.t("%s приводит в чувство %s (здоровье 1).") % [c.title, t.title], "info")
 		return true
 	if t.team != c.team and t.standing():
 		c.has_action = false
@@ -752,7 +752,7 @@ func _heal(t, amount: int, how: String) -> void:
 	if t.down and t.hp > 0:
 		t.down = false
 		t.remove_effect("unconscious")
-	log_line(I18n.t("%s восстанавливает %d HP (%s): %d → %d.") % [t.title, t.hp - old, how, old, t.hp], "heal")
+	log_line(I18n.t("%s восстанавливает %d здоровья (%s): %d → %d.") % [t.title, t.hp - old, how, old, t.hp], "heal")
 
 
 ## Подготовить атаку: реакцией ударить первого врага, вошедшего в досягаемость (до следующего хода)
@@ -797,7 +797,7 @@ func can_ability(c, ab: BattleAbility, target) -> Dictionary:
 		return {"ok": false, "why": I18n.t("нет %s или кончились применения") % {"action": I18n.t("действия"), "bonus": I18n.t("бонусного действия"), "reaction": I18n.t("реакции")}.get(ab.cost, "")}
 	var cell: Vector2i = target if target is Vector2i else (target.cell if target != null else c.cell)
 	if ab.target != "self" and grid.dist_ft(c.cell, cell) > maxi(ab.range_ft, 5 if ab.target == "ally" else 0):
-		return {"ok": false, "why": I18n.t("далеко (%d фт)") % grid.dist_ft(c.cell, cell)}
+		return {"ok": false, "why": I18n.t("далеко (%d кл.)") % ceili(grid.dist_ft(c.cell, cell) / 5.0)}
 	if ab.target == "enemy" and (target == null or target is Vector2i or target.team == c.team or not target.active()):
 		return {"ok": false, "why": I18n.t("нужна цель-враг")}
 	if ab.target == "ally" and (target == null or target is Vector2i or target.team != c.team or target.dead):

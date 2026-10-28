@@ -79,7 +79,7 @@ func _rules() -> void:
 	# Сила: 5 + 2 очка + 1 «Крепкое сложение» + 2 «Громила» = 10 (предел); прошлое характеристики не меняет
 	ok(int(parts["str"]["total"]) == 10 and int(parts["str"]["traits"]) == 3, "Сила по частям: %s" % parts["str"])
 	ok(int(parts["agi"]["total"]) == 4, "Ловкость опущена до 4: %s" % parts["agi"])
-	ok(int(parts["cha"]["total"]) == 6 and int(parts["luck"]["total"]) == 5, "«Честный»: Харизма 6; Удача 5: %s %s" % [parts["cha"], parts["luck"]])
+	ok(int(parts["cha"]["total"]) == 6 and int(parts["luck"]["total"]) == 5, "«Честный»: Обаяние 6; Удача 5: %s %s" % [parts["cha"], parts["luck"]])
 	ok(not P.alloc_valid({"str": 6, "per": 0, "end": 0, "cha": 0, "int": 0, "agi": -1, "luck": 0}), "выше 10 нельзя")
 	ok(not P.alloc_valid({"str": 2, "per": 0, "end": 0, "cha": 0, "int": 0, "agi": 0, "luck": 0}), "не все очки — нельзя")
 	ok(P.profession_tags("smith") == ["repair", "melee", "barter"], "кузнец отмечает Ремесло, Холодное оружие, Торговлю")
@@ -92,7 +92,7 @@ func _rules() -> void:
 	# кузнец: Кузнечное дело 3 → Ремесло +15 %; крестьянин: Выживание 1 + Кулинария 1 → Выживание +10 %
 	ok(int(bonus.get("repair", 0)) == 15 and int(bonus.get("outdoorsman", 0)) == 10, "добавки к навыкам от прошлого: %s" % bonus)
 	var vals: Dictionary = P.skill_values(p)
-	# Ремесло: 3×ИНТ(6) = 18 + отмечен 20 + прошлое 15 = 53
+	# Ремесло: 3×УМ(6) = 18 + отмечен 20 + прошлое 15 = 53
 	ok(int(vals["repair"]) == 53, "Ремесло героя: %s" % vals["repair"])
 	var bio: String = P.biography(p)
 	ok(bio.begins_with("Конрад, 35 лет.") and bio.contains("Мировоззрение: «") and bio.length() < 260 and bio.count(".") <= 4, "биография короткая и пишется сама: " + bio)
@@ -160,7 +160,7 @@ func _menu() -> void:
 	ok(P.points_spent(cr.alloc) == 5, "больше 5 очков не потратить")
 	cr.change_stat("cha", -1)
 	cr.change_stat("str", 1)
-	ok(int(cr.alloc["cha"]) == -1 and int(cr.alloc["str"]) == 1, "опустить Харизму до 4 — и очко на Силу")
+	ok(int(cr.alloc["cha"]) == -1 and int(cr.alloc["str"]) == 1, "опустить Обаяние до 4 — и очко на Силу")
 	cr.toggle_tag("bows")
 	ok(cr.tags.size() == 3 and not cr.tags.has("bows"), "больше 3 отмеченных навыков нельзя")
 	cr.toggle_tag("melee")
@@ -234,7 +234,7 @@ func _game() -> void:
 	await shot("h04_window_skills.png")
 	key(KEY_3)
 	await frames(3)
-	ok(cast.window.tab == "perks", "3 — перки и особенности")
+	ok(cast.window.tab == "perks", "3 — дары и особенности")
 	await shot("h05_window_perks.png")
 	key(KEY_4)
 	await frames(3)

@@ -13,7 +13,7 @@ const Sheet := preload("res://characters/sheet.gd")
 ## Подход героя:
 ##   к воротам (ближе GATE_R_M) — «Войти» (E) / «Продолжить путь» (Esc);
 ##   к стене (ближе APPROACH_M к клеткам, вне ворот) — «Попытаться проникнуть» (E) с шансом
-##     sneak_chance(): Ловкость, Восприятие, Удача, ночь, груз, травмы рук и ног, здоровье и силы;
+##     sneak_chance(): Ловкость, Чутьё, Удача, ночь, груз, травмы рук и ног, здоровье и силы;
 ##     числа в блоке "sneak" реестра [Q19: проверяет tests/balance_checks.gd]. Неудача: заметили (вход с entry "caught") или
 ##     стража настороже cooldown_h игровых часов; можно сорваться и травмироваться.
 ## Пока открыт выбор, герой стоит (cast.hold_hero). Закрыли выбор, а герой всё ещё у города — E открывает
@@ -294,14 +294,14 @@ func sneak_chance(a: Actor, env: Dictionary) -> float:
 	if a.mount != "" or not a.can_move():
 		return 0.0
 	var c: float = _rule("base", 0.3)
-	# решает навык Скрытности (Ловкость в нём уже есть), Восприятие и Удача — понемногу
+	# решает навык Скрытности (Ловкость в нём уже есть), Чутьё и Удача — понемногу
 	c += _rule("per_sneak", 0.005) * (float(a.skill("sneak")) - _rule("sneak_ref", 20.0))
 	c += _rule("per_per", 0.02) * (a.stat("per") - 5.0)
 	c += _rule("per_luck", 0.01) * (a.stat("luck") - 5.0)
 	if bool(env.get("night", false)):
 		c += _rule("night", 0.2)
 		if Sheet.has(a, "ghost"):
-			c += 0.2   # перк «Призрак»
+			c += 0.2   # дар «Призрак»
 	c -= _rule("per_kg_over", 0.01) * maxf(a.carried_kg - _rule("free_kg", 15.0), 0.0)
 	c *= a.mult("sneak")   # черты «Тихий» / «Шумный» (data/characters/creation.json)
 	for id in sneak_rules.get("hurt_conditions", ["luxation_arm", "broken_arm", "broken_leg", "blindness"]):

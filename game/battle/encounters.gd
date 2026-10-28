@@ -57,7 +57,7 @@ static func roll_on_km(hero: Actor, env: Dictionary, rng: RandomNumberGenerator 
 	if hero == null or not hero.alive:
 		return false
 	var r: float = rng.randf() if rng != null else randf()
-	# перки «Странник» — реже нападают, «Друг зверей» — реже звери (по их доле в местности)
+	# дары «Странник» — реже нападают, «Друг зверей» — реже звери (по их доле в местности)
 	var w: Dictionary = BY_TERRAIN.get(terrain_key(int(env.get("biome", 4))), {})
 	var total: float = 0.0
 	var beasts: float = 0.0

@@ -119,7 +119,7 @@ func _run() -> void:
 			goal = p
 	hover(b, b.cell_to_screen(Vector2(goal)))
 	await frames(2)
-	ok(b.hover_text().contains("фт"), "реплика при наведении на клетку: " + b.hover_text())
+	ok(b.hover_text().contains("кл."), "реплика при наведении на клетку: " + b.hover_text())
 	await shot("b03_move_hover.png")
 	click(b, b.cell_to_screen(Vector2(goal)))
 	ok(c.cell == goal and c.move_left == c.speed() - 10, "шаг на 10 фт, осталось %d" % c.move_left)
@@ -148,7 +148,7 @@ func _run() -> void:
 	await shot("b05_dice.png")
 	key(b, KEY_L)
 	await frames(2)
-	ok(b.log_box.visible and b.log_box.get_parsed_text().contains("против AC"), "L — журнал с формулами")
+	ok(b.log_box.visible and b.log_box.get_parsed_text().contains("против: защита"), "L — журнал с формулами")
 	await shot("b06_log.png")
 	key(b, KEY_L)
 	# ---- способность: выбор цели, Esc

@@ -47,7 +47,7 @@ static func skills() -> Dictionary:
 	var out: Dictionary = {}
 	var sp: Dictionary = _load("sheet.json").get("skills", {})
 	for k in sp:
-		out[k] = {"name_ru": String(sp[k].get("name", k)), "name_en": String(sp[k].get("fo", k)),
+		out[k] = {"name_ru": String(sp[k].get("name", k)), "name_en": k,
 			"description": String(sp[k].get("desc", "")), "group": String(sp[k].get("group", "")), "max_level": 10}
 	_cache["_skills"] = out
 	return out

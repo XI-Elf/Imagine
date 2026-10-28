@@ -6,9 +6,9 @@ extends RefCounted
 const Data := preload("res://battle/battle_data.gd")
 const Sheet := preload("res://characters/sheet.gd")
 const STATS: Array = ["str", "dex", "con", "int", "wis", "cha", "lck"]
-static var STAT_NAMES: Dictionary = {"str": I18n.t("МОЩ"), "dex": I18n.t("СНР"), "con": I18n.t("СТК"), "int": I18n.t("РАЗ"), "wis": I18n.t("ЗОР"), "cha": I18n.t("ОБА"), "lck": I18n.t("ВЕЗ")}
+static var STAT_NAMES: Dictionary = {"str": I18n.t("СИЛ"), "dex": I18n.t("ЛОВ"), "con": I18n.t("СТО"), "int": I18n.t("УМ"), "wis": I18n.t("ЧУТ"), "cha": I18n.t("ОБА"), "lck": I18n.t("УДА")}
 # Характеристики -> боевой лист (решение Huzzah 2026-10-28: бой от характеристик): характеристика боя = характеристика × 2.
-# Боевая Мудрость — это Зоркость (внимательность, спасброски воли), Везение — своя седьмая
+# Боевая Чутьё — это Зоркость (внимательность, спасброски воли), Везение — своя седьмая
 const FROM_AMBER: Dictionary = {"str": "str", "dex": "agi", "con": "end", "int": "int", "wis": "per", "cha": "cha", "lck": "luck"}
 
 var actor: Actor
@@ -59,7 +59,7 @@ var dead: bool = false
 var fled: bool = false
 var hp_at_start: int = 0
 var new_traumas: Array = []
-# у героя и людей из Actor мастерство атаки — от навыка оружия, бонусы черт и перков (sheet.gd)
+# у героя и людей из Actor мастерство атаки — от навыка оружия, бонусы черт и даров (sheet.gd)
 var on_sheet: bool = false
 var dr_pct: float = 0.0             # «Крепкий»: доля урона, которую не получает
 
@@ -72,11 +72,11 @@ func build_from_actor(a: Actor, t: int, cfg: BattleConfig, loadout: Dictionary) 
 	var bt: Dictionary = Sheet.sect("battle")
 	for k in FROM_AMBER:
 		scores[k] = Sheet.stat_value(a, FROM_AMBER[k]) * int(bt.get("score_mult", 2))
-	# Порядок хода (2×ВОС + перки) → прибавка к инициативе
+	# Порядок хода (2×ЧУТ + дары) → прибавка к инициативе
 	per_bonus = int(floor((Sheet.sequence(a) - float(bt.get("init_ref", 10))) / maxf(float(bt.get("init_div", 2)), 1.0))) + int(fx("b_init"))
 	level = maxi(a.level, cfg.party_level)
-	# ОЗ: 15 + СИЛ + 2×ВЫН + за уровни
-	max_hp = maxi(1, Sheet.hp_max(a))
+	# ОЗ: 15 + СИЛ + 2×СТО + за уровни
+	max_hp = maxi(1, int(round(Sheet.hp_max(a) * float(bt.get("hp_mult", 1.0)))))
 	# Ход — от очков действия: 30 фт при 7 ОД, ±5 фт за каждое
 	speed_ft = maxi(int(bt.get("speed_min_ft", 15)), int(bt.get("speed_base_ft", 30)) + int(bt.get("speed_per_ap_ft", 5)) * (Sheet.ap(a) - int(bt.get("speed_ap_ref", 7))) + int(fx("b_speed_ft")))
 	dr_pct = clampf(fx("b_dr_pct") / 100.0, 0.0, 0.9)
@@ -108,7 +108,7 @@ func build_from_creature(c: BattleCreature, a: Actor, t: int, cfg: BattleConfig,
 	# Лист и Actor согласованы: характеристика = боевая характеристика / 2 (для сохранения через Actor.to_dict)
 	for k in FROM_AMBER:
 		a.stats[FROM_AMBER[k]] = clampi(int(round(int(scores[k]) / float(Sheet.sect("battle").get("score_mult", 2)))), 1, 10)
-	var r: Dictionary = roller.roll(c.hp_dice, {"extra_mod": mod("con") * level, "label": "HP " + c.title, "silent": true})
+	var r: Dictionary = roller.roll(c.hp_dice, {"extra_mod": mod("con") * level, "label": "Здоровье " + c.title, "silent": true})
 	max_hp = maxi(1, int(r["total"]))
 	armor = Data.armor(c.armor) if c.armor != "" else null
 	for w in c.weapons:
@@ -174,7 +174,7 @@ func mod(stat: String) -> int:
 	return ability_mod(sc)
 
 
-## Эффект особенностей и перков героя (0 у зверей и врагов из шаблонов)
+## Эффект особенностей и даров героя (0 у зверей и врагов из шаблонов)
 func fx(key: String) -> float:
 	return Sheet.eff(actor, key) if on_sheet and actor != null else 0.0
 
@@ -200,7 +200,7 @@ func attack_prof(w: BattleWeapon) -> int:
 		int(bt.get("prof_min", 0)), int(bt.get("prof_max", 6)))
 
 
-## Бонус попадания от черт и перков: стрелковое/ближнее, одноручное/двуручное
+## Бонус попадания от черт и даров: стрелковое/ближнее, одноручное/двуручное
 func fo_attack_bonus(w: BattleWeapon) -> int:
 	if not on_sheet or w == null:
 		return 0
@@ -212,7 +212,7 @@ func fo_attack_bonus(w: BattleWeapon) -> int:
 	return int(b)
 
 
-## Бонус урона от черт и перков к компоненту оружия
+## Бонус урона от черт и даров к компоненту оружия
 func fo_damage_bonus(w: BattleWeapon) -> int:
 	if not on_sheet or w == null:
 		return 0

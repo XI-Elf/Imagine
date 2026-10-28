@@ -17,7 +17,7 @@ signal km_passed(total_km: int)
 
 const R := preload("res://characters/actor_rules.gd")
 const S := preload("res://characters/sheet.gd")
-# Семь характеристик: Сила, Восприятие, Выносливость, Харизма, Интеллект, Ловкость, Удача
+# Семь характеристик: Сила, Чутьё, Стойкость, Обаяние, Ум, Ловкость, Удача
 const STATS: Array = ["str", "per", "end", "cha", "int", "agi", "luck"]
 const RESOURCES: Array = ["health", "hunger", "thirst", "energy", "radiation", "stamina"]
 # Длинный шаг времени режется на куски, чтобы пороги не перескакивались
@@ -31,20 +31,20 @@ static var DEATH_CAUSES: Dictionary = {
 var actor_id: String = ""
 var display_name: String = ""
 var is_npc: bool = false
-var stats: Dictionary = {}          # характеристики: база (выбор при создании), 1–10; черты и перки — в sheet.gd
+var stats: Dictionary = {}          # характеристики: база (выбор при создании), 1–10; черты и дары — в sheet.gd
 var res: Dictionary = {}            # ресурс -> значение
 var conditions: Array = []          # {id, age_h, left_h (0 — пока не вылечат), stage}
 var buffs: Array = []               # {id, left_h}
 var skills: Dictionary = {}         # навык -> {pts (куплено очками, %), bonus (уроки, прошлое, %), spent}
 var tags: Array = []                # отмеченные навыки (3)
 var quirks: Array = []              # особенности, не больше двух
-var perks: Dictionary = {}          # перк -> ранг
+var perks: Dictionary = {}          # дар -> ранг
 var level: int = 1
 var xp: float = 0.0
 var skill_points: int = 0           # нераспределённые очки навыков
-var perk_picks: int = 0             # сколько перков можно выбрать
-var mutate_left: int = 0            # перк «Мутация»: смен черт
-var tag_left: int = 0               # перк «Ещё один конёк»: отметить навык
+var perk_picks: int = 0             # сколько даров можно выбрать
+var mutate_left: int = 0            # дар «Перерождение»: смен черт
+var tag_left: int = 0               # дар «Ещё один талант»: отметить навык
 var alive: bool = true
 var death_cause: String = ""
 var sleeping: bool = false
@@ -80,7 +80,7 @@ func _init(id: String = "", name: String = "", npc: bool = false, seed_value: in
 # =====================================================================
 # ХАРАКТЕРИСТИКИ
 # =====================================================================
-# Действующая характеристика 1–10 (с чертами и перками). Удача теперь у всех
+# Действующая характеристика 1–10 (с чертами и дарами). Удача теперь у всех
 func stat(s: String) -> float:
 	return float(S.stat_value(self, s))
 
@@ -168,7 +168,7 @@ func mult(key: String) -> float:
 		var e: Dictionary = R.trait_def(t).get("effects", {})
 		if e.has(key):
 			m *= 1.0 + float(e[key])
-	# особенности и перки: общие ключи пака (loot, sneak, move_speed, fall_chance, sleep_energy…)
+	# особенности и дары: общие ключи пака (loot, sneak, move_speed, fall_chance, sleep_energy…)
 	for e in S.effect_dicts(self):
 		if e.has(key):
 			m *= 1.0 + float(e[key])
@@ -209,11 +209,11 @@ func remove_condition(id: String) -> void:
 		condition_removed.emit(id)
 
 
-# Шанс заболеть с учётом Выносливости и Удачи; p — вероятность за раз
+# Шанс заболеть с учётом Стойкости и Удачи; p — вероятность за раз
 func try_catch(id: String, p: float) -> bool:
 	if has_condition(id):
 		return false
-	# защита от яда 5×ВЫН % — половина её режет шанс хвори; Удача сверх 5 тоже
+	# защита от яда 5×СТО % — половина её режет шанс хвори; Удача сверх 5 тоже
 	p *= clampf(1.0 - float(S.poison_resist(self)) / 200.0, 0.1, 2.0)
 	p *= clampf(1.0 - float(R.section("stats").get("luck_chance_per_pt", 0.0)) * _over("luck"), 0.5, 1.5)
 	p *= mult("disease_chance")
@@ -237,7 +237,7 @@ func add_buff(id: String) -> bool:
 	var e: Dictionary = d.get("effects", {})
 	add_res("hunger", float(e.get("hunger_restore", 0.0)))
 	add_res("energy", float(e.get("energy_restore", 0.0)))
-	# черты «Тяга к снадобьям» / «Стойкость к снадобьям», перк «Дитя цветов»
+	# черты «Тяга к снадобьям» / «Стойкость к снадобьям», дар «Дитя трав»
 	var hours: float = float(d.get("duration_hours", 1.0)) * maxf(1.0 + S.eff(self, "buff_time"), 0.1)
 	for b in buffs:
 		if b["id"] == id:
@@ -309,7 +309,7 @@ func _step(h: float, env: Dictionary) -> void:
 		add_res("energy", -R.num("needs", "thirst_zero_energy_h", 2.0) * h)
 	var regen: float = _sum("health_regen")
 	if res["hunger"] > 0.0 and res["thirst"] > 0.0 and not is_bleeding():
-		# Заживление (ВЫН/3, мин. 1): 1 — как было, каждая единица сверху +50 %
+		# Заживление (СТО/3, мин. 1): 1 — как было, каждая единица сверху +50 %
 		regen += float(ch["health"].get("regen_per_hour", 0.5)) * (0.5 + 0.5 * float(S.healing_rate(self)))
 	add_res("health", (regen - dmg) * h)
 
@@ -509,7 +509,7 @@ func carry_capacity() -> float:
 	return kg * (0.5 + 0.5 * res["stamina"] / max_of("stamina")) * mult("power") + pack_kg
 
 
-## Защита от проклятья (радиации): 2×ВЫН % + перки
+## Защита от проклятья (радиации): 2×СТО % + дары
 func radiation_resist() -> float:
 	return clampf(float(S.rad_resist(self)) / 100.0, 0.0, 0.9)
 

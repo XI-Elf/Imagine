@@ -12,14 +12,14 @@ extends Resource
 @export var grid_size: Vector2i = Vector2i(18, 12)
 @export var cell_ft: int = 5
 ## 0 HP (решение Huzzah: травмы по документу, без death saves): бросок d20 + CON + LCK
-@export var trauma_high: int = 15                # ≥ — травма, остаётся в сознании с 1 HP
+@export var trauma_high: int = 15                # ≥ — травма, остаётся в сознании с 1 здоровья
 @export var trauma_mid: int = 8                  # ≥ — без сознания, стабилен, травма; ниже — смерть
 ## Тяжёлый удар: урон ≥ доли максимума HP — проверка травмы по зоне (так же на крите)
 @export var heavy_hit_frac: float = 0.5
 @export var injury_dc: int = 12
 @export var stat_offset: int = 6                 # боевое = значение Амбера + 6 (база 4 → 10)
 @export var luck_offset: int = 10                # LCK = Удача Амбера + 10
-@export var per_initiative_div: int = 4          # Восприятие сверх базы / 4 — к инициативе и внимательности
+@export var per_initiative_div: int = 4          # Чутьё сверх базы / 4 — к инициативе и внимательности
 @export var flanking: bool = true
 @export var high_ground_adv: bool = true
 @export var party_level: int = 1

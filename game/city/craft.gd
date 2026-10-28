@@ -150,7 +150,7 @@ static func lesson(bag: Dictionary, hero: Actor, master: Actor, sk: String) -> S
 	if int(bag["money"]) < fee:
 		return I18n.t("Не хватает денег")
 	bag["money"] = int(bag["money"]) - fee
-	# Выше мастера урок не поднимает; перк «Вдумчивость» — урок на 50 % больше
+	# Выше мастера урок не поднимает; дар «Вдумчивость» — урок на 50 % больше
 	var pct: int = int(round(float(data().get("lesson", {}).get("pct", 10)) * (1.0 + Sheet.eff(hero, "lesson_mult"))))
 	Sheet.train(hero, sk, pct, master.skill(sk))
 	hero.add_xp(sk, float(data().get("lesson", {}).get("xp", 40)) * 0.25)

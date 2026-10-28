@@ -100,7 +100,7 @@ func _run() -> void:
 				repeats.append("%s №%d" % [id, i])
 			prev = t
 	ok(repeats.is_empty(), "подряд одно и то же не повторяется: %s" % [repeats])
-	ok(Endless._count(1, "old_coin") == "1 довоенную монету" and Endless._count(3, "scrap") == "3 куска металлолома" and Endless._count(5, "km") == "5 километров" and Endless._count(21, "km") == "21 километр" and Endless._count(12, "vegetables") == "12 пучков овощей", "формы слов: 1 монету, 3 куска, 5 километров")
+	ok(Endless._count(1, "old_coin") == "1 древную монету" and Endless._count(3, "scrap") == "3 куска металлолома" and Endless._count(5, "km") == "5 километров" and Endless._count(21, "km") == "21 километр" and Endless._count(12, "vegetables") == "12 пучков овощей", "формы слов: 1 монету, 3 куска, 5 километров")
 
 	# Текст: награда без «город вырастет», число подставлено
 	var pq: Dictionary = Growth.current(city.full_def, city.growth, "posadnik")

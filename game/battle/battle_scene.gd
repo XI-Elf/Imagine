@@ -190,8 +190,8 @@ func _on_acted(c, what: String, data: Dictionary) -> void:
 		var how: String = (" (%s)" % w.title.to_lower()) if w != null else ""
 		if res["hit"]:
 			var dmg: int = int(res["damage"].get("total", 0))
-			_float(t, "−%d" % dmg + (I18n.t(" крит") if res["crit"] else ""), Color(0.85, 0.08, 0.06))
-			_say(I18n.t("%s бьёт %s%s: %s, %d урона. У %s осталось %d HP.") % [c.title, t.title, how, I18n.t("критическое попадание") if res["crit"] else I18n.t("попадание"),
+			_float(t, "−%d" % dmg + (I18n.t(" сильный удар") if res["crit"] else ""), Color(0.85, 0.08, 0.06))
+			_say(I18n.t("%s бьёт %s%s: %s, %d урона. У %s осталось %d здоровья.") % [c.title, t.title, how, I18n.t("сильный удар") if res["crit"] else I18n.t("попадание"),
 				dmg, t.title, maxi(t.hp, 0)], c)
 		else:
 			_float(t, I18n.t("мимо"), Color(0.3, 0.3, 0.3))
@@ -763,7 +763,7 @@ func _draw_hover_field(v: Node2D, c, reach: Dictionary) -> void:
 		var path: Array = core.path_for(c, reach, hover_cell)
 		for i in range(1, path.size()):
 			v.draw_line(cell_to_screen(Vector2(path[i - 1])), cell_to_screen(Vector2(path[i])), Color(0.85, 1.0, 0.6, 0.95), 3.0)
-		_tag(v, cell_to_screen(Vector2(hover_cell)) + Vector2(0, -s * 0.5 - 2.0), I18n.t("%d фт") % int(reach[hover_cell]["cost"]), Color(0.05, 0.05, 0.04, 0.9), C_TEXT, 13)
+		_tag(v, cell_to_screen(Vector2(hover_cell)) + Vector2(0, -s * 0.5 - 2.0), I18n.t("%d кл.") % int(reach[hover_cell]["cost"] / 5), Color(0.05, 0.05, 0.04, 0.9), C_TEXT, 13)
 	v.draw_rect(Rect2(origin() + Vector2(hover_cell) * s, Vector2(s, s)), Color(1, 1, 1, 0.55), false, 1.5)
 
 
@@ -782,14 +782,14 @@ func hover_text() -> String:
 		var ok: Dictionary = core.can_ability(c, ab, hover_cell if ab.target == "cell" else u)
 		var t: String = "%s: %s." % [ab.title, I18n.t("можно") if ok["ok"] else ok["why"]]
 		if ab.kind == "save":
-			t += I18n.t(" Спасбросок %s против DC %d.") % [Rules.Combatant.STAT_NAMES.get(ab.save_stat, ab.save_stat), Rules.save_dc(c, ab.stat)]
+			t += I18n.t(" Спасбросок %s против сложности %d.") % [Rules.Combatant.STAT_NAMES.get(ab.save_stat, ab.save_stat), Rules.save_dc(c, ab.stat)]
 			if u != null and u.team != c.team:
 				var m: int = u.mod(ab.save_stat) + (u.prof() if u.save_profs.has(ab.save_stat) else 0)
 				t += I18n.t(" %s провалит с шансом %d%%.") % [u.title, int(round((1.0 - DiceRoller.chance(m, Rules.save_dc(c, ab.stat), false, false, false)) * 100.0))]
 		return t
 	if u != null and u.team != c.team and u.active():
 		var pv: Dictionary = core.preview_attack(c, u)
-		var t: String = I18n.t("%s: HP %d/%d, %s. %s: попадание %d%% (бросок +%d), урон %d–%d.") % [u.title, u.hp, u.max_hp,
+		var t: String = I18n.t("%s: здоровье %d/%d, %s. %s: попадание %d%% (бросок +%d), урон %d–%d.") % [u.title, u.hp, u.max_hp,
 			pv["ac"]["text"], pv["weapon"].title, int(round(pv["chance"] * 100.0)), int(pv["mod"]), pv["dmg"].x, pv["dmg"].y]
 		if pv["cover"] != "none":
 			t += I18n.t(" Укрытие %s.") % {"half": "½", "three_quarters": "¾", "full": I18n.t("полное")}.get(pv["cover"], "")
@@ -801,14 +801,14 @@ func hover_text() -> String:
 			t += " (%s%s)" % [pv["why"], I18n.t(" — подойдёт и ударит") if not c.weapon().ranged and _approach_cell(c, u) != null and c.has_action else ""]
 		return t
 	if u != null:
-		var t: String = "%s: HP %d/%d, %s." % [u.title, u.hp, u.max_hp, Rules.ac(u)["text"]]
+		var t: String = "%s: здоровье %d/%d, %s." % [u.title, u.hp, u.max_hp, Rules.ac(u)["text"]]
 		for e in u.effects:
 			t += " " + e["res"].title + "."
 		return t
 	if mode == "move":
 		var reach: Dictionary = core.reach_of(c)
 		if reach.has(hover_cell) and not reach[hover_cell].get("pass_only", false):
-			var t: String = I18n.t("Идти: %d фт из %d.") % [int(reach[hover_cell]["cost"]), c.move_left]
+			var t: String = I18n.t("Идти: %d кл. из %d.") % [int(reach[hover_cell]["cost"] / 5), c.move_left / 5]
 			if _provokes(c, core.path_for(c, reach, hover_cell)):
 				t += I18n.t(" Враг рядом ударит вслед (атака по возможности).")
 			if core.grid.difficult.has(hover_cell):
@@ -921,7 +921,7 @@ func _draw_hud(ci: Node2D) -> void:
 		ci.draw_rect(ib, Color(0, 0, 0, 0.8), false, 1.0)
 		Icons.action(ci, "move", ib.grow(-3.0), Color(0.12, 0.1, 0.08))
 		_text(ci, Vector2(x + 66, y + 23), I18n.t("Движение"), 16)
-		_text(ci, Vector2(x + 66, y + 42), I18n.t("%d / %d фт") % [who.move_left if c != null else who.speed(), who.speed()], 13, C_DIM)
+		_text(ci, Vector2(x + 66, y + 42), I18n.t("%d / %d кл.") % [(who.move_left if c != null else who.speed()) / 5, who.speed() / 5], 13, C_DIM)
 		_text(ci, Vector2(x + COL_W - 26, y + 44), "M", 11, C_DIM)
 		_hit(mr, "move")
 		y += 58.0
@@ -988,7 +988,7 @@ func _hero_card(ci: CanvasItem, r: Rect2, u, mine: bool) -> void:
 	_cross(ci, r.position + Vector2(96, 49), 12.0, C_HP)
 	_text(ci, r.position + Vector2(110, 57), "%d / %d" % [u.hp, u.max_hp], 20, C_HP)
 	_shield(ci, r.position + Vector2(96, 75), 12.0, Color(0.62, 0.64, 0.66))
-	_text(ci, r.position + Vector2(110, 82), I18n.t("КБ %d") % int(Rules.ac(u)["total"]), 15, Color(0.8, 0.8, 0.78))
+	_text(ci, r.position + Vector2(110, 82), I18n.t("Защита %d") % int(Rules.ac(u)["total"]), 15, Color(0.8, 0.8, 0.78))
 	var font: Font = ThemeDB.fallback_font
 	var px: float = r.position.x + 96.0
 	var on: bool = mine
@@ -1031,9 +1031,9 @@ func _weapon_card(ci: CanvasItem, r: Rect2, u, i: int, mine: bool) -> void:
 	if w.ammo > 0:
 		line3 = "▮ %d / %d" % [int(u.ammo.get(w.id, 0)), w.ammo]
 	elif w.ranged:
-		line3 = I18n.t("%d/%d фт") % [w.range_ft, w.long_range_ft]
+		line3 = I18n.t("%d/%d кл.") % [w.range_ft / 5, w.long_range_ft / 5]
 	else:
-		line3 = I18n.t("вплотную") if w.reach_ft <= 5 else I18n.t("%d фт") % w.reach_ft
+		line3 = I18n.t("вплотную") if w.reach_ft <= 5 else I18n.t("%d кл.") % (w.reach_ft / 5)
 	_text(ci, Vector2(tx + 22, r.position.y + 69), line3, 12, C_DIM)
 	_text(ci, Vector2(r.end.x - 18, r.end.y - 8), str(i + 1), 11, C_DIM)
 
@@ -1120,7 +1120,7 @@ func _foe_column(ci: CanvasItem, v: Vector2) -> void:
 			_text(ci, Vector2(tx + 20, r.position.y + 44), "%d / %d" % [u.hp, u.max_hp], 17, C_HP)
 			if h >= 70.0:
 				_shield(ci, Vector2(tx + 8, r.position.y + 58), 10.0, Color(0.62, 0.64, 0.66))
-				_text(ci, Vector2(tx + 20, r.position.y + 64), I18n.t("КБ %d") % int(Rules.ac(u)["total"]), 13, Color(0.8, 0.8, 0.78))
+				_text(ci, Vector2(tx + 20, r.position.y + 64), I18n.t("Защита %d") % int(Rules.ac(u)["total"]), 13, Color(0.8, 0.8, 0.78))
 			var w: BattleWeapon = u.weapon()
 			var lo: int = 0
 			var hi: int = 0
@@ -1332,7 +1332,7 @@ func _draw_prep(ci: CanvasItem) -> void:
 		var dmg: String = " + ".join(PackedStringArray(w.damage.map(func(d): return (String(d.get("dice", "")) if String(d.get("dice", "")) != "" else str(int(d.get("bonus", 0)))) + " " + Rules.DAMAGE_NAMES.get(String(d.get("type", "")), ""))))
 		_text(ci, cr.position + Vector2(84, 24), "%s%s" % [w.title, " ×%d" % e["count"] if int(e["count"]) > 1 else ""], 15, C_TEXT if not full else C_DIM, cw - 92)
 		ci.draw_multiline_string(font, cr.position + Vector2(84, 43), dmg, HORIZONTAL_ALIGNMENT_LEFT, cw - 92, 12, 2, C_DIM)
-		_text(ci, cr.position + Vector2(84, 76), I18n.t("дальнобойное %d/%d фт") % [w.range_ft, w.long_range_ft] if w.ranged else I18n.t("ближний бой"), 11, Color(0.75, 0.7, 0.5), cw - 92)
+		_text(ci, cr.position + Vector2(84, 76), I18n.t("дальнобойное %d/%d кл.") % [w.range_ft / 5, w.long_range_ft / 5] if w.ranged else I18n.t("ближний бой"), 11, Color(0.75, 0.7, 0.5), cw - 92)
 		if si >= 0:
 			ci.draw_circle(cr.position + Vector2(cr.size.x - 16, 16), 11.0, C_ORANGE)
 			_text(ci, cr.position + Vector2(cr.size.x - 27, 21), str(si + 1), 13, Color(0.1, 0.07, 0.03), 22, HORIZONTAL_ALIGNMENT_CENTER)
@@ -1355,7 +1355,7 @@ func _item_title(it: String) -> String:
 
 func _button_text(id: String, c) -> String:
 	if id == "move":
-		return I18n.t("Движение (M): зелёные клетки — куда дойти. Осталось %d фт.") % c.move_left if c != null else I18n.t("Движение")
+		return I18n.t("Движение (M): зелёные клетки — куда дойти. Осталось %d кл.") % (c.move_left / 5) if c != null else I18n.t("Движение")
 	if id.begins_with("weapon:"):
 		var u = c if c != null else core.hero()
 		var i: int = int(id.substr(7))

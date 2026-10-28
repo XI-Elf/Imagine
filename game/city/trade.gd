@@ -1,7 +1,7 @@
 extends RefCounted
 ## Вещи и торговля: сумка {"money": int, "items": {id: count}}, предметы из data/cities/items.json.
 ## Сумка — простой словарь, чтобы её мог держать кто угодно (Worlds, город) и писать в сохранение.
-## Цены: покупка дороже базовой, продажа дешевле; Харизма двигает обе [Q19: проверяет tests/balance_checks.gd].
+## Цены: покупка дороже базовой, продажа дешевле; Обаяние двигает обе [Q19: проверяет tests/balance_checks.gd].
 
 const Sheet := preload("res://characters/sheet.gd")
 const ITEMS_FILE := "res://data/cities/items.json"
@@ -60,8 +60,8 @@ static func remedies(bag: Dictionary) -> Array:
 	return bag["items"].keys().filter(func(id): return bool(item(id).get("treat", false)))
 
 
-# Цены: решает разница навыков Торговли героя и торговца (Харизма даёт стартовую Торговлю),
-# перки «Купец» (−25 % к покупке), «Культ личности». Числа — data/characters/sheet.json «trade»
+# Цены: решает разница навыков Торговли героя и торговца (Обаяние даёт стартовую Торговлю),
+# дары «Купец» (−25 % к покупке), «Всеобщий любимец». Числа — data/characters/sheet.json «trade»
 static func buy_price(id: String, buyer: Actor, trader: Actor = null) -> int:
 	var p: float = float(item(id).get("price", 1)) * (1.3 - Sheet.trade_bonus(buyer, trader, true))
 	if buyer != null:

@@ -862,7 +862,7 @@ func talk(n: Dictionary) -> void:
 	else:
 		var lines: Array = nd.get("lines", ["…"])
 		text = "«%s»" % lines[int(n["line_i"]) % lines.size()]
-		# при Интеллекте 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
+		# при Уме 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
 		var dlg: Dictionary = Sheet.sect("dialogue")
 		if hero != null and Sheet.dumb(hero):
 			text += I18n.t(String(dlg.get("dumb_suffix", "")))

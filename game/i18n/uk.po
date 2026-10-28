@@ -17,8 +17,8 @@ msgid "%s берёт в бой: %s."
 msgstr "%s бере в бій: %s."
 
 #: battle/battle_core.gd
-msgid "%s восстанавливает %d HP (%s): %d → %d."
-msgstr "%s відновлює %d HP (%s): %d → %d."
+msgid "%s восстанавливает %d здоровья (%s): %d → %d."
+msgstr "%s відновлює %d здоров’я (%s): %d → %d."
 
 #: battle/battle_core.gd
 msgid "%s встаёт (половина движения)."
@@ -65,8 +65,8 @@ msgid "%s получает травму: %s (%s)."
 msgstr "%s отримує травму: %s (%s)."
 
 #: battle/battle_core.gd
-msgid "%s приводит в чувство %s (1 HP)."
-msgstr "%s приводить до тями %s (1 HP)."
+msgid "%s приводит в чувство %s (здоровье 1)."
+msgstr "%s приводить до тями %s (здоров’я 1)."
 
 #: battle/battle_core.gd
 msgid "%s пропускает ход (%s)."
@@ -93,8 +93,8 @@ msgid "%s: «%s» снято."
 msgstr "%s: «%s» знято."
 
 #: battle/battle_core.gd
-msgid "%s: рывок (+%d фт движения)."
-msgstr "%s: ривок (+%d фт руху)."
+msgid "%s: рывок (+%d кл. движения)."
+msgstr "%s: ривок (+%d кл. руху)."
 
 #: battle/battle_core.gd
 msgid "%s: спрятаться негде — враги видят."
@@ -165,8 +165,8 @@ msgid "голова"
 msgstr "голова"
 
 #: battle/battle_core.gd
-msgid "далеко (%d фт)"
-msgstr "далеко (%d фт)"
+msgid "далеко (%d кл.)"
+msgstr "далеко (%d кл.)"
 
 #: battle/battle_core.gd
 msgid "действие уже потрачено"
@@ -193,8 +193,8 @@ msgid "не видно"
 msgstr "не видно"
 
 #: battle/battle_core.gd
-msgid "не достать (%d фт)"
-msgstr "не дістати (%d фт)"
+msgid "не достать (%d кл.)"
+msgstr "не дістати (%d кл.)"
 
 #: battle/battle_core.gd
 msgid "не может действовать"
@@ -245,8 +245,8 @@ msgid "скрыт"
 msgstr "прихований"
 
 #: battle/battle_core.gd
-msgid "слишком далеко (%d фт)"
-msgstr "надто далеко (%d фт)"
+msgid "слишком далеко (%d кл.)"
+msgstr "надто далеко (%d кл.)"
 
 #: battle/battle_core.gd
 msgid "торс"
@@ -281,8 +281,8 @@ msgid " Преимущество: "
 msgstr " Перевага: "
 
 #: battle/battle_scene.gd
-msgid " Спасбросок %s против DC %d."
-msgstr " Рятівний кидок %s проти DC %d."
+msgid " Спасбросок %s против сложности %d."
+msgstr " Рятівний кидок %s проти складності %d."
 
 #: battle/battle_scene.gd
 msgid " Трудная местность."
@@ -293,24 +293,24 @@ msgid " Укрытие %s."
 msgstr " Укриття %s."
 
 #: battle/battle_scene.gd
-msgid " крит"
-msgstr " крит"
+msgid " сильный удар"
+msgstr " сильний удар"
 
 #: battle/battle_scene.gd
 msgid " — подойдёт и ударит"
 msgstr " — підійде й ударить"
 
 #: battle/battle_scene.gd
-msgid "%d / %d фт"
-msgstr "%d / %d фт"
+msgid "%d / %d кл."
+msgstr "%d / %d кл."
 
 #: battle/battle_scene.gd
-msgid "%d фт"
-msgstr "%d фт"
+msgid "%d кл."
+msgstr "%d кл."
 
 #: battle/battle_scene.gd
-msgid "%d/%d фт"
-msgstr "%d/%d фт"
+msgid "%d/%d кл."
+msgstr "%d/%d кл."
 
 #: battle/battle_scene.gd
 msgid "%s (%d): атака действием, бросок +%d. "
@@ -321,20 +321,20 @@ msgid "%s без сознания."
 msgstr "%s непритомний."
 
 #: battle/battle_scene.gd
-msgid "%s бьёт %s%s: %s, %d урона. У %s осталось %d HP."
-msgstr "%s б'є %s%s: %s, %d шкоди. У %s лишилося %d HP."
+msgid "%s бьёт %s%s: %s, %d урона. У %s осталось %d здоровья."
+msgstr "%s б'є %s%s: %s, %d шкоди. У %s лишилося %d здоров’я."
 
 #: battle/battle_scene.gd
 msgid "%s бьёт %s%s: промах."
 msgstr "%s б'є %s%s: промах."
 
 #: battle/battle_scene.gd
-msgid "%s: HP %d/%d, %s. %s: попадание %d%% (бросок +%d), урон %d–%d."
-msgstr "%s: HP %d/%d, %s. %s: влучання %d%% (кидок +%d), шкода %d–%d."
-
-#: battle/battle_scene.gd
 msgid "%s: до %s не дойти за этот ход."
 msgstr "%s: до %s не дійти за цей хід."
+
+#: battle/battle_scene.gd
+msgid "%s: здоровье %d/%d, %s. %s: попадание %d%% (бросок +%d), урон %d–%d."
+msgstr "%s: здоров’я %d/%d, %s. %s: влучання %d%% (кидок +%d), шкода %d–%d."
 
 #: battle/battle_scene.gd
 msgid "%s: травмы — %s."
@@ -385,8 +385,8 @@ msgid "Движение"
 msgstr "Рух"
 
 #: battle/battle_scene.gd
-msgid "Движение (M): зелёные клетки — куда дойти. Осталось %d фт."
-msgstr "Рух (M): зелені клітинки — куди дійти. Лишилося %d фт."
+msgid "Движение (M): зелёные клетки — куда дойти. Осталось %d кл."
+msgstr "Рух (M): зелені клітинки — куди дійти. Лишилося %d кл.."
 
 #: battle/battle_scene.gd
 msgid "Действие: ещё столько же движения."
@@ -429,12 +429,12 @@ msgid "Завершить"
 msgstr "Завершити"
 
 #: battle/battle_scene.gd
-msgid "Идти: %d фт из %d."
-msgstr "Іти: %d фт із %d."
+msgid "Защита %d"
+msgstr "Захист %d"
 
 #: battle/battle_scene.gd
-msgid "КБ %d"
-msgstr "КБ %d"
+msgid "Идти: %d кл. из %d."
+msgstr "Іти: %d кл. із %d."
 
 #: battle/battle_scene.gd
 msgid "Клик по клетке — идти, по врагу — ударить текущим оружием. 1–3 — оружие, Enter — конец хода."
@@ -577,16 +577,12 @@ msgid "горы"
 msgstr "гори"
 
 #: battle/battle_scene.gd
-msgid "дальнобойное %d/%d фт"
-msgstr "далекобійна %d/%d фт"
+msgid "дальнобойное %d/%d кл."
+msgstr "далекобійна %d/%d кл."
 
 #: battle/battle_scene.gd
 msgid "действие"
 msgstr "дія"
-
-#: battle/battle_scene.gd
-msgid "критическое попадание"
-msgstr "критичне влучання"
 
 #: battle/battle_scene.gd
 msgid "кулаки"
@@ -661,6 +657,10 @@ msgid "сами"
 msgstr "самі"
 
 #: battle/battle_scene.gd
+msgid "сильный удар"
+msgstr "сильний удар"
+
+#: battle/battle_scene.gd
 msgid "ходят сами"
 msgstr "ходять самі"
 
@@ -701,12 +701,12 @@ msgid " − броня %d%s = %d"
 msgstr " − броня %d%s = %d"
 
 #: battle/combat_rules.gd
-msgid "%s при 0 HP: %s (ВЫН %+d, УДЧ %+d) — пороги %d/%d → %s."
-msgstr "%s при 0 HP: %s (ВИТ %+d, УДЧ %+d) — пороги %d/%d → %s."
+msgid "%s при нуле здоровья: %s (СТО %+d, УДА %+d) — пороги %d/%d → %s."
+msgstr "%s при нулі здоров’я: %s (СТІ %+d, УДА %+d) — пороги %d/%d → %s."
 
 #: battle/combat_rules.gd
-msgid ", мастерство %+d"
-msgstr ", майстерність %+d"
+msgid ", навык %+d"
+msgstr ", навичка %+d"
 
 #: battle/combat_rules.gd
 msgid ", оружие %+d"
@@ -725,16 +725,16 @@ msgid ", штраф −%d"
 msgstr ", штраф −%d"
 
 #: battle/combat_rules.gd
-msgid "AC %d (%d + ЛОВ %d%s%s%s)"
-msgstr "AC %d (%d + СПР %d%s%s%s)"
-
-#: battle/combat_rules.gd
 msgid "Атака "
 msgstr "Атака "
 
 #: battle/combat_rules.gd
-msgid "Атака: %s%s против %s → %s."
-msgstr "Атака: %s%s проти %s → %s."
+msgid "Атака: %s%s против: %s → %s."
+msgstr "Атака: %s%s проти: %s → %s."
+
+#: battle/combat_rules.gd
+msgid "защита %d (%d + ЛОВ %d%s%s%s)"
+msgstr "захист %d (%d + СПР %d%s%s%s)"
 
 #: battle/combat_rules.gd
 msgid "Зона попадания"
@@ -745,16 +745,12 @@ msgid "Инициатива "
 msgstr "Ініціатива "
 
 #: battle/combat_rules.gd
-msgid "Крит!"
-msgstr "Крит!"
-
-#: battle/combat_rules.gd
 msgid "Попадание"
 msgstr "Влучання"
 
 #: battle/combat_rules.gd
-msgid "Проверка раны %s: %s против DC %d → %s."
-msgstr "Перевірка рани %s: %s проти DC %d → %s."
+msgid "Проверка раны %s: %s против сложности %d → %s."
+msgstr "Перевірка рани %s: %s проти складності %d → %s."
 
 #: battle/combat_rules.gd
 msgid "Проверка травмы "
@@ -773,16 +769,20 @@ msgid "Рана "
 msgstr "Рана "
 
 #: battle/combat_rules.gd
+msgid "Сильный удар!"
+msgstr "Сильний удар!"
+
+#: battle/combat_rules.gd
 msgid "Спасбросок "
 msgstr "Рятівний кидок "
 
 #: battle/combat_rules.gd
-msgid "Спасбросок %s %s: %s против DC %d → %s."
-msgstr "Рятівний кидок %s %s: %s проти DC %d → %s."
+msgid "Спасбросок %s %s: %s против сложности %d → %s."
+msgstr "Рятівний кидок %s %s: %s проти складності %d → %s."
 
 #: battle/combat_rules.gd
-msgid "Спасбросок %s %s: автопровал (DC %d)."
-msgstr "Рятівний кидок %s %s: автопровал (DC %d)."
+msgid "Спасбросок %s %s: автопровал (сложность %d)."
+msgstr "Рятівний кидок %s %s: автопровал (складність %d)."
 
 #: battle/combat_rules.gd
 msgid "Урон "
@@ -869,8 +869,8 @@ msgid "травма (%s)"
 msgstr "травма (%s)"
 
 #: battle/combat_rules.gd
-msgid "тяжёлая травма, остаётся в сознании с 1 HP"
-msgstr "важка травма, лишається при тямі з 1 HP"
+msgid "тяжёлая травма, остаётся в сознании с 1 здоровья"
+msgstr "важка травма, лишається при тямі з 1 здоров’я"
 
 #: battle/combat_rules.gd
 msgid "успех"
@@ -901,36 +901,36 @@ msgid "ядовитый"
 msgstr "отруйна"
 
 #: battle/combatant.gd
-msgid "ВЫН"
-msgstr "ВИТ"
-
-#: battle/combatant.gd
-msgid "ИНТ"
-msgstr "ІНТ"
-
-#: battle/combatant.gd
 msgid "ЛОВ"
 msgstr "СПР"
 
 #: battle/combatant.gd
-msgid "МДР"
-msgstr "МДР"
+msgid "ОБА"
+msgstr "ЧАР"
 
 #: battle/combatant.gd
 msgid "СИЛ"
 msgstr "СИЛ"
 
 #: battle/combatant.gd
-msgid "УДЧ"
-msgstr "УДЧ"
+msgid "СТО"
+msgstr "СТІ"
 
 #: battle/combatant.gd
-msgid "ХАР"
-msgstr "ХАР"
+msgid "УДА"
+msgstr "УДА"
+
+#: battle/combatant.gd
+msgid "УМ"
+msgstr "РОЗ"
+
+#: battle/combatant.gd
+msgid "ЧУТ"
+msgstr "ЧУТ"
 
 #: battle/dice_roller.gd
-msgid " [крит ×%d]"
-msgstr " [крит ×%d]"
+msgid " [сильный удар ×%d]"
+msgstr " [сильний удар ×%d]"
 
 #: battle/dice_roller.gd
 msgid "%s: ошибка в «%s»"
@@ -1005,16 +1005,16 @@ msgid "\n\nСостояния:"
 msgstr "\n\nСтани:"
 
 #: characters/cast.gd
-msgid "\n  %s %d (опыт %d)"
-msgstr "\n  %s %d (досвід %d)"
-
-#: characters/cast.gd
 msgid "\n  + %s (%.0f ч)"
 msgstr "\n  + %s (%.0f год)"
 
 #: characters/cast.gd
 msgid "\nНавыки:"
 msgstr "\nНавички:"
+
+#: characters/cast.gd
+msgid "\nУровень %d, опыт %d / %d"
+msgstr "\nРівень %d, досвід %d / %d"
 
 #: characters/cast.gd
 msgid "   (камера свободна, G — к герою)"
@@ -1209,20 +1209,16 @@ msgid "%s · %s · мировоззрение: %s"
 msgstr "%s · %s · світогляд: %s"
 
 #: characters/hero_create.gd
-msgid "Бонус"
-msgstr "Бонус"
-
-#: characters/hero_create.gd
-msgid "Бонус — пол, возраст, происхождение, профессия и черты. Удача складывается из происхождения, профессии и черт и в начале скрыта."
-msgstr "Бонус — стать, вік, походження, професія й риси. Удача складається з походження, професії та рис і на початку прихована."
-
-#: characters/hero_create.gd
 msgid "Вещей с собой нет: сумка пустая, всё нужное покупается или находится в пути."
 msgstr "Речей із собою немає: торба порожня, усе потрібне купується або знаходиться в дорозі."
 
 #: characters/hero_create.gd
 msgid "Возраст"
 msgstr "Вік"
+
+#: characters/hero_create.gd
+msgid "Все характеристики начинаются с 5. Можно опустить любую до 1 и забрать очко. Наведите на название, чтобы узнать, на что она влияет."
+msgstr "Усі характеристики починаються з 5. Будь-яку можна опустити до 1 і забрати очко. Наведіть на назву, щоб дізнатися, на що вона впливає."
 
 #: characters/hero_create.gd
 msgid "Выбрано %d из %d · достоинства %d · недостатки %d · мировоззрение: %s"
@@ -1253,12 +1249,12 @@ msgid "Наведите на черту, чтобы увидеть описан�
 msgstr "Наведіть на рису, щоб побачити опис. Зелені — чесноти, червоні — вади."
 
 #: characters/hero_create.gd
-msgid "Навыки: "
-msgstr "Навички: "
-
-#: characters/hero_create.gd
 msgid "Назад (Esc)"
 msgstr "Назад (Esc)"
+
+#: characters/hero_create.gd
+msgid "Отмеченный навык: +20 % сразу и вдвое быстрее растёт. От прошлого и черт: "
+msgstr "Позначена навичка: +20 % одразу й удвічі швидше росте. Від минулого й рис: "
 
 #: characters/hero_create.gd
 msgid "Очки"
@@ -1297,8 +1293,12 @@ msgid "Создать (Enter)"
 msgstr "Створити (Enter)"
 
 #: characters/hero_create.gd
-msgid "Удача %+d"
-msgstr "Удача %+d"
+msgid "Характеристика"
+msgstr "Характеристика"
+
+#: characters/hero_create.gd
+msgid "Черты"
+msgstr "Риси"
 
 #: characters/hero_create.gd
 msgid "Черты характера"
@@ -1317,12 +1317,8 @@ msgid "введите имя"
 msgstr "введіть ім'я"
 
 #: characters/hero_create.gd
-msgid "нет"
-msgstr "немає"
-
-#: characters/hero_create.gd
-msgid "распределите очки (%d)"
-msgstr "розподіліть очки (%d)"
+msgid "ничего"
+msgstr "нічого"
 
 #: characters/hero_death.gd
 msgid "\nЛошадь погибла вместе с героем."
@@ -1381,12 +1377,12 @@ msgid "него"
 msgstr "нього"
 
 #: characters/hero_death.gd
+msgid "нет"
+msgstr "немає"
+
+#: characters/hero_death.gd
 msgid "неё"
 msgstr "неї"
-
-#: characters/hero_profile.gd
-msgid "%s %+d ур."
-msgstr "%s %+d рів."
 
 #: characters/hero_profile.gd
 msgid "%s, %d %s. %s, ремесло — %s."
@@ -1457,8 +1453,8 @@ msgid "нет такой черты"
 msgstr "немає такої риси"
 
 #: characters/hero_profile.gd
-msgid "опыт навыков"
-msgstr "досвід навичок"
+msgid "опыт"
+msgstr "досвід"
 
 #: characters/hero_profile.gd
 msgid "отдых во сне"
@@ -1517,24 +1513,12 @@ msgid "Туда не дойти: за краем мира"
 msgstr "Туди не дійти: за краєм світу"
 
 #: characters/hero_window.gd
-msgid "  опыт %d%s"
-msgstr "  досвід %d%s"
-
-#: characters/hero_window.gd
-msgid " (предел)"
-msgstr " (межа)"
-
-#: characters/hero_window.gd
 msgid " (снято: %s)"
 msgstr " (знято: %s)"
 
 #: characters/hero_window.gd
 msgid "+ %s (%.0f ч)"
 msgstr "+ %s (%.0f год)"
-
-#: characters/hero_window.gd
-msgid "1–4 вкладки · I характеристики · Tab инвентарь · Esc закрыть"
-msgstr "1–4 вкладки · I характеристики · Tab інвентар · Esc закрити"
 
 #: characters/hero_window.gd
 msgid "В бой — не больше %d видов оружия"
@@ -1549,12 +1533,12 @@ msgid "Выброшено: %s"
 msgstr "Викинуто: %s"
 
 #: characters/hero_window.gd
-msgid "Герой создан до окна персонажа: происхождения и черт нет."
-msgstr "Героя створено до вікна персонажа: походження й рис немає."
-
-#: characters/hero_window.gd
 msgid "Героя нет"
 msgstr "Героя немає"
+
+#: characters/hero_window.gd
+msgid "Дары"
+msgstr "Дари"
 
 #: characters/hero_window.gd
 msgid "Инвентарь"
@@ -1563,10 +1547,6 @@ msgstr "Інвентар"
 #: characters/hero_window.gd
 msgid "История"
 msgstr "Історія"
-
-#: characters/hero_window.gd
-msgid "Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–4 вкладки · Esc закрыть"
-msgstr "Клік — вибрати · подвійний клік — з'їсти/випити · коліщатко — сторінки · 1–4 вкладки · Esc закрити"
 
 #: characters/hero_window.gd
 msgid "Мировоззрение: %s (добро %+d, закон %+d)"
@@ -1579,10 +1559,6 @@ msgstr "Навички"
 #: characters/hero_window.gd
 msgid "Надето: %s%s"
 msgstr "Вдягнено: %s%s"
-
-#: characters/hero_window.gd
-msgid "Опыт растёт от дела: Выживание — в пути, Медицина — при лечении. Интеллект и черты «Трудолюбивый», «Грамотный» ускоряют рост."
-msgstr "Досвід росте від справи: Виживання — у дорозі, Медицина — під час лікування. Інтелект і риси «Працьовитий», «Письменний» пришвидшують ріст."
 
 #: characters/hero_window.gd
 msgid "Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от проклятья %d %% · Пройдено %.1f км"
@@ -1615,30 +1591,6 @@ msgstr "Характеристики"
 #: characters/hero_window.gd
 msgid "Черт характера нет."
 msgstr "Рис характеру немає."
-
-#: characters/hero_window.gd
-msgid "возраст"
-msgstr "вік"
-
-#: characters/hero_window.gd
-msgid "очки %d"
-msgstr "очки %d"
-
-#: characters/hero_window.gd
-msgid "пол"
-msgstr "стать"
-
-#: characters/hero_window.gd
-msgid "прошлое"
-msgstr "минуле"
-
-#: characters/hero_window.gd
-msgid "сейчас %+d"
-msgstr "зараз %+d"
-
-#: characters/hero_window.gd
-msgid "черты"
-msgstr "риси"
 
 #: characters/inventory_view.gd
 msgid "\nДоспех в бою: %s"
@@ -2085,6 +2037,10 @@ msgid "\n\nДругих поручений пока нет: пусть горо�
 msgstr "\n\nІнших доручень поки немає: хай місто підросте."
 
 #: city/city_world.gd
+msgid "\n\nОпыт +%d."
+msgstr "\n\nДосвід +%d."
+
+#: city/city_world.gd
 msgid "\n\nПолучено %d монет."
 msgstr "\n\nОтримано %d монет."
 
@@ -2123,6 +2079,14 @@ msgstr " (замкнені)"
 #: city/city_world.gd
 msgid " · Esc город"
 msgstr " · Esc місто"
+
+#: city/city_world.gd
+msgid " Красноречие выторговало ещё %d."
+msgstr " Красномовство виторгувало ще %d."
+
+#: city/city_world.gd
+msgid " Новый уровень: %d! Очки навыков и дары — в окне героя (I)."
+msgstr " Новий рівень: %d! Очки навичок і дари — у вікні героя (I)."
 
 #: city/city_world.gd
 msgid "%d монет"
@@ -2173,8 +2137,8 @@ msgid "%s: пусто, загляните через пару дней"
 msgstr "%s: порожньо, загляньте за пару днів"
 
 #: city/city_world.gd
-msgid "%s: у вас %d (опыт %d), у мастера %d"
-msgstr "%s: у вас %d (досвід %d), у майстра %d"
+msgid "%s: у вас %d %% (ур. %d), у мастера %d %% (ур. %d)"
+msgstr "%s: у вас %d %% (рів. %d), у майстра %d %% (рів. %d)"
 
 #: city/city_world.gd
 msgid ", до этапа «%s» нужно %d"
@@ -2241,8 +2205,8 @@ msgid "Готово: %s"
 msgstr "Готово: %s"
 
 #: city/city_world.gd
-msgid "Деньги: %d   Груз: %.1f / %.0f кг"
-msgstr "Гроші: %d   Вантаж: %.1f / %.0f кг"
+msgid "Деньги: %d   Груз: %.1f / %.0f кг   Торговля: у вас %d %%, у торговца %d %%"
+msgstr "Гроші: %d   Вантаж: %.1f / %.0f кг   Торгівля: у вас %d %%, у торговця %d %%"
 
 #: city/city_world.gd
 msgid "Заказать у мастера (%d)"
@@ -2417,10 +2381,6 @@ msgid "лечь спать"
 msgstr "лягти спати"
 
 #: city/city_world.gd
-msgid "ничего"
-msgstr "нічого"
-
-#: city/city_world.gd
 msgid "обыскать"
 msgstr "обшукати"
 
@@ -2549,8 +2509,8 @@ msgid "Железо для горна"
 msgstr "Залізо для горна"
 
 #: city/endless_quests.gd
-msgid "Заезжие меняют довоенные монеты втридорога. Принеси %s, и поделим выгоду."
-msgstr "Заїжджі міняють довоєнні монети втридорога. Принеси %s, і поділимо зиск."
+msgid "Заезжие меняют древные монеты втридорога. Принеси %s, и поделим выгоду."
+msgstr "Заїжджі міняють давні монети втридорога. Принеси %s, і поділимо зиск."
 
 #: city/endless_quests.gd
 msgid "Заказов больше, чем железа. Принеси %s."
@@ -2653,8 +2613,8 @@ msgid "Отчеканим новые хартии. Держи плату."
 msgstr "Викарбуємо нові хартії. Тримай плату."
 
 #: city/endless_quests.gd
-msgid "Печатникам опять нужен довоенный металл. Принеси %s."
-msgstr "Друкарям знову потрібен довоєнний метал. Принеси %s."
+msgid "Печатникам опять нужен древный металл. Принеси %s."
+msgstr "Друкарям знову потрібен давній метал. Принеси %s."
 
 #: city/endless_quests.gd
 msgid "По фермам лежат больные, а мне не дойти. Пройди %s, расскажи, кто как."
@@ -2757,16 +2717,16 @@ msgid "в одном бою"
 msgstr "в одному бою"
 
 #: city/endless_quests.gd
-msgid "довоенную монету"
-msgstr "довоєнну монету"
+msgid "древную монету"
+msgstr "давню монету"
 
 #: city/endless_quests.gd
-msgid "довоенные монеты"
-msgstr "довоєнні монети"
+msgid "древные монеты"
+msgstr "давні монети"
 
 #: city/endless_quests.gd
-msgid "довоенных монет"
-msgstr "довоєнних монет"
+msgid "древных монет"
+msgstr "давніх монет"
 
 #: city/endless_quests.gd
 msgid "километр"
@@ -2981,7 +2941,7 @@ msgid "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
 msgstr "моно 44.1 кГц, гучність піку -9 дБ, Ogg Vorbis"
 
 #: data/battle/abilities/fire_flask.tres
-msgid "Бросок склянки: все в радиусе 5 футов — спасбросок Ловкости, 2d6 огня (половина при успехе), провал — горит."
+msgid "Бросок склянки: все в радиусе 1 клетки — спасбросок Ловкости, 2d6 огня (половина при успехе), провал — горит."
 msgstr "Кидок скляночки: усі в радіусі 5 футів — рятівний кидок Спритності, 2d6 вогню (половина при успіху), провал — горить."
 
 #: data/battle/abilities/fire_flask.tres
@@ -2989,11 +2949,11 @@ msgid "Огненная смесь"
 msgstr "Вогняна суміш"
 
 #: data/battle/abilities/healing_salve.tres
-msgid "Действие: союзник рядом восстанавливает 1d8 + Мудрость HP."
-msgstr "Дія: союзник поруч відновлює 1d8 + Мудрість HP."
+msgid "Действие: союзник рядом восстанавливает 1d8 + Чутьё к здоровью."
+msgstr "Дія: союзник поруч відновлює 1d8 + Мудрість здоров’я."
 
 #: data/battle/abilities/howl.tres
-msgid "Бонусное действие: враги в 30 футах — спасбросок Мудрости или напуганы. Раз за бой."
+msgid "Бонусное действие: враги в 6 клетках — спасбросок чутья или напуганы. Раз за бой."
 msgstr "Бонусна дія: вороги в 30 футах — рятівний кидок Мудрості або налякані. Раз за бій."
 
 #: data/battle/abilities/howl.tres
@@ -3009,16 +2969,16 @@ msgid "Сеть"
 msgstr "Сітка"
 
 #: data/battle/abilities/poison_dart.tres
-msgid "Дальняя атака Ловкостью: 1d4 колющего + 1d6 яда; спасбросок Выносливости или отравлен."
-msgstr "Далека атака Спритністю: 1d4 колючої + 1d6 отрути; рятівний кидок Витривалості або отруєний."
+msgid "Дальняя атака Ловкостью: 1d4 колющего + 1d6 яда; спасбросок Стойкости или отравлен."
+msgstr "Далека атака Спритністю: 1d4 колючої + 1d6 отрути; рятівний кидок Стійкості або отруєний."
 
 #: data/battle/abilities/poison_dart.tres
 msgid "Ядовитый дротик"
 msgstr "Отруйний дротик"
 
 #: data/battle/abilities/second_wind.tres
-msgid "Бонусное действие: восстановить 1d10 + уровень HP. Раз за бой."
-msgstr "Бонусна дія: відновити 1d10 + рівень HP. Раз за бій."
+msgid "Бонусное действие: восстановить 1d10 + уровень к здоровью. Раз за бой."
+msgstr "Бонусна дія: відновити 1d10 + рівень здоров’я. Раз за бій."
 
 #: data/battle/abilities/second_wind.tres
 msgid "Второе дыхание"
@@ -3029,7 +2989,7 @@ msgid "Боевой клич"
 msgstr "Бойовий клич"
 
 #: data/battle/abilities/war_cry.tres
-msgid "Бонусное действие: союзники в 15 футах воодушевлены (атаки с преимуществом 2 раунда). Раз за бой."
+msgid "Бонусное действие: союзники в 3 клетках воодушевлены (атаки с преимуществом 2 раунда). Раз за бой."
 msgstr "Бонусна дія: союзники в 15 футах натхненні (атаки з перевагою 2 раунди). Раз за бій."
 
 #: data/battle/armor/hides.tres
@@ -4920,33 +4880,1037 @@ msgstr "норвезькі"
 msgid "эссекские (англосаксонские)"
 msgstr "ессекські (англосаксонські)"
 
-#: data/characters/rules.json
-msgid "Восприятие"
-msgstr "Сприйняття"
+#: data/characters/perks.json
+msgid "+1 к Ловкости навсегда."
+msgstr "+1 до Спритності назавжди."
 
-#: data/characters/rules.json
-msgid "Интеллект"
-msgstr "Інтелект"
+#: data/characters/perks.json
+msgid "+1 к Обаянию навсегда."
+msgstr "+1 до Чарівності назавжди."
+
+#: data/characters/perks.json
+msgid "+1 к Силе навсегда."
+msgstr "+1 до Сили назавжди."
+
+#: data/characters/perks.json
+msgid "+1 к Стойкости навсегда."
+msgstr "+1 до Стійкості назавжди."
+
+#: data/characters/perks.json
+msgid "+1 к Удаче навсегда."
+msgstr "+1 до Удачі назавжди."
+
+#: data/characters/perks.json
+msgid "+1 к Уму в разговорах за ранг."
+msgstr "+1 до Розуму в розмовах за ранг."
+
+#: data/characters/perks.json
+msgid "+1 к Уму навсегда."
+msgstr "+1 до Розуму назавжди."
+
+#: data/characters/perks.json
+msgid "+1 к Чутью навсегда."
+msgstr "+1 до Чуття назавжди."
+
+#: data/characters/perks.json
+msgid "+1 к защите в бою."
+msgstr "+1 до захисту в бою."
+
+#: data/characters/perks.json
+msgid "+1 очко действия за ранг (в бою +1 клетка хода)."
+msgstr "+1 очко дії за ранг (у бою +1 клітинка ходу)."
+
+#: data/characters/perks.json
+msgid "+1 спутник сверх предела Обаяния."
+msgstr "+1 супутник понад межу Чарівності."
+
+#: data/characters/perks.json
+msgid "+10 % к Знахарству, +2 к урону по живым."
+msgstr "+10 % до Знахарства, +2 до шкоди живим."
+
+#: data/characters/perks.json
+msgid "+10 % к Перевязке и Знахарству."
+msgstr "+10 % до Перев’язки та Знахарства."
+
+#: data/characters/perks.json
+msgid "+10 % к Скрытности, Отмычкам, Воровству и Ловушкам."
+msgstr "+10 % до Скритності, Відмичок, Крадіжки й Пасток."
+
+#: data/characters/perks.json
+msgid "+10 % к Торговле и Красноречию."
+msgstr "+10 % до Торгівлі та Красномовства."
+
+#: data/characters/perks.json
+msgid "+10 % к Учёности и Ремеслу."
+msgstr "+10 % до Вченості та Ремесла."
+
+#: data/characters/perks.json
+msgid "+10 % к шансу вылечить за ранг, зелья и второе дыхание в бою лечат на 3 больше."
+msgstr "+10 % до шансу вилікувати за ранг, зілля й друге дихання в бою лікують на 3 більше."
+
+#: data/characters/perks.json
+msgid "+15 % защиты от проклятья за ранг."
+msgstr "+15 % захисту від прокляття за ранг."
+
+#: data/characters/perks.json
+msgid "+15 % к Воровству и Отмычкам."
+msgstr "+15 % до Крадіжки й Відмичок."
+
+#: data/characters/perks.json
+msgid "+15 % к Выживанию, на 15 % реже нападают в пути."
+msgstr "+15 % до Виживання, на 15 % рідше нападають у дорозі."
+
+#: data/characters/perks.json
+msgid "+15 % к Метанию."
+msgstr "+15 % до Метання."
+
+#: data/characters/perks.json
+msgid "+2 к заживлению за ранг: здоровье само восстанавливается быстрее."
+msgstr "+2 до загоєння за ранг: здоров’я саме відновлюється швидше."
+
+#: data/characters/perks.json
+msgid "+2 к попаданию из стрелкового, на дальней дистанции нет помехи."
+msgstr "+2 до влучання зі стрілецької зброї, на дальній дистанції немає перешкоди."
+
+#: data/characters/perks.json
+msgid "+2 к попаданию тяжёлым двуручным оружием."
+msgstr "+2 до влучання важкою дворучною зброєю."
+
+#: data/characters/perks.json
+msgid "+2 к порядку хода за ранг."
+msgstr "+2 до порядку ходу за ранг."
+
+#: data/characters/perks.json
+msgid "+2 к урону в ближнем бою за ранг."
+msgstr "+2 до шкоди в ближньому бою за ранг."
+
+#: data/characters/perks.json
+msgid "+2 к урону стрелами, болтами, камнями и метательным за ранг."
+msgstr "+2 до шкоди стрілами, болтами, камінням і метальною зброєю за ранг."
+
+#: data/characters/perks.json
+msgid "+2 клетки хода в бою за ранг."
+msgstr "+2 клітинки ходу в бою за ранг."
+
+#: data/characters/perks.json
+msgid "+2 очка навыков за уровень за ранг."
+msgstr "+2 очки навичок за рівень за ранг."
+
+#: data/characters/perks.json
+msgid "+20 % к Азартным играм."
+msgstr "+20 % до Азартних ігор."
+
+#: data/characters/perks.json
+msgid "+20 % к Красноречию."
+msgstr "+20 % до Красномовства."
+
+#: data/characters/perks.json
+msgid "+20 % к Торговле."
+msgstr "+20 % до Торгівлі."
+
+#: data/characters/perks.json
+msgid "+25 % защиты от яда и хворей."
+msgstr "+25 % захисту від отрути й хвороб."
+
+#: data/characters/perks.json
+msgid "+25 % к Воровству."
+msgstr "+25 % до Крадіжки."
+
+#: data/characters/perks.json
+msgid "+25 % к Выживанию за ранг."
+msgstr "+25 % до Виживання за ранг."
+
+#: data/characters/perks.json
+msgid "+3 к урону огнём."
+msgstr "+3 до шкоди вогнем."
+
+#: data/characters/perks.json
+msgid "+4 к здоровью в бою за каждый уровень за ранг (и за прошлые)."
+msgstr "+4 до здоров’я в бою за кожен рівень за ранг (і за минулі)."
+
+#: data/characters/perks.json
+msgid "+4 к урону горшков с огнём, ядовитых дротиков и прочих приёмов."
+msgstr "+4 до шкоди горщиків із вогнем, отруйних дротиків та інших прийомів."
+
+#: data/characters/perks.json
+msgid "+5 % к шансу сильного удара за ранг."
+msgstr "+5 % до шансу сильного удару за ранг."
+
+#: data/characters/perks.json
+msgid "+5 % опыта за ранг."
+msgstr "+5 % досвіду за ранг."
+
+#: data/characters/perks.json
+msgid "+50 фунтов (~23 кг) груза за ранг."
+msgstr "+50 фунтів (~23 кг) вантажу за ранг."
+
+#: data/characters/perks.json
+msgid "Барахольщик"
+msgstr "Збирач мотлоху"
+
+#: data/characters/perks.json
+msgid "Без оружия в руках +2 к защите."
+msgstr "Без зброї в руках +2 до захисту."
+
+#: data/characters/perks.json
+msgid "Безобидный"
+msgstr "Нешкідливий"
+
+#: data/characters/perks.json
+msgid "Бесшумный бег"
+msgstr "Нечутний біг"
+
+#: data/characters/perks.json
+msgid "Больше сильных ударов"
+msgstr "Більше сильних ударів"
+
+#: data/characters/perks.json
+msgid "Быстрая реакция"
+msgstr "Швидка реакція"
+
+#: data/characters/perks.json
+msgid "Быстро на ноги"
+msgstr "Швидко на ноги"
+
+#: data/characters/perks.json
+msgid "Быстро учится"
+msgstr "Швидко вчиться"
+
+#: data/characters/perks.json
+msgid "Быстрые карманы"
+msgstr "Швидкі кишені"
+
+#: data/characters/perks.json
+msgid "Быстрые ноги"
+msgstr "Швидкі ноги"
+
+#: data/characters/perks.json
+msgid "В бою получаете на 10 % меньше урона за ранг."
+msgstr "У бою отримуєте на 10 % менше шкоди за ранг."
+
+#: data/characters/perks.json
+msgid "Вас не напугать: иммунитет к страху."
+msgstr "Вас не налякати: імунітет до страху."
+
+#: data/characters/perks.json
+msgid "Вас не сбить с ног."
+msgstr "Вас не збити з ніг."
+
+#: data/characters/perks.json
+msgid "Вдвое больше денег с побеждённых."
+msgstr "Удвічі більше грошей із переможених."
+
+#: data/characters/perks.json
+msgid "Вдвое меньше травм в пути."
+msgstr "Удвічі менше травм у дорозі."
+
+#: data/characters/perks.json
+msgid "Вдумчивость"
+msgstr "Вдумливість"
+
+#: data/characters/perks.json
+msgid "Вещи уложены плотно: +10 кг груза."
+msgstr "Речі вкладено щільно: +10 кг вантажу."
+
+#: data/characters/perks.json
+msgid "Внушительность"
+msgstr "Поважність"
+
+#: data/characters/perks.json
+msgid "Вор"
+msgstr "Злодій"
+
+#: data/characters/perks.json
+msgid "Вор-виртуоз"
+msgstr "Злодій-віртуоз"
+
+#: data/characters/perks.json
+msgid "Все хотят быть с вами заодно: +10 % к наградам, цены на 5 % выгоднее."
+msgstr "Усі хочуть бути з вами заодно: +10 % до нагород, ціни на 5 % вигідніші."
+
+#: data/characters/perks.json
+msgid "Всеобщий любимец"
+msgstr "Всезагальний улюбленець"
+
+#: data/characters/perks.json
+msgid "Второй выстрел за ход бонусным действием, без штрафа."
+msgstr "Другий постріл за хід бонусною дією, без штрафу."
+
+#: data/characters/perks.json
+msgid "Второй удар врукопашную или холодным оружием за ход — бонусным действием."
+msgstr "Другий удар врукопашну або холодною зброєю за хід — бонусною дією."
+
+#: data/characters/perks.json
+msgid "Вы замечаете затаившихся врагов: +3 к пассивному чутью в бою."
+msgstr "Ви помічаєте ворогів, що причаїлися: +3 до пасивного чуття в бою."
+
+#: data/characters/perks.json
+msgid "Вы первыми замечаете засаду: +3 к инициативе."
+msgstr "Ви першими помічаєте засідку: +3 до ініціативи."
+
+#: data/characters/perks.json
+msgid "Вы чувствуете, чего хотят люди: +10 % к Красноречию, +5 % к наградам за поручения."
+msgstr "Ви відчуваєте, чого хочуть люди: +10 % до Красномовства, +5 % до нагород за доручення."
+
+#: data/characters/perks.json
+msgid "Громкая слава"
+msgstr "Гучна слава"
+
+#: data/characters/perks.json
+msgid "Дитя трав"
+msgstr "Дитя трав"
+
+#: data/characters/perks.json
+msgid "Добытчик"
+msgstr "Здобувач"
+
+#: data/characters/perks.json
+msgid "Друг зверей"
+msgstr "Друг звірів"
+
+#: data/characters/perks.json
+msgid "Ещё один талант"
+msgstr "Ще один талант"
+
+#: data/characters/perks.json
+msgid "Живучий"
+msgstr "Живучий"
+
+#: data/characters/perks.json
+msgid "Замечаете то, что другие пропускают: +15 % к поиску."
+msgstr "Помічаєте те, що інші пропускають: +15 % до пошуку."
+
+#: data/characters/perks.json
+msgid "Защита от проклятья"
+msgstr "Захист від прокляття"
+
+#: data/characters/perks.json
+msgid "Звери вдвое реже нападают в пути."
+msgstr "Звірі вдвічі рідше нападають у дорозі."
+
+#: data/characters/perks.json
+msgid "Зелье в бою пьётся бонусным действием."
+msgstr "Зілля в бою п’ється бонусною дією."
+
+#: data/characters/perks.json
+msgid "Змееед"
+msgstr "Зміїд"
+
+#: data/characters/perks.json
+msgid "Знание тела"
+msgstr "Знання тіла"
+
+#: data/characters/perks.json
+msgid "Знаток дорог"
+msgstr "Знавець доріг"
+
+#: data/characters/perks.json
+msgid "Знаток ремёсел"
+msgstr "Знавець ремесел"
+
+#: data/characters/perks.json
+msgid "Зоркий стрелок"
+msgstr "Зіркий стрілець"
+
+#: data/characters/perks.json
+msgid "Игрок"
+msgstr "Гравець"
+
+#: data/characters/perks.json
+msgid "Иногда в бою появляется незнакомец и помогает. Пока без действия: в бою нет случайных союзников."
+msgstr "Іноді в бою з’являється незнайомець і допомагає. Поки без дії: у бою немає випадкових союзників."
+
+#: data/characters/perks.json
+msgid "Искатель"
+msgstr "Шукач"
+
+#: data/characters/perks.json
+msgid "Искатель удачи"
+msgstr "Шукач удачі"
+
+#: data/characters/perks.json
+msgid "Каждое попадание в ближнем бою — сильный удар."
+msgstr "Кожне влучання в ближньому бою — сильний удар."
+
+#: data/characters/perks.json
+msgid "Когда в бою здоровья меньше половины, +1 к Силе."
+msgstr "Коли в бою здоров’я менше половини, +1 до Сили."
+
+#: data/characters/perks.json
+msgid "Крадётесь на бегу: +20 % к шансу пробраться в город."
+msgstr "Крадетеся на бігу: +20 % до шансу пробратися в місто."
+
+#: data/characters/perks.json
+msgid "Крепкая спина"
+msgstr "Міцна спина"
+
+#: data/characters/perks.json
+msgid "Крепкая хватка"
+msgstr "Міцна хватка"
+
+#: data/characters/perks.json
+msgid "Крепкий"
+msgstr "Міцний"
+
+#: data/characters/perks.json
+msgid "Купец"
+msgstr "Купець"
+
+#: data/characters/perks.json
+msgid "Ловкие пальцы"
+msgstr "Спритні пальці"
+
+#: data/characters/perks.json
+msgid "Лучшие сильные удары"
+msgstr "Кращі сильні удари"
+
+#: data/characters/perks.json
+msgid "Любимец таверн"
+msgstr "Улюбленець таверн"
+
+#: data/characters/perks.json
+msgid "Люди охотнее вас слушают: +5 % к Красноречию и Торговле за ранг."
+msgstr "Люди охочіше вас слухають: +5 % до Красномовства й Торгівлі за ранг."
+
+#: data/characters/perks.json
+msgid "Лёгкая поступь"
+msgstr "Легка хода"
+
+#: data/characters/perks.json
+msgid "Меткий урон"
+msgstr "Влучна шкода"
+
+#: data/characters/perks.json
+msgid "Можно один раз убрать одну черту или взять новую."
+msgstr "Можна один раз прибрати одну рису або взяти нову."
+
+#: data/characters/perks.json
+msgid "На 25 % быстрее в пути за ранг."
+msgstr "На 25 % швидше в дорозі за ранг."
+
+#: data/characters/perks.json
+msgid "Настороженность"
+msgstr "Настороженість"
+
+#: data/characters/perks.json
+msgid "Находите больше в руинах и тайниках: +20 % к поиску."
+msgstr "Знаходите більше в руїнах і схованках: +20 % до пошуку."
+
+#: data/characters/perks.json
+msgid "Начитанный"
+msgstr "Начитаний"
+
+#: data/characters/perks.json
+msgid "Никто не ждёт подвоха: +20 % к Воровству."
+msgstr "Ніхто не чекає підступу: +20 % до Крадіжки."
+
+#: data/characters/perks.json
+msgid "Ночное зрение"
+msgstr "Нічний зір"
+
+#: data/characters/perks.json
+msgid "Ночь в тепле и компании бодрит: сон восстанавливает на 25 % больше."
+msgstr "Ніч у теплі й компанії бадьорить: сон відновлює на 25 % більше."
+
+#: data/characters/perks.json
+msgid "Ночь вам не помеха: в темноте шаг не замедляется."
+msgstr "Ніч вам не завада: у темряві крок не сповільнюється."
+
+#: data/characters/perks.json
+msgid "Ночью +20 % к шансу пробраться в город."
+msgstr "Вночі +20 % до шансу пробратися в місто."
+
+#: data/characters/perks.json
+msgid "О ваших делах говорят: +10 % к наградам за поручения."
+msgstr "Про ваші справи говорять: +10 % до нагород за доручення."
+
+#: data/characters/perks.json
+msgid "Озарение"
+msgstr "Осяяння"
+
+#: data/characters/perks.json
+msgid "Оратор"
+msgstr "Оратор"
+
+#: data/characters/perks.json
+msgid "Осторожность"
+msgstr "Обережність"
+
+#: data/characters/perks.json
+msgid "Отметьте ещё один навык."
+msgstr "Позначте ще одну навичку."
+
+#: data/characters/perks.json
+msgid "Переговорщик"
+msgstr "Перемовник"
+
+#: data/characters/perks.json
+msgid "Перерождение"
+msgstr "Переродження"
+
+#: data/characters/perks.json
+msgid "Поджигатель"
+msgstr "Палій"
+
+#: data/characters/perks.json
+msgid "Подрывник"
+msgstr "Підривник"
+
+#: data/characters/perks.json
+msgid "Покупать у торговцев на 25 % дешевле."
+msgstr "Купувати в торговців на 25 % дешевше."
+
+#: data/characters/perks.json
+msgid "Призрак"
+msgstr "Привид"
+
+#: data/characters/perks.json
+msgid "Притягательность"
+msgstr "Привабливість"
+
+#: data/characters/perks.json
+msgid "Разведчик"
+msgstr "Розвідник"
+
+#: data/characters/perks.json
+msgid "Развить Ловкость"
+msgstr "Розвинути Спритність"
+
+#: data/characters/perks.json
+msgid "Развить Обаяние"
+msgstr "Розвинути Чарівність"
+
+#: data/characters/perks.json
+msgid "Развить Силу"
+msgstr "Розвинути Силу"
+
+#: data/characters/perks.json
+msgid "Развить Стойкость"
+msgstr "Розвинути Стійкість"
+
+#: data/characters/perks.json
+msgid "Развить Удачу"
+msgstr "Розвинути Удачу"
+
+#: data/characters/perks.json
+msgid "Развить Ум"
+msgstr "Розвинути Розум"
+
+#: data/characters/perks.json
+msgid "Развить Чутьё"
+msgstr "Розвинути Чуття"
+
+#: data/characters/perks.json
+msgid "Расторопный"
+msgstr "Моторний"
+
+#: data/characters/perks.json
+msgid "С побеждённых — на 1 вещь больше (лом, шкуры)."
+msgstr "З переможених — на 1 річ більше (брухт, шкури)."
+
+#: data/characters/perks.json
+msgid "Сбитый с ног, встаёте в начале хода без потери движения."
+msgstr "Збитий із ніг, підводитесь на початку ходу без втрати руху."
+
+#: data/characters/perks.json
+msgid "Сильные удары ещё сильнее: кости урона бросаются ещё раз."
+msgstr "Сильні удари ще сильніші: кості шкоди кидаються ще раз."
+
+#: data/characters/perks.json
+msgid "Сильный бросок"
+msgstr "Сильний кидок"
+
+#: data/characters/perks.json
+msgid "Скала"
+msgstr "Скеля"
+
+#: data/characters/perks.json
+msgid "Скорострел"
+msgstr "Скорострільність"
+
+#: data/characters/perks.json
+msgid "Сладкоречивый"
+msgstr "Солодкомовний"
+
+#: data/characters/perks.json
+msgid "Следопыт"
+msgstr "Слідопит"
+
+#: data/characters/perks.json
+msgid "Снадобья и сытная еда действуют на 50 % дольше."
+msgstr "Зілля й ситна їжа діють на 50 % довше."
+
+#: data/characters/perks.json
+msgid "Снайпер"
+msgstr "Снайпер"
+
+#: data/characters/perks.json
+msgid "Сопереживание"
+msgstr "Співпереживання"
+
+#: data/characters/perks.json
+msgid "Сразу следующий уровень."
+msgstr "Одразу наступний рівень."
+
+#: data/characters/perks.json
+msgid "Странник"
+msgstr "Мандрівник"
+
+#: data/characters/perks.json
+msgid "Странный попутчик"
+msgstr "Дивний попутник"
+
+#: data/characters/perks.json
+msgid "Тихая смерть"
+msgstr "Тиха смерть"
+
+#: data/characters/perks.json
+msgid "Торгаш"
+msgstr "Торгаш"
+
+#: data/characters/perks.json
+msgid "Тяжёлый кулак"
+msgstr "Важкий кулак"
+
+#: data/characters/perks.json
+msgid "Убийца"
+msgstr "Вбивця"
+
+#: data/characters/perks.json
+msgid "Увёртливый"
+msgstr "Вивертливий"
+
+#: data/characters/perks.json
+msgid "Удар из укрытия (спрятавшись) — двойной урон."
+msgstr "Удар із укриття (сховавшись) — подвійна шкода."
+
+#: data/characters/perks.json
+msgid "Уклонист"
+msgstr "Ухильник"
+
+#: data/characters/perks.json
+msgid "Уроки у мастеров дают на 50 % больше."
+msgstr "Уроки в майстрів дають на 50 % більше."
+
+#: data/characters/perks.json
+msgid "Целитель"
+msgstr "Цілитель"
+
+#: data/characters/perks.json
+msgid "Шанс сильного удара из стрелкового шире на 3 (+15 %)."
+msgstr "Шанс сильного удару зі стрілецької зброї ширший на 3 (+15 %)."
+
+#: data/characters/perks.json
+msgid "Шквал ударов"
+msgstr "Шквал ударів"
+
+#: data/characters/perks.json
+msgid "Ярость раненого"
+msgstr "Лють пораненого"
+
+#: data/characters/perks.json
+msgid "Ясный ум"
+msgstr "Ясний розум"
 
 #: data/characters/rules.json
 msgid "Ловкость"
 msgstr "Спритність"
 
 #: data/characters/rules.json
-msgid "Мудрость"
-msgstr "Мудрість"
+msgid "Обаяние"
+msgstr "Чарівність"
 
 #: data/characters/rules.json
 msgid "Сила"
 msgstr "Сила"
 
 #: data/characters/rules.json
+msgid "Стойкость"
+msgstr "Стійкість"
+
+#: data/characters/rules.json
 msgid "Удача"
 msgstr "Удача"
 
 #: data/characters/rules.json
-msgid "Харизма"
-msgstr "Харизма"
+msgid "Ум"
+msgstr "Розум"
+
+#: data/characters/rules.json
+msgid "Чутьё"
+msgstr "Чуття"
+
+#: data/characters/sheet.json
+msgid "\n\n(Вы мычите что-то невнятное и тычете пальцем. Собеседник говорит медленно и громко, как с ребёнком.)"
+msgstr "\n\n(Ви мукаєте щось нерозбірливе й тицяєте пальцем. Співрозмовник говорить повільно й голосно, як із дитиною.)"
+
+#: data/characters/sheet.json
+msgid "\n\n(Вы подмечаете, о чём собеседник недоговаривает.)"
+msgstr "\n\n(Ви помічаєте, про що співрозмовник недоговорює.)"
+
+#: data/characters/sheet.json
+msgid "Азартные игры"
+msgstr "Азартні ігри"
+
+#: data/characters/sheet.json
+msgid "Безрассудный"
+msgstr "Безрозсудний"
+
+#: data/characters/sheet.json
+msgid "Боевые"
+msgstr "Бойові"
+
+#: data/characters/sheet.json
+msgid "Быстрый выстрел"
+msgstr "Швидкий постріл"
+
+#: data/characters/sheet.json
+msgid "Быстрый обмен"
+msgstr "Швидкий обмін"
+
+#: data/characters/sheet.json
+msgid "Вокруг вас враги умирают страшно и громко."
+msgstr "Навколо вас вороги вмирають страшно й гучно."
+
+#: data/characters/sheet.json
+msgid "Воровство"
+msgstr "Крадіжка"
+
+#: data/characters/sheet.json
+msgid "Вправить кость, извлечь стрелу, вылечить хворь и проклятую лихорадку."
+msgstr "Вправити кістку, дістати стрілу, вилікувати хворобу й прокляту гарячку."
+
+#: data/characters/sheet.json
+msgid "Вы больше учились лечить и договариваться, чем драться."
+msgstr "Ви більше вчилися лікувати й домовлятися, ніж битися."
+
+#: data/characters/sheet.json
+msgid "Вы больше учитесь, чем развиваете таланты: +5 очков навыков за уровень, дар раз в 4 уровня."
+msgstr "Ви більше вчитеся, ніж розвиваєте таланти: +5 очок навичок за рівень, дар раз на 4 рівні."
+
+#: data/characters/sheet.json
+msgid "Вы бросаетесь в бой первым и не думаете о защите."
+msgstr "Ви кидаєтеся в бій першим і не думаєте про захист."
+
+#: data/characters/sheet.json
+msgid "Вы бьёте точно в уязвимые места, но слабее."
+msgstr "Ви б’єте точно у вразливі місця, але слабше."
+
+#: data/characters/sheet.json
+msgid "Вы мастер одноручного оружия, а двуручное у вас из рук валится."
+msgstr "Ви майстер одноручної зброї, а дворучна з рук валиться."
+
+#: data/characters/sheet.json
+msgid "Вы проворнее, но уносите меньше."
+msgstr "Ви моторніші, але несете менше."
+
+#: data/characters/sheet.json
+msgid "Вы сильнее, но медлительнее."
+msgstr "Ви сильніші, але повільніші."
+
+#: data/characters/sheet.json
+msgid "Выживание"
+msgstr "Виживання"
+
+#: data/characters/sheet.json
+msgid "Выше среднего"
+msgstr "Вище середнього"
+
+#: data/characters/sheet.json
+msgid "Героически"
+msgstr "Героїчно"
+
+#: data/characters/sheet.json
+msgid "Грамота, алхимия, травы и порошки, разгадка механизмов Предтеч."
+msgstr "Грамота, алхімія, трави й порошки, розгадка механізмів Предтеч."
+
+#: data/characters/sheet.json
+msgid "Громила"
+msgstr "Бугай"
+
+#: data/characters/sheet.json
+msgid "Действия"
+msgstr "Дії"
+
+#: data/characters/sheet.json
+msgid "Добродушный"
+msgstr "Добродушний"
+
+#: data/characters/sheet.json
+msgid "Дорога, ночлег, охота, следы, погода, верховая езда. Меньше травм и хворей в пути, быстрее шаг."
+msgstr "Дорога, нічліг, полювання, сліди, погода, верхова їзда. Менше травм і хвороб у дорозі, швидший крок."
+
+#: data/characters/sheet.json
+msgid "Знания"
+msgstr "Знання"
+
+#: data/characters/sheet.json
+msgid "Знахарство"
+msgstr "Знахарство"
+
+#: data/characters/sheet.json
+msgid "Зрение, слух, чутьё. Кто ходит первым в бою, дальность стрельбы, ловушки, замки, лечение."
+msgstr "Зір, слух, чуття. Хто ходить першим у бою, дальність стрільби, пастки, замки, лікування."
+
+#: data/characters/sheet.json
+msgid "Изящество"
+msgstr "Витонченість"
+
+#: data/characters/sheet.json
+msgid "Ковка, шитьё, выделка кож, починка снаряжения. От него зависит работа в кузне и дубильне."
+msgstr "Кування, шиття, вичинка шкур, лагодження спорядження. Від нього залежить робота в кузні й гарбарні."
+
+#: data/characters/sheet.json
+msgid "Кости, карты, споры на деньги в тавернах."
+msgstr "Кості, карти, суперечки на гроші в тавернах."
+
+#: data/characters/sheet.json
+msgid "Красноречие"
+msgstr "Красномовство"
+
+#: data/characters/sheet.json
+msgid "Красться, прятаться в тени, перелезать через стены незамеченным."
+msgstr "Скрадатися, ховатися в тіні, перелізати через стіни непоміченим."
+
+#: data/characters/sheet.json
+msgid "Кровавый след"
+msgstr "Кривавий слід"
+
+#: data/characters/sheet.json
+msgid "Кулаки, кастеты, захваты, удары ногами."
+msgstr "Кулаки, кастети, захвати, удари ногами."
+
+#: data/characters/sheet.json
+msgid "Ловушки"
+msgstr "Пастки"
+
+#: data/characters/sheet.json
+msgid "Луки, арбалеты, пращи. Попадание из лёгкого стрелкового оружия."
+msgstr "Луки, арбалети, пращі. Влучання з легкої стрілецької зброї."
+
+#: data/characters/sheet.json
+msgid "Метание"
+msgstr "Метання"
+
+#: data/characters/sheet.json
+msgid "Мускулы и стать. Здоровье, груз, урон в ближнем бою, тяжёлое оружие."
+msgstr "М’язи й стать. Здоров’я, вантаж, шкода в ближньому бою, важка зброя."
+
+#: data/characters/sheet.json
+msgid "На вас заглядываются: +2 к Обаянию в разговорах и торговле, зато стража вас замечает."
+msgstr "На вас задивляються: +2 до Чарівності в розмовах і торгівлі, зате варта вас помічає."
+
+#: data/characters/sheet.json
+msgid "Невезучий"
+msgstr "Невдаха"
+
+#: data/characters/sheet.json
+msgid "Ниже среднего"
+msgstr "Нижче середнього"
+
+#: data/characters/sheet.json
+msgid "Ножи, топорики, дротики, горшки с огнём и сонной пылью."
+msgstr "Ножі, сокирки, дротики, горщики з вогнем і сонним пилом."
+
+#: data/characters/sheet.json
+msgid "Ножи, топоры, булавы, копья, мечи."
+msgstr "Ножі, сокири, булави, списи, мечі."
+
+#: data/characters/sheet.json
+msgid "Ночное создание"
+msgstr "Нічна істота"
+
+#: data/characters/sheet.json
+msgid "Ночью вы оживаете: +1 к Уму и Чутью ночью, −1 днём."
+msgstr "Вночі ви оживаєте: +1 до Розуму й Чуття вночі, −1 вдень."
+
+#: data/characters/sheet.json
+msgid "Обаяние и вид. Красноречие, торговля, отношение горожан, сколько спутников пойдёт за вами."
+msgstr "Чарівність і вигляд. Красномовство, торгівля, ставлення містян, скільки супутників піде за вами."
+
+#: data/characters/sheet.json
+msgid "Одарённый"
+msgstr "Обдарований"
+
+#: data/characters/sheet.json
+msgid "Одной рукой"
+msgstr "Однією рукою"
+
+#: data/characters/sheet.json
+msgid "Оружие Предтеч"
+msgstr "Зброя Предтеч"
+
+#: data/characters/sheet.json
+msgid "Остановить кровь, перевязать рану, наложить шину на скорую руку."
+msgstr "Зупинити кров, перев’язати рану, накласти шину нашвидкуруч."
+
+#: data/characters/sheet.json
+msgid "Открывать замки сундуков, дверей и запоры древних машин."
+msgstr "Відкривати замки скринь, дверей і запори давніх машин."
+
+#: data/characters/sheet.json
+msgid "Отлично"
+msgstr "Відмінно"
+
+#: data/characters/sheet.json
+msgid "Отмычки"
+msgstr "Відмички"
+
+#: data/characters/sheet.json
+msgid "Перевязка"
+msgstr "Перев’язка"
+
+#: data/characters/sheet.json
+msgid "Плохо"
+msgstr "Погано"
+
+#: data/characters/sheet.json
+msgid "Превосходно"
+msgstr "Чудово"
+
+#: data/characters/sheet.json
+msgid "Привлекательность"
+msgstr "Привабливість"
+
+#: data/characters/sheet.json
+msgid "Природа щедро одарила вас, но учиться вы не привыкли: +1 ко всем характеристикам, −10 % ко всем навыкам, −5 очков навыков за уровень."
+msgstr "Природа щедро обдарувала вас, але вчитися ви не звикли: +1 до всіх характеристик, −10 % до всіх навичок, −5 очок навичок за рівень."
+
+#: data/characters/sheet.json
+msgid "Проворство и точность. Ход в бою, защита, стрельба, клинки, скрытность, воровство."
+msgstr "Моторність і точність. Хід у бою, захист, стрільба, клинки, скритність, крадіжка."
+
+#: data/characters/sheet.json
+msgid "Происхождение, профессия и черты характера давали +уровни старых навыков; теперь каждый такой уровень — +5 % к навыку [ВРЕМЕННО]."
+msgstr "Походження, професія й риси характеру давали +рівні старих навичок; тепер кожен такий рівень — +5 % до навички [ТИМЧАСОВО]."
+
+#: data/characters/sheet.json
+msgid "Разрядники и жгущие трубки из руин древних машин. Мало кто знает, с какой стороны за них браться."
+msgstr "Розрядники й палильні трубки з руїн давніх машин. Мало хто знає, з якого боку за них братися."
+
+#: data/characters/sheet.json
+msgid "Раны затягиваются быстро, но тело беззащитно перед ядом и проклятьем."
+msgstr "Рани затягуються швидко, але тіло беззахисне перед отрутою й прокляттям."
+
+#: data/characters/sheet.json
+msgid "Ремесло"
+msgstr "Ремесло"
+
+#: data/characters/sheet.json
+msgid "Рукопашный бой"
+msgstr "Рукопашний бій"
+
+#: data/characters/sheet.json
+msgid "Рядом с вами всё идёт не так: промах в бою у любого (и у вас) с шансом 50 % оборачивается падением."
+msgstr "Поруч із вами все йде не так: промах у бою в будь-кого (і у вас) із шансом 50 % обертається падінням."
+
+#: data/characters/sheet.json
+msgid "Силки, капканы, растяжки. Замечать и обезвреживать ловушки Предтеч."
+msgstr "Силки, капкани, розтяжки. Помічати й знешкоджувати пастки Предтеч."
+
+#: data/characters/sheet.json
+msgid "Скрытность"
+msgstr "Скритність"
+
+#: data/characters/sheet.json
+msgid "Слабо"
+msgstr "Слабо"
+
+#: data/characters/sheet.json
+msgid "Снадобья и сытная еда действуют на вас дольше, но живот слабый."
+msgstr "Зілля й ситна їжа діють на вас довше, але живіт слабкий."
+
+#: data/characters/sheet.json
+msgid "Средне"
+msgstr "Середньо"
+
+#: data/characters/sheet.json
+msgid "Срезать кошель, подкинуть или стащить вещь."
+msgstr "Зрізати гаманець, підкинути або поцупити річ."
+
+#: data/characters/sheet.json
+msgid "Станковые арбалеты, ручные мортиры, пороховые ружья, сифоны с горючей смесью."
+msgstr "Станкові арбалети, ручні мортири, порохові рушниці, сифони з горючою сумішшю."
+
+#: data/characters/sheet.json
+msgid "Стойкость к снадобьям"
+msgstr "Стійкість до зілля"
+
+#: data/characters/sheet.json
+msgid "Стойкость тела. Здоровье и его прибавка с уровнем, защита от яда и проклятья, заживление."
+msgstr "Стійкість тіла. Здоров’я і його приріст із рівнем, захист від отрути й прокляття, загоєння."
+
+#: data/characters/sheet.json
+msgid "Стрельба"
+msgstr "Стрільба"
+
+#: data/characters/sheet.json
+msgid "Стреляете и метаете быстро, но не целитесь: второй выстрел за ход бонусным действием, −2 к попаданию из стрелкового."
+msgstr "Стріляєте й метаєте швидко, але не цілитеся: другий постріл за хід бонусною дією, −2 до влучання зі стрілецької зброї."
+
+#: data/characters/sheet.json
+msgid "Судьба. Шанс сильного удара, азартные игры, всё, где решает случай."
+msgstr "Доля. Шанс сильного удару, азартні ігри, усе, де вирішує випадок."
+
+#: data/characters/sheet.json
+msgid "Тяга к снадобьям"
+msgstr "Тяга до зілля"
+
+#: data/characters/sheet.json
+msgid "Тяжёлая рука"
+msgstr "Важка рука"
+
+#: data/characters/sheet.json
+msgid "Тяжёлое оружие"
+msgstr "Важка зброя"
+
+#: data/characters/sheet.json
+msgid "Убедить, уговорить, выторговать награду за поручение побольше."
+msgstr "Переконати, умовити, виторгувати нагороду за доручення більшу."
+
+#: data/characters/sheet.json
+msgid "Удары у вас тяжёлые, но без изюминки: сильные удары слабее."
+msgstr "Удари у вас важкі, але без родзинки: сильні удари слабші."
+
+#: data/characters/sheet.json
+msgid "Ужасно"
+msgstr "Жахливо"
+
+#: data/characters/sheet.json
+msgid "Ум и память. Очки навыков за уровень, учёность, ремесло, лечение. При Уме 3 и ниже разговоры идут иначе."
+msgstr "Розум і пам’ять. Очки навичок за рівень, вчені знання, ремесло, лікування. За Розуму 3 і нижче розмови йдуть інакше."
+
+#: data/characters/sheet.json
+msgid "Умелый"
+msgstr "Вправний"
+
+#: data/characters/sheet.json
+msgid "Учёность"
+msgstr "Вченість"
+
+#: data/characters/sheet.json
+msgid "Холодное оружие"
+msgstr "Холодна зброя"
+
+#: data/characters/sheet.json
+msgid "Хорошо"
+msgstr "Добре"
+
+#: data/characters/sheet.json
+msgid "Хрупкое сложение"
+msgstr "Тендітна статура"
+
+#: data/characters/sheet.json
+msgid "Цена 1 % навыка: до 100 % — 1 очко, до 125 % — 2, до 150 % — 3, до 175 % — 4, до 200 % — 5, дальше — 6. Отмеченный навык за ту же цену растёт на 2 %."
+msgstr "Ціна 1 % навички: до 100 % — 1 очко, до 125 % — 2, до 150 % — 3, до 175 % — 4, до 200 % — 5, далі — 6. Позначена навичка за ту саму ціну росте на 2 %."
+
+#: data/characters/sheet.json
+msgid "Цены у торговцев: чем навык выше навыка торговца, тем выгоднее."
+msgstr "Ціни в торговців: чим навичка вища за навичку торговця, тим вигідніше."
+
+#: data/characters/sheet.json
+msgid "Ядам вас не взять, но и снадобья выветриваются вдвое быстрее."
+msgstr "Отрути вас не беруть, але й зілля вивітрюється вдвічі швидше."
 
 #: data/characters/skills.json
 msgid "Алхимия / Травничество"
@@ -4955,10 +5919,6 @@ msgstr "Алхімія / Травництво"
 #: data/characters/skills.json
 msgid "Верховая езда"
 msgstr "Верхова їзда"
-
-#: data/characters/skills.json
-msgid "Выживание"
-msgstr "Виживання"
 
 #: data/characters/skills.json
 msgid "Изготовление одежды, брони из кожи и ткани, палаток."
@@ -5149,12 +6109,12 @@ msgid "Горячая похлёбка"
 msgstr "Гаряча юшка"
 
 #: data/cities/items.json
-msgid "Довоенная монета"
-msgstr "Довоєнна монета"
-
-#: data/cities/items.json
 msgid "Дорожный плащ"
 msgstr "Дорожній плащ"
+
+#: data/cities/items.json
+msgid "Древная монета"
+msgstr "Давна монета"
 
 #: data/cities/items.json
 msgid "Жаропонижающее"
@@ -5381,8 +6341,8 @@ msgid "Город понемногу отстраивают — в нашем к
 msgstr "Місто потроху відбудовують — у нашому кварталі знову є сусіди."
 
 #: data/cities/s001.json
-msgid "Городу нужна печать, а на печать — довоенный металл. Принеси три довоенные монеты: в развалинах они попадаются."
-msgstr "Місту потрібна печатка, а на печатку — довоєнний метал. Принеси три довоєнні монети: у руїнах вони трапляються."
+msgid "Городу нужна печать, а на печать — древный металл. Принеси три древные монеты: в развалинах они попадаются."
+msgstr "Місту потрібна печатка, а на печатку — давній метал. Принеси три давні монети: у руїнах вони трапляються."
 
 #: data/cities/s001.json
 msgid "Городу нужны оковки на ворота и петли на казарму. Пять кусков лома — и будут."
@@ -5415,18 +6375,6 @@ msgstr "Удень тут тихо. Уночі — інша річ."
 #: data/cities/s001.json
 msgid "Довели раненых. Двое остались жить в деревне."
 msgstr "Довели поранених. Двоє лишилися жити в селі."
-
-#: data/cities/s001.json
-msgid "Довоенное? Покажи. Монеты старые беру, янтарь беру."
-msgstr "Довоєнне? Покажи. Монети старі беру, бурштин беру."
-
-#: data/cities/s001.json
-msgid "Довоенные книги? Если найдёшь — неси, хорошо заплачу… когда-нибудь."
-msgstr "Довоєнні книжки? Якщо знайдеш — неси, добре заплачу… колись."
-
-#: data/cities/s001.json
-msgid "Довоенные монеты для печати"
-msgstr "Довоєнні монети для печатки"
 
 #: data/cities/s001.json
 msgid "Дозор"
@@ -5523,6 +6471,18 @@ msgstr "Дім біля південної стіни"
 #: data/cities/s001.json
 msgid "Дорога для обозов"
 msgstr "Дорога для валок"
+
+#: data/cities/s001.json
+msgid "Древное? Покажи. Монеты старые беру, янтарь беру."
+msgstr "Давне? Покажи. Монети старі беру, бурштин беру."
+
+#: data/cities/s001.json
+msgid "Древные книги? Если найдёшь — неси, хорошо заплачу… когда-нибудь."
+msgstr "Давні книжки? Якщо знайдеш — неси, добре заплачу… колись."
+
+#: data/cities/s001.json
+msgid "Древные монеты для печати"
+msgstr "Давні монети для печатки"
 
 #: data/cities/s001.json
 msgid "Дубильня Эдрика"
@@ -5793,8 +6753,8 @@ msgid "Разбойники у дороги"
 msgstr "Розбійники біля дороги"
 
 #: data/cities/s001.json
-msgid "Развалины довоенного склада"
-msgstr "Руїни довоєнного складу"
+msgid "Развалины древного склада"
+msgstr "Руїни давнього складу"
 
 #: data/cities/s001.json
 msgid "Раненые на дороге"
@@ -6825,7 +7785,7 @@ msgid "идти"
 msgstr "іти"
 
 #: tutorial/tutorial.gd
-msgid "идти (видна цена хода в футах и угроза атаки по возможности)"
+msgid "идти (видна цена хода в клетках и угроза атаки по возможности)"
 msgstr "іти (видно ціну ходу у футах і загрозу атаки за нагоди)"
 
 #: tutorial/tutorial.gd
@@ -6993,7 +7953,7 @@ msgid "через ворота (ночью их открывает стражн�
 msgstr "через браму (уночі її відчиняє вартовий за 5 монет)"
 
 #: tutorial/tutorial.gd
-msgid "шанс попадания, урон, AC, укрытие"
+msgid "шанс попадания, урон, защита, укрытие"
 msgstr "шанс влучання, шкода, AC, укриття"
 
 #: tutorial/tutorial.gd

@@ -1,8 +1,8 @@
 extends RefCounted
 ## Система персонажа (запрос Huzzah 2026-10-28): характеристики 1–10, производные параметры
 ## по формулам, 18 навыков в процентах (стартовые формулы, отмеченные навыки, лестница цены
-## очков), уровни по таблице опыта, очки навыков 5 + 2×ИНТ за уровень, особенности (не больше двух)
-## и перки раз в 3 уровня. Всё — статические функции над Actor; числа — data/characters/sheet.json и perks.json.
+## очков), уровни по таблице опыта, очки навыков 5 + 2×УМ за уровень, особенности (не больше двух)
+## и дары раз в 3 уровня. Всё — статические функции над Actor; числа — data/characters/sheet.json и perks.json.
 ## В Actor хранится только выбор игрока: stats (база характеристик), skills {k: {pts, bonus}}, tags, quirks,
 ## perks {id: ранг}, level, xp, skill_points, perk_picks. Остальное считается здесь.
 
@@ -18,7 +18,7 @@ static func _load(file: String) -> Dictionary:
 	var d: Dictionary = {}
 	var f := FileAccess.open(DIR + file, FileAccess.READ)
 	if f != null:
-		var v: Variant = JSON.parse_string(f.get_as_text())
+		var v: Variant = I18n.tree(JSON.parse_string(f.get_as_text()))
 		if v is Dictionary:
 			d = v
 	if d.is_empty():
@@ -93,7 +93,7 @@ static func perk_def(id: String) -> Dictionary:
 
 
 # =====================================================================
-# ЭФФЕКТЫ особенностей и перков (перк — × ранг)
+# ЭФФЕКТЫ особенностей и даров (дар — × ранг)
 # =====================================================================
 static func eff(a: Actor, key: String) -> float:
 	if a == null:
@@ -110,7 +110,7 @@ static func has(a: Actor, key: String) -> bool:
 	return eff(a, key) != 0.0
 
 
-## Все эффекты черт и перков списком [{ключ: значение}] — для общих множителей Actor.mult()
+## Все эффекты черт и даров списком [{ключ: значение}] — для общих множителей Actor.mult()
 static func effect_dicts(a: Actor) -> Array:
 	var out: Array = []
 	for id in a.quirks:
@@ -131,7 +131,7 @@ static func effect_dicts(a: Actor) -> Array:
 # =====================================================================
 # ХАРАКТЕРИСТИКИ
 # =====================================================================
-## Действующее значение: база + черты характера (creation.json, stats) + особенности и перки
+## Действующее значение: база + черты характера (creation.json, stats) + особенности и дары
 ## («Громила», «Развить…») + ночь для «Ночного создания»; 1–10
 static func stat_value(a: Actor, s: String) -> int:
 	var v: float = float(a.stats.get(s, int(data().get("base", 5))))
@@ -143,7 +143,7 @@ static func stat_value(a: Actor, s: String) -> int:
 	return clampi(int(v), int(data().get("min", 1)), int(data().get("max", 10)))
 
 
-## Харизма и Интеллект в разговоре (черта «Привлекательность», перк «Сладкоречивый»)
+## Обаяние и Ум в разговоре (черта «Привлекательность», дар «Сладкоречивый»)
 static func talk_cha(a: Actor) -> int:
 	return stat_value(a, "cha") + int(eff(a, "talk_cha"))
 
@@ -362,7 +362,7 @@ static func xp_to_next(a: Actor) -> int:
 	return xp_for_level(a.level + 1)
 
 
-## Опыт с учётом перка «Быстро учится» и множителей черт характера. Ответ — сколько уровней взято
+## Опыт с учётом дара «Быстро учится» и множителей черт характера. Ответ — сколько уровней взято
 static func gain_xp(a: Actor, amount: float) -> int:
 	if a == null or amount <= 0.0:
 		return 0
@@ -375,7 +375,7 @@ static func gain_xp(a: Actor, amount: float) -> int:
 	return n
 
 
-## Новый уровень: очки навыков, перк каждые perk_rate уровней (ОЗ растут сами — hp_max от уровня)
+## Новый уровень: очки навыков, дар каждые perk_rate уровней (ОЗ растут сами — hp_max от уровня)
 static func level_up(a: Actor) -> void:
 	a.level += 1
 	a.skill_points += skill_points_per_level(a)
@@ -391,7 +391,7 @@ static func level_up(a: Actor) -> void:
 static func perk_blocker(a: Actor, id: String) -> String:
 	var p: Dictionary = perk_def(id)
 	if p.is_empty():
-		return "нет такого перка"
+		return "нет такого дара"
 	if int(a.perks.get(id, 0)) >= int(p.get("ranks", 1)):
 		return "взят полностью"
 	if a.level < int(p.get("level", 1)):
@@ -415,10 +415,10 @@ static func available_perks(a: Actor) -> Array:
 	return perks().keys().filter(func(id): return perk_blocker(a, id) == "")
 
 
-## Взять перк за одно из накопленных право выбора. "" — взят
+## Взять дар за одно из накопленных право выбора. "" — взят
 static func take_perk(a: Actor, id: String) -> String:
 	if a.perk_picks <= 0:
-		return "перк пока не положен"
+		return "дар пока не положен"
 	var why: String = perk_blocker(a, id)
 	if why != "":
 		return why
@@ -426,7 +426,7 @@ static func take_perk(a: Actor, id: String) -> String:
 	a.perks[id] = int(a.perks.get(id, 0)) + 1
 	var e: Dictionary = perk_def(id).get("effects", {})
 	if e.has("levels"):
-		# «Здесь и сейчас»: опыта ровно до следующего уровня
+		# «Озарение»: опыта ровно до следующего уровня
 		a.xp = maxf(a.xp, float(xp_for_level(a.level + 1)))
 		gain_xp(a, 0.001)
 	if e.has("mutate"):
@@ -436,7 +436,7 @@ static func take_perk(a: Actor, id: String) -> String:
 	return ""
 
 
-## «Ещё один конёк»: отметить навык (+20 % сразу, дальше +2 % за очко)
+## «Ещё один талант»: отметить навык (+20 % сразу, дальше +2 % за очко)
 static func add_tag(a: Actor, k: String) -> String:
 	k = canon(k)
 	if a.tag_left <= 0:
@@ -462,7 +462,7 @@ static func perk_text(id: String) -> String:
 
 
 # =====================================================================
-# ЧЕРТЫ FALLOUT (особенности)
+# ОСОБЕННОСТИ
 # =====================================================================
 static func traits_valid(list: Array) -> String:
 	if list.size() > int(data().get("traits_max", 2)):
@@ -482,7 +482,7 @@ static func trait_text(id: String) -> String:
 	return "%s — %s" % [t.get("title", id), t.get("text", "")]
 
 
-## «Мутация»: убрать черту или взять новую (один раз за перк)
+## «Перерождение»: убрать черту или взять новую (один раз за дар)
 static func mutate(a: Actor, remove_id: String, add_id: String) -> String:
 	if a.mutate_left <= 0:
 		return "мутации нет"
@@ -552,12 +552,12 @@ static func apply_creation(a: Actor, alloc: Dictionary, tag_list: Array, trait_l
 # =====================================================================
 # ТОРГОВЛЯ, ПОРУЧЕНИЯ
 # =====================================================================
-## Бонус цены в пользу героя: разница навыков Торговли героя и торговца, перки «Купец», «Культ личности»
+## Бонус цены в пользу героя: разница навыков Торговли героя и торговца, дары «Купец», «Всеобщий любимец»
 static func trade_bonus(hero: Actor, trader: Actor = null, buying: bool = true) -> float:
 	var t: Dictionary = sect("trade")
 	var tb: float = float(skill_value(trader, "barter")) if trader != null else float(t.get("trader_default", 40))
 	var hb: float = float(skill_value(hero, "barter")) if hero != null else tb
-	# «Привлекательность»: +2 ХАР в торговле = +8 % Торговли (4 × ХАР)
+	# «Привлекательность»: +2 ОБА в торговле = +8 % Торговли (4 × ОБА)
 	if hero != null:
 		hb += 4.0 * eff(hero, "talk_cha")
 	var b: float = clampf((hb - tb) * float(t.get("per_point", 0.003)), float(t.get("min", -0.15)), float(t.get("max", 0.3)))
@@ -568,7 +568,7 @@ static func trade_bonus(hero: Actor, trader: Actor = null, buying: bool = true) 
 	return b
 
 
-## Добавка к денежной награде за поручение: Красноречие и перки
+## Добавка к денежной награде за поручение: Красноречие и дары
 static func quest_bonus(hero: Actor) -> float:
 	if hero == null:
 		return 0.0
@@ -578,7 +578,7 @@ static func quest_bonus(hero: Actor) -> float:
 
 
 # =====================================================================
-# СТАРЫЕ СОХРАНЕНИЯ: 7 характеристик 09 (база 4, Мудрость) и навыки пака уровнями
+# СТАРЫЕ СОХРАНЕНИЯ: 7 характеристик 09 (база 4, Чутьё) и навыки пака уровнями
 # =====================================================================
 static func is_legacy(d: Dictionary) -> bool:
 	if d.has("sheet"):
@@ -586,7 +586,7 @@ static func is_legacy(d: Dictionary) -> bool:
 	return d.get("stats", {}).has("wis") or not d.has("level")
 
 
-## Перевод старого персонажа: характеристика − 4 + 5 (в пределах 1–10), Мудрость уходит, Удача 5 + старая;
+## Перевод старого персонажа: характеристика − 4 + 5 (в пределах 1–10), Чутьё уходит, Удача 5 + старая;
 ## уровни старых навыков — как уровень навыка (значение ≈ уровень × 10 + 5), опыт навыков → опыт героя
 static func migrate(a: Actor, d: Dictionary) -> void:
 	var st: Dictionary = d.get("stats", {})

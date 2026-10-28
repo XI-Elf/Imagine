@@ -16,7 +16,7 @@ func ok(cond: bool, what: String) -> void:
 		print("FAIL: ", what)
 
 
-# Выживание стартует с 2×(ВЫН+ИНТ) = 20 % — уже «2 уровень» пака. Для эталонных
+# Выживание стартует с 2×(СТО+УМ) = 20 % — уже «2 уровень» пака. Для эталонных
 # скоростей пака — путник с Выживанием 4 % (уровень 0)
 func plain(id: String, name: String) -> Actor:
 	var a := Actor.new(id, name)
@@ -152,7 +152,7 @@ func _radiation() -> void:
 	tough.tick(3600.0 * 10.0, env(8))
 	var weak := Actor.new("w", "Слабый")
 	weak.tick(3600.0 * 10.0, env(8))
-	ok(tough.res["radiation"] < weak.res["radiation"], "Выносливость снижает дозу")
+	ok(tough.res["radiation"] < weak.res["radiation"], "Стойкость снижает дозу")
 
 
 func _conditions_and_treatment() -> void:
@@ -210,13 +210,13 @@ func _skills() -> void:
 	var levels: Array = []
 	a.leveled_up.connect(func(l): levels.append(l))
 	a.add_xp("survival", 400.0)
-	ok(a.level == 2 and levels == [2] and a.skill_points == 15, "1200 опыта → 2 уровень, 15 очков навыков (ИНТ 5): %d %s %d" % [a.level, levels, a.skill_points])
+	ok(a.level == 2 and levels == [2] and a.skill_points == 15, "1200 опыта → 2 уровень, 15 очков навыков (УМ 5): %d %s %d" % [a.level, levels, a.skill_points])
 	a.add_xp("survival", 10000000.0)
 	ok(a.level == 30, "предел 30 уровня")
 	ok(a.skill_level("riding") == a.skill_level("outdoorsman"), "Верховая езда пака = Выживание")
 	var smart := Actor.new("s", "Умник")
 	smart.set_stat("int", 10)
-	ok(smart.derived()["skill_points"] == 25, "Интеллект 10 — 25 очков навыков за уровень")
+	ok(smart.derived()["skill_points"] == 25, "Ум 10 — 25 очков навыков за уровень")
 	var walker := Actor.new("w", "Путник")
 	var kms: Array = []
 	walker.km_passed.connect(func(k): kms.append(k))

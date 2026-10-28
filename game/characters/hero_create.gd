@@ -468,7 +468,7 @@ func _refresh() -> void:
 		row["plus"].disabled = left <= 0 or int(e["base"]) >= int(S.data().get("max", 10))
 	var pa: Actor = P.preview_actor(p)
 	var dv: Dictionary = S.derived(pa)
-	_derived_label.text = "ОЗ %d · ОД %d · Класс брони %d · Груз %d кг · Урон в рукопашной %d · Яд %d %% · Проклятье %d %% · Порядок хода %d · Заживление %d · Крит %d %% · Очков навыков за уровень %d · Спутников до %d" % [
+	_derived_label.text = "Здоровье в бою %d · ОД %d · Защита %d · Груз %d кг · Урон в рукопашной %d · Яд %d %% · Проклятье %d %% · Порядок хода %d · Заживление %d · Крит %d %% · Очков навыков за уровень %d · Спутников до %d" % [
 		dv["hp"], dv["ap"], dv["ac"], int(dv["carry_kg"]), dv["melee"], dv["poison"], dv["rad"], dv["sequence"], dv["healing"], dv["crit"], dv["skill_points"], dv["party"]]
 	var vals: Dictionary = P.skill_values(p)
 	_tags_label.text = "Отмеченные навыки: %d из %d" % [tags.size(), int(S.data().get("tags", 3))]

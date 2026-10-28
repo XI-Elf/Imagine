@@ -44,7 +44,7 @@ func _initialize() -> void:
 	ok(empty.is_empty(), "все строки переведены, пустых: %d %s" % [empty.size(), str(empty.slice(0, 3))])
 	ok(bad.is_empty(), "подстановки и переносы строк совпадают: %d %s" % [bad.size(), str(bad.slice(0, 3))])
 	# Формат с подстановками не падает на украинском
-	var f: String = String(tr.get_message("%s бьёт %s%s: %s, %d урона. У %s осталось %d HP.")) % ["A", "B", "", "попадание", 3, "B", 4]
+	var f: String = String(tr.get_message("%s бьёт %s%s: %s, %d урона. У %s осталось %d здоровья.")) % ["A", "B", "", "попадание", 3, "B", 4]
 	ok(f.begins_with("A б'є B"), "формат с подстановками: %s" % f)
 
 	# Выбор языка: сохраняется и читается, неизвестный код — русский

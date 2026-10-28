@@ -89,7 +89,7 @@ func _stats() -> void:
 	var c = Combatant.new()
 	c.build_from_actor(a, 0, Data.config(), Data.config().hero)
 	ok(c.scores["dex"] == 20 and c.scores["str"] == 16 and c.scores["con"] == 10 and c.scores["lck"] == 10 and c.scores["wis"] == 10, "характеристика × 2: Ловкость 10 → DEX 20, Сила 8 → STR 16, 5 → 10")
-	ok(c.max_hp == 33 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: HP 33 (15 + СИЛ 8 + 2×ВЫН 5), меч и праща, кожаная броня")
+	ok(c.max_hp == 12 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: здоровье 15 (формула 33 × 0,36), меч и праща, кожаная броня")
 
 
 func mk(scores: Dictionary, armor: String = "none") -> Object:
@@ -148,11 +148,11 @@ func _formulas() -> void:
 	ok(hi["damage"]["parts"][0]["Q"] == 8, "на крите кости бросаются K_CRIT = 2 раза (4 + 4)")
 	d.forced = [10]
 	var mid: Dictionary = Rules.attack(d, att, tgt, Data.weapon("longsword"), null, ctx.duplicate())
-	ok(not mid["hit"] and int(mid["ATK"]) == 10 + 3 + 2, "ATK = R + M_ATK + PB = 15 против AC 16 — промах")
+	ok(not mid["hit"] and int(mid["ATK"]) == 10 + 3 + 2, "ATK = R + M_ATK + PB = 15 против: защита 16 — промах")
 	d.forced = [11, 5]
 	var mid2: Dictionary = Rules.attack(d, att, tgt, Data.weapon("longsword"), null, ctx.duplicate())
 	ok(mid2["hit"] and not mid2["crit"], "ATK 16 ≥ AC 16 — попадание: " + mid2["text"])
-	ok(mid2["text"].contains("Атака: 11 (d20)") and mid2["text"].contains("против AC 16") and mid2["text"].contains("Урон:"), "лог в формате «Атака: 11 (d20) … против AC 16 → … Урон: …»")
+	ok(mid2["text"].contains("Атака: 11 (d20)") and mid2["text"].contains("против: защита 16") and mid2["text"].contains("Урон:"), "лог в формате «Атака: 11 (d20) … против: защита 16 → … Урон: …»")
 
 
 # --- Правила боя -----------------------------------------------------------

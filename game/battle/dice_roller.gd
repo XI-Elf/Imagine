@@ -81,7 +81,7 @@ func roll(expr: String, opts: Dictionary = {}) -> Dictionary:
 	out["mod"] = mod
 	out["total"] = total
 	out["text"] = "%s%s%s = %d" % [" + ".join(PackedStringArray(parts)) if not parts.is_empty() else "0",
-		"" if mod == 0 else (" + %d" % mod if mod > 0 else " − %d" % -mod), I18n.t(" [крит ×%d]") % rep if rep > 1 else "", total]
+		"" if mod == 0 else (" + %d" % mod if mod > 0 else " − %d" % -mod), I18n.t(" [сильный удар ×%d]") % rep if rep > 1 else "", total]
 	_log(out, opts)
 	return out
 

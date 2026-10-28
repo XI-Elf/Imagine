@@ -108,7 +108,7 @@ func _order() -> void:
 
 
 func _self() -> void:
-	# Ремесло = 3×ИНТ; при ИНТ 1 — 3 %, «уровень 0»
+	# Ремесло = 3×УМ; при УМ 1 — 3 %, «уровень 0»
 	var hero := Actor.new("hero", "Герой", false, 7)
 	hero.set_stat("int", 1)
 	var bag: Dictionary = Trade.new_bag(0)
