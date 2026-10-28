@@ -241,31 +241,7 @@ def clean_at(x, y):
 	return water[wy, wx] < 0.5 and 0 < bio[by, bx] < 7 and hot[by, bx] < 0.5
 
 
-# Дорога от ворот наружу: шаги ROAD_STEP_M, плавно петляет, обходит воду и заражённые места
-ROAD_STEP_M, ROAD_LEN_M = 40.0, 1600.0
-
-
-def road_from(g, center):
-	d = math.atan2(g[1] - center[1], g[0] - center[0])
-	# Ворота на стороне: дорога сначала перпендикулярно стене
-	d = round(d / (math.pi / 2)) * (math.pi / 2)
-	pts = [g]
-	x, y = g
-	bend = 0.0
-	while len(pts) * ROAD_STEP_M < ROAD_LEN_M:
-		bend = max(-0.5, min(0.5, bend + rng.uniform(-0.12, 0.12)))
-		for turn in (0.0, 0.3, -0.3, 0.6, -0.6, 0.9, -0.9):
-			a = d + bend + turn
-			nx, ny = x + math.cos(a) * ROAD_STEP_M, y + math.sin(a) * ROAD_STEP_M
-			cx, cy = int(nx // CELL_M), int(ny // CELL_M)
-			if clean_at(nx, ny) and not (0 <= cx < NCX and 0 <= cy < NCY and taken[cy, cx]):
-				break
-		else:
-			break
-		d = a - bend
-		x, y = nx, ny
-		pts.append((x, y))
-	return [[round(px, 1), round(py, 1)] for px, py in pts]
+# Готовой дороги от ворот нет (Huzzah 2026-10-28): дороги протаптываются в игре (world/trails.gd)
 
 
 # Эмблемы на щитке: поле, фигура, цвет фигуры
@@ -302,7 +278,6 @@ def add(fp, size):
 		'city_id': sid, 'template': SIZES[size]['template'],
 		'walled': size in ('town', 'city', 'capital'),
 		'emblem': EMBLEMS[(n - 1) % len(EMBLEMS)],
-		'road': road_from(g, center),
 	})
 
 
@@ -347,7 +322,7 @@ for r in sorted(reg_ids, key=lambda r: -rarea[r]):
 
 out = {
 	'_note': 'Поселения на общей карте. Создано tools/make_settlements.py (seed %d); можно править руками. '
-		'Координаты center, gate и road — метры доски; road — дорога от ворот наружу; cells — клетки [cx, cy] размером cell_m, клетка cx покрывает X от cx*cell_m. '
+		'Координаты center и gate — метры доски; готовой дороги нет — дороги протаптываются в игре (world/trails.gd); cells — клетки [cx, cy] размером cell_m, клетка cx покрывает X от cx*cell_m. '
 		'gate — точка выхода из города на общую карту. city_id — ключ мира города (data/cities/<city_id>.json, '
 		'нет файла — data/cities/<template>.json).' % SEED,
 	'cell_m': CELL_M,

@@ -5,11 +5,12 @@ const Growth := preload("res://city/city_growth.gd")
 ## можно править руками). Сейчас по решению Huzzah город один на весь мир, герой появляется у его ворот.
 ##
 ## Вид: издали — щиток-эмблема города с подписью (точка интереса, мало места); при сильном приближении
-## (клетка поселения от OUTLINE_CELL_PX пикселей) — очерк территории: стена с башнями, ворота, дорога,
-## улицы и кварталы внутри. Клетка поселения — квадрат cell_m метров доски, число клеток по размеру.
+## (клетка поселения от OUTLINE_CELL_PX пикселей) — очерк территории: стена с башнями, ворота,
+## улицы и кварталы внутри. Готовой дороги к воротам нет (Huzzah 2026-10-28): дороги протаптываются
+## героем и НПС (world/trails.gd, world/trails_layer.gd). Клетка поселения — квадрат cell_m метров доски, число клеток по размеру.
 ##
 ## Подход героя:
-##   к воротам (ближе GATE_R_M, сюда ведёт дорога) — «Войти» (E) / «Продолжить путь» (Esc);
+##   к воротам (ближе GATE_R_M) — «Войти» (E) / «Продолжить путь» (Esc);
 ##   к стене (ближе APPROACH_M к клеткам, вне ворот) — «Попытаться проникнуть» (E) с шансом
 ##     sneak_chance(): Ловкость, Восприятие, Удача, ночь, груз, травмы рук и ног, здоровье и силы;
 ##     числа в блоке "sneak" реестра [ВРЕМЕННО]. Неудача: заметили (вход с entry "caught") или
@@ -32,7 +33,6 @@ const GATE_R_M: float = 60.0        # ворота: от точки ворот
 const LEAVE_M: float = 150.0        # снова спросит, когда герой отойдёт от места ответа дальше этого
 const JUMP_M: float = 200.0         # скачок героя за кадр (загрузка, возврат из города) — не подход
 const OUTLINE_CELL_PX: float = 28.0 # с такой клетки на экране вместо щитка — очерк города
-const ROAD_W_M: float = 14.0
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталов в ряд на клетку
 const MEDAL_MIN_PX: float = 30.0    # радиус медальона издали не меньше этого (город остаётся точкой интереса)
@@ -46,7 +46,7 @@ var game: Node2D
 var cell_m: float = 250.0
 var sizes: Dictionary = {}
 var sneak_rules: Dictionary = {}
-var list: Array = []                # поселения + служебные поля (_cells, _own, _rect, _center, _gate, _gate_wall, _road)
+var list: Array = []                # поселения + служебные поля (_cells, _own, _rect, _center, _gate, _gate_wall)
 var by_id: Dictionary = {}
 var by_cell: Dictionary = {}        # Vector2i -> поселение
 var dismissed: Dictionary = {}      # "id:gate" / "id:wall" -> место, где игрок ответил «Продолжить путь»
@@ -126,10 +126,6 @@ func _load() -> void:
 			s["_plan"] = _load_plan(s)
 		s["_rect"] = rect
 		s["_gate"] = Vector2(s["gate"][0], s["gate"][1]) if s.has("gate") else rect.get_center() + Vector2(0.0, rect.size.y * 0.5 + 40.0)
-		var road := PackedVector2Array()
-		for q in s.get("road", []):
-			road.append(Vector2(q[0], q[1]))
-		s["_road"] = road
 		if not s.has("walled"):
 			s["walled"] = SIZE_ORDER.find(s.get("size", "")) >= 2
 		list.append(s)
@@ -708,8 +704,6 @@ func _draw() -> void:
 		var r: Rect2 = s["_rect"]
 		var sr := Rect2(game.world_to_screen(r.position), r.size * z)
 		var hl: bool = s == prompt_for or s == mouse_s
-		if cs >= 3.0:
-			_draw_road(s, z, vp)
 		if radial(s):
 			var c0: Vector2 = game.world_to_screen(s["_center"])
 			var rp: float = maxf(s["_radius"] * z, MEDAL_MIN_PX)
@@ -735,22 +729,6 @@ func _draw() -> void:
 		var tw: float = font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
 		draw_string_outline(font, hp - Vector2(tw * 0.5, 0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.9))
 		draw_string(font, hp - Vector2(tw * 0.5, 0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.9, 0.55))
-
-
-func _draw_road(s: Dictionary, z: float, vp: Rect2) -> void:
-	var road: PackedVector2Array = s["_road"]
-	if road.size() < 2:
-		return
-	var pts := PackedVector2Array()
-	pts.append(game.world_to_screen(s["_gate_wall"]))
-	for q in road:
-		pts.append(game.world_to_screen(q))
-	var w: float = clampf(ROAD_W_M * z, 1.5, 40.0)
-	draw_polyline(pts, Color(0.12, 0.09, 0.06, 0.7), w + 2.0, true)
-	draw_polyline(pts, Color(0.62, 0.5, 0.33), w, true)
-	if w >= 6.0:
-		# Колеи
-		draw_polyline(pts, Color(0.5, 0.39, 0.25), maxf(1.0, w * 0.12), true)
 
 
 # Щиток: поле, кайма, фигура эмблемы

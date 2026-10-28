@@ -3,7 +3,8 @@ extends RefCounted
 ## Ячейки: "autosave" (выход в меню, закрытие окна, раз в 5 минут) и ручные "manual_<время>" (меню паузы).
 ## Сохраняются: время и скорость часов, скорость погоды и состояние атмосферы, камера карты,
 ## герой и НПС (characters/cast.gd; в старых сохранениях их нет — тогда мир без персонажей),
-## в каком мире герой — город или бой поверх общей карты (worlds/worlds.gd, ключ "worlds").
+## в каком мире герой — город или бой поверх общей карты (worlds/worlds.gd, ключ "worlds"),
+## протоптанные дороги общей карты (world/trails_layer.gd, ключ "trails"; дороги в городах — в состоянии города).
 ## Ландшафт и климатические таблицы в игре не меняются и не сохраняются.
 ## В файле сначала заголовок (для списка загрузки), потом данные.
 
@@ -117,6 +118,8 @@ static func build(game: Node) -> Dictionary:
 	d["zoom"] = game.zoom
 	if game.get("cast") != null:
 		d["cast"] = game.cast.to_dict()
+	if game.get("trails") != null:
+		d["trails"] = game.trails.to_dict()
 	var worlds: Node = _worlds(game)
 	if worlds != null:
 		d["worlds"] = worlds.to_dict()
@@ -203,6 +206,8 @@ static func apply_late(game: Node, d: Dictionary) -> void:
 	game._clamp_camera()
 	if game.get("cast") != null and d.get("cast") is Dictionary:
 		game.cast.load_dict(d["cast"])
+	if game.get("trails") != null:
+		game.trails.load_dict(d.get("trails", {}))
 	var worlds: Node = _worlds(game)
 	if worlds != null and d.get("worlds") is Dictionary:
 		worlds.load_dict(d["worlds"])

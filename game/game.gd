@@ -38,6 +38,7 @@ const PhysicsScene := preload("res://world_physics.tscn")
 # Персонажи: герой и НПС на общих правилах (characters/)
 const CastScript := preload("res://characters/cast.gd")
 const SettlementsScript := preload("res://world/settlements.gd")
+const TrailsScript := preload("res://world/trails_layer.gd")
 
 # Прежняя развёртка 36000 x 18000 м: в ней живёт модель атмосферы
 const SRC_SIZE := Vector2(36000.0, 18000.0)
@@ -111,6 +112,7 @@ var goto_edit: LineEdit
 var goto_status: Label
 var cast: Node2D
 var settlements: Node2D     # города и поселения на общей карте (world/settlements.gd)
+var trails: Node2D          # протоптанные дороги (world/trails_layer.gd): появляются там, где ходят
 
 
 func _ready() -> void:
@@ -157,6 +159,10 @@ func _startup() -> void:
 	await get_tree().process_frame
 	_build_map()
 	_build_ui()
+	# Протоптанные дороги — под деревьями, поселениями и персонажами
+	trails = TrailsScript.new()
+	trails.game = self
+	add_child(trails)
 	var decor := preload("res://storybook/world_decor.gd").new()
 	decor.game = self
 	add_child(decor)

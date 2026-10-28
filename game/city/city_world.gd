@@ -16,6 +16,9 @@ extends Node2D
 ## задания шести НПС в разговоре, сданное задание — очко роста, новый этап перестраивает город сразу.
 ## Мышь (city_route.gd): ЛКМ — идти в точку / к жителю (заговорить) / к колодцу, тайнику (как E) / в ворота;
 ## держать ЛКМ — за курсором, ПКМ — стоп.
+## Протоптанные дороги (world/trails.gd, Huzzah 2026-10-28): герой и жители протаптывают траву и поле —
+## от 50 проходов клетки тропинка, дальше до грунтовой дороги (рисуется землёй улиц, шаг быстрее).
+## Состояние — ключ "trails" в to_dict(), помнится между визитами вместе с остальным городом.
 
 signal exit_requested(city_id: String, gate_id: String)
 
@@ -30,6 +33,10 @@ const T = CityMap.T
 const Art := preload("res://storybook/art.gd")
 const Growth := preload("res://city/city_growth.gd")
 const CityMenu := preload("res://city/city_menu.gd")
+const Trails := preload("res://world/trails.gd")
+const TRAIL_TILES: Array = [CityMap.T.GRASS, CityMap.T.FIELD]   # где видно протоптанное (улицы и площади и так мощёные)
+const TRAIL_ALPHA: Array = [0.0, 0.3, 0.5, 0.75, 1.0]
+const TRAIL_REFRESH_S: float = 3600.0
 ## Экран города (city_menu.gd, видео Huzzah 2026-10-23): вход через ворота открывает меню услуг,
 ## пешая карта — по кнопке «Пройтись по городу», Esc на улице — назад в меню
 ## (меню — при входе с общей карты; отдельный запуск сцены без "settlement" в ctx — сразу на улице)
@@ -72,6 +79,8 @@ var test_wins: int = 0                 # победы, если игры нет 
 var rules: Dictionary = {}
 var display_name: String = ""
 var map := CityMap.new()
+var trails := Trails.new(1.0)          # протоптанные дороги города (клетка = клетка карты)
+var _trails_at: float = -1.0           # игровые секунды последнего пересчёта зарастания
 var hero: Actor
 var hero_pos := Vector2.ZERO
 var hero_dir := Vector2.DOWN
@@ -227,6 +236,8 @@ func enter(id: String, h: Actor, c: Dictionary) -> void:
 	stage = Growth.stage(full_def, growth)
 	def = Growth.view(full_def, stage)
 	map.build(def)
+	trails = Trails.new(map.cell_m)
+	_trails_at = -1.0
 	fog.resize(map.w * map.h)
 	fog.fill(0)
 	_spawn_npcs()
@@ -491,7 +502,7 @@ func _update_npc(n: Dictionary, env: Dictionary, dt_game: float, delta: float) -
 	var path: PackedVector2Array = n["path"]
 	var moved: bool = false
 	if n["path_i"] < path.size():
-		var speed: float = a.calculate_speed(env) / 3.6 * float(rules.get("walk_scale", 3.0)) * GameClock.GAME_SPEED * map.speed_at(n["pos"])
+		var speed: float = a.calculate_speed(env) / 3.6 * float(rules.get("walk_scale", 3.0)) * GameClock.GAME_SPEED * ground_speed(n["pos"])
 		var step: float = speed * delta
 		while step > 0.0 and n["path_i"] < path.size():
 			var tgt: Vector2 = path[n["path_i"]]
@@ -538,12 +549,14 @@ func _process(delta: float) -> void:
 	if own_clock and dt_game > 0.0:
 		hero.tick(dt_game, env)
 	_drive_hero(env, delta)
+	var trails_changed: bool = trails.walk(hero, hero_pos, now)
 	art_moving = hero_pos.distance_squared_to(art_last_hero) > 0.00001
 	art_last_hero = hero_pos
 
 	for n in npcs:
 		var was: Vector2 = n["pos"]
 		_update_npc(n, env_at(n["pos"]), dt_game, delta)
+		trails_changed = trails.walk(n["actor"], n["pos"], now) or trails_changed
 		var d: Vector2 = n["pos"] - was
 		_art_walk[n["actor"]] = d.length_squared() > 0.00001
 		if absf(d.x) > 0.0005:
@@ -555,6 +568,11 @@ func _process(delta: float) -> void:
 		if b >= 0:
 			_discover(String(map.buildings[b]["id"]), String(map.buildings[b]["name"]))
 	_reveal()
+	if _trails_at < 0.0 or absf(now - _trails_at) >= TRAIL_REFRESH_S:
+		_trails_at = now
+		trails_changed = trails.refresh(now) or trails_changed
+	if trails_changed:
+		_ground.queue_redraw()
 
 	cam.position = (map.size_m() * 0.5 if _map_view else hero_pos) * PX
 	_update_light(hour)
@@ -647,7 +665,7 @@ func move_hero(dir: Vector2, run: bool, delta: float, env: Dictionary) -> bool:
 	dir = dir.limit_length(1.0)
 	hero_dir = dir.normalized()
 	hero.carried_kg = Trade.weight(bag)
-	var v: float = hero.calculate_speed(env, run) / 3.6 * float(rules.get("walk_scale", 3.0)) * GameClock.GAME_SPEED * map.speed_at(hero_pos)
+	var v: float = hero.calculate_speed(env, run) / 3.6 * float(rules.get("walk_scale", 3.0)) * GameClock.GAME_SPEED * ground_speed(hero_pos)
 	var step: Vector2 = dir * v * delta
 	var start: Vector2 = hero_pos
 	if map.is_free(hero_pos + step, BODY_R):
@@ -662,6 +680,14 @@ func move_hero(dir: Vector2, run: bool, delta: float, env: Dictionary) -> bool:
 	if g != "":
 		_leave(g)
 	return hero_pos != start
+
+
+## Множитель шага по клетке: тропа по траве и полю быстрее нетоптаной земли (world/trails.gd SPEED)
+func ground_speed(p: Vector2) -> float:
+	var v: float = map.speed_at(p)
+	if map.tile_at(p) in TRAIL_TILES:
+		v *= trails.speed_mult(p)
+	return v
 
 
 func _update_gates(hour: float, now: float) -> void:
@@ -1217,6 +1243,11 @@ func _draw_ground(l: Node2D) -> void:
 				l.draw_rect(r, Color(0.22, 0.18, 0.12, 0.45), false, 1.2)
 			if t == T.DOOR:
 				l.draw_line(r.position + Vector2(cs * 0.2, cs * 0.5), r.position + Vector2(cs * 0.8, cs * 0.5), Color(0.3, 0.2, 0.12), 3.0)
+	# Протоптанное поверх травы и поля: земля улиц, тем плотнее, чем выше ступень
+	var dirt: Texture2D = Art.ground("t01_coast")
+	for c in trails.stage_of:
+		if map.at(c.x, c.y) in TRAIL_TILES and not _sprite_cell(c.x, c.y):
+			Art.surface(l, dirt, Rect2(Vector2(c) * cs, Vector2(cs, cs)), TEX_PERIOD, Color(1, 1, 1, TRAIL_ALPHA[trails.stage_of[c]]))
 
 
 func _sprite_cell(x: int, y: int) -> bool:
@@ -1753,6 +1784,7 @@ func to_dict() -> Dictionary:
 		"city_id": city_id, "hero_pos": [hero_pos.x, hero_pos.y], "fog": Marshalls.raw_to_base64(fog),
 		"discovered": discovered.keys(), "looted": looted.duplicate(), "paid_gate": paid_gate.duplicate(), "npcs": list,
 		"intruder_until": intruder_until, "left": leaving, "growth": growth.duplicate(true), "walking": walking,
+		"trails": trails.to_dict(),
 	}
 	if own_bag:
 		d["bag"] = bag.duplicate(true)
@@ -1789,6 +1821,9 @@ func load_dict(d: Dictionary) -> void:
 	if own_bag and d.has("bag"):
 		bag.clear()
 		bag.merge(d["bag"].duplicate(true))
+	trails.load_dict(d.get("trails", {}))
+	_trails_at = -1.0
+	_ground.queue_redraw()
 	_hero_bld = map.building_at(hero_pos)
 	_fog_dirty = true
 	_last_clock = -1.0

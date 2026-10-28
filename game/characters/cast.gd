@@ -284,6 +284,9 @@ func _step(b: Dictionary, dir: Vector2, run: bool, delta: float) -> bool:
 		b["drowning"] = a.exert(delta, env, "rest")
 		return false
 	var v: float = a.travel_speed(env, run) * slope_factor(b["pos"], dir)
+	var trails: Node = game.get("trails")
+	if trails != null:
+		v *= trails.speed_mult(b["pos"])
 	var next: Vector2 = b["pos"] + dir.normalized() * v * delta
 	var into_water: bool = not b["hero"] and game.biome_at(next) == 1 and game.biome_at(b["pos"]) != 1
 	if game.biome_at(next) == 0 or v <= 0.0 or into_water or _walled(next, b["pos"]):
@@ -292,6 +295,8 @@ func _step(b: Dictionary, dir: Vector2, run: bool, delta: float) -> bool:
 	b["drowning"] = a.exert(delta, env, "run" if run and a.can_run() else "walk")
 	a.note_travel(b["pos"].distance_to(next), env)
 	b["pos"] = next
+	if trails != null:
+		trails.walked(b)
 	return true
 
 

@@ -9,6 +9,7 @@ extends Node2D
 ## (CELLS_ALONG клеток на весь путь, от MIN_CELL_M до MAX_CELL_M), и путь пересчитывается мельче,
 ## когда пройдена большая часть. Вес клетки = 1 / скорость местности; вода и радиация — дороже
 ## (WATER_COST, RAD_COST) [ВРЕМЕННО]: реку переплывёт там, где уже, а в лужу посреди суши не полезет.
+## Протоптанные дороги (world/trails.gd) дешевле по ступени — путь предпочитает их.
 
 const R := preload("res://characters/actor_rules.gd")
 
@@ -25,6 +26,8 @@ const STUCK_S: float = 0.6
 const HOLD_RETARGET_S: float = 0.25  # при удержании ЛКМ — новая цель не чаще
 const CITY_PICK_PX: float = 26.0     # щиток города издали: попадание в этот радиус от центра
 const WALL_RING_COST: float = 8.0    # полоса у стены города (где спрашивают «проникнуть»): путь её обходит
+const TRAIL_MAX_CELL_M: float = 100.0  # тропы учитываются, пока клетка сетки не крупнее этого
+const Trails := preload("res://world/trails.gd")
 
 var cast: Node2D
 var game: Node2D
@@ -194,6 +197,7 @@ func _plan_in(from: Vector2, to: Vector2, widen: float) -> bool:
 				if float(ter.get("radiation_h", 0.0)) > 0.0:
 					w *= RAD_COST
 			grid.set_point_weight_scale(Vector2i(x, y), w)
+	_prefer_trails(grid, lo, size, cell)
 	# Стены городов: клетки сетки, задевающие клетки поселения со стеной (сетка бывает крупнее их).
 	# Полоса подхода у стены дорогая: мимо города путь идёт дальше, чем там спрашивают «проникнуть»
 	if st != null:
@@ -247,6 +251,23 @@ func _plan_in(from: Vector2, to: Vector2, widen: float) -> bool:
 	_plan_cell = cell
 	queue_redraw()
 	return true
+
+
+# Протоптанные дороги (world/trails.gd) дешевле: путь мышью сворачивает на них, и тропа от этого крепнет.
+# Только на мелкой сетке: на крупной одна клетка тропы удешевила бы сотни метров вокруг
+func _prefer_trails(grid: AStarGrid2D, lo: Vector2, size: Vector2i, cell: float) -> void:
+	var tl: Node = game.get("trails")
+	if tl == null or cell > TRAIL_MAX_CELL_M or tl.model.stage_of.is_empty():
+		return
+	var best := {}
+	for c in tl.model.stage_of:
+		var q: Vector2 = tl.model.center_of(c)
+		var g := Vector2i(floori((q.x - lo.x) / cell), floori((q.y - lo.y) / cell))
+		if g.x >= 0 and g.y >= 0 and g.x < size.x and g.y < size.y:
+			best[g] = maxi(int(best.get(g, 0)), int(tl.model.stage_of[c]))
+	for g in best:
+		if not grid.is_point_solid(g):
+			grid.set_point_weight_scale(g, grid.get_point_weight_scale(g) * float(Trails.ROUTE_WEIGHT[best[g]]))
 
 
 # =====================================================================
