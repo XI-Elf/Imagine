@@ -60,12 +60,12 @@ func click(p: Vector2) -> bool:
 		if _route_to(city._place_pos(pl)):
 			return true
 		cancel()
-		city._say("Не подойти: %s" % pl.get("name", ""))
+		city._say(I18n.t("Не подойти: %s") % pl.get("name", ""))
 		return false
 	var g: String = m.gate_at(p)
 	if g != "":
 		if m.closed_gates.has(g):
-			city._say("%s заперты" % city._gate_def(g).get("name", "Ворота"))
+			city._say(I18n.t("%s заперты") % city._gate_def(g).get("name", I18n.t("Ворота")))
 			return false
 		goal_gate = g
 		var gc: Vector2 = m.center_of(m.cell_of(p))
@@ -78,7 +78,7 @@ func click(p: Vector2) -> bool:
 	if _route_to(p):
 		return true
 	cancel()
-	city._say("Туда не пройти")
+	city._say(I18n.t("Туда не пройти"))
 	return false
 
 

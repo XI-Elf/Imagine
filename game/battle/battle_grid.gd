@@ -1,7 +1,7 @@
 extends RefCounted
 ## Сетка боя: клетки по 5 футов. Препятствия (дерево — укрытие ¾, камень — ½, скала — полное),
 ## трудная местность (движение ×2), возвышенности (подъём ×2, высота даёт преимущество стрелку),
-## радиоактивные клетки. Путь — Дейкстра с диагоналями по 5 футов, углы не срезаются.
+## проклятые клетки. Путь — Дейкстра с диагоналями по 5 футов, углы не срезаются.
 
 const Data := preload("res://battle/battle_data.gd")
 
@@ -10,7 +10,7 @@ var cell_ft: int = 5
 var obstacle: Dictionary = {}      # Vector2i -> "tree" | "rock" | "cliff"
 var difficult: Dictionary = {}     # Vector2i -> true
 var high: Dictionary = {}          # Vector2i -> высота в футах (10)
-var hazard: Dictionary = {}        # Vector2i -> true (радиация)
+var hazard: Dictionary = {}        # Vector2i -> true (проклятье)
 var rng := RandomNumberGenerator.new()
 
 

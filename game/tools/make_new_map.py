@@ -165,7 +165,9 @@ bio = np.where(water_b & inside, 1, land).astype(np.uint8)   # только дл
 print('biomes after water:', {int(i): int((bio == i).sum()) for i in np.unique(bio)})
 
 # Названия областей и состав регионов для игры
-names = {'provinces': {str(p['id']): {'name': p['name'], 'regions': p['region_ids']} for p in meta['provinces']},
+# Европейские названия областей (Huzzah 2026-10-28: «Все названия поменять на европейские»)
+EURO_PROVINCES = {1: 'Нордстейн', 2: 'Форнхейм', 3: 'Гринесс', 4: 'Вестстранд', 5: 'Упите', 6: 'Эжеренай', 7: 'Брэндхит', 8: 'Стангейт', 9: 'Судрскард', 10: 'Лионесс', 11: 'Аскрюгг', 12: 'Корран', 13: 'Нордскер', 14: 'Инишард', 15: 'Дастнесс', 16: 'Аустберг', 17: 'Клофтхольм', 18: 'Инишмор', 19: 'Пелькяй', 20: 'Таннстранд', 21: 'Эйнсанд', 22: 'Скеллиг-Бег', 23: 'Норфорс', 24: 'Стейнхальс', 25: 'Кетильфьелль', 26: 'Судвик', 27: 'Уиндмур', 28: 'Рыткальняй', 29: 'Кнокруа', 30: 'Сатмарк', 31: 'Финистер'}
+names = {'provinces': {str(p['id']): {'name': EURO_PROVINCES.get(p['id'], p['name']), 'regions': p['region_ids']} for p in meta['provinces']},
 	'regions': {str(r['id']): {'province': r['province_id'], 'code': 'R%03d' % r['id'], 'dominant_biome': r['dominant_biome']} for r in meta['regions']}}
 json.dump(names, open(out_dir + '/map_names.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 

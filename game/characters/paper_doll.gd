@@ -14,7 +14,7 @@ const SHORTS := Color("8a6a46")
 const SHADE := Color(0.12, 0.08, 0.15, 0.22)
 
 ## Слоты в порядке показа: id, подпись
-const SLOTS: Array = [["head", "Голова"], ["body", "Тело"], ["back", "Плащ"], ["hands", "Руки"], ["legs", "Ноги"], ["feet", "Обувь"]]
+static var SLOTS: Array = [["head", I18n.t("Голова")], ["body", I18n.t("Тело")], ["back", I18n.t("Плащ")], ["hands", I18n.t("Руки")], ["legs", I18n.t("Ноги")], ["feet", I18n.t("Обувь")]]
 
 var _ci: CanvasItem
 var _o: Vector2

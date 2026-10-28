@@ -2,7 +2,7 @@ extends RefCounted
 ## Кто нападает и когда. Нападение проверяется на каждый пройденный километр (событие km_passed пака),
 ## враги собираются по местности из шаблонов res://data/battle/creatures. Враги — обычные Actor;
 ## шаблон зашит в actor_id: "foe:<шаблон>:<n>", чтобы пережить сохранение через Actor.to_dict.
-## Числа [ВРЕМЕННО].
+## Числа [Q19: проверяет tests/balance_checks.gd].
 
 const Data := preload("res://battle/battle_data.gd")
 const Sheet := preload("res://characters/sheet.gd")
@@ -20,8 +20,8 @@ const BY_TERRAIN: Dictionary = {
 	"rad_wasteland": {"hounds": 3, "bandits": 1},
 	"rad_swamp": {"hounds": 3},
 }
-## Q30 (Huzzah 2026-10-27, вариант B): пока растущий город на этапе «Острог», в STARTER_KM от него
-## бандиты ходят по одному — первый бой с ножом по силам. Флаг starter ставит Worlds._start_battle_now
+## Q30 (Huzzah 2026-10-27, вариант B): пока растущий город на этапе «Форт», в STARTER_KM от него
+## вместо шайки выходит один оборванец с дубиной (Q19, bandit_ragged) — первый бой с ножом по силам. Флаг starter ставит Worlds._start_battle_now
 const STARTER_KM: float = 8.0
 const STARTER_GROUPS: Array = ["bandits", "gang"]
 ## [шаблон, от, до]
@@ -95,12 +95,12 @@ static func make_enemies(req: Dictionary, rng: RandomNumberGenerator) -> Array:
 	var n: int = 0
 	if bool(req.get("starter", false)) and group in STARTER_GROUPS:
 		req["group"] = group
-		return [make_enemy("bandit", 0, rng)]
+		return [make_enemy("bandit_ragged", 0, rng)]
 	for m in GROUPS[group]:
 		for i in rng.randi_range(int(m[1]), int(m[2])):
 			out.append(make_enemy(String(m[0]), n, rng))
 			n += 1
-	# не больше, чем по силам стороне героя: союзников × cap + extra [ВРЕМЕННО]
+	# не больше, чем по силам стороне героя: союзников × cap + extra [Q19: проверяет tests/balance_checks.gd]
 	var allies: int = req.get("allies", []).size()
 	if allies > 0 and not bool(req.get("no_cap", false)):
 		var cfg: BattleConfig = Data.config()

@@ -21,7 +21,7 @@ const MAP_REGIONS_FILE := "res://art/map/map_regions.png"
 const MAP_NAMES_FILE := "res://art/map/map_names.json"
 const MAP_HOT_FILE := "res://art/map/map_hot.png"
 const MAP_HEIGHT_FILE := "res://art/map/map_height.png"
-const HEIGHT_MAX_M: float = 900.0      # высота белого в map_height.png [ВРЕМЕННО]; шейдер рисует светотень с превышением ×2
+const HEIGHT_MAX_M: float = 900.0      # высота белого в map_height.png [Q19: не баланс, оставлено]; шейдер рисует светотень с превышением ×2
 # Текстуры биомов, по порядку слоёв массива terrain_tex (последний — маски свечения)
 const TERRAIN_FILES: Array = ["t00_water", "t01_coast", "t02_forest", "t03_field1", "t04_field2",
 	"t05_wasteland", "t06_swamp", "t07_mountains", "t08_hot_mountains", "t09_rad_forest",
@@ -38,6 +38,7 @@ const PhysicsScene := preload("res://world_physics.tscn")
 # Персонажи: герой и НПС на общих правилах (characters/)
 const CastScript := preload("res://characters/cast.gd")
 const SettlementsScript := preload("res://world/settlements.gd")
+const TrailsScript := preload("res://world/trails_layer.gd")
 
 # Прежняя развёртка 36000 x 18000 м: в ней живёт модель атмосферы
 const SRC_SIZE := Vector2(36000.0, 18000.0)
@@ -54,8 +55,8 @@ const ZOOM_STEP := 1.25
 const CAMERA_SPEED := 500.0
 
 # Биомы слоя map_biomes.png (номер = значение пикселя)
-const BIOME_NAMES := ["за краем мира", "вода", "берег", "лес", "пустошь", "болото", "горы",
-	"проклятый лес", "проклятая пустошь", "проклятое болото"]
+static var BIOME_NAMES := [I18n.t("за краем мира"), I18n.t("вода"), I18n.t("берег"), I18n.t("лес"), I18n.t("пустошь"), I18n.t("болото"), I18n.t("горы"),
+	I18n.t("проклятый лес"), I18n.t("проклятая пустошь"), I18n.t("проклятое болото")]
 
 # Камера в метрах і масштаб у пікселях на метр
 var cam_pos := Vector2(20812.5, 18000.0)
@@ -81,7 +82,7 @@ var region_img: Image
 var map_names: Dictionary = {}   # {"provinces": {id: {name, regions}}, "regions": {id: {province, code}}}
 # Границы на карте (клавиша B): 0 нет, 1 области, 2 области и регионы
 var border_mode: int = 0
-const BORDER_NAMES := ["скрыты", "области", "области и регионы"]
+static var BORDER_NAMES := [I18n.t("скрыты"), I18n.t("области"), I18n.t("области и регионы")]
 var frame_count: int = 0
 var applied_version: int = -1
 
@@ -111,6 +112,7 @@ var goto_edit: LineEdit
 var goto_status: Label
 var cast: Node2D
 var settlements: Node2D     # города и поселения на общей карте (world/settlements.gd)
+var trails: Node2D          # протоптанные дороги (world/trails_layer.gd): появляются там, где ходят
 
 
 func _ready() -> void:
@@ -128,7 +130,7 @@ func _set_progress(frac: float, text: String) -> void:
 
 # Запуск світу по етапах. Між етапами кадр малюється, тому смуга рухається
 func _startup() -> void:
-	_set_progress(0.05, "Часы и погода")
+	_set_progress(0.05, I18n.t("Часы и погода"))
 	await get_tree().process_frame
 	clock = ClockScene.instantiate()
 	add_child(clock)
@@ -153,10 +155,14 @@ func _startup() -> void:
 	min_zoom = fit * 0.9
 	zoom = fit * 0.97
 
-	_set_progress(0.15, "Карта мира")
+	_set_progress(0.15, I18n.t("Карта мира"))
 	await get_tree().process_frame
 	_build_map()
 	_build_ui()
+	# Протоптанные дороги — под деревьями, поселениями и персонажами
+	trails = TrailsScript.new()
+	trails.game = self
+	add_child(trails)
 	var decor := preload("res://storybook/world_decor.gd").new()
 	decor.game = self
 	add_child(decor)
@@ -173,7 +179,7 @@ func _startup() -> void:
 
 	clock.paused = false
 
-	_set_progress(1.0, "Мир готов")
+	_set_progress(1.0, I18n.t("Мир готов"))
 	await get_tree().create_timer(0.3).timeout
 	var tw := create_tween()
 	tw.tween_property(loading_root, "modulate:a", 0.0, 0.5)
@@ -183,7 +189,7 @@ func _startup() -> void:
 	if not _save_data.is_empty():
 		WorldSave.apply_late(self, _save_data)
 		_save_data = {}
-		event_text = "Мир загружен"
+		event_text = I18n.t("Мир загружен")
 		event_timer = 5.0
 
 
@@ -255,7 +261,7 @@ func _build_loading_screen() -> void:
 	title.add_theme_color_override("font_color", Color("d8cfb0"))
 	box.add_child(title)
 	var sub := Label.new()
-	sub.text = "Создание мира"
+	sub.text = I18n.t("Создание мира")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 18)
 	sub.add_theme_color_override("font_color", Color("8a8470"))
@@ -278,7 +284,7 @@ func _build_loading_screen() -> void:
 	loading_pct = Label.new()
 	loading_pct.add_theme_color_override("font_color", Color("d8cfb0"))
 	row.add_child(loading_pct)
-	_set_progress(0.0, "Запуск")
+	_set_progress(0.0, I18n.t("Запуск"))
 
 
 func _notification(what: int) -> void:
@@ -364,7 +370,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Границы областей и регионов
 		if event.physical_keycode == KEY_B:
 			border_mode = (border_mode + 1) % BORDER_NAMES.size()
-			event_text = "Границы: " + BORDER_NAMES[border_mode]
+			event_text = I18n.t("Границы: ") + BORDER_NAMES[border_mode]
 			event_timer = 3.0
 
 
@@ -418,7 +424,7 @@ func temperature_line(p: Vector2) -> String:
 	if wn != "":
 		s += ", " + wn
 	if is_hot(p):
-		s += "   жаркие горы (+%d °C)" % int(HOT_BONUS_C)
+		s += I18n.t("   жаркие горы (+%d °C)") % int(HOT_BONUS_C)
 	return s
 
 
@@ -476,7 +482,7 @@ func place_line(p: Vector2) -> String:
 			return "%s %s, %s" % [settlements.size_name(st), st["name"], province_name(pr)]
 	if pr == 0:
 		return ""
-	return "%s, регион %s" % [province_name(pr), region_code(region_at(p))]
+	return I18n.t("%s, регион %s") % [province_name(pr), region_code(region_at(p))]
 
 
 # Точка карты -> точка модели атмосферы (прежняя развёртка S), как в map_shaders.gd
@@ -492,7 +498,7 @@ func atm_latlon(p: Vector2) -> Vector2:
 
 # Реакція на сигнал годинника: приклад того, як на нього підключаються алгоритми
 func _on_season_changed(season: int) -> void:
-	event_text = "Наступила пора года: %s" % GameClock.SEASON_NAMES[season]
+	event_text = I18n.t("Наступила пора года: %s") % GameClock.SEASON_NAMES[season]
 	event_timer = 4.0
 
 
@@ -538,7 +544,7 @@ func toggle_global_map() -> void:
 		var vs: Vector2 = get_viewport_rect().size
 		zoom = clampf(minf(vs.x / MAP_SIZE.x, vs.y / MAP_SIZE.y) * 0.97, min_zoom, MAX_ZOOM)
 		cam_pos = MAP_SIZE * 0.5
-		event_text = "Глобальная карта · M — назад"
+		event_text = I18n.t("Глобальная карта · M — назад")
 	else:
 		zoom = _gm_zoom
 		cam_pos = _gm_cam
@@ -550,7 +556,7 @@ func toggle_global_map() -> void:
 func _open_goto() -> void:
 	typing = true
 	goto_edit.text = ""
-	goto_status.text = "X и Y в метрах через пробел: от 0 до %d и от 0 до %d" % [int(MAP_SIZE.x), int(MAP_SIZE.y)]
+	goto_status.text = I18n.t("X и Y в метрах через пробел: от 0 до %d и от 0 до %d") % [int(MAP_SIZE.x), int(MAP_SIZE.y)]
 	goto_panel.visible = true
 	goto_edit.grab_focus()
 
@@ -565,11 +571,11 @@ func _close_goto() -> void:
 func _on_goto_submitted(text: String) -> void:
 	var parts: PackedStringArray = text.strip_edges().replace(",", " ").replace(";", " ").split(" ", false)
 	if parts.size() != 2 or not parts[0].is_valid_float() or not parts[1].is_valid_float():
-		goto_status.text = "Нужно два числа: X Y, например 20812 18000"
+		goto_status.text = I18n.t("Нужно два числа: X Y, например 20812 18000")
 		return
 	var p := Vector2(parts[0].to_float(), parts[1].to_float())
 	if not Board.inside(p):
-		goto_status.text = "Точка %d, %d за краем мира" % [int(p.x), int(p.y)]
+		goto_status.text = I18n.t("Точка %d, %d за краем мира") % [int(p.x), int(p.y)]
 		return
 	cam_pos = p
 	zoom = clampf(8.0, min_zoom, MAX_ZOOM)
@@ -620,7 +626,7 @@ func _build_map() -> void:
 	province_img = _load_id_layer(MAP_PROVINCES_FILE, "province_tex")
 	region_img = _load_id_layer(MAP_REGIONS_FILE, "region_tex")
 	if FileAccess.file_exists(MAP_NAMES_FILE):
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MAP_NAMES_FILE))
+		var parsed: Variant = I18n.tree(JSON.parse_string(FileAccess.get_file_as_string(MAP_NAMES_FILE)))
 		if parsed is Dictionary:
 			map_names = parsed
 	else:
@@ -701,47 +707,47 @@ func _update_hud() -> void:
 	var text: String = compact + "\n\nFPS %d\n" % Engine.get_frames_per_second()
 	var speed_txt: String = GameClock.SPEED_NAMES[clock.speed_index]
 	if clock.paused:
-		speed_txt = "ПАУЗА ВРЕМЕНИ"
-	text += "Время: %s\n" % speed_txt
-	text += "Луна: %s (освещено %d%%)\n" % [physics.moon_name(), int(physics.moon_illum * 100.0)]
+		speed_txt = I18n.t("ПАУЗА ВРЕМЕНИ")
+	text += I18n.t("Время: %s\n") % speed_txt
+	text += I18n.t("Луна: %s (освещено %d%%)\n") % [physics.moon_name(), int(physics.moon_illum * 100.0)]
 	text += physics.status_text() + "\n"
 	var lat: float = deg_to_rad(MAP_LAT_DEG)
 	var sun_el: float = physics.sun_elevation_deg_at(lat, 0.0)
-	var sun_state: String = "ночь"
+	var sun_state: String = I18n.t("ночь")
 	if sun_el > 0.0:
-		sun_state = "день"
+		sun_state = I18n.t("день")
 	if sun_el <= 0.0 and sun_el > -12.0:
-		sun_state = "сумерки"
-	text += "Солнце: %d° над горизонтом (%s)   Длина дня %.1f ч\n" % [int(sun_el), sun_state, physics.day_length_at(lat)]
+		sun_state = I18n.t("сумерки")
+	text += I18n.t("Солнце: %d° над горизонтом (%s)   Длина дня %.1f ч\n") % [int(sun_el), sun_state, physics.day_length_at(lat)]
 	if event_timer > 0.0:
 		text += event_text + "\n"
 	text += "\n"
-	text += "Данные для центра экрана\n" if observer_mode else "Данные под курсором\n"
+	text += I18n.t("Данные для центра экрана\n") if observer_mode else I18n.t("Данные под курсором\n")
 	if Board.inside(m):
 		text += "X %d   Y %d\n" % [int(m.x), int(m.y)]
-		text += "Биом: %s\n" % BIOME_NAMES[biome_at(m)]
+		text += I18n.t("Биом: %s\n") % BIOME_NAMES[biome_at(m)]
 		var tl2: String = temperature_line(m)
 		if tl2 != "":
-			text += "Температура: %s\n" % tl2
+			text += I18n.t("Температура: %s\n") % tl2
 		var pl: String = place_line(m)
 		if pl != "":
-			text += "Область: %s\n" % pl
+			text += I18n.t("Область: %s\n") % pl
 		var ll: Vector2 = atm_latlon(m)
 		var wnd: Vector2 = physics.wind_at(ll.x, ll.y)
-		text += "Ветер %.1f м/с, с %s   Давление %d гПа\n" % [wnd.length(), physics.wind_from_name(wnd), int(physics.pressure_at(ll.x, ll.y))]
-		text += "Осадков в этом году: %d мм\n" % int(physics.rain_year_at(ll.x, ll.y))
+		text += I18n.t("Ветер %.1f м/с, с %s   Давление %d гПа\n") % [wnd.length(), physics.wind_from_name(wnd), int(physics.pressure_at(ll.x, ll.y))]
+		text += I18n.t("Осадков в этом году: %d мм\n") % int(physics.rain_year_at(ll.x, ll.y))
 	else:
-		text += "За краем мира\n"
-	text += "Центр экрана: X %d   Y %d   1 пиксель = %s м\n" % [int(cam_pos.x), int(cam_pos.y), _fmt(1.0 / zoom)]
+		text += I18n.t("За краем мира\n")
+	text += I18n.t("Центр экрана: X %d   Y %d   1 пиксель = %s м\n") % [int(cam_pos.x), int(cam_pos.y), _fmt(1.0 / zoom)]
 	text += _hint_line()
 	for mf in missing_files:
-		text += "\nНет файла " + String(mf).replace("res://", "")
+		text += I18n.t("\nНет файла ") + String(mf).replace("res://", "")
 	hud_label.text = text
 	_layout_hud()
 
 
 func _hint_line() -> String:
-	return "WASD/стрелки камера, колесо масштаб, P пауза, [ ] скорость времени, C облака, B границы, M переход к X Y, O маркер в центре, H подробности, , . скорость погоды; G герой, Shift бег, Z сон, E пить, F еда, T лечиться у знахаря, I лист персонажа; у поселения E войти, Esc мимо"
+	return I18n.t("WASD/стрелки камера, колесо масштаб, P пауза, [ ] скорость времени, C облака, B границы, M переход к X Y, O маркер в центре, H подробности, , . скорость погоды; G герой, Shift бег, Z сон, E пить, F еда, T лечиться у лекаря, I лист персонажа; у поселения E войти, Esc мимо")
 
 
 # Випадкова текстура 256 x 256: з неї будується весь шум
@@ -826,7 +832,7 @@ func _build_ui() -> void:
 	var gbox := VBoxContainer.new()
 	goto_panel.add_child(gbox)
 	var glabel := Label.new()
-	glabel.text = "Перейти к точке X Y (Enter, Esc отмена)"
+	glabel.text = I18n.t("Перейти к точке X Y (Enter, Esc отмена)")
 	gbox.add_child(glabel)
 	goto_edit = LineEdit.new()
 	goto_edit.placeholder_text = "20812 18000"
@@ -859,18 +865,18 @@ func _build_ui() -> void:
 	frame.add_child(box)
 
 	var title := Label.new()
-	title.text = "Меню"
+	title.text = I18n.t("Меню")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 40)
 	box.add_child(title)
 
-	_add_menu_button(box, "Продолжить", _toggle_menu)
-	_add_menu_button(box, "Сохранить", func() -> void:
+	_add_menu_button(box, I18n.t("Продолжить"), _toggle_menu)
+	_add_menu_button(box, I18n.t("Сохранить"), func() -> void:
 		var ok: bool = save_world(true)
-		event_text = "Мир сохранён" if ok else "Не удалось сохранить мир"
+		event_text = I18n.t("Мир сохранён") if ok else I18n.t("Не удалось сохранить мир")
 		event_timer = 4.0
 		_toggle_menu())
-	_add_menu_button(box, "В меню", _on_exit_pressed)
+	_add_menu_button(box, I18n.t("В меню"), _on_exit_pressed)
 
 
 # Створює кнопку меню

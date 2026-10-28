@@ -45,7 +45,7 @@ static func load_rules() -> Dictionary:
 	if f == null:
 		push_error("simple_weather: нет %s" % FILE)
 		return {}
-	var d: Variant = JSON.parse_string(f.get_as_text())
+	var d: Variant = I18n.tree(JSON.parse_string(f.get_as_text()))
 	return d if d is Dictionary else {}
 
 

@@ -70,34 +70,34 @@ func open(a: Actor) -> void:
 	active = true
 	dead_name = a.display_name
 	params = P.random_params(_rng)
-	_title.text = "%s погиб%s" % [dead_name, _ending(a)]
-	_cause.text = "Причина: %s. Вещи и деньги пропали. Мир остаётся прежним: время, города, сданные поручения, обысканные руины." % \
+	_title.text = (I18n.t("%s погибла") if _female(a) else I18n.t("%s погиб")) % dead_name
+	_cause.text = I18n.t("Причина: %s. Вещи и деньги пропали. Мир остаётся прежним: время, города, сданные поручения, обысканные руины.") % \
 		Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
 	var w: Node = get_node_or_null("/root/Worlds")
 	var bag: Variant = w.get("inventory") if w != null else null
 	if bag is Dictionary and int(bag.get("items", {}).get("horse", 0)) > 0:
-		_cause.text += "\nЛошадь погибла вместе с героем."
+		_cause.text += I18n.t("\nЛошадь погибла вместе с героем.")
 	if bag is Dictionary and int(bag.get("items", {}).get("cart", 0)) > 0:
-		_cause.text += " Повозка с вещами осталась на месте гибели и пропадёт через %d дня." % int(CART_DAYS)
+		_cause.text += I18n.t(" Повозка с вещами осталась на месте гибели и пропадёт через %d дня.") % int(CART_DAYS)
 	_bio.text = P.biography(params)
 	var parts: Dictionary = P.stat_parts(params)
 	var st: PackedStringArray = []
 	for s in P.stats_list():
 		st.append("%s %d" % [P.stat_name(s), int(parts[s]["total"])])
-	st.append("Удача %d" % int(parts["luck"]["total"]))
+	st.append(I18n.t("Удача %d") % int(parts["luck"]["total"]))
 	_stats.text = "   ".join(st)
 	var tr: PackedStringArray = []
 	for t in params.get("traits", []):
 		tr.append(String(R.trait_def(t).get("title", t)))
-	_traits.text = "Черты: " + (", ".join(tr) if not tr.is_empty() else "нет")
+	_traits.text = I18n.t("Черты: ") + (", ".join(tr) if not tr.is_empty() else I18n.t("нет"))
 	var male: bool = String(params.get("gender", "female")) == "male"
-	_continue_btn.text = "Продолжить за %s (Enter)" % ("него" if male else "неё")
+	_continue_btn.text = I18n.t("Продолжить за %s (Enter)") % (I18n.t("него") if male else I18n.t("неё"))
 	_layer.visible = true
 
 
-# Род по профилю погибшего (у героя без профиля — мужской)
-func _ending(a: Actor) -> String:
-	return "ла" if String(a.profile.get("gender", "male")) == "female" else ""
+# Род по профилю погибшего (у героя без профиля — мужской). Целыми словами: в украинском «загинув / загинула»
+func _female(a: Actor) -> bool:
+	return String(a.profile.get("gender", "male")) == "female"
 
 
 ## Продолжить за нового персонажа: он появляется у ворот города, мир не меняется
@@ -111,7 +111,7 @@ func continue_as_new() -> void:
 	var p: Dictionary = params
 	_close()
 	cast.create_hero(p)
-	cast._event("Новый герой: %s" % String(p.get("name", "")))
+	cast._event(I18n.t("Новый герой: %s") % String(p.get("name", "")))
 
 
 # ---------------------------------------------------------------------
@@ -160,7 +160,7 @@ static func take_cart(w: Node, i: int) -> String:
 	for id in c.get("items", {}):
 		bag["items"][id] = int(bag["items"].get(id, 0)) + int(c["items"][id])
 		n += int(c["items"][id])
-	return "Повозка прежнего героя: забрано вещей %d (с повозкой)" % n
+	return I18n.t("Повозка прежнего героя: забрано вещей %d (с повозкой)") % n
 
 
 ## Забыть всё, что связано с погибшим героем; прогресс поселений (growth.done, лавки, тайники) остаётся
@@ -249,7 +249,7 @@ func _build() -> void:
 	box.add_child(_cause)
 	box.add_child(HSeparator.new())
 	var head := _label(19, COL_GOLD)
-	head.text = "Новый путник"
+	head.text = I18n.t("Новый путник")
 	box.add_child(head)
 	_bio = _label(17, COL_TEXT)
 	box.add_child(_bio)
@@ -261,10 +261,10 @@ func _build() -> void:
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	btns.add_theme_constant_override("separation", 14)
 	box.add_child(btns)
-	_continue_btn = _button("Продолжить (Enter)", continue_as_new)
+	_continue_btn = _button(I18n.t("Продолжить (Enter)"), continue_as_new)
 	_continue_btn.add_theme_color_override("font_color", COL_GOLD)
 	btns.add_child(_continue_btn)
-	btns.add_child(_button("Начать заново", start_over))
+	btns.add_child(_button(I18n.t("Начать заново"), start_over))
 
 
 func _label(size: int, color: Color, centered: bool = false) -> Label:

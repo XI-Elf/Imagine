@@ -1,5 +1,5 @@
 extends SceneTree
-## Сквозной путь игрока (вопрос Q22, Huzzah 2026-10-24): новая игра → создание героя → у ворот Чёрнославля →
+## Сквозной путь игрока (вопрос Q22, Huzzah 2026-10-24): новая игра → создание героя → у ворот Эшвика →
 ## город и поручения → лом в руинах → нож у кожевника → бой → сдача поручений и рост города → сохранение → загрузка.
 ## Бот идёт через те же функции, что зовут кнопки и клавиши. Сокращения бота: километры для поручений «пройти»
 ## прибавляются к счётчику героя, к руинам он переносится, а бой за героя ведёт ИИ боя.
@@ -92,13 +92,13 @@ func _run() -> void:
 	ok(cast.hero["pos"].distance_to(gate) < 600.0, "герой у ворот города")
 	ok(W.inventory["items"].get("water_flask", 0) == 2 and W.inventory["equipped"].get("body", "") == "leather_jacket", "на старте куртка и две фляги")
 
-	# ---- Город: этап «Острог», берём все поручения
+	# ---- Город: этап «Форт», берём все поручения
 	var city: Node = await enter_city(W, game)
-	ok(city != null and city.city_id == "s001", "вход в Чёрнославль")
+	ok(city != null and city.city_id == "s001", "вход в Эшвик")
 	if city == null:
 		return _done()
-	ok(city.stage == 0 and Growth.stage_name(city.full_def, 0) == "Острог", "город на этапе «Острог»")
-	ok(npc(city, "tanner")["stock"].has("knife"), "нож у кожевника с «Острога» (Q02)")
+	ok(city.stage == 0 and Growth.stage_name(city.full_def, 0) == "Форт", "город на этапе «Форт»")
+	ok(npc(city, "tanner")["stock"].has("knife"), "нож у кожевника с «Форта» (Q02)")
 	var taken: Array = []
 	for id in ["posadnik", "healer", "tanner"]:
 		for q in Growth.available(city.full_def, city.growth, id):
@@ -127,8 +127,8 @@ func _run() -> void:
 	ok(Trade.count(W.inventory, "scrap") - scrap0 >= 2, "в руинах найден лом: %d" % (Trade.count(W.inventory, "scrap") - scrap0))
 	cast.hero["pos"] = hp
 
-	# ---- Снова в город: сдать два самых дорогих поручения (лом посаднику и «пройти» травнице: 20 монет,
-	# 2 очка — город ещё «Острог», Q30) и купить нож. Нож стоит 15 × (1,3 − 0,03 × (Хар − 4)): при Харизме
+	# ---- Снова в город: сдать два самых дорогих поручения (лом олдермену и «пройти» травнице: 20 монет,
+	# 2 очка — город ещё «Форт», Q30) и купить нож. Нож стоит 15 × (1,3 − 0,03 × (Хар − 4)): при Харизме
 	# ниже 4 (случайные черты) 20 монет не хватает, поэтому бот берёт героя хотя бы с Харизмой 4
 	city = await enter_city(W, game)
 	if a.stat("cha") < 4:
@@ -138,12 +138,12 @@ func _run() -> void:
 		for q in Growth.available(city.full_def, city.growth, id):
 			if first_ids.has(q["id"]) and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won()):
 				city.turn_in(npc(city, id), q)
-	ok(Growth.points(city.growth) == 2 and city.stage == 0, "сданы лом и «пройти»: очков %d, денег %d, нож за %d, этап «Острог»" % [Growth.points(city.growth), W.inventory["money"], Trade.buy_price("knife", a)])
+	ok(Growth.points(city.growth) == 2 and city.stage == 0, "сданы лом и «пройти»: очков %d, денег %d, нож за %d, этап «Форт»" % [Growth.points(city.growth), W.inventory["money"], Trade.buy_price("knife", a)])
 	ok(Trade.buy(W.inventory, npc(city, "tanner")["stock"], "knife", a) == "" and Trade.count(W.inventory, "knife") == 1, "куплен нож у кожевника")
 	await W.leave()
 	await wait_worlds(W)
 
-	# ---- Бой с бандитами и ножом у «Острога»: бандит один (Q30 B), ИИ ведёт героя, до победы (не больше 6 боёв).
+	# ---- Бой с бандитами и ножом у «Форта»: бандит один (Q30 B), ИИ ведёт героя, до победы (не больше 6 боёв).
 	# После гибели бот, как игрок, загружает сохранение
 	ok(WorldSave.write(game, true), "сохранение перед боем")
 	var pre: String = WorldSave.latest_slot()
@@ -161,7 +161,7 @@ func _run() -> void:
 		var b: Node = W.current_node()
 		ok(W.is_battle() and b.has_method("prep_confirm"), "бой %d начался" % tries)
 		if tries == 1:
-			ok(b.core.all.filter(func(c): return c.team == 1).size() == 1, "у «Острога» бандит один (Q30): %d" % b.core.all.filter(func(c): return c.team == 1).size())
+			ok(b.core.all.filter(func(c): return c.team == 1).size() == 1, "у «Форта» бандит один (Q30): %d" % b.core.all.filter(func(c): return c.team == 1).size())
 		# ИИ боя ходит за всех сразу, без пауз интерфейса
 		b.core.auto_ai = true
 		for c in b.core.all:
@@ -188,14 +188,14 @@ func _run() -> void:
 	# Добыча — только с убитых (сбежавший или сдавшийся ничего не оставляет)
 	ok(killed == 0 or int(W.inventory["money"]) > money_b, "убито %d, с бандитов — деньги: +%d, лом: +%d (Q04)" % [killed, int(W.inventory["money"]) - money_b, Trade.count(W.inventory, "scrap") - scrap_b])
 
-	# ---- Сдать остальные «пройти» и «принести»: город растёт до «Слободы» без поручений на бой (Q03)
+	# ---- Сдать остальные «пройти» и «принести»: город растёт до «Деревни» без поручений на бой (Q03)
 	city = await enter_city(W, game)
 	for id in ["posadnik", "healer", "tanner"]:
 		for q in Growth.available(city.full_def, city.growth, id):
 			if q["kind"] in ["walk", "bring"] and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won()):
 				city.turn_in(npc(city, id), q)
 	ok(Growth.points(city.growth) >= 3, "сданы поручения «пройти» и «принести»: очков %d, денег %d" % [Growth.points(city.growth), W.inventory["money"]])
-	ok(city.stage >= 1, "город вырос до «Слободы» без поручений на бой (запасные поручения, Q03)")
+	ok(city.stage >= 1, "город вырос до «Деревни» без поручений на бой (запасные поручения, Q03)")
 
 	# ---- Сдать бой кожевнику
 	var tq: Dictionary = Growth.current(city.full_def, city.growth, "tanner")

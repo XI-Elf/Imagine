@@ -6,9 +6,9 @@ extends RefCounted
 const Data := preload("res://battle/battle_data.gd")
 const Sheet := preload("res://characters/sheet.gd")
 const STATS: Array = ["str", "dex", "con", "int", "wis", "cha", "lck"]
-const STAT_NAMES: Dictionary = {"str": "СИЛ", "dex": "ЛВК", "con": "ВЫН", "int": "ИНТ", "wis": "ВОС", "cha": "ХАР", "lck": "УДЧ"}
+static var STAT_NAMES: Dictionary = {"str": I18n.t("МОЩ"), "dex": I18n.t("СНР"), "con": I18n.t("СТК"), "int": I18n.t("РАЗ"), "wis": I18n.t("ЗОР"), "cha": I18n.t("ОБА"), "lck": I18n.t("ВЕЗ")}
 # Характеристики -> боевой лист (решение Huzzah 2026-10-28: бой от характеристик): характеристика боя = характеристика × 2.
-# Боевая Мудрость — это Восприятие (внимательность, спасброски воли), Удача — своя седьмая
+# Боевая Мудрость — это Зоркость (внимательность, спасброски воли), Везение — своя седьмая
 const FROM_AMBER: Dictionary = {"str": "str", "dex": "agi", "con": "end", "int": "int", "wis": "per", "cha": "cha", "lck": "luck"}
 
 var actor: Actor

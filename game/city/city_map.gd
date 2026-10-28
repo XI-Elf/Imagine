@@ -9,7 +9,7 @@ extends RefCounted
 enum T { GRASS, ROAD, SQUARE, PALISADE, WALL, FLOOR, DOOR, WELL, GATE, FIELD, TREE, STALL, RUBBLE, OUTSIDE }
 
 const SOLID: Array = [T.PALISADE, T.WALL, T.WELL, T.TREE, T.STALL, T.OUTSIDE]
-# Множитель шага по клетке [ВРЕМЕННО]
+# Множитель шага по клетке [Q19: не баланс, оставлено]
 const SPEED: Dictionary = {
 	T.GRASS: 0.9, T.ROAD: 1.0, T.SQUARE: 1.0, T.FLOOR: 1.0, T.DOOR: 1.0, T.GATE: 1.0,
 	T.FIELD: 0.7, T.RUBBLE: 0.6,

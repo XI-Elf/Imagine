@@ -61,7 +61,7 @@ static func looted_now(looted: Dictionary, key: String, now: float) -> bool:
 
 
 ## Обыскать: {"scrap": n, "old_coin": n} (пусто, если обысканы недавно). Вещи кладутся в сумку bag (Trade)
-## [ВРЕМЕННО] 1–3 куска лома, больше при хорошем поиске; монета — в одном случае из шести
+## [Q19: не баланс, оставлено] 1–3 куска лома, больше при хорошем поиске; монета — в одном случае из шести
 static func search(site: Dictionary, looted: Dictionary, now: float, search_eff: float, rng: RandomNumberGenerator, bag: Dictionary) -> Dictionary:
 	if looted_now(looted, site["key"], now):
 		return {}

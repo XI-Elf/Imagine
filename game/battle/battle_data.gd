@@ -18,6 +18,11 @@ static func _res(kind: String, id: String) -> Resource:
 		if not missing.has(key):
 			missing.append(key)
 			push_warning("battle_data: нет %s" % path)
+	# Q26: названия и описания из ресурсов — на выбранном языке (ресурс общий, меняется один раз за загрузку)
+	if r != null:
+		for prop in ["title", "description"]:
+			if prop in r and r.get(prop) is String:
+				r.set(prop, I18n.t(r.get(prop)))
 	_cache[key] = r
 	return r
 

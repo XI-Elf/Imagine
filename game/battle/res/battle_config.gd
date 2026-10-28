@@ -1,6 +1,6 @@
 class_name BattleConfig
 extends Resource
-## Общие числа боя. Все [ВРЕМЕННО], кроме базовых формул.
+## Общие числа боя. Все [Q19: проверяет tests/balance_checks.gd], кроме базовых формул.
 
 ## Combat_Formulas: параметры, которые не зашиты в формулы. Значения — из ТЗ и документа пользователя
 ## (d20, крит — второй бросок костей, укрытие +2/+5, сопротивление половина, уязвимость вдвое)
@@ -47,7 +47,7 @@ extends Resource
 ## Состояния пака у персонажа -> эффект боя
 @export var pack_effects: Dictionary = {"broken_leg": "hurt_leg", "broken_arm": "hurt_arm", "luxation_arm": "hurt_arm",
 	"blindness": "blinded", "broken_head": "concussed", "intoxication": "poisoned", "dysentery": "poisoned"}
-@export var hazard_dice: String = "1d4"          # радиоактивная клетка в начале хода
+@export var hazard_dice: String = "1d4"          # проклятая клетка в начале хода
 @export var encounter_cap_per_ally: float = 1.0
 @export var encounter_cap_extra: int = 0
 @export var arena: Dictionary = {

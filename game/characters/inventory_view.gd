@@ -1,7 +1,7 @@
 extends Control
 ## Вкладка «Инвентарь» окна героя (референсы Huzzah 2026-10-23; с 2026-10-24 оформление комикса — Q24 A,
 ## тёмная сталь и уголь из ui/comic_ui.gd вместо «синего мрамора»):
-## сверху строка показателей героя значками (здоровье, сытость, вода, энергия, силы, радиация) и деньги;
+## сверху строка показателей героя значками (здоровье, сытость, вода, энергия, силы, проклятье) и деньги;
 ## ниже «По типу» / «Бросить всё» и груз N/M; слева фильтры по виду вещей, в середине сумка крупными
 ## ячейками (значок, число в углу, значок вида) с листанием страниц, под ней выбранная вещь и её кнопки;
 ## справа кукла героя: слоты одежды по бокам, в середине силуэт фишки героя (art/storybook/traveler.png),
@@ -31,13 +31,13 @@ const RED_DARK := Color("6e1c18")
 const SHEET := Color(0.075, 0.072, 0.085)   # лист сумки (уголь чуть темнее панелей)
 
 ## Фильтры слева: id, подпись, виды вещей
-const FILTERS: Array = [["all", "Всё"], ["food", "Провизия"], ["med", "Медицина"], ["gear", "Снаряжение"],
-	["tools", "Инструменты"], ["weapon", "Оружие"], ["parts", "Компоненты"], ["misc", "Прочее"]]
+static var FILTERS: Array = [["all", I18n.t("Всё")], ["food", I18n.t("Провизия")], ["med", I18n.t("Медицина")], ["gear", I18n.t("Снаряжение")],
+	["tools", I18n.t("Инструменты")], ["weapon", I18n.t("Оружие")], ["parts", I18n.t("Компоненты")], ["misc", I18n.t("Прочее")]]
 const CAT_ORDER: Array = ["food", "med", "weapon", "gear", "tools", "parts", "misc"]
 const TOOLS: Array = ["rope"]
 const PARTS: Array = ["scrap", "hide"]
 const STAT_KEYS: Array = ["health", "hunger", "thirst", "energy", "stamina", "radiation"]
-const STAT_NAMES: Dictionary = {"health": "Здоровье", "hunger": "Сытость", "thirst": "Вода", "energy": "Энергия", "stamina": "Силы", "radiation": "Воздействие проклятья"}
+static var STAT_NAMES: Dictionary = {"health": I18n.t("Здоровье"), "hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "energy": I18n.t("Энергия"), "stamina": I18n.t("Силы"), "radiation": I18n.t("Воздействие проклятья")}
 const PAWN := "res://art/storybook/traveler.png"
 
 const W := 900.0
@@ -93,16 +93,16 @@ func _sel() -> String:
 func kind_of(id: String) -> String:
 	var u: Dictionary = Trade.item(id).get("use", {})
 	if u.has("eat"):
-		return "еда"
+		return I18n.t("еда")
 	if u.has("drink"):
-		return "питьё"
+		return I18n.t("питьё")
 	if bool(Trade.item(id).get("treat", false)):
-		return "лечение"
+		return I18n.t("лечение")
 	if weapons.has(id):
-		return "оружие"
+		return I18n.t("оружие")
 	if is_wear(id):
-		return "одежда"
-	return "вещь"
+		return I18n.t("одежда")
+	return I18n.t("вещь")
 
 
 ## Вид вещи для фильтров: food, med, weapon, gear, tools, parts, misc
@@ -176,14 +176,14 @@ func _layout() -> void:
 		c.queue_free()
 	_hits.clear()
 	# По типу / Бросить всё
-	var sort_b := _btn("По типу ✓" if bool(_w("inv_sort", false)) else "По типу", win.toggle_sort, 16)
+	var sort_b := _btn(I18n.t("По типу ✓") if bool(_w("inv_sort", false)) else I18n.t("По типу"), win.toggle_sort, 16)
 	sort_b.position = Vector2(0, 52)
 	sort_b.custom_minimum_size = Vector2(140, 36)
 	add_child(sort_b)
-	var drop_b := _btn("Точно? Ещё раз" if bool(_w("inv_drop_armed", false)) else "Бросить всё", win.drop_all, 16)
+	var drop_b := _btn(I18n.t("Точно? Ещё раз") if bool(_w("inv_drop_armed", false)) else I18n.t("Бросить всё"), win.drop_all, 16)
 	drop_b.position = Vector2(152, 52)
 	drop_b.custom_minimum_size = Vector2(160, 36)
-	drop_b.tooltip_text = "Выбросить все вещи из выбранного фильтра (деньги остаются)"
+	drop_b.tooltip_text = I18n.t("Выбросить все вещи из выбранного фильтра (деньги остаются)")
 	add_child(drop_b)
 	# фильтры
 	var f: String = String(_w("inv_filter", "all"))
@@ -231,14 +231,14 @@ func _layout() -> void:
 		var k: String = kind_of(s)
 		if is_wear(s):
 			var on: bool = equipped().values().has(s)
-			row.add_child(_btn("Снять" if on else "Надеть", (win.unequip_item if on else win.equip_item).bind(s), 14))
-		if k == "еда" or k == "питьё":
-			row.add_child(_btn("Съесть" if k == "еда" else "Выпить", win.use_item.bind(s), 14))
+			row.add_child(_btn(I18n.t("Снять") if on else I18n.t("Надеть"), (win.unequip_item if on else win.equip_item).bind(s), 14))
+		if k == I18n.t("еда") or k == I18n.t("питьё"):
+			row.add_child(_btn(I18n.t("Съесть") if k == I18n.t("еда") else I18n.t("Выпить"), win.use_item.bind(s), 14))
 		if weapons.has(s):
-			var b := _btn("В бою ✓" if lo.has(s) else "В бой", win.toggle_loadout.bind(s), 14)
-			b.tooltip_text = "До %d видов оружия; окно «Подготовка к бою» предложит этот выбор" % loadout_max
+			var b := _btn(I18n.t("В бою ✓") if lo.has(s) else I18n.t("В бой"), win.toggle_loadout.bind(s), 14)
+			b.tooltip_text = I18n.t("До %d видов оружия; окно «Подготовка к бою» предложит этот выбор") % loadout_max
 			row.add_child(b)
-		row.add_child(_btn("Выбросить", win.drop_item.bind(s), 14))
+		row.add_child(_btn(I18n.t("Выбросить"), win.drop_item.bind(s), 14))
 	queue_redraw()
 
 
@@ -282,7 +282,7 @@ func _gui_input(event: InputEvent) -> void:
 			return
 		var id: String = _hits[h][2]
 		if id != "":
-			if event.double_click and kind_of(id) in ["еда", "питьё"]:
+			if event.double_click and kind_of(id) in [I18n.t("еда"), I18n.t("питьё")]:
 				win.use_item(id)
 			else:
 				win.inv_sel = id
@@ -303,18 +303,18 @@ func _tip(h: int) -> String:
 	var e: Array = _hits[h]
 	match e[1]:
 		"weapon":
-			return "Оружие в бой: %s" % Trade.item_name(e[2]) if e[2] != "" else "Пусто. Выберите оружие в сумке и нажмите «В бой»"
+			return I18n.t("Оружие в бой: %s") % Trade.item_name(e[2]) if e[2] != "" else I18n.t("Пусто. Выберите оружие в сумке и нажмите «В бой»")
 		"equip":
 			var nm: String = ""
 			for sl in Doll.SLOTS:
 				if sl[0] == e[3]:
 					nm = sl[1]
-			var tip: String = "%s: %s" % [nm, Trade.item_name(e[2])] if e[2] != "" else "%s: пусто. Выберите одежду в сумке и нажмите «Надеть»" % nm
+			var tip: String = "%s: %s" % [nm, Trade.item_name(e[2])] if e[2] != "" else I18n.t("%s: пусто. Выберите одежду в сумке и нажмите «Надеть»") % nm
 			if e[3] == "body":
-				tip += "\nДоспех в бою: %s" % (String(armor.get("title")) if armor != null else "нет")
+				tip += I18n.t("\nДоспех в бою: %s") % (String(armor.get("title")) if armor != null else I18n.t("нет"))
 			return tip
 		"cell":
-			return "%s ×%d · двойной клик — съесть/выпить" % [Trade.item_name(e[2]), Trade.count(bag, e[2])] if e[2] != "" and kind_of(e[2]) in ["еда", "питьё"] else ("%s ×%d" % [Trade.item_name(e[2]), Trade.count(bag, e[2])] if e[2] != "" else "")
+			return I18n.t("%s ×%d · двойной клик — съесть/выпить") % [Trade.item_name(e[2]), Trade.count(bag, e[2])] if e[2] != "" and kind_of(e[2]) in [I18n.t("еда"), I18n.t("питьё")] else ("%s ×%d" % [Trade.item_name(e[2]), Trade.count(bag, e[2])] if e[2] != "" else "")
 	return ""
 
 
@@ -344,7 +344,7 @@ func _draw() -> void:
 		match e[1]:
 			"weapon":
 				if e[2] == "":
-					_text_c(Vector2(r.get_center().x, r.get_center().y + 5), "пусто", 11, Color(DIM, 0.6))
+					_text_c(Vector2(r.get_center().x, r.get_center().y + 5), I18n.t("пусто"), 11, Color(DIM, 0.6))
 				_text(r.position + Vector2(9, r.size.y - 8), str(i - COLS * ROWS - Doll.SLOTS.size() + 1), 10, Color(DIM, 0.8))
 			"equip":
 				if e[2] == "":
@@ -357,7 +357,7 @@ func _draw() -> void:
 					var n: int = Trade.count(bag, e[2])
 					_text_r(r.end - Vector2(6, 6), str(n), 17, TEXT, true)
 					if equipped().values().has(e[2]):
-						_text(r.position + Vector2(5, r.size.y - 6), "надето", 11, Color("8fd18a"), true)
+						_text(r.position + Vector2(5, r.size.y - 6), I18n.t("надето"), 11, Color("8fd18a"), true)
 	var py: float = GRID.y + ROWS * (CELL + GAP) + 2.0
 	_text_c(Vector2(GRID.x + (COLS * (CELL + GAP) - GAP) * 0.5, py + 22), "%d/%d" % [_page() + 1, pages()], 18, TEXT, true)
 	_draw_details(py + 40)
@@ -391,7 +391,7 @@ func _draw_stats() -> void:
 func _draw_weight() -> void:
 	var w: float = Trade.weight(bag)
 	var cap: float = actor.carry_capacity() if actor != null else 0.0
-	var s: String = "%.1f/%.0f кг" % [w, cap]
+	var s: String = I18n.t("%.1f/%.0f кг") % [w, cap]
 	_text_r(Vector2(W - 8, 78), s, 20, RED if w > cap else GOLD, true)
 	var sw: float = _font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
 	weight_icon(self, Rect2(W - 40 - sw, 56, 26, 26), GOLD)
@@ -404,7 +404,7 @@ func _panel_rect(r: Rect2, light: bool) -> void:
 
 func _draw_doll() -> void:
 	var p: Rect2 = DOLL
-	_text(p.position + Vector2(12, 26), "Снаряжение", 17, TEXT, true)
+	_text(p.position + Vector2(12, 26), I18n.t("Снаряжение"), 17, TEXT, true)
 	if actor != null:
 		_text_r(Vector2(p.end.x - 12, p.position.y + 26), actor.display_name, 17, GOLD, true)
 	var fig := Rect2(p.position.x + 78, p.position.y + 40, p.size.x - 156, p.size.y - 118)
@@ -452,7 +452,7 @@ static func silhouette_tex() -> Texture2D:
 func _draw_details(y: float) -> void:
 	var s: String = _sel()
 	if s == "":
-		_text(Vector2(GRID.x, y + 20), "Клик — выбрать вещь", 13, DIM)
+		_text(Vector2(GRID.x, y + 20), I18n.t("Клик — выбрать вещь"), 13, DIM)
 		return
 	var it: Dictionary = Trade.item(s)
 	var n: int = Trade.count(bag, s)
@@ -460,13 +460,13 @@ func _draw_details(y: float) -> void:
 	var info: String = kind_of(s)
 	var u: Dictionary = it.get("use", {})
 	if u.has("eat"):
-		info += " · сытость +%d" % int(u["eat"])
+		info += I18n.t(" · сытость +%d") % int(u["eat"])
 	elif u.has("drink"):
-		info += " · вода +%d" % int(u["drink"])
+		info += I18n.t(" · вода +%d") % int(u["drink"])
 	if weapons.has(s):
-		info += " · " + ("в бою" if bag.get("battle_loadout", []).has(s) else "не в бою")
+		info += " · " + (I18n.t("в бою") if bag.get("battle_loadout", []).has(s) else I18n.t("не в бою"))
 	_text(Vector2(GRID.x, y + 38), info, 13, DIM)
-	_text(Vector2(GRID.x, y + 56), "%.1f кг · %d мон. за шт." % [float(it.get("weight", 0.0)) * n, int(it.get("price", 0))], 13, DIM)
+	_text(Vector2(GRID.x, y + 56), I18n.t("%.1f кг · %d мон. за шт.") % [float(it.get("weight", 0.0)) * n, int(it.get("price", 0))], 13, DIM)
 
 
 func _text(p: Vector2, s: String, size_px: int, col: Color, outline: bool = false) -> void:
@@ -572,7 +572,7 @@ static func weight_icon(ci: CanvasItem, r: Rect2, col: Color) -> void:
 	ci.draw_arc(c + Vector2(0, -0.45) * s, s * 0.32, PI, TAU, 10, col, maxf(2.0, s * 0.18))
 
 
-## Значки показателей: крест, вилка с ножом, капля, молния, бегун, знак радиации
+## Значки показателей: крест, вилка с ножом, капля, молния, бегун, знак проклятья
 static func stat_icon(ci: CanvasItem, k: String, r: Rect2) -> void:
 	var o: Vector2 = r.get_center()
 	var s: float = minf(r.size.x, r.size.y) * 0.5
@@ -635,8 +635,9 @@ func item_icon(id: String, r: Rect2) -> void:
 	if is_wear(id):
 		_wear_icon(Trade.item(id)["wear"], o, s)
 		return
-	match kind_of(id):
-		"еда":
+	# Q26: kind_of отдаёт название на языке игры, а шаблон match должен быть постоянным — сравниваем по номеру
+	match [I18n.t("еда"), I18n.t("питьё"), I18n.t("лечение")].find(kind_of(id)):
+		0:
 			if id == "stew":
 				draw_arc(o + Vector2(0, -0.05) * s, s * 0.6, 0.0, PI, 16, INK, 3.0)
 				draw_colored_polygon(_pts(o, s, [[-0.7, 0.0], [0.7, 0.0], [0.5, 0.55], [-0.5, 0.55]]), Color("6b4a2e"))
@@ -650,7 +651,7 @@ func item_icon(id: String, r: Rect2) -> void:
 				draw_colored_polygon(_pts(o, s, [[-0.75, 0.35], [-0.6, -0.2], [-0.2, -0.45], [0.3, -0.45], [0.7, -0.2], [0.78, 0.35]]), c)
 				for i in 3:
 					draw_line(o + Vector2(-0.4 + i * 0.35, -0.3) * s, o + Vector2(-0.25 + i * 0.35, 0.0) * s, c.darkened(0.35), 2.0)
-		"питьё":
+		1:
 			if id == "ale":
 				draw_colored_polygon(_pts(o, s, [[-0.45, -0.55], [0.35, -0.55], [0.35, 0.7], [-0.45, 0.7]]), Color("8a5a2c"))
 				draw_colored_polygon(_pts(o, s, [[-0.5, -0.75], [0.4, -0.75], [0.4, -0.5], [-0.5, -0.5]]), Color("efe6d2"))
@@ -658,7 +659,7 @@ func item_icon(id: String, r: Rect2) -> void:
 			else:
 				draw_colored_polygon(_pts(o, s, [[-0.12, -0.8], [0.12, -0.8], [0.12, -0.5], [0.55, -0.25], [0.55, 0.65], [-0.55, 0.65], [-0.55, -0.25], [-0.12, -0.5]]), Color("8f6f48"))
 				draw_colored_polygon(_pts(o, s, [[-0.45, 0.0], [0.45, 0.0], [0.45, 0.5], [-0.45, 0.5]]), Color("6d93b5"))
-		"лечение":
+		2:
 			if id in ["bandage", "splint"]:
 				draw_circle(o, s * 0.55, Color("efe6d2"))
 				draw_circle(o, s * 0.18, Color("b9a67c"))

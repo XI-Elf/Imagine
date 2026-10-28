@@ -242,15 +242,16 @@ func _game(S: Node) -> void:
 			c.controlled = false
 		bs.prep_confirm()
 		var g: int = 0
+		var swung: bool = false   # played хранит 64 последних звука: в долгом бою взмахи вытесняются ударами из очереди
+		var is_swing := func(x): return String(x) == "swing" or String(x).begins_with("whoosh_")
 		while bs.core.outcome == "" and g < 600:
 			bs.core.run_ai_turn()
+			swung = swung or S.played.any(is_swing)
 			g += 1
-		# Взмахи звучат сразу, удары — с задержкой из очереди; played хранит последние 64,
-		# поэтому взмахи смотрим до очереди (бой от характеристик длиннее: у героя 30 ОЗ)
-		var swung: bool = S.played.any(func(x): return String(x) == "swing" or String(x).begins_with("whoosh_"))
+		swung = swung or S.played.any(is_swing)   # до отложенных ударов: их сброс может вытеснить взмахи
 		S._run_queue(2.0)
 		await create_timer(0.5).timeout
-		ok(swung, "в бою звучат взмахи " + str(S.played.slice(0, 8)))
+		ok(swung or S.played.any(is_swing), "в бою звучат взмахи " + str(S.played.slice(0, 8)))
 		ok(S.played.any(func(x): return String(x).begins_with("step_gravel_")), "в бою шаги по клеткам")
 		await frames(2)
 		bs.leave()

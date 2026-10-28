@@ -1,5 +1,5 @@
 extends SceneTree
-## По снимку на локацию: общая карта, миниатюра города, каждый биом, места Чёрнославля, бой.
+## По снимку на локацию: общая карта, миниатюра города, каждый биом, места Эшвика, бой.
 ## godot --path game --rendering-driver opengl3 -s res://qa/shots_locations.gd  (папка — AMBER_QA_OUT)
 const Actor := preload("res://characters/actor.gd")
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://location_shots/"

@@ -1,5 +1,5 @@
 extends SceneTree
-## Бесконечные поручения после «Чёрнославля» (city/endless_quests.gd, вопрос Q14): город вырос до конца —
+## Бесконечные поручения после «Эшвика» (city/endless_quests.gd, вопрос Q14): город вырос до конца —
 ## каждый из шести НПС раз за разом даёт новое поручение, награда платится, очки роста не растут, сохранение помнит взятое.
 ## godot --path game --headless -s res://tests/endless_quests_checks.gd
 
@@ -63,7 +63,7 @@ func _run() -> void:
 	# До последнего этапа бесконечных поручений нет
 	for id in QUEST_NPCS:
 		for q in Growth.available(city.full_def, city.growth, id):
-			ok(not Endless.is_endless(q), "до Чёрнославля у %s нет бесконечных: %s" % [id, q["id"]])
+			ok(not Endless.is_endless(q), "до Эшвика у %s нет бесконечных: %s" % [id, q["id"]])
 	ok(not Endless.open_for(city.full_def, 3, "posadnik") and Endless.open_for(city.full_def, 4, "posadnik"), "открываются только на последнем этапе")
 	ok(not Endless.open_for(city.full_def, 4, "priest"), "у жителей без цепочки их нет")
 
@@ -73,7 +73,7 @@ func _run() -> void:
 			var cq: Dictionary = Growth.current(city.full_def, city.growth, String(n["def"]["id"]))
 			if not cq.is_empty() and not Endless.is_endless(cq):
 				do_quest(city, npc(city, String(n["def"]["id"])), cq)
-	ok(city.stage == 4, "город вырос до Чёрнославля")
+	ok(city.stage == 4, "город вырос до Эшвика")
 	ok(Growth.points(city.growth) == 18 and Growth.endless_done(city.growth) == 0, "18 очков, бесконечных не сдано")
 
 	# У каждого из шести — бесконечное поручение; запасные цепочки остаются рядом
@@ -165,7 +165,7 @@ func _run() -> void:
 	ok(items.size() == Endless.PRICE.size(), "приносить просят лом, монеты, овощи и шкуры: %s" % [items.keys()])
 	ok(by_npc.get("tanner", {}).keys() == ["hide"] and by_npc.get("smith", {}).keys() == ["scrap"], "Q33: кожевник просит только шкуры, кузнец только лом: %s" % [by_npc])
 	ok(max_km <= 8 and max_n <= 6 and max_w <= 2, "потолок объёма: до %d км, %d шт., %d побед" % [max_km, max_n, max_w])
-	ok(Growth.points(city.growth) == 18 and Growth.stage(city.full_def, city.growth) == 4, "после 181 бесконечного очков 18, этап Чёрнославль")
+	ok(Growth.points(city.growth) == 18 and Growth.stage(city.full_def, city.growth) == 4, "после 181 бесконечного очков 18, этап «Крупный город»")
 
 	# Доска объявлений перечисляет и бесконечные
 	var board: Dictionary = {}

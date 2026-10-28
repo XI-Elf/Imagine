@@ -8,7 +8,7 @@ const Art := preload("res://storybook/art.gd")
 ## НПС далеко от героя и камеры считаются кусками по FAR_TICK_S игровых секунд, по тем же правилам.
 ##
 ## Клавиши: G — создать героя (у ворот города) / взять или отпустить управление, WASD — идти, Shift — бежать,
-## Z — спать/проснуться, E — пить у воды, F — искать еду, T — лечиться у знахаря рядом, I — лист персонажа.
+## Z — спать/проснуться, E — пить у воды, F — искать еду, T — лечиться у лекаря рядом, I — лист персонажа.
 ## Мышь (characters/hero_route.gd): ЛКМ — идти в точку (по городу — к воротам), держать ЛКМ — за курсором, ПКМ — стоп.
 
 const WorldEnv := preload("res://characters/world_env.gd")
@@ -25,7 +25,7 @@ const TransportScript := preload("res://characters/transport.gd")
 
 const OVERWORLD_NPCS: bool = false
 const NPC_COUNT: int = 8
-const NPC_RADIUS_M: float = 600.0       # [ВРЕМЕННО] НПС бродят в этом радиусе от дома
+const NPC_RADIUS_M: float = 600.0       # [Q19: не баланс, оставлено] НПС бродят в этом радиусе от дома
 const NEAR_M: float = 4000.0            # ближе этого к герою или камере НПС считаются каждый кадр
 const FAR_TICK_S: float = 600.0
 const DRINK_REACH_M: float = 25.0
@@ -33,8 +33,8 @@ const WATER_SEARCH_M: float = 1500.0
 const FORAGE_COOLDOWN_S: float = 3.0
 const HEAL_REACH_M: float = 30.0
 const HEAL_RETRY_S: float = 20.0        # реальных секунд между попытками лечения у одного НПС
-const NPC_NAMES: Array = ["Агата", "Борислав", "Ведана", "Горан", "Добрыня", "Есения", "Ждан", "Зорина",
-	"Ивар", "Лада", "Мирон", "Нежана", "Остромир", "Прася", "Радим", "Слава"]
+static var NPC_NAMES: Array = [I18n.t("Эйвинд"), I18n.t("Сигрид"), I18n.t("Кормак"), I18n.t("Айсте"), I18n.t("Годрик"), I18n.t("Ингрид"), I18n.t("Ниалл"), I18n.t("Милда"),
+	I18n.t("Хокон"), I18n.t("Эдит"), I18n.t("Фергус"), I18n.t("Расма"), I18n.t("Леофрик"), I18n.t("Тора"), I18n.t("Витаутас"), I18n.t("Сорха")]
 
 var game: Node2D
 var bodies: Array = []          # {actor, pos, home, target, plan, wait, acc_s, drowning, hero, kit, heal_cd}
@@ -116,7 +116,7 @@ func _land(p: Vector2) -> bool:
 	return b != 0 and b != 1
 
 
-# Чистая суша: без радиации (дома и стоянки НПС, место появления героя)
+# Чистая суша: без проклятья (дома и стоянки НПС, место появления героя)
 func _clean_land(p: Vector2) -> bool:
 	return _land(p) and float(R.terrain(game.biome_at(p)).get("radiation_h", 0.0)) <= 0.0 \
 		and not (game.get("settlements") != null and game.settlements.blocks(p))
@@ -151,7 +151,7 @@ func spawn_hero(at: Vector2, params: Dictionary = {}) -> void:
 	var p: Vector2 = _find_land(at, 8000.0, true)
 	if not _land(p):
 		p = _find_land(at)
-	var a := Actor.new("hero", "Герой", false, _rng.randi())
+	var a := Actor.new("hero", I18n.t("Герой"), false, _rng.randi())
 	if not params.is_empty():
 		HeroProfile.apply(a, params)
 	hero = _add(a, p, true)
@@ -160,7 +160,7 @@ func spawn_hero(at: Vector2, params: Dictionary = {}) -> void:
 	controls_hero = true
 	if OVERWORLD_NPCS and bodies.filter(func(x): return not x["hero"]).is_empty():
 		_spawn_npcs(p)
-	_event("Герой появился: %s" % R.terrain(game.biome_at(p)).get("name", ""))
+	_event(I18n.t("Герой появился: %s") % R.terrain(game.biome_at(p)).get("name", ""))
 
 
 ## НПС на общей карте вручную (тесты, будущие поселения): те же правила и распорядок
@@ -178,12 +178,12 @@ func _spawn_npcs(center: Vector2) -> void:
 			a.set_stat(s, _rng.randi_range(3, 8))
 		a.res["hunger"] = _rng.randf_range(40.0, 90.0)
 		a.res["thirst"] = _rng.randf_range(40.0, 90.0)
-		# У каждого НПС свое ремесло (навык пака → навык): знахарь, кузнец, повар...
+		# У каждого НПС свое ремесло (навык пака → навык): лекарь, кузнец, повар...
 		var sk: Array = R.pack_skills().keys()
 		a.set_skill_level(sk[i % sk.size()], _rng.randi_range(2, 5))
 		var p: Vector2 = _find_land(center + Vector2.from_angle(_rng.randf() * TAU) * _rng.randf_range(150.0, NPC_RADIUS_M * 1.5), 3000.0, true)
 		var b: Dictionary = _add(a, p, false)
-		# Знахарь носит всё для лечения: инвентаря пока нет [ВРЕМЕННО]
+		# Лекарь носит всё для лечения: инвентаря пока нет [Q19: не баланс, оставлено]
 		if sk[i % sk.size()] == "medicine":
 			b["kit"] = all_remedies()
 
@@ -198,7 +198,7 @@ static func all_remedies() -> Array:
 	return out
 
 
-# Ближайший живой знахарь (у кого есть набор), кроме самого b
+# Ближайший живой лекарь (у кого есть набор), кроме самого b
 func _nearest_healer(b: Dictionary) -> Dictionary:
 	var best: Dictionary = {}
 	var best_d: float = INF
@@ -212,19 +212,19 @@ func _nearest_healer(b: Dictionary) -> Dictionary:
 	return best
 
 
-## Лечение у знахаря: первое из состояний пациента, что знахарь берётся лечить. Для героя и НПС одно
+## Лечение у лекаря: первое из состояний пациента, что лекарь берётся лечить. Для героя и НПС одно
 func heal_at(patient: Dictionary, healer: Dictionary) -> Dictionary:
 	var a: Actor = patient["actor"]
 	for c in a.conditions:
 		var r: Dictionary = a.treat(c["id"], healer["actor"], healer["kit"])
 		r["id"] = c["id"]
 		return r
-	return {"ok": false, "reason": "нечего лечить", "id": ""}
+	return {"ok": false, "reason": I18n.t("нечего лечить"), "id": ""}
 
 
 func _on_died(b: Dictionary, cause: String) -> void:
 	var a: Actor = b["actor"]
-	_event("%s погиб: %s" % [a.display_name, Actor.DEATH_CAUSES.get(cause, cause)])
+	_event(I18n.t("%s погиб: %s") % [a.display_name, Actor.DEATH_CAUSES.get(cause, cause)])
 	if b["hero"]:
 		controls_hero = false
 
@@ -287,6 +287,9 @@ func _step(b: Dictionary, dir: Vector2, run: bool, delta: float) -> bool:
 		b["drowning"] = a.exert(delta, env, "rest")
 		return false
 	var v: float = a.travel_speed(env, run) * slope_factor(b["pos"], dir)
+	var trails: Node = game.get("trails")
+	if trails != null:
+		v *= trails.speed_mult(b["pos"])
 	var next: Vector2 = b["pos"] + dir.normalized() * v * delta
 	var into_water: bool = not b["hero"] and game.biome_at(next) == 1 and game.biome_at(b["pos"]) != 1
 	if game.biome_at(next) == 0 or v <= 0.0 or into_water or _walled(next, b["pos"]):
@@ -295,10 +298,12 @@ func _step(b: Dictionary, dir: Vector2, run: bool, delta: float) -> bool:
 	b["drowning"] = a.exert(delta, env, "run" if run and a.can_run() else "walk")
 	a.note_travel(b["pos"].distance_to(next), env)
 	b["pos"] = next
+	if trails != null:
+		trails.walked(b)
 	return true
 
 
-## В гору медленнее, под гору чуть быстрее (объём гор, Huzzah 2026-10-24) [ВРЕМЕННО]: уклон по карте высот на 12 м вперёд
+## В гору медленнее, под гору чуть быстрее (объём гор, Huzzah 2026-10-24) [Q19: не баланс, оставлено]: уклон по карте высот на 12 м вперёд
 func slope_factor(p: Vector2, dir: Vector2) -> float:
 	if not game.has_method("height_at") or dir == Vector2.ZERO:
 		return 1.0
@@ -358,7 +363,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				open_creator()
 			else:
 				controls_hero = not controls_hero
-				_event("Управление героем" if controls_hero else "Свободная камера")
+				_event(I18n.t("Управление героем") if controls_hero else I18n.t("Свободная камера"))
 		KEY_I:
 			if not hero.is_empty():
 				window.toggle("stats")
@@ -368,26 +373,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_Z:
 			if _hero_alive():
 				hero["actor"].set_sleep(not hero["actor"].sleeping)
-				_event("Сон" if hero["actor"].sleeping else "Проснулся")
+				_event(I18n.t("Сон") if hero["actor"].sleeping else I18n.t("Проснулся"))
 		KEY_E:
 			if _hero_alive():
 				if _water_near(hero["pos"]):
 					hero["actor"].drink(25.0, "raw")
-					_event("Напился из реки")
+					_event(I18n.t("Напился из реки"))
 				else:
-					_event("Воды рядом нет")
+					_event(I18n.t("Воды рядом нет"))
 		KEY_T:
 			if _hero_alive():
 				var h: Dictionary = _nearest_healer(hero)
 				if h.is_empty() or h["pos"].distance_to(hero["pos"]) > HEAL_REACH_M:
-					_event("Знахаря рядом нет")
+					_event(I18n.t("Лекаря рядом нет"))
 				else:
 					var r: Dictionary = heal_at(hero, h)
 					if r["id"] == "":
-						_event("Лечить нечего")
+						_event(I18n.t("Лечить нечего"))
 					else:
 						var nm: String = R.condition(r["id"]).get("name_ru", r["id"])
-						_event("%s вылечил: %s (шанс %d %%)" % [h["actor"].display_name, nm, int(r["chance"] * 100.0)] if r["ok"] else "%s: %s — %s" % [h["actor"].display_name, nm, r["reason"]])
+						_event(I18n.t("%s вылечил: %s (шанс %d %%)") % [h["actor"].display_name, nm, int(r["chance"] * 100.0)] if r["ok"] else "%s: %s — %s" % [h["actor"].display_name, nm, r["reason"]])
 		KEY_F:
 			if _hero_alive() and _forage_cd <= 0.0:
 				_forage_cd = FORAGE_COOLDOWN_S
@@ -399,7 +404,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				elif not site.is_empty():
 					_event(search_ruins(site))
 				else:
-					_event("Нашёл еду" if forage(hero) else "Ничего съедобного")
+					_event(I18n.t("Нашёл еду") if forage(hero) else I18n.t("Ничего съедобного"))
 		_:
 			return
 	get_viewport().set_input_as_handled()
@@ -412,12 +417,12 @@ func search_ruins(site: Dictionary) -> String:
 	var a: Actor = hero["actor"]
 	var found: Dictionary = Ruins.search(site, ruins_looted, game.clock.total_seconds, a.derived()["search_efficiency"], _rng, bag)
 	if found.is_empty():
-		return "Руины уже обысканы: загляните через несколько дней"
+		return I18n.t("Руины уже обысканы: загляните через несколько дней")
 	a.add_xp("survival", 1.0)
 	var parts: PackedStringArray = []
 	for id in found:
 		parts.append("%s ×%d" % [Trade.item_name(id), int(found[id])])
-	return "Обыскал руины: %s" % ", ".join(parts)
+	return I18n.t("Обыскал руины: %s") % ", ".join(parts)
 
 
 func _hero_alive() -> bool:
@@ -433,7 +438,7 @@ func _water_near(p: Vector2) -> bool:
 	return false
 
 
-## Поиск еды: шанс от поиска (Восприятие, травмы рук, Выживание) и биома [ВРЕМЕННО].
+## Поиск еды: шанс от поиска (Восприятие, травмы рук, Выживание) и биома [Q19: проверяет tests/balance_checks.gd].
 ## Одно и то же для героя и НПС
 func forage(b: Dictionary) -> bool:
 	var a: Actor = b["actor"]
@@ -485,7 +490,7 @@ func _npc_think(b: Dictionary, env: Dictionary, delta: float) -> void:
 			b["target"] = w
 	elif not a.conditions.is_empty() and b["heal_cd"] <= 0.0 and b["plan"] in ["idle", "walk"]:
 		if not b["kit"].is_empty():
-			# Знахарь лечит себя сам
+			# Лекарь лечит себя сам
 			heal_at(b, b)
 			b["heal_cd"] = HEAL_RETRY_S
 		elif not _nearest_healer(b).is_empty():
@@ -583,9 +588,9 @@ func _draw() -> void:
 		if b["hero"] or game.zoom > 0.15:
 			var label: String = a.display_name
 			if a.sleeping:
-				label += " (спит)"
+				label += I18n.t(" (спит)")
 			elif b["drowning"]:
-				label += " (тонет!)"
+				label += I18n.t(" (тонет!)")
 			draw_string_outline(font, sp + Vector2(-40, -r - 6), label, HORIZONTAL_ALIGNMENT_CENTER, 80, 13, 4, Color(0, 0, 0, 0.9))
 			draw_string(font, sp + Vector2(-40, -r - 6), label, HORIZONTAL_ALIGNMENT_CENTER, 80, 13, col)
 			# Полоска здоровья
@@ -611,7 +616,7 @@ func _draw_ruins(font: Font) -> void:
 		Art.sprite(self, key, sp + Vector2(-h * 0.1, 0.0), h * 0.8, tint)
 		Art.sprite(self, "rock", sp + Vector2(h * 0.62, h * 0.12), h * 0.3, tint)
 		if game.zoom >= 0.6:
-			var label: String = "Руины" + (" (обысканы)" if done else "")
+			var label: String = I18n.t("Руины") + (I18n.t(" (обысканы)") if done else "")
 			draw_string_outline(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, 4, Color(0, 0, 0, 0.9))
 			draw_string(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, Color(0.95, 0.88, 0.7))
 
@@ -619,55 +624,55 @@ func _draw_ruins(font: Font) -> void:
 func _update_status() -> void:
 	var vp: Vector2 = get_viewport_rect().size
 	if hero.is_empty():
-		_status.text = "G — создать героя"
+		_status.text = I18n.t("G — создать героя")
 	else:
 		var a: Actor = hero["actor"]
 		var env: Dictionary = WorldEnv.sample(game, hero["pos"])
 		if not a.alive:
-			_status.text = "Герой погиб: %s" % Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
+			_status.text = I18n.t("Герой погиб: %s") % Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
 		else:
 			var alt: float = game.height_at(hero["pos"]) if game.has_method("height_at") else 0.0
-			_status.text = "Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d  Воздействие проклятья %d   %s%s, ощущается %d °C, шаг %.1f км/ч%s" % [
+			_status.text = I18n.t("Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d  Воздействие проклятья %d   %s%s, ощущается %d °C, шаг %.1f км/ч%s") % [
 				int(a.res["health"]), int(a.res["hunger"]), int(a.res["thirst"]), int(a.res["energy"]),
 				int(a.res["stamina"]), int(a.res["radiation"]), R.terrain(int(env["biome"])).get("name", ""),
-				", высота %d м" % int(round(alt / 10.0) * 10.0) if alt >= 20.0 else "",
+				I18n.t(", высота %d м") % int(round(alt / 10.0) * 10.0) if alt >= 20.0 else "",
 				int(round(a.feels_temp(env))), a.calculate_speed(env),
-				"" if controls_hero else "   (камера свободна, G — к герою)"]
+				"" if controls_hero else I18n.t("   (камера свободна, G — к герою)")]
 	_status.position = Vector2(14.0, vp.y - 34.0)
 	sheet_visible = window.visible or _creator != null
 
 
 ## Лист персонажа: годится для героя и для любого НПС
 func sheet_text(a: Actor) -> String:
-	var t: String = "%s%s\n\n" % [a.display_name, " (НПС)" if a.is_npc else ""]
+	var t: String = "%s%s\n\n" % [a.display_name, I18n.t(" (НПС)") if a.is_npc else ""]
 	var ch: Dictionary = R.characteristics()
 	# «Выносливость» — и характеристика 09, и ресурс пака: ресурс здесь зовётся «Запас сил»;
 	# голод и жажда пака — шкалы сытости и воды (100 — сыт и напоен)
-	var shown: Dictionary = {"hunger": "Сытость", "thirst": "Вода", "stamina": "Запас сил"}
+	var shown: Dictionary = {"hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "stamina": I18n.t("Запас сил")}
 	for r in Actor.RESOURCES:
 		t += "%s: %d / %d\n" % [shown.get(r, ch.get(r, {}).get("name_ru", r)), int(a.res[r]), int(a.max_of(r))]
 	var names: Dictionary = R.section("stats").get("names", {})
 	t += "\n"
 	for s in Actor.STATS:
 		t += "%s %d   " % [names.get(s, s), int(a.stat(s))]
-	t += "\n\nСостояния:"
+	t += I18n.t("\n\nСостояния:")
 	if a.conditions.is_empty() and a.buffs.is_empty():
-		t += " нет"
+		t += I18n.t(" нет")
 	for c in a.conditions:
 		var d: Dictionary = R.condition(c["id"])
-		t += "\n  %s%s" % [d.get("name_ru", c["id"]), "" if c["id"] != "radiation_sickness" else " (стадия %d)" % int(c["stage"])]
+		t += "\n  %s%s" % [d.get("name_ru", c["id"]), "" if c["id"] != "radiation_sickness" else I18n.t(" (стадия %d)") % int(c["stage"])]
 	for bf in a.buffs:
-		t += "\n  + %s (%.0f ч)" % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])]
+		t += I18n.t("\n  + %s (%.0f ч)") % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])]
 	var dv: Dictionary = a.derived()
-	t += "\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n" % [
+	t += I18n.t("\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n") % [
 		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0)]
-	t += "\nУровень %d, опыт %d / %d" % [a.level, int(a.xp), Sheet.xp_to_next(a)]
-	t += "\nНавыки:"
+	t += I18n.t("\nУровень %d, опыт %d / %d") % [a.level, int(a.xp), Sheet.xp_to_next(a)]
+	t += I18n.t("\nНавыки:")
 	var sk: Dictionary = R.skills()
 	for k in sk:
 		t += "\n  %s %d %%%s" % [sk[k].get("name_ru", k), a.skill(k), " ◆" if a.tags.has(k) else ""]
-	t += "\n\nПройдено %.1f км" % (a.distance_m / 1000.0)
-	t += "\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T знахарь, R верхом / пешком, I персонаж, Tab сумка"
+	t += I18n.t("\n\nПройдено %.1f км") % (a.distance_m / 1000.0)
+	t += I18n.t("\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I персонаж, Tab сумка")
 	return t
 
 

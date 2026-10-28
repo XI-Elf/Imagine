@@ -14,7 +14,7 @@ static func _load(file: String) -> Dictionary:
 	var d: Dictionary = {}
 	var f := FileAccess.open(DIR + file, FileAccess.READ)
 	if f != null:
-		var v: Variant = JSON.parse_string(f.get_as_text())
+		var v: Variant = I18n.tree(JSON.parse_string(f.get_as_text()))
 		if v is Dictionary:
 			d = v
 	if d.is_empty():
@@ -120,7 +120,7 @@ static func terrain(biome: int) -> Dictionary:
 	return section("terrain").get(str(biome), section("terrain").get("4", {}))
 
 
-# Таблица опыта навыка: у навыков без своей таблицы — таблица Выживания [ВРЕМЕННО]
+# Таблица опыта навыка: у навыков без своей таблицы — таблица Выживания [Q19: не баланс, оставлено]
 static func xp_table(skill: String) -> Array:
 	var s: Dictionary = pack_skills().get(skill, {})
 	if s.has("xp_table"):

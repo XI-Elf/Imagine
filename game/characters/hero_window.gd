@@ -18,7 +18,7 @@ const ComicUI := preload("res://ui/comic_ui.gd")
 const BATTLE_CONFIG := "res://data/battle/config.tres"
 
 const TABS: Array = ["stats", "skills", "perks", "traits", "bag"]
-const TAB_TITLES: Dictionary = {"stats": "Характеристики", "skills": "Навыки", "perks": "Перки", "traits": "Черты характера", "bag": "Инвентарь"}
+static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь")}
 const COL_TEXT := Color("d8cfb0")
 const COL_DIM := Color("9a9078")
 const COL_GOLD := Color("c9a24b")
@@ -185,8 +185,8 @@ func refresh() -> void:
 	for c in _body.get_children():
 		c.queue_free()
 	if a == null:
-		_title.text = "Героя нет"
-		_body.add_child(_label("Создайте героя: G на карте.", 16, COL_DIM))
+		_title.text = I18n.t("Героя нет")
+		_body.add_child(_label(I18n.t("Создайте героя: G на карте."), 16, COL_DIM))
 		return
 	_title.text = "%s — %s" % [a.display_name, TAB_TITLES[tab]]
 	match tab:
@@ -233,8 +233,8 @@ func _fill_stats(a: Actor) -> void:
 	_body.add_child(_wrap("Очки здоровья %d (+%d за уровень) · Очки действия %d · Класс брони %d · Груз %d кг · Урон в рукопашной %d · Защита от яда %d %% · от проклятья %d %% · Порядок хода %d · Заживление %d · Шанс крита %d %% · Очков навыков за уровень %d · Спутников до %d" % [
 		fd["hp"], fd["hp_level"], fd["ap"], fd["ac"], int(fd["carry_kg"]), fd["melee"], fd["poison"], fd["rad"], fd["sequence"], fd["healing"], fd["crit"], fd["skill_points"], fd["party"]], 14, COL_TEXT))
 	_body.add_child(HSeparator.new())
-	_body.add_child(_label("Состояние", 17, COL_GOLD))
-	var shown: Dictionary = {"hunger": "Сытость", "thirst": "Вода", "stamina": "Запас сил"}
+	_body.add_child(_label(I18n.t("Состояние"), 17, COL_GOLD))
+	var shown: Dictionary = {"hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "stamina": I18n.t("Запас сил")}
 	var ch: Dictionary = R.characteristics()
 	for r in Actor.RESOURCES:
 		var row := HBoxContainer.new()
@@ -251,12 +251,12 @@ func _fill_stats(a: Actor) -> void:
 		_body.add_child(row)
 	var cond: Array = []
 	for c in a.conditions:
-		cond.append(String(R.condition(c["id"]).get("name_ru", c["id"])) + ("" if c["id"] != "radiation_sickness" else " (стадия %d)" % int(c["stage"])))
+		cond.append(String(R.condition(c["id"]).get("name_ru", c["id"])) + ("" if c["id"] != "radiation_sickness" else I18n.t(" (стадия %d)") % int(c["stage"])))
 	for bf in a.buffs:
-		cond.append("+ %s (%.0f ч)" % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])])
-	_body.add_child(_wrap("Травмы, болезни, эффекты: " + (", ".join(cond) if not cond.is_empty() else "нет"), 14, COL_TEXT))
+		cond.append(I18n.t("+ %s (%.0f ч)") % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])])
+	_body.add_child(_wrap(I18n.t("Травмы, болезни, эффекты: ") + (", ".join(cond) if not cond.is_empty() else I18n.t("нет")), 14, COL_TEXT))
 	var dv: Dictionary = a.derived()
-	_body.add_child(_wrap("Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от проклятья %d %% · Пройдено %.1f км" % [
+	_body.add_child(_wrap(I18n.t("Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от проклятья %d %% · Пройдено %.1f км") % [
 		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0), a.distance_m / 1000.0], 14, COL_DIM))
 
 
@@ -406,17 +406,17 @@ func mutate_trait(remove_id: String, add_id: String) -> void:
 # =====================================================================
 func _fill_traits(a: Actor) -> void:
 	if a.traits.is_empty():
-		_body.add_child(_label("Черт характера нет.", 15, COL_DIM))
+		_body.add_child(_label(I18n.t("Черт характера нет."), 15, COL_DIM))
 	for t in a.traits:
 		var c: int = int(R.trait_def(t).get("cost", 0))
 		_body.add_child(_wrap(P.trait_text(t), 15, COL_GOOD if c > 0 else COL_BAD))
 	var al: Dictionary = a.profile.get("alignment", P.alignment(a.traits))
 	_body.add_child(HSeparator.new())
-	_body.add_child(_label("Мировоззрение: %s (добро %+d, закон %+d)" % [P.alignment_name(al), int(al.get("moral", 0)), int(al.get("order", 0))], 16, COL_GOLD))
+	_body.add_child(_label(I18n.t("Мировоззрение: %s (добро %+d, закон %+d)") % [P.alignment_name(al), int(al.get("moral", 0)), int(al.get("order", 0))], 16, COL_GOLD))
 	var bio: String = String(a.profile.get("biography", ""))
 	if bio != "":
 		_body.add_child(HSeparator.new())
-		_body.add_child(_label("История", 17, COL_GOLD))
+		_body.add_child(_label(I18n.t("История"), 17, COL_GOLD))
 		_body.add_child(_wrap(bio, 15, Color("e6dcc0")))
 
 
@@ -460,7 +460,7 @@ static func armor_of(bag: Dictionary) -> String:
 func _fill_bag(a: Actor) -> void:
 	var bag: Dictionary = _bag()
 	if bag.is_empty():
-		_body.add_child(_label("Сумки нет.", 15, COL_DIM))
+		_body.add_child(_label(I18n.t("Сумки нет."), 15, COL_DIM))
 		return
 	if Trade.count(bag, inv_sel) <= 0:
 		inv_sel = ""
@@ -487,7 +487,7 @@ func equip_item(id: String) -> void:
 	var old: String = String(eq.get(w["slot"], ""))
 	eq[String(w["slot"])] = id
 	bag["equipped"] = eq
-	_say("Надето: %s%s" % [Trade.item_name(id), (" (снято: %s)" % Trade.item_name(old)) if old != "" and old != id else ""])
+	_say(I18n.t("Надето: %s%s") % [Trade.item_name(id), (I18n.t(" (снято: %s)") % Trade.item_name(old)) if old != "" and old != id else ""])
 	refresh_bag()
 
 
@@ -496,7 +496,7 @@ func unequip_item(id: String) -> void:
 	for slot in eq.keys():
 		if eq[slot] == id:
 			eq.erase(slot)
-			_say("Снято: %s" % Trade.item_name(id))
+			_say(I18n.t("Снято: %s") % Trade.item_name(id))
 	refresh_bag()
 
 
@@ -548,7 +548,7 @@ func drop_all() -> void:
 	if _actor() != null:
 		_actor().carried_kg = Trade.weight(bag)
 	_fix_equipped(bag)
-	_say("Выброшено вещей: %d" % n)
+	_say(I18n.t("Выброшено вещей: %d") % n)
 	refresh_bag()
 
 
@@ -573,7 +573,7 @@ func drop_item(id: String) -> void:
 	if _actor() != null:
 		_actor().carried_kg = Trade.weight(bag)
 	_fix_equipped(bag)
-	_say("Выброшено: %s" % Trade.item_name(id))
+	_say(I18n.t("Выброшено: %s") % Trade.item_name(id))
 	_sig = ""
 	refresh()
 
@@ -588,7 +588,7 @@ func toggle_loadout(id: String) -> void:
 	elif lo.size() < _loadout_max():
 		lo.append(id)
 	else:
-		_say("В бой — не больше %d видов оружия" % _loadout_max())
+		_say(I18n.t("В бой — не больше %d видов оружия") % _loadout_max())
 	bag["battle_loadout"] = lo
 	_sig = ""
 	refresh()

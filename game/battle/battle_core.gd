@@ -137,17 +137,17 @@ func _free_near(p: Vector2i, taken: Dictionary) -> Vector2i:
 
 ## Бросок инициативы и первый ход. Отдельно от setup, чтобы интерфейс успел подписаться
 func begin() -> void:
-	log_line("Бой: %s. Бросаем инициативу." % _group_title(), "head")
+	log_line(I18n.t("Бой: %s. Бросаем инициативу.") % _group_title(), "head")
 	for c in all:
 		var r: Dictionary = Rules.initiative(roller, c)
 		c.init_tiebreak = 0.0
-		log_line("Инициатива %s: %s" % [c.title, r["text"]], "roll")
+		log_line(I18n.t("Инициатива %s: %s") % [c.title, r["text"]], "roll")
 	order = all.duplicate()
 	# при равенстве — ЛОВ, затем дополнительный бросок, при новом равенстве — сторона игрока
 	for c in order:
 		c.init_tiebreak = float(c.scores.get("dex", 10)) * 100.0 + float(roller.die(20)) + (0.5 if c.team == 0 else 0.0)
 	order.sort_custom(func(a, b): return a.initiative > b.initiative or (a.initiative == b.initiative and a.init_tiebreak > b.init_tiebreak))
-	log_line("Очередь: " + ", ".join(PackedStringArray(order.map(func(c): return "%s %d" % [c.title, c.initiative]))), "head")
+	log_line(I18n.t("Очередь: ") + ", ".join(PackedStringArray(order.map(func(c): return "%s %d" % [c.title, c.initiative]))), "head")
 	round_n = 1
 	round_started.emit(round_n)
 	turn_i = -1
@@ -208,7 +208,7 @@ func set_loadout(c, items: Array) -> void:
 	var inv: Variant = req.get("inventory", null)
 	if inv is Dictionary:
 		inv["battle_loadout"] = items.slice(0, cfg.loadout_max)
-	log_line("%s берёт в бой: %s." % [c.title, ", ".join(PackedStringArray(c.weapons.map(func(w): return w.title.to_lower())))], "info")
+	log_line(I18n.t("%s берёт в бой: %s.") % [c.title, ", ".join(PackedStringArray(c.weapons.map(func(w): return w.title.to_lower())))], "info")
 
 
 ## Взять в руки оружие из своих (до трёх): свободное взаимодействие, раз в ход
@@ -216,17 +216,17 @@ func draw_weapon(c, i: int) -> bool:
 	if i == c.wi or i < 0 or i >= c.weapons.size():
 		return i == c.wi
 	if c.free_used:
-		log_line("%s уже доставал оружие в этот ход." % c.title, "info")
+		log_line(I18n.t("%s уже доставал оружие в этот ход.") % c.title, "info")
 		return false
 	c.free_used = true
 	c.wi = i
-	log_line("%s берёт %s." % [c.title, c.weapon().title.to_lower()], "info")
+	log_line(I18n.t("%s берёт %s.") % [c.title, c.weapon().title.to_lower()], "info")
 	return true
 
 
 func _group_title() -> String:
-	var t: Dictionary = {"bandits": "разбойники", "wolves": "волки", "boar": "кабан", "hounds": "проклятые гончие"}
-	return t.get(String(req.get("group", "")), "враги")
+	var t: Dictionary = {"bandits": I18n.t("разбойники"), "wolves": I18n.t("волки"), "boar": I18n.t("кабан"), "hounds": I18n.t("проклятые гончие")}
+	return t.get(String(req.get("group", "")), I18n.t("враги"))
 
 
 # =====================================================================
@@ -244,7 +244,7 @@ func next_turn() -> void:
 			turn_i = 0
 			round_n += 1
 			round_started.emit(round_n)
-			log_line("— Раунд %d —" % round_n, "head")
+			log_line(I18n.t("— Раунд %d —") % round_n, "head")
 		var c = current()
 		if not c.active():
 			continue
@@ -294,7 +294,7 @@ func _start_turn(c) -> bool:
 			e["left"] = int(e["left"]) - 1
 			if int(e["left"]) == 0:
 				c.remove_effect(e["id"])
-				log_line("%s: «%s» прошло." % [c.title, e["res"].title], "info")
+				log_line(I18n.t("%s: «%s» прошло.") % [c.title, e["res"].title], "info")
 	for e in c.effects.duplicate():
 		var r: BattleEffect = e["res"]
 		if r.turn_start_dice != "" and c.active():
@@ -304,12 +304,12 @@ func _start_turn(c) -> bool:
 	if grid.hazard.has(c.cell) and c.active():
 		var d: Dictionary = Rules.damage(roller, c, [{"type": "radiation", "dice": cfg.hazard_dice, "F": 0}], {}, 1)
 		c.actor.add_res("radiation", float(d["total"]))
-		log_line("%s стоит в светящемся пятне. %s" % [c.title, d["text"]], "hit")
+		log_line(I18n.t("%s стоит в светящемся пятне. %s") % [c.title, d["text"]], "hit")
 		_apply_damage(c, d, null, false)
 	if not c.active() or c.down:
 		return false
 	if c.incapacitated():
-		log_line("%s пропускает ход (%s)." % [c.title, _incap_reason(c)], "info")
+		log_line(I18n.t("%s пропускает ход (%s).") % [c.title, _incap_reason(c)], "info")
 		_end_effect_saves(c)
 		return false
 	return true
@@ -319,7 +319,7 @@ func _incap_reason(c) -> String:
 	for e in c.effects:
 		if e["res"].incapacitated:
 			return e["res"].title.to_lower()
-	return "не может действовать"
+	return I18n.t("не может действовать")
 
 
 ## Игрок закончил ход
@@ -339,7 +339,7 @@ func _end_effect_saves(c) -> void:
 			log_line(s["text"], "roll")
 			if s["ok"]:
 				c.remove_effect(e["id"])
-				log_line("%s: «%s» снято." % [c.title, r.title], "info")
+				log_line(I18n.t("%s: «%s» снято.") % [c.title, r.title], "info")
 
 
 # =====================================================================
@@ -394,7 +394,7 @@ func move_to(c, to: Vector2i) -> bool:
 	if c.has_effect("prone"):
 		c.remove_effect("prone")
 		c.move_left -= c.speed() / 2
-		log_line("%s встаёт (половина движения)." % c.title, "info")
+		log_line(I18n.t("%s встаёт (половина движения).") % c.title, "info")
 	var path: Array = path_for(c, reach, to)
 	var walked: Array = [path[0]]
 	for i in range(1, path.size()):
@@ -409,7 +409,7 @@ func move_to(c, to: Vector2i) -> bool:
 	moved.emit(c, walked)
 	if c.has_effect("hidden") and _seen_by_enemies(c):
 		c.remove_effect("hidden")
-		log_line("%s замечен." % c.title, "info")
+		log_line(I18n.t("%s замечен.") % c.title, "info")
 	return true
 
 
@@ -425,12 +425,12 @@ func _reactions_on_move(c, from: Vector2i, to: Vector2i) -> void:
 		var now_in: bool = grid.dist_ft(to, e.cell) <= reach
 		if was_in and not now_in and not c.disengaged:
 			e.has_reaction = false
-			log_line("Атака по возможности: %s по %s." % [e.title, c.title], "head")
+			log_line(I18n.t("Атака по возможности: %s по %s.") % [e.title, c.title], "head")
 			_weapon_attack(e, c, mi, true)
 		elif not was_in and now_in and e.readied.get("type", "") == "attack":
 			e.has_reaction = false
 			e.readied = {}
-			log_line("Подготовленная атака: %s по %s." % [e.title, c.title], "head")
+			log_line(I18n.t("Подготовленная атака: %s по %s.") % [e.title, c.title], "head")
 			_weapon_attack(e, c, mi, true)
 		if not c.standing():
 			return
@@ -447,18 +447,18 @@ func can_attack(c, t, wi: int = -1) -> Dictionary:
 	var cov: String = grid.cover(c.cell, t.cell, _creature_cells([c, t]))
 	# «Быстрый выстрел», «Скорострел», «Шквал ударов»: ещё одна атака бонусным действием
 	if not c.has_action and not (c.has_bonus and c.bonus_attack_ok(w)):
-		return {"ok": false, "why": "действие уже потрачено"}
+		return {"ok": false, "why": I18n.t("действие уже потрачено")}
 	if not t.active() or t.team == c.team:
-		return {"ok": false, "why": "не цель"}
+		return {"ok": false, "why": I18n.t("не цель")}
 	if w.ranged:
 		if w.ammo > 0 and int(c.ammo.get(w.id, 0)) <= 0:
-			return {"ok": false, "why": "нет снарядов"}
+			return {"ok": false, "why": I18n.t("нет снарядов")}
 		if d > maxi(w.long_range_ft, w.range_ft):
-			return {"ok": false, "why": "слишком далеко (%d фт)" % d}
+			return {"ok": false, "why": I18n.t("слишком далеко (%d фт)") % d}
 	elif d > w.reach_ft:
-		return {"ok": false, "why": "не достать (%d фт)" % d}
+		return {"ok": false, "why": I18n.t("не достать (%d фт)") % d}
 	if cov == "full":
-		return {"ok": false, "why": "цель за полным укрытием"}
+		return {"ok": false, "why": I18n.t("цель за полным укрытием")}
 	return {"ok": true, "dist": d, "cover": cov, "weapon": w}
 
 
@@ -491,7 +491,7 @@ func preview_attack(c, t, wi: int = -1) -> Dictionary:
 func attack(c, t, wi: int = -1) -> bool:
 	var ca: Dictionary = can_attack(c, t, wi)
 	if not ca["ok"]:
-		log_line("%s не может атаковать: %s." % [c.title, ca["why"]], "info")
+		log_line(I18n.t("%s не может атаковать: %s.") % [c.title, ca["why"]], "info")
 		return false
 	if wi >= 0:
 		c.wi = wi
@@ -570,7 +570,7 @@ func _apply_damage(t, dmg: Dictionary, src, crit: bool) -> void:
 			_kill(t, src)
 		return
 	var h: Dictionary = Rules.apply_hp(t, total)
-	log_line("%s: HP %d → %d%s." % [t.title, h["HP_OLD"], h["HP_NEW"], " (с избытком %d)" % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
+	log_line("%s: HP %d → %d%s." % [t.title, h["HP_OLD"], h["HP_NEW"], I18n.t(" (с избытком %d)") % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
 	if t.hp <= 0:
 		if t.team == 0:
 			var z: Dictionary = Rules.zero_hp_check(roller, t)
@@ -600,7 +600,7 @@ func _apply_damage(t, dmg: Dictionary, src, crit: bool) -> void:
 		t.set_meta("morale_done", true)
 		if roller.rng.randf() > t.morale:
 			fleeing[t] = true
-			log_line("%s дрогнул и бежит." % t.title, "info")
+			log_line(I18n.t("%s дрогнул и бежит.") % t.title, "info")
 
 
 func _main_type(dmg: Dictionary) -> String:
@@ -622,8 +622,8 @@ func _trauma(t, dtype: String, zone: String, cond: String = "") -> void:
 	var eid: String = String(cfg.pack_effects.get(cond, ""))
 	if eid != "":
 		t.add_effect(eid)
-	log_line("%s получает травму: %s (%s)." % [t.title, String(Actor.R.condition(cond).get("name_ru", cond)).to_lower(),
-		{"head": "голова", "torso": "торс", "arm": "рука", "leg": "нога"}.get(zone, zone)], "hit")
+	log_line(I18n.t("%s получает травму: %s (%s).") % [t.title, String(Actor.R.condition(cond).get("name_ru", cond)).to_lower(),
+		{"head": I18n.t("голова"), "torso": I18n.t("торс"), "arm": I18n.t("рука"), "leg": I18n.t("нога")}.get(zone, zone)], "hit")
 
 
 func _kill(t, src) -> void:
@@ -634,7 +634,7 @@ func _kill(t, src) -> void:
 	if t.team == 1:
 		killed += 1
 		killed_levels += maxi(1, t.level)
-	log_line("%s погиб%s." % [t.title, "" if src == null else " (%s)" % src.title], "hit")
+	log_line((I18n.t("%s погиб.") % t.title if src == null else I18n.t("%s погиб (%s).") % [t.title, src.title]), "hit")
 	if src != null and src.team == 0 and _bloody(src):
 		log_line("Кровавая баня: от %s мало что осталось." % t.title, "hit")
 	_check_end()
@@ -656,7 +656,7 @@ func dash(c) -> bool:
 		return false
 	c.has_action = false
 	c.move_left += c.speed()
-	log_line("%s: рывок (+%d фт движения)." % [c.title, c.speed()], "info")
+	log_line(I18n.t("%s: рывок (+%d фт движения).") % [c.title, c.speed()], "info")
 	return true
 
 
@@ -665,7 +665,7 @@ func disengage(c) -> bool:
 		return false
 	c.has_action = false
 	c.disengaged = true
-	log_line("%s отходит без атак по возможности." % c.title, "info")
+	log_line(I18n.t("%s отходит без атак по возможности.") % c.title, "info")
 	return true
 
 
@@ -674,7 +674,7 @@ func dodge(c) -> bool:
 		return false
 	c.has_action = false
 	c.add_effect("dodging", 1)
-	log_line("%s уклоняется до своего следующего хода." % c.title, "info")
+	log_line(I18n.t("%s уклоняется до своего следующего хода.") % c.title, "info")
 	return true
 
 
@@ -687,13 +687,13 @@ func help(c, t) -> bool:
 		t.down = false
 		t.hp = maxi(t.hp, 1)
 		t.remove_effect("unconscious")
-		log_line("%s приводит в чувство %s (1 HP)." % [c.title, t.title], "info")
+		log_line(I18n.t("%s приводит в чувство %s (1 HP).") % [c.title, t.title], "info")
 		return true
 	if t.team != c.team and t.standing():
 		c.has_action = false
 		t.helped_by = c.team
 		t.set_meta("help_src", c)
-		log_line("%s отвлекает %s: следующая атака союзника — с преимуществом." % [c.title, t.title], "info")
+		log_line(I18n.t("%s отвлекает %s: следующая атака союзника — с преимуществом.") % [c.title, t.title], "info")
 		return true
 	return false
 
@@ -712,17 +712,17 @@ func hide(c) -> bool:
 	if not c.has_action or not c.standing():
 		return false
 	if _seen_by_enemies(c):
-		log_line("%s: спрятаться негде — враги видят." % c.title, "info")
+		log_line(I18n.t("%s: спрятаться негде — враги видят.") % c.title, "info")
 		return false
 	c.has_action = false
 	var m: int = c.mod("dex") + (c.prof() if c.stealth_prof else 0)
-	var r: Dictionary = roller.d20(m, false, c.armor != null and c.armor.stealth_disadvantage, "Скрытность " + c.title)
+	var r: Dictionary = roller.d20(m, false, c.armor != null and c.armor.stealth_disadvantage, I18n.t("Скрытность ") + c.title)
 	var pp: int = 0
 	for e in all:
 		if e.team != c.team and e.standing():
 			pp = maxi(pp, Rules.passive_perception(e))
 	var ok: bool = int(r["total"]) >= pp
-	log_line("Скрытность %s: %s против внимательности %d → %s." % [c.title, r["text"], pp, "скрыт" if ok else "замечен"], "roll")
+	log_line(I18n.t("Скрытность %s: %s против внимательности %d → %s.") % [c.title, r["text"], pp, I18n.t("скрыт") if ok else I18n.t("замечен")], "roll")
 	if ok:
 		c.add_effect("hidden")
 	return ok
@@ -741,8 +741,8 @@ func use_object(c, t = null) -> bool:
 	else:
 		c.has_action = false
 	c.potions -= 1
-	var r: Dictionary = roller.roll(cfg.potion_dice, {"label": "Зелье"})
-	_heal(t, int(r["total"]) + int(c.fx("b_heal")), "зелье: " + r["text"] + (" +%d (целитель)" % int(c.fx("b_heal")) if c.fx("b_heal") > 0.0 else ""))
+	var r: Dictionary = roller.roll(cfg.potion_dice, {"label": I18n.t("Зелье")})
+	_heal(t, int(r["total"]) + int(c.fx("b_heal")), I18n.t("зелье: ") + r["text"] + (" +%d (целитель)" % int(c.fx("b_heal")) if c.fx("b_heal") > 0.0 else ""))
 	return true
 
 
@@ -752,7 +752,7 @@ func _heal(t, amount: int, how: String) -> void:
 	if t.down and t.hp > 0:
 		t.down = false
 		t.remove_effect("unconscious")
-	log_line("%s восстанавливает %d HP (%s): %d → %d." % [t.title, t.hp - old, how, old, t.hp], "heal")
+	log_line(I18n.t("%s восстанавливает %d HP (%s): %d → %d.") % [t.title, t.hp - old, how, old, t.hp], "heal")
 
 
 ## Подготовить атаку: реакцией ударить первого врага, вошедшего в досягаемость (до следующего хода)
@@ -761,7 +761,7 @@ func ready_attack(c) -> bool:
 		return false
 	c.has_action = false
 	c.readied = {"type": "attack"}
-	log_line("%s готовит удар." % c.title, "info")
+	log_line(I18n.t("%s готовит удар.") % c.title, "info")
 	return true
 
 
@@ -771,7 +771,7 @@ func swap_weapon(c) -> bool:
 		return false
 	c.free_used = true
 	c.wi = (c.wi + 1) % c.weapons.size()
-	log_line("%s берёт %s." % [c.title, c.weapon().title.to_lower()], "info")
+	log_line(I18n.t("%s берёт %s.") % [c.title, c.weapon().title.to_lower()], "info")
 	return true
 
 
@@ -781,7 +781,7 @@ func flee(c) -> bool:
 		return false
 	c.has_action = false
 	c.fled = true
-	log_line("%s покидает бой." % c.title, "info")
+	log_line(I18n.t("%s покидает бой.") % c.title, "info")
 	_check_end()
 	return true
 
@@ -792,18 +792,18 @@ func flee(c) -> bool:
 ## target — участник или клетка (Vector2i) для способностей по площади
 func can_ability(c, ab: BattleAbility, target) -> Dictionary:
 	if not c.standing() or c.incapacitated():
-		return {"ok": false, "why": "не может действовать"}
+		return {"ok": false, "why": I18n.t("не может действовать")}
 	if not c.can_use(ab):
-		return {"ok": false, "why": "нет %s или кончились применения" % {"action": "действия", "bonus": "бонусного действия", "reaction": "реакции"}.get(ab.cost, "")}
+		return {"ok": false, "why": I18n.t("нет %s или кончились применения") % {"action": I18n.t("действия"), "bonus": I18n.t("бонусного действия"), "reaction": I18n.t("реакции")}.get(ab.cost, "")}
 	var cell: Vector2i = target if target is Vector2i else (target.cell if target != null else c.cell)
 	if ab.target != "self" and grid.dist_ft(c.cell, cell) > maxi(ab.range_ft, 5 if ab.target == "ally" else 0):
-		return {"ok": false, "why": "далеко (%d фт)" % grid.dist_ft(c.cell, cell)}
+		return {"ok": false, "why": I18n.t("далеко (%d фт)") % grid.dist_ft(c.cell, cell)}
 	if ab.target == "enemy" and (target == null or target is Vector2i or target.team == c.team or not target.active()):
-		return {"ok": false, "why": "нужна цель-враг"}
+		return {"ok": false, "why": I18n.t("нужна цель-враг")}
 	if ab.target == "ally" and (target == null or target is Vector2i or target.team != c.team or target.dead):
-		return {"ok": false, "why": "нужен союзник"}
+		return {"ok": false, "why": I18n.t("нужен союзник")}
 	if ab.target in ["enemy", "cell"] and grid.cover(c.cell, cell, {}) == "full":
-		return {"ok": false, "why": "не видно"}
+		return {"ok": false, "why": I18n.t("не видно")}
 	return {"ok": true}
 
 
@@ -835,7 +835,7 @@ func use_ability(c, ab: BattleAbility, target = null) -> bool:
 			for t in all:
 				if t.team == c.team and t.standing() and grid.dist_ft(c.cell, t.cell) <= ab.radius_ft:
 					t.add_effect(ab.apply_effect)
-			log_line("Союзники рядом: %s." % Data.effect(ab.apply_effect).title.to_lower(), "info")
+			log_line(I18n.t("Союзники рядом: %s.") % Data.effect(ab.apply_effect).title.to_lower(), "info")
 	acted.emit(c, "ability", {"ability": ab, "target": target})
 	_check_end()
 	return true
@@ -1142,11 +1142,11 @@ func _finish(o: String) -> void:
 		for c in all:
 			if c.team == 1 and c.dead and c.human:
 				money += int(roller.roll("2d6", {"silent": true})["total"])
-				# Лом с бандитов (вопрос Q04, Huzzah 2026-10-24): 0–2 куска с каждого [ВРЕМЕННО]
+				# Лом с бандитов (вопрос Q04, Huzzah 2026-10-24): 0–2 куска с каждого [Q19: не баланс, оставлено]
 				# (кости d3 у DiceRoller нет — «1d3» не разбиралось, и лом не падал никогда)
 				scrap += roller.rng.randi_range(0, 2)
 			elif c.team == 1 and c.dead and not c.is_pet:
-				# Шкуры со зверей — материал для кожевника (вопрос Q18): 1–2 с каждого [ВРЕМЕННО]
+				# Шкуры со зверей — материал для кожевника (вопрос Q18): 1–2 с каждого [Q19: не баланс, оставлено]
 				hides += roller.rng.randi_range(1, 2)
 		# «Искатель удачи» — вдвое больше денег, «Добытчик» — на вещь больше
 		var hero_c = _hero_c()
@@ -1183,7 +1183,7 @@ func _finish(o: String) -> void:
 				inv["items"] = {}
 			for id in got:
 				inv["items"][id] = int(inv["items"].get(id, 0)) + int(got[id])
-	log_line({"win": "Победа.", "flee": "Отступили.", "lose": "Поражение."}[o], "head")
+	log_line({"win": I18n.t("Победа."), "flee": I18n.t("Отступили."), "lose": I18n.t("Поражение.")}[o], "head")
 	finished.emit(o)
 
 
