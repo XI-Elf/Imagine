@@ -12,10 +12,10 @@ extends RefCounted
 const Data := preload("res://battle/battle_data.gd")
 const Combatant := preload("res://battle/combatant.gd")
 
-const DAMAGE_NAMES: Dictionary = {
-	"slashing": "режущий", "piercing": "колющий", "bludgeoning": "дробящий", "fire": "огненный",
-	"radiation": "проклятый", "poison": "ядовитый", "fall": "падение", "cold": "холод", "acid": "кислота",
-	"lightning": "молния", "necrotic": "некротический", "radiant": "светящийся",
+static var DAMAGE_NAMES: Dictionary = {
+	"slashing": I18n.t("режущий"), "piercing": I18n.t("колющий"), "bludgeoning": I18n.t("дробящий"), "fire": I18n.t("огненный"),
+	"radiation": I18n.t("проклятый"), "poison": I18n.t("ядовитый"), "fall": I18n.t("падение"), "cold": I18n.t("холод"), "acid": I18n.t("кислота"),
+	"lightning": I18n.t("молния"), "necrotic": I18n.t("некротический"), "radiant": I18n.t("светящийся"),
 }
 
 
@@ -46,8 +46,8 @@ static func ac(t, cover: String = "none") -> Dictionary:
 	var cv: int = int(cfg().cover_ac.get(cover, 0))
 	var total: int = base + dex_eff + sh + ab + cv
 	return {"total": total, "base": base, "dex": dex_eff, "shield": sh, "abilities": ab, "cover": cv,
-		"text": "AC %d (%d + ЛОВ %d%s%s%s)" % [total, base, dex_eff, " + щит %d" % sh if sh else "",
-		" + эффекты %d" % ab if ab else "", " + укрытие %d" % cv if cv else ""]}
+		"text": I18n.t("AC %d (%d + ЛОВ %d%s%s%s)") % [total, base, dex_eff, I18n.t(" + щит %d") % sh if sh else "",
+		I18n.t(" + эффекты %d") % ab if ab else "", I18n.t(" + укрытие %d") % cv if cv else ""]}
 
 
 # =====================================================================
@@ -96,33 +96,33 @@ static func adv_dis(att, tgt, ctx: Dictionary) -> Dictionary:
 	for e in tgt.effects:
 		var r: BattleEffect = e["res"]
 		if r.attacked_adv:
-			adv.append("цель: " + r.title.to_lower())
+			adv.append(I18n.t("цель: ") + r.title.to_lower())
 		if r.attacked_dis and not tgt.incapacitated():
-			dis.append("цель: " + r.title.to_lower())
+			dis.append(I18n.t("цель: ") + r.title.to_lower())
 		if r.melee_attacked_adv and not ranged and dist <= 5:
-			adv.append("цель лежит")
+			adv.append(I18n.t("цель лежит"))
 		if r.ranged_attacked_dis and (ranged or dist > 5):
-			dis.append("цель лежит")
+			dis.append(I18n.t("цель лежит"))
 	if tgt.down:
-		adv.append("цель без сознания")
+		adv.append(I18n.t("цель без сознания"))
 	if tgt.helped_by == att.team:
-		adv.append("помощь союзника")
+		adv.append(I18n.t("помощь союзника"))
 	if ranged:
 		if dist > int(ctx.get("normal_range", 1 << 20)):
-			dis.append("дальше обычной дистанции")
+			dis.append(I18n.t("дальше обычной дистанции"))
 		for o in ctx.get("all", []):
 			if o.team != att.team and o.standing() and not o.incapacitated() and ctx["grid"].dist_ft(o.cell, att.cell) <= 5:
-				dis.append("враг вплотную")
+				dis.append(I18n.t("враг вплотную"))
 				break
 		var g = ctx.get("grid")
 		if cfg().high_ground_adv and g != null and g.elevation(att.cell) > g.elevation(tgt.cell):
-			adv.append("высота")
+			adv.append(I18n.t("высота"))
 	elif cfg().flanking and ctx.get("grid") != null:
 		# фланг: союзник атакующего стоит вплотную к цели с противоположной стороны
 		for o in ctx.get("all", []):
 			if o != att and o.team == att.team and o.standing() and not o.incapacitated():
 				if o.cell - tgt.cell == -(att.cell - tgt.cell) and ctx["grid"].dist_ft(o.cell, tgt.cell) <= 5:
-					adv.append("фланг")
+					adv.append(I18n.t("фланг"))
 					break
 	return {"adv": adv, "dis": dis}
 
@@ -136,7 +136,7 @@ static func attack(roller, att, tgt, w: BattleWeapon, ab: BattleAbility, ctx: Di
 	var cover: String = String(ctx.get("cover", "none"))
 	var act: Dictionary = ac(tgt, cover)
 	var r: Dictionary = roller.check(c.attack_die, int(terms["sum"]), not ad["adv"].is_empty(), not ad["dis"].is_empty(),
-		"Атака " + att.title)
+		I18n.t("Атака ") + att.title)
 	var R: int = int(r["natural"])
 	var L: int = 1
 	var H: int = c.attack_die
@@ -148,8 +148,8 @@ static func attack(roller, att, tgt, w: BattleWeapon, ab: BattleAbility, ctx: Di
 		crit = true
 	var out: Dictionary = {"R": R, "L": L, "H": H, "terms": terms, "ATK": atk, "AC": act, "adv": ad["adv"], "dis": ad["dis"],
 		"mode": r["mode"], "rolls": r["rolls"], "hit": hit, "crit": crit, "roll": r, "damage": {}}
-	var verdict: String = "Крит!" if crit else ("Попадание" if hit else ("Промах (минимум кубика)" if R == L else "Промах"))
-	out["text"] = "Атака: %s%s против %s → %s." % [r["text"], _terms_text(terms), act["text"], verdict]
+	var verdict: String = I18n.t("Крит!") if crit else (I18n.t("Попадание") if hit else (I18n.t("Промах (минимум кубика)") if R == L else I18n.t("Промах")))
+	out["text"] = I18n.t("Атака: %s%s против %s → %s.") % [r["text"], _terms_text(terms), act["text"], verdict]
 	if ad["adv"].size() > 0 or ad["dis"].size() > 0:
 		out["text"] += " [%s]" % ", ".join(PackedStringArray(
 			ad["adv"].map(func(x): return "+" + x) + ad["dis"].map(func(x): return "−" + x)))
@@ -162,17 +162,17 @@ static func attack(roller, att, tgt, w: BattleWeapon, ab: BattleAbility, ctx: Di
 
 
 static func _terms_text(t: Dictionary) -> String:
-	var s: String = " [мод. %+d" % int(t["M_ATK"])
+	var s: String = I18n.t(" [мод. %+d") % int(t["M_ATK"])
 	if int(t["PB"]):
-		s += ", мастерство %+d" % int(t["PB"])
+		s += I18n.t(", мастерство %+d") % int(t["PB"])
 	if int(t["W_ATK"]):
-		s += ", оружие %+d" % int(t["W_ATK"])
+		s += I18n.t(", оружие %+d") % int(t["W_ATK"])
 	if int(t["A_ATK"]):
-		s += ", способность %+d" % int(t["A_ATK"])
+		s += I18n.t(", способность %+d") % int(t["A_ATK"])
 	if int(t["LU_ATK"]):
-		s += ", удача %+d" % int(t["LU_ATK"])
+		s += I18n.t(", удача %+d") % int(t["LU_ATK"])
 	if int(t["PEN_ATK"]):
-		s += ", штраф −%d" % int(t["PEN_ATK"])
+		s += I18n.t(", штраф −%d") % int(t["PEN_ATK"])
 	return s + "]"
 
 
@@ -205,7 +205,7 @@ static func damage(roller, tgt, comps: Array, penetration: Dictionary, repeat: i
 		var q: int = 0
 		var qtext: String = ""
 		if String(comp["dice"]) != "":
-			var r: Dictionary = roller.roll(comp["dice"], {"repeat": repeat, "label": "Урон " + DAMAGE_NAMES.get(j, j)})
+			var r: Dictionary = roller.roll(comp["dice"], {"repeat": repeat, "label": I18n.t("Урон ") + DAMAGE_NAMES.get(j, j)})
 			q = int(r["total"])
 			qtext = "%d (%s%s)" % [q, comp["dice"], " ×%d" % repeat if repeat > 1 else ""]
 		var f: int = int(comp["F"])
@@ -227,13 +227,13 @@ static func damage(roller, tgt, comps: Array, penetration: Dictionary, repeat: i
 			"S": s, "V": v, "IMM": imm, "FINAL": fin})
 		var t: String = "%s %s%s%s = %d" % [DAMAGE_NAMES.get(j, j), qtext if qtext != "" else "0", " %+d" % f if f else "", " ÷2" if half else "", base]
 		if dr_eff > 0:
-			t += " − броня %d%s = %d" % [dr_eff, " (пробито %d%%)" % int(p * 100) if p > 0.0 else "", after]
+			t += I18n.t(" − броня %d%s = %d") % [dr_eff, I18n.t(" (пробито %d%%)") % int(p * 100) if p > 0.0 else "", after]
 		if imm:
-			t += " → иммунитет 0"
+			t += I18n.t(" → иммунитет 0")
 		elif s > 0.0 or v > 0.0:
-			t += " × %.2f%s%s → %d" % [mult, " (сопр. %d%%)" % int(s * 100) if s > 0.0 else "", " (уязв. +%d%%)" % int(v * 100) if v > 0.0 else "", fin]
+			t += " × %.2f%s%s → %d" % [mult, I18n.t(" (сопр. %d%%)") % int(s * 100) if s > 0.0 else "", I18n.t(" (уязв. +%d%%)") % int(v * 100) if v > 0.0 else "", fin]
 		texts.append(t)
-	return {"parts": parts, "total": total, "text": "Урон: %s. Итого %d." % ["; ".join(PackedStringArray(texts)), total]}
+	return {"parts": parts, "total": total, "text": I18n.t("Урон: %s. Итого %d.") % ["; ".join(PackedStringArray(texts)), total]}
 
 
 ## Раздел H: HP_NEW, ACTUAL_HP_LOSS, OVERKILL
@@ -256,16 +256,16 @@ static func saving_throw(roller, c, stat: String, dc: int, cover: String = "none
 	if stat == "dex":
 		m += int(cfg().cover_ac.get(cover, 0))
 	if c.save_flag("save_autofail", stat) or (c.down and stat in ["str", "dex"]):
-		var t: String = "Спасбросок %s %s: автопровал (DC %d)." % [Combatant.STAT_NAMES.get(stat, stat), c.title, dc]
+		var t: String = I18n.t("Спасбросок %s %s: автопровал (DC %d).") % [Combatant.STAT_NAMES.get(stat, stat), c.title, dc]
 		return {"ok": false, "auto": true, "text": t, "total": 0}
-	var r: Dictionary = roller.d20(m, c.save_flag("save_adv", stat), c.save_flag("save_dis", stat), "Спасбросок " + c.title)
+	var r: Dictionary = roller.d20(m, c.save_flag("save_adv", stat), c.save_flag("save_dis", stat), I18n.t("Спасбросок ") + c.title)
 	var ok: bool = int(r["total"]) >= dc
-	return {"ok": ok, "roll": r, "total": r["total"], "text": "Спасбросок %s %s: %s против DC %d → %s." % [
-		Combatant.STAT_NAMES.get(stat, stat), c.title, r["text"], dc, "успех" if ok else "провал"]}
+	return {"ok": ok, "roll": r, "total": r["total"], "text": I18n.t("Спасбросок %s %s: %s против DC %d → %s.") % [
+		Combatant.STAT_NAMES.get(stat, stat), c.title, r["text"], dc, I18n.t("успех") if ok else I18n.t("провал")]}
 
 
 static func initiative(roller, c) -> Dictionary:
-	var r: Dictionary = roller.d20(c.mod("dex") + c.per_bonus, false, false, "Инициатива " + c.title)
+	var r: Dictionary = roller.d20(c.mod("dex") + c.per_bonus, false, false, I18n.t("Инициатива ") + c.title)
 	c.initiative = int(r["total"])
 	return r
 
@@ -278,7 +278,7 @@ static func passive_perception(c) -> int:
 # ТРАВМЫ И 0 HP (документ: травмы вместо death saves; решение Huzzah)
 # =====================================================================
 static func hit_zone(roller) -> String:
-	var r: Dictionary = roller.d20(0, false, false, "Зона попадания", {"silent": true})
+	var r: Dictionary = roller.d20(0, false, false, I18n.t("Зона попадания"), {"silent": true})
 	var zones: Dictionary = cfg().zones
 	for z in ["head", "torso", "arm", "leg"]:
 		if int(r["natural"]) <= int(zones.get(z, 20)):
@@ -294,27 +294,27 @@ static func trauma_for(zone: String, dtype: String) -> String:
 ## Проверка при 0 HP: d20 + CON + LCK. Ответ: {result: "trauma"|"down"|"dead", text}
 static func zero_hp_check(roller, c) -> Dictionary:
 	var k: BattleConfig = cfg()
-	var r: Dictionary = roller.d20(c.mod("con") + c.mod("lck"), false, false, "Проверка травмы " + c.title)
+	var r: Dictionary = roller.d20(c.mod("con") + c.mod("lck"), false, false, I18n.t("Проверка травмы ") + c.title)
 	var total: int = int(r["total"])
 	var res: String = "dead"
 	if total >= k.trauma_high:
 		res = "trauma"
 	elif total >= k.trauma_mid:
 		res = "down"
-	var what: Dictionary = {"trauma": "тяжёлая травма, остаётся в сознании с 1 HP", "down": "без сознания, стабилен, травма", "dead": "смерть"}
-	return {"result": res, "roll": r, "text": "%s при 0 HP: %s (ВЫН %+d, УДЧ %+d) — пороги %d/%d → %s." % [
+	var what: Dictionary = {"trauma": I18n.t("тяжёлая травма, остаётся в сознании с 1 HP"), "down": I18n.t("без сознания, стабилен, травма"), "dead": I18n.t("смерть")}
+	return {"result": res, "roll": r, "text": I18n.t("%s при 0 HP: %s (ВЫН %+d, УДЧ %+d) — пороги %d/%d → %s.") % [
 		c.title, r["text"], c.mod("con"), c.mod("lck"), k.trauma_high, k.trauma_mid, what[res]]}
 
 
 ## Проверка тяжёлой раны (крит или удар ≥ доли HP): d20 + CON + LCK против injury_dc; провал — травма по зоне
 static func injury_check(roller, c, dtype: String) -> Dictionary:
 	var k: BattleConfig = cfg()
-	var r: Dictionary = roller.d20(c.mod("con") + c.mod("lck"), false, false, "Рана " + c.title)
+	var r: Dictionary = roller.d20(c.mod("con") + c.mod("lck"), false, false, I18n.t("Рана ") + c.title)
 	var ok: bool = int(r["total"]) >= k.injury_dc
 	var zone: String = hit_zone(roller)
 	var tr: String = "" if ok else trauma_for(zone, dtype)
-	return {"ok": ok, "zone": zone, "trauma": tr, "text": "Проверка раны %s: %s против DC %d → %s." % [
-		c.title, r["text"], k.injury_dc, "выдержал" if ok else "травма (%s)" % zone]}
+	return {"ok": ok, "zone": zone, "trauma": tr, "text": I18n.t("Проверка раны %s: %s против DC %d → %s.") % [
+		c.title, r["text"], k.injury_dc, I18n.t("выдержал") if ok else I18n.t("травма (%s)") % zone]}
 
 
 ## Урон падения: 1d6 дробящего за каждые 10 футов, не больше 20d6 (документ, раздел 6)

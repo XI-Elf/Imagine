@@ -62,7 +62,7 @@ func _ready() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	margin.add_child(box)
-	box.add_child(_label("Создание персонажа", 24, COL_TEXT, true))
+	box.add_child(_label(I18n.t("Создание персонажа"), 24, COL_TEXT, true))
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 12)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -76,9 +76,9 @@ func _ready() -> void:
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	btns.add_theme_constant_override("separation", 14)
 	box.add_child(btns)
-	btns.add_child(_button("Назад (Esc)", func() -> void: finished.emit({})))
-	btns.add_child(_button("Случайно", randomize_all))
-	create_btn = _button("Создать (Enter)", _on_create)
+	btns.add_child(_button(I18n.t("Назад (Esc)"), func() -> void: finished.emit({})))
+	btns.add_child(_button(I18n.t("Случайно"), randomize_all))
+	create_btn = _button(I18n.t("Создать (Enter)"), _on_create)
 	create_btn.add_theme_color_override("font_color", COL_GOLD)
 	btns.add_child(create_btn)
 	_set_gender("female")
@@ -107,7 +107,7 @@ func _build_story() -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	panel.add_child(v)
-	_bio_title = _label("История персонажа", 20, COL_GOLD, true)
+	_bio_title = _label(I18n.t("История персонажа"), 20, COL_GOLD, true)
 	v.add_child(_bio_title)
 	v.add_child(HSeparator.new())
 	_bio = RichTextLabel.new()
@@ -132,19 +132,19 @@ func _build_story() -> Control:
 func _build_left() -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
-	v.add_child(_label("Имя", 16, COL_DIM))
+	v.add_child(_label(I18n.t("Имя"), 16, COL_DIM))
 	var nr := HBoxContainer.new()
 	name_edit = LineEdit.new()
-	name_edit.placeholder_text = "Как зовут персонажа"
+	name_edit.placeholder_text = I18n.t("Как зовут персонажа")
 	name_edit.max_length = 16
 	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_edit.text_changed.connect(func(_t: String) -> void: _refresh())
 	nr.add_child(name_edit)
 	var rb := _small_button("⟳", _random_name)
-	rb.tooltip_text = "Случайное имя"
+	rb.tooltip_text = I18n.t("Случайное имя")
 	nr.add_child(rb)
 	v.add_child(nr)
-	v.add_child(_label("Пол", 16, COL_DIM))
+	v.add_child(_label(I18n.t("Пол"), 16, COL_DIM))
 	var gr := HBoxContainer.new()
 	gr.add_theme_constant_override("separation", 8)
 	v.add_child(gr)
@@ -163,7 +163,7 @@ func _build_left() -> Control:
 		gender_btns[g] = b
 		gr.add_child(b)
 	var ar := HBoxContainer.new()
-	ar.add_child(_label("Возраст", 16, COL_DIM))
+	ar.add_child(_label(I18n.t("Возраст"), 16, COL_DIM))
 	age_spin = SpinBox.new()
 	age_spin.min_value = int(P.C().get("age_min", 18))
 	age_spin.max_value = int(P.C().get("age_max", 60))
@@ -174,12 +174,12 @@ func _build_left() -> Control:
 	ar.add_child(age_spin)
 	v.add_child(ar)
 	v.add_child(HSeparator.new())
-	v.add_child(_label("Происхождение", 16, COL_DIM))
+	v.add_child(_label(I18n.t("Происхождение"), 16, COL_DIM))
 	origin_opt = _keyed_options(P.C()["origins"])
 	v.add_child(origin_opt)
 	origin_text = _wrap_label(13, COL_DIM)
 	v.add_child(origin_text)
-	v.add_child(_label("Профессия", 16, COL_DIM))
+	v.add_child(_label(I18n.t("Профессия"), 16, COL_DIM))
 	prof_opt = _keyed_options(P.C()["professions"])
 	v.add_child(prof_opt)
 	prof_text = _wrap_label(13, COL_DIM)
@@ -188,7 +188,7 @@ func _build_left() -> Control:
 	skills_label = _wrap_label(13, COL_TEXT)
 	v.add_child(skills_label)
 	var bag := _wrap_label(12, COL_DIM)
-	bag.text = "Вещей с собой нет: сумка пустая, всё нужное покупается или находится в пути."
+	bag.text = I18n.t("Вещей с собой нет: сумка пустая, всё нужное покупается или находится в пути.")
 	v.add_child(bag)
 	return v
 
@@ -218,7 +218,7 @@ func _build_right() -> Control:
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 3)
 	v.add_child(grid)
-	for h in ["", "", "Очки", "", "Бонус", "Итог"]:
+	for h in ["", "", I18n.t("Очки"), "", I18n.t("Бонус"), I18n.t("Итог")]:
 		grid.add_child(_label(h, 12, COL_DIM))
 	for s in P.stats_list():
 		var row: Dictionary = {}
@@ -236,10 +236,10 @@ func _build_right() -> Control:
 		grid.add_child(row["total"])
 		stat_rows[s] = row
 	var note := _wrap_label(12, COL_DIM)
-	note.text = "Бонус — пол, возраст, происхождение, профессия и черты. Удача складывается из происхождения, профессии и черт и в начале скрыта."
+	note.text = I18n.t("Бонус — пол, возраст, происхождение, профессия и черты. Удача складывается из происхождения, профессии и черт и в начале скрыта.")
 	v.add_child(note)
 	v.add_child(HSeparator.new())
-	v.add_child(_label("Черты характера", 17, COL_GOLD))
+	v.add_child(_label(I18n.t("Черты характера"), 17, COL_GOLD))
 	_trait_info = _wrap_label(13, COL_TEXT)
 	v.add_child(_trait_info)
 	var tg := GridContainer.new()
@@ -265,7 +265,7 @@ func _build_right() -> Control:
 		_trait_btns[t] = b
 		tg.add_child(b)
 	_trait_desc = _wrap_label(13, COL_DIM)
-	_trait_desc.text = "Наведите на черту, чтобы увидеть описание. Зелёные — достоинства, красные — недостатки."
+	_trait_desc.text = I18n.t("Наведите на черту, чтобы увидеть описание. Зелёные — достоинства, красные — недостатки.")
 	v.add_child(_trait_desc)
 	return v
 
@@ -274,7 +274,7 @@ func _trait_full(t: String) -> String:
 	var d: Dictionary = R.trait_def(t)
 	var s: String = P.trait_text(t)
 	if d.has("opp"):
-		s += " Несовместима с «%s»." % R.trait_def(d["opp"]).get("title", "")
+		s += I18n.t(" Несовместима с «%s».") % R.trait_def(d["opp"]).get("title", "")
 	return s
 
 
@@ -360,10 +360,10 @@ func _select_key(o: OptionButton, key: String) -> void:
 func problems() -> Array:
 	var out: Array = []
 	if name_edit.text.strip_edges() == "":
-		out.append("введите имя")
+		out.append(I18n.t("введите имя"))
 	var left: int = int(P.C().get("points", 10)) - P.points_spent(alloc)
 	if left > 0:
-		out.append("распределите очки (%d)" % left)
+		out.append(I18n.t("распределите очки (%d)") % left)
 	return out
 
 
@@ -373,7 +373,7 @@ func _refresh() -> void:
 	var p: Dictionary = params()
 	var parts: Dictionary = P.stat_parts(p)
 	var left: int = int(P.C().get("points", 10)) - P.points_spent(alloc)
-	points_label.text = "Свободные очки: %d из %d" % [left, int(P.C().get("points", 10))]
+	points_label.text = I18n.t("Свободные очки: %d из %d") % [left, int(P.C().get("points", 10))]
 	for s in P.stats_list():
 		var row: Dictionary = stat_rows[s]
 		var e: Dictionary = parts[s]
@@ -386,7 +386,7 @@ func _refresh() -> void:
 		row["plus"].disabled = left <= 0
 	var c: Dictionary = P.traits_cost(traits)
 	var al: String = P.alignment_name(P.alignment(traits))
-	_trait_info.text = "Выбрано %d из %d · достоинства %d · недостатки %d · мировоззрение: %s" % [
+	_trait_info.text = I18n.t("Выбрано %d из %d · достоинства %d · недостатки %d · мировоззрение: %s") % [
 		traits.size(), int(P.C().get("trait_max", 10)), int(c["positive"]), int(c["negative"]), al]
 	for t in _trait_btns:
 		var b: Button = _trait_btns[t]
@@ -400,15 +400,15 @@ func _refresh() -> void:
 	var lv: Dictionary = P.skill_levels(p)
 	for k in lv:
 		sk.append("%s %d" % [R.skills()[k].get("name_ru", k), int(lv[k])])
-	skills_label.text = "Навыки: " + (", ".join(sk) if not sk.is_empty() else "нет")
+	skills_label.text = I18n.t("Навыки: ") + (", ".join(sk) if not sk.is_empty() else I18n.t("нет"))
 	var story: String = P.biography(p)
 	if _bio.text != story:
 		_bio.text = story
 		_bio.scroll_to_line(0)
-	_bio_title.text = "История: %s" % (p["name"] if p["name"] != "" else "без имени")
-	_bio_note.text = "%s · %s · мировоззрение: %s" % [P.C()["origins"][origin()]["title"], P.C()["professions"][profession()]["title"], al]
+	_bio_title.text = I18n.t("История: %s") % (p["name"] if p["name"] != "" else I18n.t("без имени"))
+	_bio_note.text = I18n.t("%s · %s · мировоззрение: %s") % [P.C()["origins"][origin()]["title"], P.C()["professions"][profession()]["title"], al]
 	var pr: Array = problems()
-	hint_label.text = ("Чтобы продолжить: " + ", ".join(pr)) if not pr.is_empty() else ""
+	hint_label.text = (I18n.t("Чтобы продолжить: ") + ", ".join(pr)) if not pr.is_empty() else ""
 	create_btn.disabled = not pr.is_empty()
 
 
@@ -417,7 +417,7 @@ func _describe(d: Dictionary) -> String:
 	for s in d.get("stats", {}):
 		parts.append("%s %+d" % [P.stat_name(s), int(d["stats"][s])])
 	if int(d.get("luck", 0)) != 0:
-		parts.append("Удача %+d" % int(d["luck"]))
+		parts.append(I18n.t("Удача %+d") % int(d["luck"]))
 	for k in d.get("skills", {}):
 		parts.append("%s %d" % [R.skills().get(k, {}).get("name_ru", k), int(d["skills"][k])])
 	return "%s %s" % [String(d.get("text", "")), "; ".join(parts)]

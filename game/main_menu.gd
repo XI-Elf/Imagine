@@ -75,16 +75,19 @@ func _ready() -> void:
 	box.add_child(spacer)
 
 	# Кнопки меню
-	_add_button(box, "Новая игра", _on_new_game)
+	_add_button(box, I18n.t("Новая игра"), _on_new_game)
 
 	# «Продолжить» — последнее сохранение, «Загрузить» — выбор из списка
 	var has_saves: bool = WorldSave.exists()
-	var continue_button := _add_button(box, "Продолжить", _on_continue)
+	var continue_button := _add_button(box, I18n.t("Продолжить"), _on_continue)
 	continue_button.disabled = not has_saves
-	var load_button := _add_button(box, "Загрузить", _on_load_menu)
+	var load_button := _add_button(box, I18n.t("Загрузить"), _on_load_menu)
 	load_button.disabled = not has_saves
 
-	_add_button(box, "Выход", _on_quit)
+	# Язык (вопрос Q26): русский / украинский; смена перезапускает игру, чтобы все тексты собрались заново
+	_add_button(box, I18n.t("Язык: %s") % _lang_name(I18n.current()), _on_language)
+
+	_add_button(box, I18n.t("Выход"), _on_quit)
 
 	# Мітка для повідомлень
 	message_label = Label.new()
@@ -138,7 +141,7 @@ func _load_slot(slot: String) -> void:
 	# Нечитаемое сохранение (старая версия, повреждено) игра молча заменила бы новым пустым миром
 	if WorldSave.read(slot).is_empty():
 		_close_load_menu()
-		message_label.text = "Сохранение не читается (повреждено или от другой версии игры)"
+		message_label.text = I18n.t("Сохранение не читается (повреждено или от другой версии игры)")
 		return
 	Engine.set_meta("aw_load", slot)
 	_open_game()
@@ -151,7 +154,7 @@ func _open_game() -> void:
 		err = get_tree().change_scene_to_file(GAME_SCENE)
 	if err != OK:
 		Engine.set_meta("aw_load", "")
-		message_label.text = "Не открывается сцена мира %s (%s)" % [GAME_SCENE, error_string(err)]
+		message_label.text = I18n.t("Не открывается сцена мира %s (%s)") % [GAME_SCENE, error_string(err)]
 
 
 # Список сохранений: вид, дата, персонаж, игровая дата; «Загрузить» и «Удалить»
@@ -165,7 +168,7 @@ func _build_load_panel(parent: Control) -> void:
 	v.add_theme_constant_override("separation", 10)
 	_load_panel.add_child(v)
 	var t := Label.new()
-	t.text = "Загрузить"
+	t.text = I18n.t("Загрузить")
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	t.add_theme_font_size_override("font_size", 30)
 	t.add_theme_color_override("font_color", COLOR_TITLE)
@@ -177,7 +180,7 @@ func _build_load_panel(parent: Control) -> void:
 	_load_list = VBoxContainer.new()
 	_load_list.add_theme_constant_override("separation", 6)
 	sc.add_child(_load_list)
-	var back := _add_button(v, "Назад", _close_load_menu)
+	var back := _add_button(v, I18n.t("Назад"), _close_load_menu)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
@@ -203,22 +206,36 @@ func _on_load_menu() -> void:
 		var l := Label.new()
 		var who: String = String(h.get("char_name", ""))
 		l.text = "%s  %s\n%s%s" % [h["title"], String(h.get("saved_at", "")).replace("T", " "),
-			("Персонаж: " + who + "   ") if who != "" else "",
+			(I18n.t("Персонаж: ") + who + "   ") if who != "" else "",
 			String(h.get("game_date", "")) + ("   " + String(h["place"]) if h.has("place") else "")]
 		l.custom_minimum_size = Vector2(420, 0)
 		l.add_theme_color_override("font_color", COLOR_TITLE)
 		row.add_child(l)
 		var b := Button.new()
-		b.text = "Загрузить"
+		b.text = I18n.t("Загрузить")
 		b.pressed.connect(_load_slot.bind(String(h["slot"])))
 		row.add_child(b)
 		var d := Button.new()
-		d.text = "Удалить"
+		d.text = I18n.t("Удалить")
 		d.pressed.connect(_delete_slot.bind(String(h["slot"])))
 		row.add_child(d)
 		_load_list.add_child(row)
 	_main_box.visible = false
 	_load_panel.visible = true
+
+
+func _lang_name(code: String) -> String:
+	for l in I18n.LANGS:
+		if l[0] == code:
+			return l[1]
+	return code
+
+
+func _on_language() -> void:
+	var codes: Array = I18n.LANGS.map(func(l): return l[0])
+	var next: String = codes[(codes.find(I18n.current()) + 1) % codes.size()]
+	if I18n.choose(next):
+		I18n.restart(get_tree())
 
 
 # Натиснули "Выход"

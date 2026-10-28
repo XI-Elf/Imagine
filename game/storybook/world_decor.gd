@@ -6,6 +6,7 @@ extends Node2D
 ## По биомам: лес — густые деревья (поляны шейдера — без деревьев, с цветами), проклятый лес — кривые
 ## деревья с лиловым оттенком, болото — редкие кривые деревья и кусты, пустошь — редкие сухие деревья
 ## и камни, горы — горы и скалы в 8–15 м (жаркие — рыжие), берег — камешки.
+## На протоптанной тропе и дороге (world/trails_layer.gd, со ступени «тропа») деревьев и кустов нет.
 ##
 ## Быстро: карта делится на клетки CHUNK м; у клетки два MultiMesh (крупное и мелочь) из одного атласа,
 ## один вызов отрисовки на клетку. Клетки считаются по нескольку за кадр от центра экрана и
@@ -52,6 +53,7 @@ func _process(_delta: float) -> void:
 		return
 	if _noise == null:
 		_noise = game.get("noise_image")
+	_drop_trodden_chunks()
 	var z: float = game.zoom
 	var vp: Vector2 = get_viewport_rect().size
 	_root.position = vp * 0.5 - game.cam_pos * z
@@ -103,6 +105,27 @@ func _process(_delta: float) -> void:
 		var old: Vector2i = _order.pop_front()
 		if not _nodes.has(old):
 			_data.erase(old)
+
+
+# Сменилась ступень протоптанной клетки — её участок расставляется заново (дорога вытаптывает лес)
+func _drop_trodden_chunks() -> void:
+	var tl: Node = game.get("trails")
+	if tl == null:
+		return
+	var cells: Array = tl.take_dirty()
+	if cells.is_empty():
+		return
+	var keys: Dictionary = {}
+	for c in cells:
+		var q: Vector2 = tl.model.center_of(c)
+		var h: float = tl.model.cell_m * 0.5
+		for o in [Vector2(-h, -h), Vector2(h, -h), Vector2(-h, h), Vector2(h, h)]:
+			keys[Vector2i(floori((q.x + o.x) / CHUNK), floori((q.y + o.y) / CHUNK))] = true
+	for k in keys:
+		_data.erase(k)
+		if _nodes.has(k):
+			_nodes[k].queue_free()
+			_nodes.erase(k)
 
 
 # =====================================================================
@@ -158,6 +181,7 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 func _grid(o: Vector2, s: float, salt: int, f: Callable) -> void:
 	var x0: int = floori(o.x / s)
 	var y0: int = floori(o.y / s)
+	var tl: Node = game.get("trails") if game != null else null
 	var x1: int = floori((o.x + CHUNK) / s)
 	var y1: int = floori((o.y + CHUNK) / s)
 	for y in range(y0, y1 + 1):
@@ -167,7 +191,8 @@ func _grid(o: Vector2, s: float, salt: int, f: Callable) -> void:
 			if p.x < o.x or p.y < o.y or p.x >= o.x + CHUNK or p.y >= o.y + CHUNK:
 				continue
 			var b: int = game.biome_at(p)
-			if b >= 2:
+			# Протоптанная тропа и дорога (world/trails_layer.gd) — без деревьев и кустов
+			if b >= 2 and (tl == null or not tl.trodden(p)):
 				f.call(p, n, b)
 
 

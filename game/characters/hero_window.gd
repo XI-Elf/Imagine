@@ -16,7 +16,7 @@ const ComicUI := preload("res://ui/comic_ui.gd")
 const BATTLE_CONFIG := "res://data/battle/config.tres"
 
 const TABS: Array = ["stats", "skills", "traits", "bag"]
-const TAB_TITLES: Dictionary = {"stats": "Характеристики", "skills": "Навыки", "traits": "Черты характера", "bag": "Инвентарь"}
+static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь")}
 const COL_TEXT := Color("d8cfb0")
 const COL_DIM := Color("9a9078")
 const COL_GOLD := Color("c9a24b")
@@ -92,7 +92,7 @@ func _ready() -> void:
 	_body.add_theme_constant_override("separation", 4)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.add_child(_body)
-	_note = _label("1–4 вкладки · I характеристики · Tab инвентарь · Esc закрыть", 13, COL_DIM)
+	_note = _label(I18n.t("1–4 вкладки · I характеристики · Tab инвентарь · Esc закрыть"), 13, COL_DIM)
 	v.add_child(_note)
 
 
@@ -179,8 +179,8 @@ func refresh() -> void:
 	for c in _body.get_children():
 		c.queue_free()
 	if a == null:
-		_title.text = "Героя нет"
-		_body.add_child(_label("Создайте героя: G на карте.", 16, COL_DIM))
+		_title.text = I18n.t("Героя нет")
+		_body.add_child(_label(I18n.t("Создайте героя: G на карте."), 16, COL_DIM))
 		return
 	_title.text = "%s — %s" % [a.display_name, TAB_TITLES[tab]]
 	match tab:
@@ -206,8 +206,8 @@ func _fill_stats(a: Actor) -> void:
 		_body.add_child(_label("%s, %d %s · %s · %s · %s" % [g, int(pf.get("age", 0)), P.years(int(pf.get("age", 0))), o, pr,
 			P.alignment_name(pf.get("alignment", {}))], 15, COL_TEXT))
 	else:
-		_body.add_child(_label("Герой создан до окна персонажа: происхождения и черт нет.", 14, COL_DIM))
-	_body.add_child(_label("Характеристики", 17, COL_GOLD))
+		_body.add_child(_label(I18n.t("Герой создан до окна персонажа: происхождения и черт нет."), 14, COL_DIM))
+	_body.add_child(_label(I18n.t("Характеристики"), 17, COL_GOLD))
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 18)
@@ -219,17 +219,17 @@ func _fill_stats(a: Actor) -> void:
 		var tip: String = ""
 		if parts.has(s):
 			var e: Dictionary = parts[s]
-			var bits: Array = ["очки %d" % int(e.get("base", 4))]
-			for k in [["gender", "пол"], ["age", "возраст"], ["background", "прошлое"], ["traits", "черты"]]:
+			var bits: Array = [I18n.t("очки %d") % int(e.get("base", 4))]
+			for k in [["gender", I18n.t("пол")], ["age", I18n.t("возраст")], ["background", I18n.t("прошлое")], ["traits", I18n.t("черты")]]:
 				if int(e.get(k[0], 0)) != 0:
 					bits.append("%s %+d" % [k[1], int(e[k[0]])])
 			if int(e.get("total", a.stat(s))) != int(a.stat(s)):
-				bits.append("сейчас %+d" % (int(a.stat(s)) - int(e.get("total", 0))))
+				bits.append(I18n.t("сейчас %+d") % (int(a.stat(s)) - int(e.get("total", 0))))
 			tip = ", ".join(bits)
 		grid.add_child(_label(tip, 13, COL_DIM))
 	_body.add_child(HSeparator.new())
-	_body.add_child(_label("Состояние", 17, COL_GOLD))
-	var shown: Dictionary = {"hunger": "Сытость", "thirst": "Вода", "stamina": "Запас сил"}
+	_body.add_child(_label(I18n.t("Состояние"), 17, COL_GOLD))
+	var shown: Dictionary = {"hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "stamina": I18n.t("Запас сил")}
 	var ch: Dictionary = R.characteristics()
 	for r in Actor.RESOURCES:
 		var row := HBoxContainer.new()
@@ -246,12 +246,12 @@ func _fill_stats(a: Actor) -> void:
 		_body.add_child(row)
 	var cond: Array = []
 	for c in a.conditions:
-		cond.append(String(R.condition(c["id"]).get("name_ru", c["id"])) + ("" if c["id"] != "radiation_sickness" else " (стадия %d)" % int(c["stage"])))
+		cond.append(String(R.condition(c["id"]).get("name_ru", c["id"])) + ("" if c["id"] != "radiation_sickness" else I18n.t(" (стадия %d)") % int(c["stage"])))
 	for bf in a.buffs:
-		cond.append("+ %s (%.0f ч)" % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])])
-	_body.add_child(_wrap("Травмы, болезни, эффекты: " + (", ".join(cond) if not cond.is_empty() else "нет"), 14, COL_TEXT))
+		cond.append(I18n.t("+ %s (%.0f ч)") % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])])
+	_body.add_child(_wrap(I18n.t("Травмы, болезни, эффекты: ") + (", ".join(cond) if not cond.is_empty() else I18n.t("нет")), 14, COL_TEXT))
 	var dv: Dictionary = a.derived()
-	_body.add_child(_wrap("Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от проклятья %d %% · Пройдено %.1f км" % [
+	_body.add_child(_wrap(I18n.t("Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от проклятья %d %% · Пройдено %.1f км") % [
 		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0), a.distance_m / 1000.0], 14, COL_DIM))
 
 
@@ -277,10 +277,10 @@ func _fill_skills(a: Actor) -> void:
 		bar.max_value = maxf(hi - lo, 1.0)
 		bar.value = clampf(xp - lo, 0.0, bar.max_value) if hi > lo else bar.max_value
 		row.add_child(bar)
-		row.add_child(_label("  опыт %d%s" % [int(xp), (" / %d" % int(hi)) if hi > lo else " (предел)"], 13, COL_DIM))
+		row.add_child(_label(I18n.t("  опыт %d%s") % [int(xp), (" / %d" % int(hi)) if hi > lo else I18n.t(" (предел)")], 13, COL_DIM))
 		_body.add_child(row)
 		_body.add_child(_wrap(String(sk[k].get("description", "")), 13, COL_DIM))
-	_body.add_child(_wrap("Опыт растёт от дела: Выживание — в пути, Медицина — при лечении. Интеллект и черты «Трудолюбивый», «Грамотный» ускоряют рост.", 13, COL_DIM))
+	_body.add_child(_wrap(I18n.t("Опыт растёт от дела: Выживание — в пути, Медицина — при лечении. Интеллект и черты «Трудолюбивый», «Грамотный» ускоряют рост."), 13, COL_DIM))
 
 
 # =====================================================================
@@ -288,17 +288,17 @@ func _fill_skills(a: Actor) -> void:
 # =====================================================================
 func _fill_traits(a: Actor) -> void:
 	if a.traits.is_empty():
-		_body.add_child(_label("Черт характера нет.", 15, COL_DIM))
+		_body.add_child(_label(I18n.t("Черт характера нет."), 15, COL_DIM))
 	for t in a.traits:
 		var c: int = int(R.trait_def(t).get("cost", 0))
 		_body.add_child(_wrap(P.trait_text(t), 15, COL_GOOD if c > 0 else COL_BAD))
 	var al: Dictionary = a.profile.get("alignment", P.alignment(a.traits))
 	_body.add_child(HSeparator.new())
-	_body.add_child(_label("Мировоззрение: %s (добро %+d, закон %+d)" % [P.alignment_name(al), int(al.get("moral", 0)), int(al.get("order", 0))], 16, COL_GOLD))
+	_body.add_child(_label(I18n.t("Мировоззрение: %s (добро %+d, закон %+d)") % [P.alignment_name(al), int(al.get("moral", 0)), int(al.get("order", 0))], 16, COL_GOLD))
 	var bio: String = String(a.profile.get("biography", ""))
 	if bio != "":
 		_body.add_child(HSeparator.new())
-		_body.add_child(_label("История", 17, COL_GOLD))
+		_body.add_child(_label(I18n.t("История"), 17, COL_GOLD))
 		_body.add_child(_wrap(bio, 15, Color("e6dcc0")))
 
 
@@ -342,7 +342,7 @@ static func armor_of(bag: Dictionary) -> String:
 func _fill_bag(a: Actor) -> void:
 	var bag: Dictionary = _bag()
 	if bag.is_empty():
-		_body.add_child(_label("Сумки нет.", 15, COL_DIM))
+		_body.add_child(_label(I18n.t("Сумки нет."), 15, COL_DIM))
 		return
 	if Trade.count(bag, inv_sel) <= 0:
 		inv_sel = ""
@@ -351,7 +351,7 @@ func _fill_bag(a: Actor) -> void:
 	inv_page = clampi(inv_page, 0, view.pages() - 1)
 	_body.add_child(view)
 	if _say_t <= 0.0:
-		_note.text = "Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–4 вкладки · Esc закрыть"
+		_note.text = I18n.t("Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–4 вкладки · Esc закрыть")
 
 
 func refresh_bag() -> void:
@@ -369,7 +369,7 @@ func equip_item(id: String) -> void:
 	var old: String = String(eq.get(w["slot"], ""))
 	eq[String(w["slot"])] = id
 	bag["equipped"] = eq
-	_say("Надето: %s%s" % [Trade.item_name(id), (" (снято: %s)" % Trade.item_name(old)) if old != "" and old != id else ""])
+	_say(I18n.t("Надето: %s%s") % [Trade.item_name(id), (I18n.t(" (снято: %s)") % Trade.item_name(old)) if old != "" and old != id else ""])
 	refresh_bag()
 
 
@@ -378,7 +378,7 @@ func unequip_item(id: String) -> void:
 	for slot in eq.keys():
 		if eq[slot] == id:
 			eq.erase(slot)
-			_say("Снято: %s" % Trade.item_name(id))
+			_say(I18n.t("Снято: %s") % Trade.item_name(id))
 	refresh_bag()
 
 
@@ -430,7 +430,7 @@ func drop_all() -> void:
 	if _actor() != null:
 		_actor().carried_kg = Trade.weight(bag)
 	_fix_equipped(bag)
-	_say("Выброшено вещей: %d" % n)
+	_say(I18n.t("Выброшено вещей: %d") % n)
 	refresh_bag()
 
 
@@ -455,7 +455,7 @@ func drop_item(id: String) -> void:
 	if _actor() != null:
 		_actor().carried_kg = Trade.weight(bag)
 	_fix_equipped(bag)
-	_say("Выброшено: %s" % Trade.item_name(id))
+	_say(I18n.t("Выброшено: %s") % Trade.item_name(id))
 	_sig = ""
 	refresh()
 
@@ -470,7 +470,7 @@ func toggle_loadout(id: String) -> void:
 	elif lo.size() < _loadout_max():
 		lo.append(id)
 	else:
-		_say("В бой — не больше %d видов оружия" % _loadout_max())
+		_say(I18n.t("В бой — не больше %d видов оружия") % _loadout_max())
 	bag["battle_loadout"] = lo
 	_sig = ""
 	refresh()

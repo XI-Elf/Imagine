@@ -51,7 +51,7 @@ func walk(city: Node, dir: Vector2, seconds: float) -> float:
 	return city.hero_pos.distance_to(start)
 
 
-## Город, выросший до конца (city_growth.gd): все поручения сданы — проверки ниже про полный Чёрнославль
+## Город, выросший до конца (city_growth.gd): все поручения сданы — проверки ниже про полный Эшвик
 func full_state() -> Dictionary:
 	var done: Array = []
 	var quests: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/cities/s001.json"))["growth"]["quests"]
@@ -69,7 +69,7 @@ func _run() -> void:
 	city.enter("s001", hero, {"inventory": bag, "gate": "south", "state": full_state()})
 	city.exit_requested.connect(func(c, g): exits.append([c, g]))
 	await frames(5)
-	ok(city.entered and city.map.radial() and city.map.w == 84 and city.map.h == 84 and city.map.cell_m == 1.0, "Чёрнославль: радиальный план 84×84 клетки по 1 м")
+	ok(city.entered and city.map.radial() and city.map.w == 84 and city.map.h == 84 and city.map.cell_m == 1.0, "Эшвик: радиальный план 84×84 клетки по 1 м")
 	ok(city.map.buildings.size() == 43 and city.npcs.size() == 29, "выросший город: 43 дома, 29 НПС (Storybook и кожевник)")
 	ok(city.map.tile_at(city.hero_pos) in [CityMap.T.ROAD, CityMap.T.GRASS], "герой у южных ворот на дороге: %s" % city.hero_pos)
 	city.clock.paused = true
@@ -151,18 +151,18 @@ func _run() -> void:
 	city.use_place(city._nearest_place())
 	ok(hero.res["thirst"] > 50.0, "напился из колодца: %.0f" % hero.res["thirst"])
 
-	# Лечение у знахарки
+	# Лечение у травницы
 	var healer: Dictionary = {}
 	for n in city.npcs:
 		if n["def"]["id"] == "healer":
 			healer = n
-	ok(city._npc_on_duty_here(healer), "знахарка в знахарской: %s → %s sleep=%s alive=%s h=%.1f" % [healer["pos"], healer["work_pos"], healer["actor"].sleeping, healer["actor"].alive, city.clock.hour_of_day()])
+	ok(city._npc_on_duty_here(healer), "травница в лечебнице: %s → %s sleep=%s alive=%s h=%.1f" % [healer["pos"], healer["work_pos"], healer["actor"].sleeping, healer["actor"].alive, city.clock.hour_of_day()])
 	hero.add_condition("laceration")
 	var tries: int = 0
 	while hero.has_condition("laceration") and tries < 10:
 		city.heal(healer)
 		tries += 1
-	ok(not hero.has_condition("laceration"), "знахарка вылечила рваную рану за %d попыток" % tries)
+	ok(not hero.has_condition("laceration"), "травница вылечила рваную рану за %d попыток" % tries)
 
 	# Тайник: погреб под развалинами
 	var cellar: Dictionary = {}

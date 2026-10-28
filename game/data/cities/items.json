@@ -1,5 +1,5 @@
 {
-  "_note": "Предметы для торговли в городах. price — базовая цена в монетах, weight — кг. use: eat/drink — что делает при использовании (Actor.eat/drink), treat — ключ для лечения (rules.json treatments). wear — одежда: slot (head, body, back, hands, legs, feet), look — как рисуется на кукле героя (characters/paper_doll.gd), color. transport — лошадь или повозка (characters/transport.gd, вопрос Q16): в сумке, но не в сетке инвентаря; unique — одна на героя; requires — что нужно иметь до покупки. Все числа [ВРЕМЕННО].",
+  "_note": "Предметы для торговли в городах. price — базовая цена в монетах, weight — кг. use: eat/drink — что делает при использовании (Actor.eat/drink), treat — ключ для лечения (rules.json treatments). wear — одежда: slot (head, body, back, hands, legs, feet), look — как рисуется на кукле героя (characters/paper_doll.gd), color. transport — лошадь или повозка (characters/transport.gd, вопрос Q16): в сумке, но не в сетке инвентаря; unique — одна на героя; requires — что нужно иметь до покупки. Все числа [Q19: проверяет tests/balance_checks.gd].",
   "currency": "монеты",
   "items": {
     "bread":            {"name": "Хлеб",                 "price": 3,  "weight": 0.5, "use": {"eat": 20, "kind": "cooked"}},
@@ -12,7 +12,7 @@
     "salve":            {"name": "Мазь",                 "price": 10, "weight": 0.2, "treat": true},
     "herbal_decoction": {"name": "Травяной отвар",       "price": 8,  "weight": 0.3, "treat": true},
     "charcoal":         {"name": "Толчёный уголь",       "price": 3,  "weight": 0.1, "treat": true},
-    "anti_rad_potion":  {"name": "Противорадное зелье",  "price": 30, "weight": 0.3, "treat": true},
+    "anti_rad_potion":  {"name": "Очищающее зелье",  "price": 30, "weight": 0.3, "treat": true},
     "healing_potion":   {"name": "Целебное зелье",       "price": 25, "weight": 0.3, "treat": true},
     "fever_potion":     {"name": "Жаропонижающее",       "price": 12, "weight": 0.2, "treat": true},
     "warming_potion":   {"name": "Согревающее",          "price": 10, "weight": 0.2, "treat": true},

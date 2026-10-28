@@ -1,7 +1,7 @@
 extends SceneTree
 ## Тёмный мир и техно-артефакты (Q31 B): фильтр ui/world_grade.gd на карте, в городе и в бою (интерфейс —
 ## без фильтра), руины машин (characters/cast.gd), сигнальные вышки (storybook/world_decor.gd), вышка и остов
-## машины в Чёрнославле (data/cities/s001.json). Нужен экран: под xvfb, --rendering-driver opengl3.
+## машины в Эшвике (data/cities/s001.json). Нужен экран: под xvfb, --rendering-driver opengl3.
 ## godot --path game --rendering-driver opengl3 -s res://tests/dark_world_checks.gd -- [папка_для_снимков]
 
 const WorldGrade := preload("res://ui/world_grade.gd")
@@ -68,7 +68,7 @@ func _run() -> void:
 	var m := CityMap.new()
 	m.build(def)
 	var tech: Array = def["props"].filter(func(p): return String(p["kind"]).begins_with("tech_"))
-	ok(tech.size() == 2, "в Чёрнославле 2 техно-артефакта")
+	ok(tech.size() == 2, "в Эшвике 2 техно-артефакта")
 	var solid: bool = true
 	for p in tech:
 		for c in p["cells"]:
@@ -173,7 +173,7 @@ func _run() -> void:
 	var W: Node = root.get_node("Worlds")
 	game.cast.spawn_hero(start)
 	game.clock.total_seconds = floorf(game.clock.total_seconds / 86400.0) * 86400.0 + 12.0 * 3600.0
-	ok(await W.enter_city("s001", {"return_pos": game.cast.hero["pos"]}), "вошли в Чёрнославль")
+	ok(await W.enter_city("s001", {"return_pos": game.cast.hero["pos"]}), "вошли в Эшвик")
 	await frames(4)
 	var city: Node = W.current_node()
 	ok(skin.grade.visible, "в городе фильтр включён")

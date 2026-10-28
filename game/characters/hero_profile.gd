@@ -73,18 +73,18 @@ static func trait_mods(list: Array) -> Dictionary:
 ## "" — набор годится; иначе причина
 static func traits_valid(list: Array) -> String:
 	if list.size() > int(C().get("trait_max", 10)):
-		return "не больше %d черт" % int(C().get("trait_max", 10))
+		return I18n.t("не больше %d черт") % int(C().get("trait_max", 10))
 	var seen: Dictionary = {}
 	for t in list:
 		if R.trait_def(t).is_empty():
-			return "нет такой черты"
+			return I18n.t("нет такой черты")
 		if seen.has(t):
-			return "черта повторяется"
+			return I18n.t("черта повторяется")
 		seen[t] = true
 	for t in list:
 		var opp: String = String(R.trait_def(t).get("opp", ""))
 		if opp != "" and seen.has(opp):
-			return "«%s» и «%s» несовместимы" % [R.trait_def(t)["title"], R.trait_def(opp)["title"]]
+			return I18n.t("«%s» и «%s» несовместимы") % [R.trait_def(t)["title"], R.trait_def(opp)["title"]]
 	return ""
 
 
@@ -128,36 +128,36 @@ static func trait_text(t: String) -> String:
 	for k in d.get("stats", {}):
 		parts.append("%s %+d" % [stat_name(k), int(d["stats"][k])])
 	for k in d.get("skills", {}):
-		parts.append("%s %+d ур." % [R.skills().get(k, {}).get("name_ru", k), int(d["skills"][k])])
+		parts.append(I18n.t("%s %+d ур.") % [R.skills().get(k, {}).get("name_ru", k), int(d["skills"][k])])
 	for k in d.get("effects", {}):
 		parts.append(effect_text(k, float(d["effects"][k])))
 	if d.has("moral") or d.has("order"):
-		parts.append("мировоззрение")
+		parts.append(I18n.t("мировоззрение"))
 	var s: String = "%s — %s" % [d.get("title", t), d.get("text", "")]
 	if not parts.is_empty():
 		s += " (%s)" % ", ".join(parts)
 	return s + "."
 
 
-const EFFECT_NAMES: Dictionary = {
-	"power": "сила удара", "speed": "скорость", "loot": "поиск", "xp": "опыт навыков",
-	"disease_chance": "шанс заболеть", "fall_chance": "травмы в пути", "food_water_chance": "болезни от еды и сырой воды",
-	"sneak": "шанс проникнуть в город", "sleep_energy": "отдых во сне",
+static var EFFECT_NAMES: Dictionary = {
+	"power": I18n.t("сила удара"), "speed": I18n.t("скорость"), "loot": I18n.t("поиск"), "xp": I18n.t("опыт навыков"),
+	"disease_chance": I18n.t("шанс заболеть"), "fall_chance": I18n.t("травмы в пути"), "food_water_chance": I18n.t("болезни от еды и сырой воды"),
+	"sneak": I18n.t("шанс проникнуть в город"), "sleep_energy": I18n.t("отдых во сне"),
 }
 
 
 static func effect_text(k: String, v: float) -> String:
 	match k:
 		"health_regen":
-			return "здоровье %+.1f/ч" % v
+			return I18n.t("здоровье %+.1f/ч") % v
 		"hunger":
-			return "голод %+.1f/ч" % (v * 100.0)
+			return I18n.t("голод %+.1f/ч") % (v * 100.0)
 		"energy_decay":
-			return "энергия %+.1f/ч" % (-v * 100.0)
+			return I18n.t("энергия %+.1f/ч") % (-v * 100.0)
 		"cold_resist_c":
-			return "холод на %d °C позже" % int(v)
+			return I18n.t("холод на %d °C позже") % int(v)
 		"heat_resist_c":
-			return "жара на %d °C позже" % int(v)
+			return I18n.t("жара на %d °C позже") % int(v)
 	return "%s %+d %%" % [EFFECT_NAMES.get(k, k), int(round(v * 100.0))]
 
 
@@ -182,7 +182,7 @@ static func _axis(v: float) -> int:
 
 static func alignment_name(al: Dictionary) -> String:
 	var names: Dictionary = C().get("alignment", {}).get("names", {})
-	return String(names.get("%d,%d" % [_axis(float(al.get("order", 0.0))), _axis(float(al.get("moral", 0.0)))], "Нейтральный"))
+	return String(names.get("%d,%d" % [_axis(float(al.get("order", 0.0))), _axis(float(al.get("moral", 0.0)))], I18n.t("Нейтральный")))
 
 
 # =====================================================================
@@ -236,12 +236,12 @@ static func skill_levels(p: Dictionary) -> Dictionary:
 
 static func years(n: int) -> String:
 	if n % 100 >= 11 and n % 100 <= 14:
-		return "лет"
+		return I18n.t("лет")
 	if n % 10 == 1:
-		return "год"
+		return I18n.t("год")
 	if n % 10 >= 2 and n % 10 <= 4:
-		return "года"
-	return "лет"
+		return I18n.t("года")
+	return I18n.t("лет")
 
 
 ## Биография коротко (Huzzah 2026-10-23: «меньше текста»): 2–3 предложения —
@@ -252,14 +252,14 @@ static func biography(p: Dictionary) -> String:
 	var nm: String = String(p.get("name", "")).strip_edges()
 	var male: bool = String(p.get("gender", "female")) == "male"
 	if nm == "":
-		nm = "Безымянный путник" if male else "Безымянная путница"
+		nm = I18n.t("Безымянный путник") if male else I18n.t("Безымянная путница")
 	var o: String = String(p.get("origin", ""))
 	var pr: String = String(p.get("profession", ""))
 	var sel: Array = p.get("traits", [])
 	var age: int = int(p.get("age", 25))
 	var out: PackedStringArray = []
-	out.append("%s, %d %s. %s, ремесло — %s." % [nm, age, years(age),
-		String(data.get("origins_short", {}).get(o, "Родом издалека")), String(data.get("professions_short", {}).get(pr, "своё"))])
+	out.append(I18n.t("%s, %d %s. %s, ремесло — %s.") % [nm, age, years(age),
+		String(data.get("origins_short", {}).get(o, I18n.t("Родом издалека"))), String(data.get("professions_short", {}).get(pr, I18n.t("своё")))])
 	var best: String = ""
 	for k in C()["traits"]:
 		if sel.has(k):
@@ -269,7 +269,7 @@ static func biography(p: Dictionary) -> String:
 				best = first
 	if best != "":
 		out.append(best + ".")
-	out.append("Мировоззрение: «%s»." % alignment_name(alignment(sel)))
+	out.append(I18n.t("Мировоззрение: «%s».") % alignment_name(alignment(sel)))
 	return " ".join(out)
 
 

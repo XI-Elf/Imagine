@@ -16,7 +16,7 @@ static func data() -> Dictionary:
 		_read = true
 		var f := FileAccess.open(RECIPES_FILE, FileAccess.READ)
 		if f != null:
-			var v: Variant = JSON.parse_string(f.get_as_text())
+			var v: Variant = I18n.tree(JSON.parse_string(f.get_as_text()))
 			if v is Dictionary:
 				_data = v
 		if _data.get("recipes", {}).is_empty():
@@ -34,7 +34,7 @@ static func skill_of(role: String) -> String:
 
 
 static func workshop_name(role: String) -> String:
-	return String(data().get("workshops", {}).get(role, {}).get("name", "Мастерская"))
+	return String(data().get("workshops", {}).get(role, {}).get("name", I18n.t("Мастерская")))
 
 
 ## Рецепты мастерской: id по уровню, потом по имени вещи
@@ -76,15 +76,15 @@ static func _take(bag: Dictionary, r: Dictionary, share: float) -> void:
 ## Заказ у мастера. Ответ: текст ошибки, "" — вещь в сумке
 static func order(bag: Dictionary, r: Dictionary, master: Actor) -> String:
 	if r.is_empty():
-		return "Нет такого рецепта"
+		return I18n.t("Нет такого рецепта")
 	var sk: String = skill_of(String(r["master"]))
 	if master != null and master.skill_level(sk) < int(r.get("level", 0)):
-		return "Мастер такого не умеет"
+		return I18n.t("Мастер такого не умеет")
 	if not missing(bag, r).is_empty():
-		return "Не хватает материалов"
+		return I18n.t("Не хватает материалов")
 	var fee: int = int(r.get("fee", 0))
 	if int(bag["money"]) < fee:
-		return "Не хватает денег"
+		return I18n.t("Не хватает денег")
 	bag["money"] = int(bag["money"]) - fee
 	_take(bag, r, 1.0)
 	Trade.add(bag, String(r["out"]))
@@ -104,13 +104,13 @@ static func chance(r: Dictionary, hero: Actor) -> float:
 ## Почему нельзя сделать самому ("" — можно попробовать)
 static func self_blocker(bag: Dictionary, r: Dictionary, hero: Actor) -> String:
 	if r.is_empty() or hero == null:
-		return "Нет такого рецепта"
+		return I18n.t("Нет такого рецепта")
 	if chance(r, hero) <= 0.0:
-		return "Нужен навык %d" % int(r.get("level", 0))
+		return I18n.t("Нужен навык %d") % int(r.get("level", 0))
 	if not missing(bag, r).is_empty():
-		return "Не хватает материалов"
+		return I18n.t("Не хватает материалов")
 	if hero.res["stamina"] < float(r.get("work", 0)):
-		return "Слишком устали: нужно %d выносливости" % int(r.get("work", 0))
+		return I18n.t("Слишком устали: нужно %d выносливости") % int(r.get("work", 0))
 	return ""
 
 
@@ -127,10 +127,10 @@ static func make(bag: Dictionary, r: Dictionary, hero: Actor, rng: RandomNumberG
 		_take(bag, r, 1.0)
 		Trade.add(bag, String(r["out"]))
 		hero.add_xp(sk, float(r.get("xp", 0)))
-		return {"ok": true, "text": "Готово: %s" % name}
+		return {"ok": true, "text": I18n.t("Готово: %s") % name}
 	_take(bag, r, float(s.get("fail_loss", 0.5)))
 	hero.add_xp(sk, float(r.get("xp", 0)) * float(s.get("fail_xp", 0.5)))
-	return {"ok": false, "text": "Не вышло (%s): работа испорчена, часть материалов пропала" % name}
+	return {"ok": false, "text": I18n.t("Не вышло (%s): работа испорчена, часть материалов пропала") % name}
 
 
 static func lesson_fee(hero: Actor, sk: String) -> int:
@@ -141,12 +141,12 @@ static func lesson_fee(hero: Actor, sk: String) -> int:
 ## Урок у мастера: опыт за деньги, пока герой ниже мастера. Ответ: текст ошибки, "" — урок пройден
 static func lesson(bag: Dictionary, hero: Actor, master: Actor, sk: String) -> String:
 	if sk == "" or hero == null or master == null:
-		return "Здесь не учат"
+		return I18n.t("Здесь не учат")
 	if hero.skill_level(sk) >= master.skill_level(sk):
-		return "Мастеру больше нечему вас учить"
+		return I18n.t("Мастеру больше нечему вас учить")
 	var fee: int = lesson_fee(hero, sk)
 	if int(bag["money"]) < fee:
-		return "Не хватает денег"
+		return I18n.t("Не хватает денег")
 	bag["money"] = int(bag["money"]) - fee
 	hero.add_xp(sk, float(data().get("lesson", {}).get("xp", 40)))
 	# Выше мастера урок не поднимает

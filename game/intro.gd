@@ -97,7 +97,7 @@ func _ready() -> void:
 	_t0 = Time.get_ticks_msec()
 	Engine.set_meta("aw_intro_done", true)   # главное меню не будет запускать заставку второй раз
 	_build_ui()
-	_say("Amber World, проверка игры. Godot %s, %s, видеокарта: %s" % [Engine.get_version_info().get("string", "?"), OS.get_name(), RenderingServer.get_video_adapter_name()])
+	_say(I18n.t("Amber World, проверка игры. Godot %s, %s, видеокарта: %s") % [Engine.get_version_info().get("string", "?"), OS.get_name(), RenderingServer.get_video_adapter_name()])
 	# Картинки данных читаем в фоне сразу
 	for it in IMAGES:
 		if ResourceLoader.exists(it[0]):
@@ -122,12 +122,12 @@ func _ready() -> void:
 			video.finished.connect(_on_video_finished)
 			video.play()
 			_video_t0 = Time.get_ticks_msec()
-			_say("Ролик запущен: %s" % VIDEO_FILE)
+			_say(I18n.t("Ролик запущен: %s") % VIDEO_FILE)
 		else:
-			_warn("Ролик не открывается: " + VIDEO_FILE)
+			_warn(I18n.t("Ролик не открывается: ") + VIDEO_FILE)
 			_video_done = true
 	else:
-		_warn("Нет файла ролика: " + VIDEO_FILE)
+		_warn(I18n.t("Нет файла ролика: ") + VIDEO_FILE)
 		_video_done = true
 	if _video_done:
 		hint_label.visible = false
@@ -146,7 +146,7 @@ func _build_ui() -> void:
 	add_child(video)
 
 	hint_label = Label.new()
-	hint_label.text = "Пропустить: Esc, Пробел или щелчок"
+	hint_label.text = I18n.t("Пропустить: Esc, Пробел или щелчок")
 	hint_label.add_theme_font_size_override("font_size", 14)
 	hint_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
 	hint_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -199,11 +199,11 @@ func _build_ui() -> void:
 	row.add_theme_constant_override("separation", 14)
 	box.add_child(row)
 	go_button = Button.new()
-	go_button.text = "Продолжить"
+	go_button.text = I18n.t("Продолжить")
 	go_button.pressed.connect(_go_to_menu)
 	row.add_child(go_button)
 	var quit_button := Button.new()
-	quit_button.text = "Выйти"
+	quit_button.text = I18n.t("Выйти")
 	quit_button.pressed.connect(func() -> void: get_tree().quit())
 	row.add_child(quit_button)
 
@@ -212,12 +212,12 @@ func _build_ui() -> void:
 # ЖУРНАЛ
 # ---------------------------------------------------------------------
 func _say(text: String) -> void:
-	lines.append("[%5.1f с] %s" % [float(Time.get_ticks_msec() - _t0) / 1000.0, text])
+	lines.append(I18n.t("[%5.1f с] %s") % [float(Time.get_ticks_msec() - _t0) / 1000.0, text])
 
 
 func _err(text: String) -> void:
 	fatal.append(text)
-	lines.append("[%5.1f с] ОШИБКА: %s" % [float(Time.get_ticks_msec() - _t0) / 1000.0, text])
+	lines.append(I18n.t("[%5.1f с] ОШИБКА: %s") % [float(Time.get_ticks_msec() - _t0) / 1000.0, text])
 
 
 func _miss(text: String, critical: bool) -> void:
@@ -229,7 +229,7 @@ func _miss(text: String, critical: bool) -> void:
 
 func _warn(text: String) -> void:
 	warns.append(text)
-	lines.append("[%5.1f с] ПРЕДУПРЕЖДЕНИЕ: %s" % [float(Time.get_ticks_msec() - _t0) / 1000.0, text])
+	lines.append(I18n.t("[%5.1f с] ПРЕДУПРЕЖДЕНИЕ: %s") % [float(Time.get_ticks_msec() - _t0) / 1000.0, text])
 
 
 # ---------------------------------------------------------------------
@@ -238,7 +238,7 @@ func _warn(text: String) -> void:
 func _process(_delta: float) -> void:
 	# Ролик не пошёл (например, этот Godot не читает Theora): отмечаем и не ждём его
 	if not _video_done and video.stream != null and not video.is_playing() and Time.get_ticks_msec() - _video_t0 > 1500:
-		_warn("Ролик не воспроизводится (проверьте файл video/intro.ogv и первые строки вывода Godot)")
+		_warn(I18n.t("Ролик не воспроизводится (проверьте файл video/intro.ogv и первые строки вывода Godot)"))
 		_on_video_finished(true)
 	if not _checks_done:
 		var budget: int = 2
@@ -249,10 +249,10 @@ func _process(_delta: float) -> void:
 			budget -= 1
 		bar.value = 100.0 * float(_job_i) / float(maxi(_jobs.size(), 1))
 		if _job_i < _jobs.size():
-			status_label.text = "Проверка игры: %s" % _job_name(_jobs[_job_i])
+			status_label.text = I18n.t("Проверка игры: %s") % _job_name(_jobs[_job_i])
 		else:
 			_checks_done = true
-			status_label.text = "Проверка завершена"
+			status_label.text = I18n.t("Проверка завершена")
 	if _checks_done and _video_done and not _decided:
 		_decided = true
 		_decide()
@@ -263,10 +263,10 @@ func _job_name(job: Dictionary) -> String:
 		"script", "scene", "image", "json":
 			return String(job["path"]).get_file()
 		"raw":
-			return "файлы данных"
+			return I18n.t("файлы данных")
 		"classes":
-			return "классы скриптов"
-	return "журнал"
+			return I18n.t("классы скриптов")
+	return I18n.t("журнал")
 
 
 # Возвращает true, когда задача выполнена. false: ждём фоновое чтение
@@ -278,14 +278,14 @@ func _run_job(job: Dictionary) -> bool:
 			known[String(c["class"])] = true
 		var lost: Array = CLASSES.filter(func(n): return not known.has(n))
 		if not lost.is_empty():
-			_err("Нет кэша классов скриптов (папка game/.godot): %s. Распакуйте архив целиком или запустите Start_HEX.cmd — он заново импортирует проект" % ", ".join(PackedStringArray(lost)))
+			_err(I18n.t("Нет кэша классов скриптов (папка game/.godot): %s. Распакуйте архив целиком или запустите Start_HEX.cmd — он заново импортирует проект") % ", ".join(PackedStringArray(lost)))
 		return true
 	if kind == "json":
 		var jpath: String = job["path"]
 		if not FileAccess.file_exists(jpath):
-			_miss("Нет файла данных: " + jpath, job["critical"])
+			_miss(I18n.t("Нет файла данных: ") + jpath, job["critical"])
 		elif not (JSON.parse_string(FileAccess.get_file_as_string(jpath)) is Dictionary):
-			_miss("Файл данных не читается как JSON: " + jpath, job["critical"])
+			_miss(I18n.t("Файл данных не читается как JSON: ") + jpath, job["critical"])
 		return true
 	if kind == "script":
 		var path: String = job["path"]
@@ -293,9 +293,9 @@ func _run_job(job: Dictionary) -> bool:
 		if ResourceLoader.exists(path):
 			res = load(path)
 		if res == null or not (res is Script):
-			_miss("Скрипт не найден или не открывается: " + path, job["critical"])
+			_miss(I18n.t("Скрипт не найден или не открывается: ") + path, job["critical"])
 		elif not (res as Script).can_instantiate():
-			_miss("Скрипт не компилируется: " + path, job["critical"])
+			_miss(I18n.t("Скрипт не компилируется: ") + path, job["critical"])
 		return true
 	if kind == "scene":
 		var spath: String = job["path"]
@@ -303,15 +303,15 @@ func _run_job(job: Dictionary) -> bool:
 		if ResourceLoader.exists(spath):
 			ps = load(spath) as PackedScene
 		if ps == null or not ps.can_instantiate():
-			_miss("Сцена не найдена или не открывается: " + spath, job["critical"])
+			_miss(I18n.t("Сцена не найдена или не открывается: ") + spath, job["critical"])
 		return true
 	if kind == "image":
 		return _check_image(job)
 	if kind == "raw":
 		return _check_raw()
 	# журнал
-	_say("Критических ошибок: %d, предупреждений: %d" % [fatal.size(), warns.size()])
-	_say("Память процесса: %d МБ" % int(OS.get_static_memory_usage() / 1048576.0))
+	_say(I18n.t("Критических ошибок: %d, предупреждений: %d") % [fatal.size(), warns.size()])
+	_say(I18n.t("Память процесса: %d МБ") % int(OS.get_static_memory_usage() / 1048576.0))
 	var f := FileAccess.open(LOG_FILE, FileAccess.WRITE)
 	if f != null:
 		f.store_string("\n".join(lines) + "\n")
@@ -327,35 +327,35 @@ func _check_image(job: Dictionary) -> bool:
 	var critical: bool = job["critical"]
 	if not ResourceLoader.exists(path):
 		if critical:
-			_err("Нет файла данных: " + path)
+			_err(I18n.t("Нет файла данных: ") + path)
 		else:
-			_warn("Нет файла (необязательного): " + path)
+			_warn(I18n.t("Нет файла (необязательного): ") + path)
 		return true
 	var st: int = ResourceLoader.load_threaded_get_status(path)
 	if st == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 		return false
 	if st != ResourceLoader.THREAD_LOAD_LOADED:
 		if critical:
-			_err("Файл данных не читается: " + path)
+			_err(I18n.t("Файл данных не читается: ") + path)
 		else:
-			_warn("Файл не читается: " + path)
+			_warn(I18n.t("Файл не читается: ") + path)
 		return true
 	var res: Resource = ResourceLoader.load_threaded_get(path)
 	preload_res[path] = res
 	var tex := res as Texture2D
 	if tex == null:
-		_err("Файл данных не является картинкой: " + path)
+		_err(I18n.t("Файл данных не является картинкой: ") + path)
 		return true
 	var w: int = job["w"]
 	var h: int = job["h"]
 	if w > 0 and (tex.get_width() != w or tex.get_height() != h):
-		var msg: String = "Неверный размер %s: %d x %d, ожидалось %d x %d" % [path, tex.get_width(), tex.get_height(), w, h]
+		var msg: String = I18n.t("Неверный размер %s: %d x %d, ожидалось %d x %d") % [path, tex.get_width(), tex.get_height(), w, h]
 		if critical:
 			_err(msg)
 		else:
 			_warn(msg)
 	else:
-		_say("Файл в порядке: %s (%d x %d)" % [path.get_file(), tex.get_width(), tex.get_height()])
+		_say(I18n.t("Файл в порядке: %s (%d x %d)") % [path.get_file(), tex.get_width(), tex.get_height()])
 	return true
 
 
@@ -374,12 +374,12 @@ func _check_raw() -> bool:
 		var want: int = it[1]
 		var b: PackedByteArray = got.get(path, PackedByteArray())
 		if b.size() == 0:
-			_warn("Нет файла данных: " + path)
+			_warn(I18n.t("Нет файла данных: ") + path)
 		elif b.size() != want:
-			_warn("Неверный размер %s: %d, ожидалось %d" % [path, b.size(), want])
+			_warn(I18n.t("Неверный размер %s: %d, ожидалось %d") % [path, b.size(), want])
 		else:
 			preload_raw[path] = b
-			_say("Файл в порядке: %s (%d байт)" % [path.get_file(), b.size()])
+			_say(I18n.t("Файл в порядке: %s (%d байт)") % [path.get_file(), b.size()])
 	return true
 
 
@@ -412,7 +412,7 @@ func _input(event: InputEvent) -> void:
 
 func _on_video_finished(skipped: bool = false) -> void:
 	if not skipped and Time.get_ticks_msec() - _video_t0 < 3000:
-		_warn("Ролик закончился почти сразу: он не воспроизвёлся")
+		_warn(I18n.t("Ролик закончился почти сразу: он не воспроизвёлся"))
 	_video_done = true
 	hint_label.visible = false
 
@@ -423,14 +423,14 @@ func _decide() -> void:
 		return
 	var txt: String = ""
 	if not fatal.is_empty():
-		report_title.text = "Игра не может запуститься"
-		txt = "Найдены критические проблемы:\n- " + "\n- ".join(fatal)
+		report_title.text = I18n.t("Игра не может запуститься")
+		txt = I18n.t("Найдены критические проблемы:\n- ") + "\n- ".join(fatal)
 		go_button.visible = false
 	else:
-		report_title.text = "Игра запустится, но есть предупреждения"
+		report_title.text = I18n.t("Игра запустится, но есть предупреждения")
 		txt = "- " + "\n- ".join(warns)
 		go_button.visible = true
-	txt += "\n\nПодробный журнал: " + ProjectSettings.globalize_path(LOG_FILE)
+	txt += I18n.t("\n\nПодробный журнал: ") + ProjectSettings.globalize_path(LOG_FILE)
 	report_text.text = txt
 	report_panel.visible = true
 
@@ -440,7 +440,7 @@ func _go_to_menu() -> void:
 	var err: Error = get_tree().change_scene_to_file(MENU_SCENE)
 	if err != OK:
 		set_process(true)
-		report_title.text = "Игра не может запуститься"
-		report_text.text = "Не открывается главное меню %s (%s).\n\nПодробный журнал: %s" % [MENU_SCENE, error_string(err), ProjectSettings.globalize_path(LOG_FILE)]
+		report_title.text = I18n.t("Игра не может запуститься")
+		report_text.text = I18n.t("Не открывается главное меню %s (%s).\n\nПодробный журнал: %s") % [MENU_SCENE, error_string(err), ProjectSettings.globalize_path(LOG_FILE)]
 		go_button.visible = false
 		report_panel.visible = true

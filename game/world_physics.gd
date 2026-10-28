@@ -23,7 +23,7 @@ const MIN_INTERVAL: float = 1.0 / 30.0
 const FLOW_PERIOD: float = 7200.0
 # Доступные скорости погоды (клавиши , и .)
 const WEATHER_SPEEDS: Array = [0.25, 0.5, 1.0, 2.0, 4.0]
-const COMPASS: Array = ["С", "СВ", "В", "ЮВ", "Ю", "ЮЗ", "З", "СЗ"]
+static var COMPASS: Array = [I18n.t("С"), I18n.t("СВ"), I18n.t("В"), I18n.t("ЮВ"), I18n.t("Ю"), I18n.t("ЮЗ"), I18n.t("З"), I18n.t("СЗ")]
 # Сетка текстур погоды на всю планету (как была у модели атмосферы: шейдер берёт окно ATM_*)
 const NX: int = 144
 const NY: int = 72
@@ -131,7 +131,7 @@ func setup(game_clock: GameClock, width_m: float, height_m: float) -> void:
 	force_update()
 	_update_weather(true)
 	# Приклад повільного процесу: щогодини перераховуємо, де сонце в зеніті
-	register_process("точка в зените", 3600.0, _proc_subsolar)
+	register_process(I18n.t("точка в зените"), 3600.0, _proc_subsolar)
 	_proc_subsolar(0.0)
 
 
@@ -341,7 +341,7 @@ func is_spinning_up() -> bool:
 
 # Рядок стану погоди для підказки
 func status_text() -> String:
-	return "Погода: сезон %s, скорость x%s (клавиши , и .)" % [GameClock.SEASON_NAMES[clock.season()], str(weather_speed)]
+	return I18n.t("Погода: сезон %s, скорость x%s (клавиши , и .)") % [GameClock.SEASON_NAMES[clock.season()], str(weather_speed)]
 
 
 # Білінійна вибірка з сітки погоди за широтою і довготою в радіанах
@@ -530,9 +530,9 @@ func wind_from_name(wv: Vector2) -> String:
 
 func moon_name() -> String:
 	if moon_phase < 0.06 or moon_phase > 0.94:
-		return "новолуние"
+		return I18n.t("новолуние")
 	if moon_phase < 0.44:
-		return "растущая"
+		return I18n.t("растущая")
 	if moon_phase < 0.56:
-		return "полнолуние"
-	return "убывающая"
+		return I18n.t("полнолуние")
+	return I18n.t("убывающая")

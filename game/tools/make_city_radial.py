@@ -213,7 +213,7 @@ def place(bid, w, h, band, ang, spread=180.0, ruins=False):
 
 KIND = {b['id']: b.get('kind', 'house') for b in src['buildings']}
 # Размеры — метры (клетка 1 м) под пропорции спрайтов: ширина × глубина, крыша рисуется выше прямоугольника
-# Площадь: детинец к северу, храм к востоку, лавки вокруг
+# Площадь: чертог к северу, храм к востоку, лавки вокруг
 place("hall", 10, 7, 'A', -90, 60)
 place('temple', 9, 6, 'A', -30, 50)
 place('inn', 9, 6, 'A', 125, 50)
@@ -476,7 +476,7 @@ gate.update({'cells': gate_cells, 'spawn': spawn, 'guard_post': guard_post})
 d = {}
 for key in src:
 	d[key] = src[key]
-d['_note'] = ('Чёрнославль — единственный город мира (id s001 из data/world/settlements.json). Радиальный план (Huzzah 2026-10-23): '
+d['_note'] = ('Эшвик — единственный город мира (id s001 из data/world/settlements.json). Радиальный план (Huzzah 2026-10-23): '
 	'круглая стена радиусом wall_r клеток вокруг center, площадь в центре, улицы лучами и кольцами. Клетки по cell_m метров, '
 	'x вправо, y вниз. Сделан скриптом tools/make_city_radial.py (seed %d); числа [ВРЕМЕННО].' % SEED)
 d['size'] = [N, N]

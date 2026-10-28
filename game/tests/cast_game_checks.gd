@@ -53,7 +53,7 @@ func _run() -> void:
 	ok(not hero.is_empty() and cast._land(hero["pos"]), "герой на суше: %s" % hero.get("pos"))
 	ok(cast.bodies.size() == 1, "НПС снаружи города не появляются (их %d)" % (cast.bodies.size() - 1))
 	ok(is_equal_approx(game.clock.current_rate(), 96.0 * GameClock.GAME_SPEED) or not game.clock.active, "часы ×%d" % int(game.clock.current_rate()))
-	# Для проверки распорядка НПС — восемь вручную, по тем же правилам; знахарь пятый
+	# Для проверки распорядка НПС — восемь вручную, по тем же правилам; лекарь пятый
 	var R := preload("res://characters/actor_rules.gd")
 	var sk: Array = R.skills().keys()
 	for i in 8:
@@ -120,8 +120,8 @@ func _run() -> void:
 	cast.load_dict(d["cast"])
 	ok(not cast.hero.is_empty() and cast.hero["pos"].distance_to(hero_pos) < 0.01, "загрузка: герой на месте")
 	ok(cast.bodies.size() == 1, "НПС с общей карты из сохранения не грузятся")
-	# Знахарь для проверки лечения — снова вручную
-	var hk := Actor.new("healer_t", "Знахарь", true, 77)
+	# Лекарь для проверки лечения — снова вручную
+	var hk := Actor.new("healer_t", "Лекарь", true, 77)
 	hk.add_xp("medicine", 300.0)
 	cast.spawn_npc(hk, cast.hero["pos"] + Vector2(300, 0), cast.all_remedies())
 
@@ -140,9 +140,9 @@ func _run() -> void:
 		await frames(3)
 		await shot("c04_swimming.png")
 
-	# Знахарь лечит героя (клавиша T) и любой НПС по тем же правилам
+	# Лекарь лечит героя (клавиша T) и любой НПС по тем же правилам
 	var healer: Dictionary = cast._nearest_healer(cast.hero)
-	ok(not healer.is_empty(), "среди НПС есть знахарь: %s" % healer.get("actor", Actor.new()).display_name)
+	ok(not healer.is_empty(), "среди НПС есть лекарь: %s" % healer.get("actor", Actor.new()).display_name)
 	if not healer.is_empty():
 		cast.hero["pos"] = healer["pos"] + Vector2(5, 0)
 		cast.hero["actor"].add_condition("laceration")
@@ -160,8 +160,8 @@ func _run() -> void:
 			if not cast.hero["actor"].has_condition("laceration"):
 				healed = true
 				break
-		ok(healed, "знахарь вылечил рану героя: " + game.event_text)
-		ok(healer["actor"].skills["medicine"]["xp"] > 0.0, "знахарь получил опыт")
+		ok(healed, "лекарь вылечил рану героя: " + game.event_text)
+		ok(healer["actor"].skills["medicine"]["xp"] > 0.0, "лекарь получил опыт")
 
 	# Жаркие горы (ветка terrain): температура из карты, жажда в жару быстрее
 	if game.has_method("is_hot"):

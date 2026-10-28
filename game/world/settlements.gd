@@ -5,14 +5,15 @@ const Growth := preload("res://city/city_growth.gd")
 ## можно править руками). Сейчас по решению Huzzah город один на весь мир, герой появляется у его ворот.
 ##
 ## Вид: издали — щиток-эмблема города с подписью (точка интереса, мало места); при сильном приближении
-## (клетка поселения от OUTLINE_CELL_PX пикселей) — очерк территории: стена с башнями, ворота, дорога,
-## улицы и кварталы внутри. Клетка поселения — квадрат cell_m метров доски, число клеток по размеру.
+## (клетка поселения от OUTLINE_CELL_PX пикселей) — очерк территории: стена с башнями, ворота,
+## улицы и кварталы внутри. Готовой дороги к воротам нет (Huzzah 2026-10-28): дороги протаптываются
+## героем и НПС (world/trails.gd, world/trails_layer.gd). Клетка поселения — квадрат cell_m метров доски, число клеток по размеру.
 ##
 ## Подход героя:
-##   к воротам (ближе GATE_R_M, сюда ведёт дорога) — «Войти» (E) / «Продолжить путь» (Esc);
+##   к воротам (ближе GATE_R_M) — «Войти» (E) / «Продолжить путь» (Esc);
 ##   к стене (ближе APPROACH_M к клеткам, вне ворот) — «Попытаться проникнуть» (E) с шансом
 ##     sneak_chance(): Ловкость, Восприятие, Удача, ночь, груз, травмы рук и ног, здоровье и силы;
-##     числа в блоке "sneak" реестра [ВРЕМЕННО]. Неудача: заметили (вход с entry "caught") или
+##     числа в блоке "sneak" реестра [Q19: проверяет tests/balance_checks.gd]. Неудача: заметили (вход с entry "caught") или
 ##     стража настороже cooldown_h игровых часов; можно сорваться и травмироваться.
 ## Пока открыт выбор, герой стоит (cast.hold_hero). Закрыли выбор, а герой всё ещё у города — E открывает
 ## его снова (подсказка у героя). Новый герой у ворот сразу видит выбор. Вход — сигнал enter_requested(s), в копии s поля
@@ -32,7 +33,6 @@ const GATE_R_M: float = 60.0        # ворота: от точки ворот
 const LEAVE_M: float = 150.0        # снова спросит, когда герой отойдёт от места ответа дальше этого
 const JUMP_M: float = 200.0         # скачок героя за кадр (загрузка, возврат из города) — не подход
 const OUTLINE_CELL_PX: float = 28.0 # с такой клетки на экране вместо щитка — очерк города
-const ROAD_W_M: float = 14.0
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталов в ряд на клетку
 const MEDAL_MIN_PX: float = 30.0    # радиус медальона издали не меньше этого (город остаётся точкой интереса)
@@ -46,7 +46,7 @@ var game: Node2D
 var cell_m: float = 250.0
 var sizes: Dictionary = {}
 var sneak_rules: Dictionary = {}
-var list: Array = []                # поселения + служебные поля (_cells, _own, _rect, _center, _gate, _gate_wall, _road)
+var list: Array = []                # поселения + служебные поля (_cells, _own, _rect, _center, _gate, _gate_wall)
 var by_id: Dictionary = {}
 var by_cell: Dictionary = {}        # Vector2i -> поселение
 var dismissed: Dictionary = {}      # "id:gate" / "id:wall" -> место, где игрок ответил «Продолжить путь»
@@ -69,7 +69,7 @@ var _water_btn: Button
 var searched_until: Dictionary = {}  # id -> игровые секунды, до которых окрестности уже обысканы
 const SEARCH_MIN: float = 40.0       # обыск окрестностей, игровых минут
 const WATER_MIN: float = 10.0
-const SEARCH_LOOT: Dictionary = {    # id -> [от, до, шанс] [ВРЕМЕННО]
+const SEARCH_LOOT: Dictionary = {    # id -> [от, до, шанс] [Q19: не баланс, оставлено]
 	"scrap": [1, 3, 0.6], "charcoal": [1, 2, 0.35], "rope": [1, 1, 0.15], "hide": [1, 1, 0.15],
 	"old_coin": [1, 2, 0.2], "money": [1, 4, 0.3],
 }
@@ -97,7 +97,7 @@ func _load() -> void:
 	if not FileAccess.file_exists(DATA_FILE):
 		game.missing_files.append(DATA_FILE)
 		return
-	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(DATA_FILE))
+	var d: Variant = I18n.tree(JSON.parse_string(FileAccess.get_file_as_string(DATA_FILE)))
 	if not (d is Dictionary):
 		push_warning("settlements.json не читается")
 		return
@@ -126,10 +126,6 @@ func _load() -> void:
 			s["_plan"] = _load_plan(s)
 		s["_rect"] = rect
 		s["_gate"] = Vector2(s["gate"][0], s["gate"][1]) if s.has("gate") else rect.get_center() + Vector2(0.0, rect.size.y * 0.5 + 40.0)
-		var road := PackedVector2Array()
-		for q in s.get("road", []):
-			road.append(Vector2(q[0], q[1]))
-		s["_road"] = road
 		if not s.has("walled"):
 			s["walled"] = SIZE_ORDER.find(s.get("size", "")) >= 2
 		list.append(s)
@@ -143,7 +139,7 @@ func _load_plan(s: Dictionary) -> Dictionary:
 		var path: String = CITY_DIR + key + ".json"
 		if key == "" or not FileAccess.file_exists(path):
 			continue
-		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		var d: Variant = I18n.tree(JSON.parse_string(FileAccess.get_file_as_string(path)))
 		if d is Dictionary and String(d.get("plan", "")) == "radial":
 			return d
 	return {}
@@ -403,8 +399,8 @@ func _open_prompt(s: Dictionary, kind: String, side: String) -> void:
 	_refresh_search()
 	if kind == "gate":
 		var place: String = game.province_name(int(s.get("province", 0)))
-		_info.text = "Ворота. Дорога ведёт внутрь%s" % (("   ·   " + place) if place != "" else "")
-		_act_btn.text = "Войти  [E]"
+		_info.text = I18n.t("Ворота. Дорога ведёт внутрь%s") % (("   ·   " + place) if place != "" else "")
+		_act_btn.text = I18n.t("Войти  [E]")
 		_act_btn.disabled = false
 	else:
 		_refresh_wall_info(_hero())
@@ -412,7 +408,7 @@ func _open_prompt(s: Dictionary, kind: String, side: String) -> void:
 	_layout()
 
 
-const SIDE_NAMES: Dictionary = {"north": "северной", "east": "восточной", "south": "южной", "west": "западной"}
+static var SIDE_NAMES: Dictionary = {"north": I18n.t("северной"), "east": I18n.t("восточной"), "south": I18n.t("южной"), "west": I18n.t("западной")}
 
 
 func _refresh_wall_info(h: Dictionary) -> void:
@@ -422,15 +418,15 @@ func _refresh_wall_info(h: Dictionary) -> void:
 	var a: Actor = h["actor"]
 	var env: Dictionary = WorldEnvRef.sample(game, h["pos"])
 	var c: float = sneak_chance(a, env)
-	var t: String = "У %s стены, ворота далеко. " % SIDE_NAMES.get(prompt_side, "")
+	var t: String = I18n.t("У %s стены, ворота далеко. ") % SIDE_NAMES.get(prompt_side, "")
 	if left > 0.0:
-		t += "Стража настороже: ещё %d мин" % int(ceil(left / 60.0))
+		t += I18n.t("Стража настороже: ещё %d мин") % int(ceil(left / 60.0))
 	elif c <= 0.0:
-		t += "Так не перелезть (верхом или не может идти)"
+		t += I18n.t("Так не перелезть (верхом или не может идти)")
 	else:
-		t += "Шанс %d %%%s" % [int(round(c * 100.0)), ", ночь помогает" if bool(env.get("night", false)) else ""]
+		t += I18n.t("Шанс %d %%%s") % [int(round(c * 100.0)), I18n.t(", ночь помогает") if bool(env.get("night", false)) else ""]
 	_info.text = t
-	_act_btn.text = "Попытаться проникнуть  [E]"
+	_act_btn.text = I18n.t("Попытаться проникнуть  [E]")
 	_act_btn.disabled = left > 0.0 or c <= 0.0
 	_layout()
 
@@ -461,14 +457,14 @@ func choose_act() -> void:
 	_close_prompt()
 	match entry:
 		"fail":
-			_event("Не удалось перелезть стену %s. Стража настороже" % s["name"])
+			_event(I18n.t("Не удалось перелезть стену %s. Стража настороже") % s["name"])
 			return
 		"sneak":
-			_event("Пробрался в %s через стену" % s["name"])
+			_event(I18n.t("Пробрался в %s через стену") % s["name"])
 		"caught":
-			_event("Стража заметила у стены %s" % s["name"])
+			_event(I18n.t("Стража заметила у стены %s") % s["name"])
 	if enter_requested.get_connections().is_empty():
-		_event("%s: мир города ещё не подключён" % s["name"])
+		_event(I18n.t("%s: мир города ещё не подключён") % s["name"])
 		return
 	# Вернётся из города к воротам: там выбор сам не всплывает (E — открыть)
 	dismissed[s["id"] + ":gate"] = s["_gate"]
@@ -534,12 +530,12 @@ func choose_search() -> void:
 		var k: int = _rng.randi_range(int(l[0]), int(l[1]))
 		if item == "money":
 			bag["money"] = int(bag.get("money", 0)) + k
-			found.append("%d монет" % k)
+			found.append(I18n.t("%d монет") % k)
 		else:
 			TradeRef.add(bag, item, k)
 			found.append("%s ×%d" % [TradeRef.item_name(item), k])
 	a.add_xp("survival", 2.0)
-	_show_result("Обыскал окрестности (%d мин): %s" % [int(SEARCH_MIN), "ничего" if found.is_empty() else ", ".join(PackedStringArray(found))])
+	_show_result(I18n.t("Обыскал окрестности (%d мин): %s") % [int(SEARCH_MIN), I18n.t("ничего") if found.is_empty() else ", ".join(PackedStringArray(found))])
 	_refresh_search()
 
 
@@ -554,17 +550,17 @@ func choose_water() -> void:
 	_pass_minutes(WATER_MIN)
 	a.drink(100.0, "clean")
 	var bag: Dictionary = _bag()
-	var t: String = "Напился у колодца"
+	var t: String = I18n.t("Напился у колодца")
 	if TradeRef.count(bag, "water_flask") < 2:
 		TradeRef.add(bag, "water_flask", 1)
-		t += " и наполнил флягу"
+		t += I18n.t(" и наполнил флягу")
 	_show_result(t)
 
 
 func _refresh_search() -> void:
 	var left: float = float(searched_until.get(String(prompt_for.get("id", "")), -1.0)) - game.clock.total_seconds
 	_search_btn.disabled = left > 0.0
-	_search_btn.text = "Искать  [F]" if left <= 0.0 else "Обыскано (ещё %d ч)" % int(ceil(left / 3600.0))
+	_search_btn.text = I18n.t("Искать  [F]") if left <= 0.0 else I18n.t("Обыскано (ещё %d ч)") % int(ceil(left / 3600.0))
 
 
 func _show_result(t: String) -> void:
@@ -657,14 +653,14 @@ func _build_ui() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
 	box.add_child(row)
-	_act_btn = _button(row, "Войти  [E]", choose_act)
-	_button(row, "Продолжить путь  [Esc]", choose_continue)
+	_act_btn = _button(row, I18n.t("Войти  [E]"), choose_act)
+	_button(row, I18n.t("Продолжить путь  [Esc]"), choose_continue)
 	var row2 := HBoxContainer.new()
 	row2.alignment = BoxContainer.ALIGNMENT_CENTER
 	row2.add_theme_constant_override("separation", 12)
 	box.add_child(row2)
-	_search_btn = _button(row2, "Искать  [F]", choose_search)
-	_water_btn = _button(row2, "Набрать воды  [R]", choose_water)
+	_search_btn = _button(row2, I18n.t("Искать  [F]"), choose_search)
+	_water_btn = _button(row2, I18n.t("Набрать воды  [R]"), choose_water)
 	_result = Label.new()
 	_result.add_theme_font_size_override("font_size", 14)
 	_result.add_theme_color_override("font_color", Color("e8d8a8"))
@@ -708,8 +704,6 @@ func _draw() -> void:
 		var r: Rect2 = s["_rect"]
 		var sr := Rect2(game.world_to_screen(r.position), r.size * z)
 		var hl: bool = s == prompt_for or s == mouse_s
-		if cs >= 3.0:
-			_draw_road(s, z, vp)
 		if radial(s):
 			var c0: Vector2 = game.world_to_screen(s["_center"])
 			var rp: float = maxf(s["_radius"] * z, MEDAL_MIN_PX)
@@ -730,27 +724,11 @@ func _draw() -> void:
 	# Подсказка у героя: выбор закрыт, E — открыть
 	var qz: Dictionary = _quiet_zone()
 	if not qz.is_empty():
-		var t: String = "E — войти в %s" % qz["s"]["name"] if qz["kind"] == "gate" else "E — попытаться проникнуть"
+		var t: String = I18n.t("E — войти в %s") % qz["s"]["name"] if qz["kind"] == "gate" else I18n.t("E — попытаться проникнуть")
 		var hp: Vector2 = game.world_to_screen(qz["pos"]) + Vector2(0, 34)
 		var tw: float = font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
 		draw_string_outline(font, hp - Vector2(tw * 0.5, 0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.9))
 		draw_string(font, hp - Vector2(tw * 0.5, 0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.9, 0.55))
-
-
-func _draw_road(s: Dictionary, z: float, vp: Rect2) -> void:
-	var road: PackedVector2Array = s["_road"]
-	if road.size() < 2:
-		return
-	var pts := PackedVector2Array()
-	pts.append(game.world_to_screen(s["_gate_wall"]))
-	for q in road:
-		pts.append(game.world_to_screen(q))
-	var w: float = clampf(ROAD_W_M * z, 1.5, 40.0)
-	draw_polyline(pts, Color(0.12, 0.09, 0.06, 0.7), w + 2.0, true)
-	draw_polyline(pts, Color(0.62, 0.5, 0.33), w, true)
-	if w >= 6.0:
-		# Колеи
-		draw_polyline(pts, Color(0.5, 0.39, 0.25), maxf(1.0, w * 0.12), true)
 
 
 # Щиток: поле, кайма, фигура эмблемы

@@ -1,5 +1,5 @@
 extends SceneTree
-## Снимки медальона Чёрнославля на общей карте: издали, вблизи и на каждом этапе роста (city_growth.gd).
+## Снимки медальона Эшвика на общей карте: издали, вблизи и на каждом этапе роста (city_growth.gd).
 ## godot --path game --rendering-driver opengl3 -s res://qa/shots_medallion.gd  (папка — AMBER_QA_OUT)
 const Growth := preload("res://city/city_growth.gd")
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://medallion_shots/"

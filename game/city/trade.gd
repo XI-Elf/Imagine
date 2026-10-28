@@ -1,7 +1,7 @@
 extends RefCounted
 ## Вещи и торговля: сумка {"money": int, "items": {id: count}}, предметы из data/cities/items.json.
 ## Сумка — простой словарь, чтобы её мог держать кто угодно (Worlds, город) и писать в сохранение.
-## Цены: покупка дороже базовой, продажа дешевле; Харизма двигает обе [ВРЕМЕННО].
+## Цены: покупка дороже базовой, продажа дешевле; Харизма двигает обе [Q19: проверяет tests/balance_checks.gd].
 
 const ITEMS_FILE := "res://data/cities/items.json"
 
@@ -15,7 +15,7 @@ static func items() -> Dictionary:
 		_read = true
 		var f := FileAccess.open(ITEMS_FILE, FileAccess.READ)
 		if f != null:
-			var v: Variant = JSON.parse_string(f.get_as_text())
+			var v: Variant = I18n.tree(JSON.parse_string(f.get_as_text()))
 			if v is Dictionary:
 				_items = v.get("items", {})
 		if _items.is_empty():
@@ -69,22 +69,25 @@ static func buy_price(id: String, buyer: Actor) -> int:
 
 
 static func sell_price(id: String, seller: Actor) -> int:
-	return maxi(1, int(round(float(item(id).get("price", 1)) * (0.45 + _cha_bonus(seller)))))
+	var p: int = maxi(1, int(round(float(item(id).get("price", 1)) * (0.45 + _cha_bonus(seller)))))
+	# Q19: после округления дешёвая вещь при высокой Харизме продавалась бы за цену покупки — купи-продай без убытка
+	var buy: int = maxi(1, int(round(float(item(id).get("price", 1)) * (1.3 - _cha_bonus(seller)))))
+	return mini(p, maxi(1, buy - 1))
 
 
 ## Купить одну вещь у торговца (его запас stock: {id: count}). Ответ: текст для игрока, "" — удалось
 static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor) -> String:
 	if int(stock.get(id, 0)) <= 0:
-		return "Нет в наличии"
+		return I18n.t("Нет в наличии")
 	# Лошадь и повозка (Q16): одна на героя, повозке нужна лошадь
 	if bool(item(id).get("unique", false)) and count(bag, id) > 0:
-		return "Уже есть"
+		return I18n.t("Уже есть")
 	var need: String = String(item(id).get("requires", ""))
 	if need != "" and count(bag, need) <= 0:
-		return "Сначала нужна %s" % item_name(need).to_lower()
+		return I18n.t("Сначала нужна %s") % item_name(need).to_lower()
 	var price: int = buy_price(id, buyer)
 	if int(bag["money"]) < price:
-		return "Не хватает денег"
+		return I18n.t("Не хватает денег")
 	bag["money"] = int(bag["money"]) - price
 	stock[id] = int(stock[id]) - 1
 	add(bag, id)
@@ -94,9 +97,9 @@ static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor) ->
 ## Продать одну вещь торговцу, если он такое берёт (buys) или уже им торгует
 static func sell(bag: Dictionary, stock: Dictionary, buys: Array, id: String, seller: Actor) -> String:
 	if count(bag, id) <= 0:
-		return "Нечего продать"
+		return I18n.t("Нечего продать")
 	if not buys.has(id) and not stock.has(id):
-		return "Такое здесь не берут"
+		return I18n.t("Такое здесь не берут")
 	bag["money"] = int(bag["money"]) + sell_price(id, seller)
 	add(bag, id, -1)
 	stock[id] = int(stock.get(id, 0)) + 1
@@ -113,6 +116,6 @@ static func use(bag: Dictionary, id: String, a: Actor) -> String:
 	elif u.has("drink"):
 		a.drink(float(u["drink"]), String(u.get("kind", "clean")))
 	else:
-		return "%s: так не используется" % item_name(id)
+		return I18n.t("%s: так не используется") % item_name(id)
 	add(bag, id, -1)
-	return "Использовано: %s" % item_name(id)
+	return I18n.t("Использовано: %s") % item_name(id)

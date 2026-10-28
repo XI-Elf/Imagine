@@ -77,7 +77,7 @@ func _shop() -> void:
 	ok(Trade.buy(bag, stock, "horse", a) == "Уже есть", "вторую лошадь не продают")
 	ok(Trade.buy(bag, stock, "cart", a) == "", "повозка куплена за %d" % Trade.buy_price("cart", a))
 	ok(Trade.sell(bag, stock, [], "horse", a) == "" and Trade.count(bag, "horse") == 0, "лошадь можно продать обратно")
-	# Кто продаёт: торговка и кузнец, с этапа «Слобода»
+	# Кто продаёт: торговка и кузнец, с этапа «Деревня»
 	var def: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/cities/s001.json"))
 	var who: Dictionary = {}
 	for st in [0, 1]:
@@ -85,8 +85,8 @@ func _shop() -> void:
 			for id in ["horse", "cart"]:
 				if int(n.get("stock", {}).get(id, 0)) > 0:
 					who["%s@%d" % [id, st]] = n["id"]
-	ok(not who.has("horse@0") and not who.has("cart@0"), "в «Остроге» лошадей и повозок нет")
-	ok(who.get("horse@1", "") == "trader" and who.get("cart@1", "") == "smith", "в «Слободе» лошадь у торговки, повозка у кузнеца: %s" % who)
+	ok(not who.has("horse@0") and not who.has("cart@0"), "в «Форте» лошадей и повозок нет")
+	ok(who.get("horse@1", "") == "trader" and who.get("cart@1", "") == "smith", "в «Деревне» лошадь у торговки, повозка у кузнеца: %s" % who)
 	var wish: int = Trade.buy_price("horse", a) + Trade.buy_price("cart", a)
 	ok(wish > 40 and wish < 250, "лошадь с повозкой — цель на несколько поручений: %d монет" % wish)
 

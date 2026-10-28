@@ -44,7 +44,7 @@ func _run() -> void:
 	ok(await W.enter_city("s001", {"return_pos": outside}), "Worlds.enter_city(s001)")
 	await frames(3)
 	var city: Node = W.current_node()
-	ok(city != null and city.has_method("talk") and city.city_id == "s001", "открылся мир Чёрнославля, не заглушка")
+	ok(city != null and city.has_method("talk") and city.city_id == "s001", "открылся мир Эшвика, не заглушка")
 	ok(city.hero == game.cast.hero["actor"], "в городе тот же герой")
 	ok(city.bag == W.inventory, "сумка общая с Worlds")
 	ok(not game.cast.controls_hero, "общая карта не двигает героя")

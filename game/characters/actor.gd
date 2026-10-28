@@ -1,7 +1,7 @@
 class_name Actor
 extends RefCounted
 ## Общий персонаж для игрока и НПС: характеристики 09, ресурсы пака Day R (здоровье, голод, жажда,
-## энергия, радиация, запас сил), травмы, болезни, полезные эффекты, навыки, движение по местности.
+## энергия, проклятье, запас сил), травмы, болезни, полезные эффекты, навыки, движение по местности.
 ## Правила одни для всех: игрок и НПС различаются только тем, кто решает, куда идти (actor_body.gd).
 ## Нужды идут в игровом времени (tick), запас сил и шаги — в реальном (travel_speed, exert):
 ## так персонаж проходит одинаковое расстояние при любой скорости часов (масштаб ×8, решение автора).
@@ -20,9 +20,9 @@ const RESOURCES: Array = ["health", "hunger", "thirst", "energy", "radiation", "
 # Длинный шаг времени режется на куски, чтобы пороги не перескакивались
 const SUBSTEP_S: float = 600.0
 const OPEN_WOUNDS: Array = ["bullet_wound", "laceration"]
-const DEATH_CAUSES: Dictionary = {
-	"thirst": "жажда", "hunger": "голод", "radiation": "воздействие проклятья", "drowning": "утонул",
-	"wounds": "раны", "disease": "болезнь", "other": "неизвестно",
+static var DEATH_CAUSES: Dictionary = {
+	"thirst": I18n.t("жажда"), "hunger": I18n.t("голод"), "radiation": I18n.t("воздействие проклятья"), "drowning": I18n.t("утонул"),
+	"wounds": I18n.t("раны"), "disease": I18n.t("болезнь"), "other": I18n.t("неизвестно"),
 }
 
 var actor_id: String = ""
@@ -233,7 +233,7 @@ func add_buff(id: String) -> bool:
 
 
 # =====================================================================
-# ИГРОВОЕ ВРЕМЯ: нужды, здоровье, радиация, болезни
+# ИГРОВОЕ ВРЕМЯ: нужды, здоровье, проклятье, болезни
 # =====================================================================
 ## env: {biome: int, water: float, temp_c: float, rain: float 0..1, night: bool} — см. world_env.gd
 func tick(dt_s: float, env: Dictionary) -> void:
@@ -297,7 +297,7 @@ func _step(h: float, env: Dictionary) -> void:
 		regen += float(ch["health"].get("regen_per_hour", 0.5))
 	add_res("health", (regen - dmg) * h)
 
-	# Радиация: копится в заражённых биомах, сама уходит только в чистых
+	# Проклятье: копится в проклятых биомах, само уходит только в чистых
 	var rch: Dictionary = ch["radiation"]
 	var gain: float = float(ter.get("radiation_h", 0.0)) * (1.0 - radiation_resist())
 	if gain > 0.0:
@@ -446,7 +446,7 @@ func set_skill_level(k: String, level: int) -> void:
 
 
 # =====================================================================
-# ЛЕЧЕНИЕ: лечит любой персонаж любого, в том числе себя и знахарь-НПС игрока
+# ЛЕЧЕНИЕ: лечит любой персонаж любого, в том числе себя и лекарь-НПС игрока
 # =====================================================================
 func treat_chance(id: String, healer: Actor) -> float:
 	var t: Dictionary = R.section("treatments").get(id, {})
@@ -462,14 +462,14 @@ func treat_chance(id: String, healer: Actor) -> float:
 ## used — какие предметы потрачены (их убирает вызывающий: инвентаря пока нет)
 func treat(id: String, healer: Actor, items: Array = []) -> Dictionary:
 	if not has_condition(id):
-		return {"ok": false, "reason": "нечего лечить", "chance": 0.0, "used": []}
+		return {"ok": false, "reason": I18n.t("нечего лечить"), "chance": 0.0, "used": []}
 	if healer == null or not healer.alive or healer.sleeping:
-		return {"ok": false, "reason": "некому лечить", "chance": 0.0, "used": []}
+		return {"ok": false, "reason": I18n.t("некому лечить"), "chance": 0.0, "used": []}
 	var t: Dictionary = R.section("treatments").get(id, {})
 	var need: Array = t.get("items", [])
 	var missing: Array = need.filter(func(x): return not items.has(x))
 	if not missing.is_empty():
-		return {"ok": false, "reason": "нужно: " + ", ".join(PackedStringArray(missing)), "chance": 0.0, "used": []}
+		return {"ok": false, "reason": I18n.t("нужно: ") + ", ".join(PackedStringArray(missing)), "chance": 0.0, "used": []}
 	var chance: float = treat_chance(id, healer)
 	var m: Dictionary = R.section("medicine")
 	var ok: bool = healer.rng.randf() < chance
@@ -481,7 +481,7 @@ func treat(id: String, healer: Actor, items: Array = []) -> Dictionary:
 		healer.add_xp("medicine", float(m.get("xp_success", 12.0)) * (1.0 + 0.25 * float(t.get("skill", 1))))
 	else:
 		healer.add_xp("medicine", float(m.get("xp_fail", 3.0)))
-	return {"ok": ok, "reason": "" if ok else "не вышло", "chance": chance, "used": need.duplicate()}
+	return {"ok": ok, "reason": "" if ok else I18n.t("не вышло"), "chance": chance, "used": need.duplicate()}
 
 
 # =====================================================================

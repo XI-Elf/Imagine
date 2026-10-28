@@ -63,7 +63,7 @@ func roll(expr: String, opts: Dictionary = {}) -> Dictionary:
 		"label": String(opts.get("label", "")), "ok": p["ok"], "kind": "roll"}
 	if not p["ok"]:
 		push_error("DiceRoller: не разобрано выражение «%s»" % expr)
-		out["text"] = "%s: ошибка в «%s»" % [out["label"], expr]
+		out["text"] = I18n.t("%s: ошибка в «%s»") % [out["label"], expr]
 		return out
 	var total: int = 0
 	var parts: Array = []
@@ -81,7 +81,7 @@ func roll(expr: String, opts: Dictionary = {}) -> Dictionary:
 	out["mod"] = mod
 	out["total"] = total
 	out["text"] = "%s%s%s = %d" % [" + ".join(PackedStringArray(parts)) if not parts.is_empty() else "0",
-		"" if mod == 0 else (" + %d" % mod if mod > 0 else " − %d" % -mod), " [крит ×%d]" % rep if rep > 1 else "", total]
+		"" if mod == 0 else (" + %d" % mod if mod > 0 else " − %d" % -mod), I18n.t(" [крит ×%d]") % rep if rep > 1 else "", total]
 	_log(out, opts)
 	return out
 
@@ -112,7 +112,7 @@ func check(sides: int, mod: int = 0, adv: bool = false, dis: bool = false, label
 		"dice": rolls.map(func(x): return {"sides": sides, "value": x})}
 	var head: String = "%d (d%d)" % [nat, sides]
 	if mode != "":
-		head = "%d (d%d %s: %d, %d)" % [nat, sides, "преим." if mode == "adv" else "помеха", rolls[0], rolls[1]]
+		head = "%d (d%d %s: %d, %d)" % [nat, sides, I18n.t("преим.") if mode == "adv" else I18n.t("помеха"), rolls[0], rolls[1]]
 	out["text"] = head + ("" if mod == 0 else (" + %d" % mod if mod > 0 else " − %d" % -mod)) + " = %d" % out["total"]
 	_log(out, opts)
 	return out

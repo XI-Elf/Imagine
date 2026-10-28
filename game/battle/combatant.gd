@@ -5,7 +5,7 @@ extends RefCounted
 
 const Data := preload("res://battle/battle_data.gd")
 const STATS: Array = ["str", "dex", "con", "int", "wis", "cha", "lck"]
-const STAT_NAMES: Dictionary = {"str": "СИЛ", "dex": "ЛОВ", "con": "ВЫН", "int": "ИНТ", "wis": "МДР", "cha": "ХАР", "lck": "УДЧ"}
+static var STAT_NAMES: Dictionary = {"str": I18n.t("СИЛ"), "dex": I18n.t("ЛОВ"), "con": I18n.t("ВЫН"), "int": I18n.t("ИНТ"), "wis": I18n.t("МДР"), "cha": I18n.t("ХАР"), "lck": I18n.t("УДЧ")}
 # Характеристики Амбера -> D&D (Восприятие — отдельно, в инициативу и внимательность)
 const FROM_AMBER: Dictionary = {"str": "str", "dex": "agi", "con": "end", "int": "int", "wis": "wis", "cha": "cha"}
 

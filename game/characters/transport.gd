@@ -1,7 +1,7 @@
 extends Node2D
 ## Лошадь и повозка (вопрос Q16, Huzzah 2026-10-24): только транспорт — быстрее ехать и больше везти,
 ## в бою не участвуют. Владение — вещи horse и cart в сумке героя (Worlds.inventory, data/cities/items.json);
-## лошадь продаёт торговка, повозку — кузнец, оба с этапа «Слобода». Повозке нужна лошадь (Trade.buy).
+## лошадь продаёт торговка, повозку — кузнец, оба с этапа «Деревня». Повозке нужна лошадь (Trade.buy).
 ## R на карте — сесть верхом (с повозкой — на повозку) или спешиться; выбор — ключ ride в сумке,
 ## поэтому сохраняется вместе с ней. Пешком лошадь идёт в поводу и груз везёт всё равно.
 ## Каждый кадр: Actor.mount по выбору (в городе и в бою — пешком), Actor.pack_kg — сколько везут
@@ -50,14 +50,14 @@ static func mode(bag: Dictionary) -> String:
 ## Сесть или спешиться. Ответ: текст для игрока
 static func toggle(bag: Dictionary) -> String:
 	if not owns(bag, "horse"):
-		return "Лошади нет: её продаёт торговка в городе"
+		return I18n.t("Лошади нет: её продаёт торговка в городе")
 	bag["ride"] = not bool(bag.get("ride", false))
 	match mode(bag):
 		"horse":
-			return "Верхом"
+			return I18n.t("Верхом")
 		"cart":
-			return "На повозке"
-	return "Пешком, лошадь в поводу"
+			return I18n.t("На повозке")
+	return I18n.t("Пешком, лошадь в поводу")
 
 
 ## Транспорт к герою: mount, груз животных, вес сумки. away — герой в городе или в бою: там пешком
@@ -132,16 +132,16 @@ func _update_hud(a: Actor, bag: Dictionary) -> void:
 	if owns(bag, "horse"):
 		match a.mount:
 			"horse":
-				parts.append("Верхом")
+				parts.append(I18n.t("Верхом"))
 			"cart":
-				parts.append("На повозке")
+				parts.append(I18n.t("На повозке"))
 			_:
-				parts.append("Лошадь в поводу")
+				parts.append(I18n.t("Лошадь в поводу"))
 	if owns(bag, "cart"):
-		parts.append("повозка" if owns(bag, "horse") else "повозка стоит: нет лошади")
-	parts.append("груз %.0f / %.0f кг" % [a.carried_kg, a.carry_capacity()])
+		parts.append(I18n.t("повозка") if owns(bag, "horse") else I18n.t("повозка стоит: нет лошади"))
+	parts.append(I18n.t("груз %.0f / %.0f кг") % [a.carried_kg, a.carry_capacity()])
 	if owns(bag, "horse"):
-		parts.append("R — спешиться" if a.mount != "" else "R — сесть")
+		parts.append(I18n.t("R — спешиться") if a.mount != "" else I18n.t("R — сесть"))
 	hud.text = "  ·  ".join(parts)
 	hud.position = Vector2(14.0, get_viewport_rect().size.y - 56.0)
 

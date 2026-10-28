@@ -90,7 +90,8 @@ func _run() -> void:
 	ok(st != null and st.list.size() == 1, "один город в реестре: %d" % (st.list.size() if st else -1))
 	var city: Dictionary = st.list[0]
 	ok(city["_cells"].size() == int(st.sizes[city["size"]]["cells"]), "%s %s: %d клеток по размеру" % [st.size_name(city), city["name"], city["_cells"].size()])
-	ok(city.has("emblem") and city["walled"] and city["_road"].size() >= 10, "есть эмблема, стена и дорога (%d точек)" % city["_road"].size())
+	ok(city.has("emblem") and city["walled"], "есть эмблема и стена")
+	ok(not city.has("road") and not city.has("_road"), "готовой дороги к воротам нет: дороги протаптываются (world/trails.gd)")
 	# Город целиком в одной области и одном регионе: по клеткам с запасом 20 м границ нет
 	var regs := {}
 	var provs := {}
@@ -103,11 +104,6 @@ func _run() -> void:
 	ok(regs.size() == 1 and provs.size() == 1 and int(regs.keys()[0]) == int(city["region"]) and int(provs.keys()[0]) == int(city["province"]),
 		"город в одной области и регионе: области %s, регионы %s" % [provs.keys(), regs.keys()])
 	ok(game.region_at(city["_gate"]) == int(city["region"]), "ворота в том же регионе")
-	var road_ok: bool = true
-	for q in city["_road"]:
-		if game.biome_at(q) <= 1 or st.blocks(q):
-			road_ok = false
-	ok(road_ok, "дорога по суше и вне города")
 	ok(game.cam_pos.distance_to(st.spawn_point()) < 1.0, "новая игра: камера над городом")
 	var ex: Vector2 = st.exit_point(city["id"])
 	ok(ex != Vector2.INF and st.settlement_at(ex).is_empty() and game.biome_at(ex) > 1, "точка выхода на суше вне клеток: %s" % ex)
@@ -138,12 +134,14 @@ func _run() -> void:
 	await key(KEY_ESCAPE)
 	game.zoom = 0.4
 
-	# По дороге к воротам: «Войти»
-	var road: PackedVector2Array = city["_road"]
-	await place(hero, road[6], (road[12] - road[6]).normalized())
-	ok(st.prompt_for.is_empty(), "на дороге в %.0f м от ворот выбора нет" % road[6].distance_to(city["_gate"]))
+	# Прямо к воротам снаружи: «Войти»
+	var out_dir: Vector2 = (city["_gate"] - city["_center"]).normalized()
+	var appr: Vector2 = city["_gate"] + out_dir * 240.0
+	ok(game.biome_at(appr) > 1 and not st.blocks(appr), "подход к воротам по суше и вне города")
+	await place(hero, appr, out_dir)
+	ok(st.prompt_for.is_empty(), "в %.0f м от ворот выбора нет" % appr.distance_to(city["_gate"]))
 	await walk_until_prompt(st, hero, city["_gate"])
-	ok(st.prompt_kind == "gate", "по дороге у ворот всплыл выбор «Войти»")
+	ok(st.prompt_kind == "gate", "у ворот всплыл выбор «Войти»")
 	ok(cast.hold_hero, "герой стоит, пока игрок выбирает")
 	var p0: Vector2 = hero["pos"]
 	Input.action_press("ui_up")
@@ -275,7 +273,7 @@ func _run() -> void:
 	st.sneak_rules = saved
 
 	# Вход через ворота: entry "gate"
-	await place(hero, road[6], (road[12] - road[6]).normalized())
+	await place(hero, appr, out_dir)
 	await walk_until_prompt(st, hero, city["_gate"])
 	await key(KEY_E)
 	ok(got.size() == 3 and got[2]["entry"] == "gate", "ворота: entry %s" % (got[2].get("entry") if got.size() > 2 else "-"))
@@ -286,12 +284,12 @@ func _run() -> void:
 
 	ok(game.place_line(city["_center"]).contains(city["name"]), "подсказка: %s" % game.place_line(city["_center"]))
 
-	# Медальон на карте (знамя и картинка по развитию): Чёрнославль — по этапу роста, другие — по размеру
+	# Медальон на карте (знамя и картинка по развитию): Эшвик — по этапу роста, другие — по размеру
 	var W2: Node = root.get_node_or_null("Worlds")
 	var saved_states: Dictionary = W2.city_states.duplicate() if W2 != null else {}
 	if W2 != null:
 		W2.city_states.erase(String(city.get("city_id", city["id"])))
-	ok(st.dev_level(city) == 1 and st.medallion_texture(1) != null, "новая игра: медальон «острог»")
+	ok(st.dev_level(city) == 1 and st.medallion_texture(1) != null, "новая игра: медальон «форт»")
 	var done: Array = []
 	for id in city["_plan"]["growth"]["quests"]:
 		for q in city["_plan"]["growth"]["quests"][id]:

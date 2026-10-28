@@ -59,9 +59,9 @@ func _run() -> void:
 	city.clock.paused = true
 	await frames(3)
 
-	# Острог: лачуга героя и общий дом на троих, развалины довоенные
+	# Форт: лачуга героя и общий дом на троих, развалины довоенные
 	var houses: Array = city.map.buildings.filter(func(b): return b.get("kind", "") != "ruins")
-	ok(city.stage == 0 and Growth.stage_name(city.full_def, 0) == "Острог", "начальный этап — Острог")
+	ok(city.stage == 0 and Growth.stage_name(city.full_def, 0) == "Форт", "начальный этап — Форт")
 	ok(houses.size() == 2, "в начале два дома: %s" % [houses.map(func(b): return b["name"])])
 	ok(not city.map.building_by_id("inn").is_empty() and city.map.building_by_id("inn")["name"] == "Общий дом", "общий дом есть")
 	ok(city.map.building_by_id("quarter_house_24")["name"] == "Лачуга", "лачуга героя есть")
@@ -74,7 +74,7 @@ func _run() -> void:
 	ok(city.map.building_at(npc(city, "posadnik")["work_pos"]) < 0 and city.map.is_free(npc(city, "posadnik")["work_pos"], 0.35), "глава днём на площади")
 	ok(npc(city, "tanner")["stock"].has("leather_jacket") and npc(city, "tanner")["stock"].has("boots"), "кожевник продаёт куртку и сапоги")
 	ok(npc(city, "posadnik")["stock"].has("linen_shirt"), "рубаху пока продаёт глава")
-	ok(city.map.building_by_id("smithy").is_empty() and city.map.building_by_id("hall").is_empty(), "кузницы и детинца ещё нет")
+	ok(city.map.building_by_id("smithy").is_empty() and city.map.building_by_id("hall").is_empty(), "кузницы и чертога ещё нет")
 
 	# Лежанка в лачуге
 	var bed: Dictionary = {}
@@ -92,7 +92,7 @@ func _run() -> void:
 		if p["id"] == "notice_board":
 			board = p
 	var bt: String = city._board_text(board)
-	ok(bt.contains("Острог") and bt.contains("Скобы для частокола"), "доска: этап и поручения")
+	ok(bt.contains("Форт") and bt.contains("Скобы для частокола"), "доска: этап и поручения")
 
 	# Поручение главы: принести лом. Без лома не сдать
 	var elder: Dictionary = npc(city, "posadnik")
@@ -124,9 +124,9 @@ func _run() -> void:
 	var hero_was: Vector2 = city.hero_pos
 	city.turn_in(npc(city, "tanner"), tq)
 
-	# Слобода: кузнец, торговка, стражник и их дома появились сразу
-	ok(city.stage == 1, "три поручения — этап Слобода")
-	ok(city._panel_text.text.contains("Слобода"), "в разговоре сказано, что город вырос")
+	# Деревня: кузнец, торговка, стражник и их дома появились сразу
+	ok(city.stage == 1, "три поручения — этап Деревня")
+	ok(city._panel_text.text.contains("Деревня"), "в разговоре сказано, что город вырос")
 	for id in ["smith", "trader", "guard_1"]:
 		ok(not npc(city, id).is_empty(), "пришёл %s" % id)
 	ok(not city.map.building_by_id("smithy").is_empty() and not city.map.building_by_id("shop").is_empty(), "кузница и лавка стоят")
@@ -143,7 +143,7 @@ func _run() -> void:
 	city2.enter("s001", hero, {"inventory": bag, "state": st})
 	city2.clock.paused = true
 	await frames(2)
-	ok(city2.stage == 1 and city2.npcs.size() == city.npcs.size(), "после загрузки — Слобода, жителей %d" % city2.npcs.size())
+	ok(city2.stage == 1 and city2.npcs.size() == city.npcs.size(), "после загрузки — Деревня, жителей %d" % city2.npcs.size())
 	ok(Growth.taken(city2.growth, sq), "взятое поручение кузнеца помнится")
 	city2.queue_free()
 
@@ -153,11 +153,11 @@ func _run() -> void:
 			var cq: Dictionary = Growth.current(city.full_def, city.growth, String(n["def"]["id"]))
 			if not cq.is_empty():
 				do_quest(city, npc(city, String(n["def"]["id"])), cq)
-	ok(city.stage == 4 and Growth.stage_name(city.full_def, 4) == "Чёрнославль", "все 18 поручений — город вырос до конца")
+	ok(city.stage == 4 and Growth.stage_name(city.full_def, 4) == "Крупный город", "все 18 поручений — город вырос до конца")
 	ok(city.map.buildings.size() == 43 and city.npcs.size() == 29, "43 дома, 29 жителей: %d, %d" % [city.map.buildings.size(), city.npcs.size()])
-	ok(city.def["wall"] == "stone" and city.map.building_by_id("inn")["name"].begins_with("Трактир"), "каменная стена, общий дом снова трактир")
-	ok(not npc(city, "posadnik")["def"].has("work_cell") and city.map.building_at(npc(city, "posadnik")["work_pos"]) == int(city.map.building_by_id("hall")["index"]), "глава работает в детинце")
-	ok(npc(city, "posadnik")["def"]["home"] == "hall" and npc(city, "tanner")["def"]["home"] == "house_2", "глава в детинце, кожевник в дубильне")
+	ok(city.def["wall"] == "stone" and city.map.building_by_id("inn")["name"].begins_with("Таверна"), "каменная стена, общий дом снова таверна")
+	ok(not npc(city, "posadnik")["def"].has("work_cell") and city.map.building_at(npc(city, "posadnik")["work_pos"]) == int(city.map.building_by_id("hall")["index"]), "глава работает в чертоге")
+	ok(npc(city, "posadnik")["def"]["home"] == "hall" and npc(city, "tanner")["def"]["home"] == "house_2", "глава в чертоге, кожевник в дубильне")
 	# Все дома достижимы от ворот
 	var gate: Vector2 = Vector2(city.def["gates"][0]["spawn"][0], city.def["gates"][0]["spawn"][1]) * city.map.cell_m
 	var bad: Array = []

@@ -64,6 +64,8 @@ const ABILITIES: Array = [
 
 const CREATURES: Array = [
 	{"id": "bandit", "title": "Разбойник", "scores": {"str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10, "lck": 10}, "hp_dice": "2d8", "armor": "leather", "weapons": ["shortsword", "dagger"], "abilities": ["net"], "ai": "melee", "morale": 0.5},
+	# Q19: первый бой у «Острога» (Q30) — оборванец с дубиной: разбойник в шкурах с дубиной: с ножом побеждают ~95 из 100, кулаками ~каждый второй (tests/balance_checks.gd)
+	{"id": "bandit_ragged", "title": "Оборванец", "scores": {"str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10, "lck": 10}, "hp_dice": "2d8", "armor": "hides", "weapons": ["club"], "ai": "melee", "morale": 0.5},
 	{"id": "bandit_archer", "title": "Разбойник-лучник", "scores": {"str": 10, "dex": 14, "con": 12, "int": 10, "wis": 11, "cha": 10, "lck": 10}, "hp_dice": "2d8", "armor": "hides", "weapons": ["shortbow", "dagger"], "ai": "ranged", "morale": 0.4, "perception_prof": true},
 	{"id": "bandit_chief", "title": "Атаман", "level": 2, "scores": {"str": 15, "dex": 12, "con": 14, "int": 11, "wis": 11, "cha": 14, "lck": 10}, "hp_dice": "4d8", "armor": "chain", "weapons": ["battleaxe", "dagger"], "abilities": ["war_cry"], "ai": "melee", "morale": 0.8, "save_profs": ["str", "con"]},
 	{"id": "wolf", "title": "Волк", "human": false, "scores": {"str": 12, "dex": 15, "con": 12, "int": 3, "wis": 12, "cha": 6, "lck": 10}, "hp_dice": "2d8", "natural_ac": 11, "weapons": ["wolf_bite"], "speed_ft": 40, "ai": "beast", "morale": 0.4, "perception_prof": true, "stealth_prof": true},

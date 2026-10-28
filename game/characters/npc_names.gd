@@ -12,7 +12,7 @@ static var _read: bool = false
 static func data() -> Dictionary:
 	if not _read:
 		_read = true
-		var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(FILE)) if FileAccess.file_exists(FILE) else null
+		var v: Variant = I18n.tree(JSON.parse_string(FileAccess.get_file_as_string(FILE))) if FileAccess.file_exists(FILE) else null
 		_data = v.get("cultures", {}) if v is Dictionary else {}
 		if _data.is_empty():
 			push_error("npc_names: не прочитан " + FILE)
@@ -37,7 +37,7 @@ static func pick(rng: RandomNumberGenerator, gender: String = "", culture: Strin
 	if free.is_empty():
 		free = pool
 	if free.is_empty():
-		return "Безымянный"
+		return I18n.t("Безымянный")
 	return free[rng.randi() % free.size()]
 
 
