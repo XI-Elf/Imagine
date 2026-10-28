@@ -71,7 +71,8 @@ func build(d: Dictionary) -> void:
 	for i in d.get("buildings", []).size():
 		_building(d["buildings"][i], i)
 	for p in d.get("props", []):
-		var t: int = {"stall": T.STALL, "well": T.WELL, "tree": T.TREE}.get(p["kind"], T.GRASS)
+		# техно-артефакты (tech_*, Q31 B) — препятствие, как лоток
+		var t: int = {"stall": T.STALL, "well": T.WELL, "tree": T.TREE}.get(p["kind"], T.STALL if String(p["kind"]).begins_with("tech_") else T.GRASS)
 		# Деревья только на траве; лотки и колодцы — на траве и площади
 		var allowed: Array = [T.GRASS] if t == T.TREE else [T.GRASS, T.SQUARE]
 		for c in p["cells"]:

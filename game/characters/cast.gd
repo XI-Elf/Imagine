@@ -389,7 +389,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _hero_alive() and _forage_cd <= 0.0:
 				_forage_cd = FORAGE_COOLDOWN_S
 				var site: Dictionary = Ruins.near(game, hero["pos"])
-				if not site.is_empty():
+				var wm: Node = get_node_or_null("/root/Worlds")
+				var cart_i: int = HeroDeath.cart_near(wm, hero["pos"], game.clock.total_seconds)
+				if cart_i >= 0:
+					_event(HeroDeath.take_cart(wm, cart_i))
+				elif not site.is_empty():
 					_event(search_ruins(site))
 				else:
 					_event("Нашёл еду" if forage(hero) else "Ничего съедобного")
@@ -588,7 +592,8 @@ func _draw() -> void:
 			draw_rect(Rect2(sp + Vector2(-w / 2, r + 4), Vector2(w * hp, 4)), Color(0.85, 0.2, 0.2) if hp < 0.3 else Color(0.4, 0.85, 0.35))
 
 
-## Руины на карте: груда камней и обломок стены; вблизи — подпись (обысканные — серые)
+## Руины на карте — руины машин (Q31 B): остов шагающей машины или купол бункера (по клетке руин) и камни;
+## вблизи — подпись (обысканные — серые)
 func _draw_ruins(font: Font) -> void:
 	if game.zoom < 0.25:
 		return
@@ -599,13 +604,9 @@ func _draw_ruins(font: Font) -> void:
 		var h: float = clampf(9.0 * game.zoom, 8.0, 260.0)
 		var done: bool = Ruins.looted_now(ruins_looted, s["key"], now)
 		var tint: Color = Color(0.62, 0.6, 0.56) if done else Color(0.92, 0.86, 0.78)
-		# Обломок стены: два зуба кладки за камнями
-		var wall := PackedVector2Array([sp + Vector2(-0.55, 0.0) * h, sp + Vector2(-0.55, -0.62) * h, sp + Vector2(-0.38, -0.5) * h,
-			sp + Vector2(-0.3, -0.78) * h, sp + Vector2(-0.12, -0.55) * h, sp + Vector2(0.05, -0.6) * h, sp + Vector2(0.12, 0.0) * h])
-		draw_colored_polygon(wall, Color(0.5, 0.46, 0.4, 0.95) * tint)
-		draw_polyline(wall, Color(0.12, 0.1, 0.08, 0.9), maxf(1.0, h * 0.02))
-		Art.sprite(self, "rock", sp + Vector2(h * 0.1, h * 0.05), h * 0.55, tint)
-		Art.sprite(self, "rock", sp + Vector2(-h * 0.35, h * 0.12), h * 0.35, tint)
+		var key: String = "tech_dome" if Art.seed_at(absi(hash(s["key"])) % 9973, 7, 31) > 0.6 else "tech_wreck"
+		Art.sprite(self, key, sp + Vector2(-h * 0.1, 0.0), h * 0.8, tint)
+		Art.sprite(self, "rock", sp + Vector2(h * 0.62, h * 0.12), h * 0.3, tint)
 		if game.zoom >= 0.6:
 			var label: String = "Руины" + (" (обысканы)" if done else "")
 			draw_string_outline(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, 4, Color(0, 0, 0, 0.9))

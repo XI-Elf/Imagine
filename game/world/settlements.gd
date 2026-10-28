@@ -172,6 +172,21 @@ func _growth_of(s: Dictionary) -> Dictionary:
 	return Growth.new_state()
 
 
+## Этап роста ближайшего растущего города в радиусе radius_m от точки; -1 — такого нет (Q30)
+func growth_stage_near(p: Vector2, radius_m: float) -> int:
+	var best: int = -1
+	var best_d: float = INF
+	for s in list:
+		var plan: Dictionary = s.get("_plan", {})
+		if not Growth.has_growth(plan):
+			continue
+		var d: float = p.distance_to(s["_center"])
+		if d <= radius_m and d < best_d:
+			best_d = d
+			best = Growth.stage(plan, _growth_of(s))
+	return best
+
+
 func radial(s: Dictionary) -> bool:
 	return float(s.get("_radius", 0.0)) > 0.0
 

@@ -141,16 +141,26 @@ func _run() -> void:
 	city.menu.press(card(city, "npc", "tanner"))
 	await frames(2)
 	ok(city._panel.visible and city._panel_kind == "talk", "карточка открыла разговор")
-	var labels: Array = city._buttons.map(func(b): return b.text)
-	ok(labels.any(func(s): return s.contains("Торговать")), "в меню кожевник торгует в часы работы: %s" % [labels])
+	var labels: Array = city._tab_buttons.map(func(b): return b.text)
+	ok(labels.has("Разговор") and labels.has("Торговля") and labels.has("Мастерская") and labels.any(func(s): return s.begins_with("Поручения")), "Q34: вкладки разговора у кожевника: %s" % [labels])
+	ok(city._tab_buttons[0].button_pressed and city._tabs.visible, "Q34: открыта вкладка «Разговор»")
 	var vp: Vector2 = city.get_viewport().get_visible_rect().size
 	ok(absf(city._panel.position.x + city._panel.size.x * 0.5 - vp.x * 0.5) < 4.0, "окно разговора по центру экрана")
 	await shot("cm04_kozhevnik.png")
-	for b in city._buttons:
-		if b.text.contains("Торговать"):
+	for b in city._tab_buttons:
+		if b.text == "Торговля":
 			b.emit_signal("pressed")
 	await frames(2)
-	ok(city._panel_kind == "trade", "торговля открылась")
+	ok(city._panel_kind == "trade" and city._tab_buttons.filter(func(b): return b.button_pressed).map(func(b): return b.text) == ["Торговля"], "торговля открылась на своей вкладке")
+	for b in city._tab_buttons:
+		if b.text == "Мастерская":
+			b.emit_signal("pressed")
+	await frames(2)
+	ok(city._panel_kind == "craft" and city._buttons.size() > 0, "Q34: вкладка «Мастерская» без прокрутки разговора")
+	for b in city._tab_buttons:
+		if b.text == "Торговля":
+			b.emit_signal("pressed")
+	await frames(2)
 	await shot("cm05_torgovlya.png")
 	await key(KEY_ESCAPE)
 	ok(not city._panel.visible and city.menu.visible and W.current_kind() == "city", "Esc закрыл окно, экран города на месте")
@@ -158,8 +168,12 @@ func _run() -> void:
 	# Поручение главы из карточки
 	city.menu.press(card(city, "npc", "posadnik"))
 	await frames(2)
+	for b in city._tab_buttons:
+		if b.text.begins_with("Поручения"):
+			b.emit_signal("pressed")
+	await frames(2)
 	labels = city._buttons.map(func(b): return b.text)
-	ok(labels.any(func(s): return s.contains("Работа:")), "у главы в разговоре есть работа")
+	ok(city._panel_kind == "quests" and labels.any(func(s): return s.contains("Работа:")), "у главы на вкладке «Поручения» есть работа")
 	city._close_panel()
 	city.menu.press(card(city, "quests"))
 	await frames(2)

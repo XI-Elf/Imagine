@@ -19,6 +19,10 @@ const BY_TERRAIN: Dictionary = {
 	"rad_wasteland": {"hounds": 3, "bandits": 1},
 	"rad_swamp": {"hounds": 3},
 }
+## Q30 (Huzzah 2026-10-27, вариант B): пока растущий город на этапе «Острог», в STARTER_KM от него
+## бандиты ходят по одному — первый бой с ножом по силам. Флаг starter ставит Worlds._start_battle_now
+const STARTER_KM: float = 8.0
+const STARTER_GROUPS: Array = ["bandits", "gang"]
 ## [шаблон, от, до]
 const GROUPS: Dictionary = {
 	"bandits": [["bandit", 1, 2], ["bandit_archer", 0, 1], ["bandit_chief", 0, 0]],
@@ -79,6 +83,9 @@ static func make_enemies(req: Dictionary, rng: RandomNumberGenerator) -> Array:
 		group = pick_group(String(req.get("terrain", "wasteland")), rng)
 	var out: Array = []
 	var n: int = 0
+	if bool(req.get("starter", false)) and group in STARTER_GROUPS:
+		req["group"] = group
+		return [make_enemy("bandit", 0, rng)]
 	for m in GROUPS[group]:
 		for i in rng.randi_range(int(m[1]), int(m[2])):
 			out.append(make_enemy(String(m[0]), n, rng))
