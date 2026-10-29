@@ -140,6 +140,12 @@ var _tabs: HBoxContainer               # вкладки розмови (Q34): Р
 var _tab_buttons: Array = []
 var _panel_kind: String = ""           # "", "talk", "trade", "craft", "bag", "note"
 var _talk_npc: Dictionary = {}
+var _portrait: Control                   # портрет співрозмовника (city/portrait.gd)
+var _type_tween: Tween
+var dlg_state: Dictionary = {}           # пункт 7: id жителя -> {node, attitude, flags} (city/dialogue.gd)
+const Dialogue := preload("res://city/dialogue.gd")
+const PortraitScript := preload("res://city/portrait.gd")
+const TALK_KINDS: Array = ["talk", "quests", "trade", "craft"]
 var craft_rng := RandomNumberGenerator.new()   # удача роботи своїми руками в майстерні (craft.gd)
 
 
@@ -938,15 +944,21 @@ func talk(n: Dictionary) -> void:
 	if a.sleeping:
 		text = I18n.t("Спит. Будить не стоит.")
 	else:
+		var tree: Dictionary = Dialogue.tree_for(String(nd.get("id", "")), role)
 		var lines: Array = nd.get("lines", ["…"])
 		text = "«%s»" % lines[int(n["line_i"]) % lines.size()]
+		if not tree.is_empty():
+			text = String(Dialogue.node(tree, String(_dlg(n).get("node", "start"))).get("text", text))
 		# при Уме 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
 		var dlg: Dictionary = Sheet.sect("dialogue")
 		if hero != null and Sheet.dumb(hero):
 			text += I18n.t(String(dlg.get("dumb_suffix", "")))
 		elif hero != null and Sheet.smart(hero) and int(n["line_i"]) == 0:
 			text += I18n.t(String(dlg.get("smart_suffix", "")))
-		opts.append([I18n.t("Поговорить"), func(): n["line_i"] += 1; talk(n)])
+		if tree.is_empty():
+			opts.append([I18n.t("Поговорить"), func(): n["line_i"] += 1; talk(n)])
+		else:
+			opts.append_array(_dlg_options(n, tree))
 		var qs: Array = Growth.available(full_def, growth, String(nd["id"]))
 		if not qs.is_empty():
 			var ready_n: int = qs.filter(func(q): return Growth.taken(growth, q) and Growth.ready(growth, q, bag, hero_km(), battles_won())).size()
@@ -965,8 +977,77 @@ func talk(n: Dictionary) -> void:
 			opts.append([I18n.t("Выпусти меня (%d)") % int(rules.get("night_pass_fee", 5)), func(): pay_gate(n)])
 		if role == "elder" and not discovered.has("_plan"):
 			opts.append([I18n.t("Расспросить о городе"), func(): ask_plan(n)])
-	opts.append([I18n.t("Уйти"), _close_panel])
+	# У дереві розмови є свій варіант «піти»
+	if a.sleeping or Dialogue.tree_for(String(nd.get("id", "")), role).is_empty():
+		opts.append([I18n.t("Уйти"), _close_panel])
 	_open_panel("talk", title, text, opts, _talk_tabs(n, "talk"))
+
+
+# =====================================================================
+# РОЗМОВИ З ВАРІАНТАМИ (пункт 7) І ПОРТРЕТ (пункт 18)
+# =====================================================================
+func _dlg(n: Dictionary) -> Dictionary:
+	var id: String = String(n["def"].get("id", ""))
+	if not dlg_state.has(id):
+		dlg_state[id] = {"node": "start", "attitude": 0, "flags": {}}
+	return dlg_state[id]
+
+
+func _dlg_options(n: Dictionary, tree: Dictionary) -> Array:
+	var st: Dictionary = _dlg(n)
+	var out: Array = []
+	for o in Dialogue.node(tree, String(st.get("node", "start"))).get("options", []):
+		if Dialogue.allowed(o, hero, bag, _dlg_flags_view(st)):
+			out.append([Dialogue.label(o), func(): answer(n, o)])
+	return out
+
+
+# Позначки розмов спільні на місто (донос олдерменові пам'ятає вся варта), ставлення — у кожного своє
+func _dlg_flags_view(st: Dictionary) -> Dictionary:
+	var all: Dictionary = {}
+	for k in dlg_state:
+		all.merge(dlg_state[k].get("flags", {}))
+	return {"flags": all, "attitude": st.get("attitude", 0)}
+
+
+## Відповідь героя: наслідки, наступна репліка; «end» — розмова закінчена
+func answer(n: Dictionary, o: Dictionary) -> void:
+	var st: Dictionary = _dlg(n)
+	var said: String = Dialogue.apply(o, hero, bag, st)
+	if said != "":
+		_say(said)
+	var nxt: String = String(o.get("next", "start"))
+	if nxt == "end":
+		st["node"] = "start"
+		_close_panel()
+		return
+	st["node"] = nxt
+	talk(n)
+
+
+func _inspect_speaker() -> void:
+	if _talk_npc.is_empty():
+		return
+	var a: Actor = _talk_npc["actor"]
+	var m: int = Dialogue.mood(_dlg(_talk_npc))
+	_say(I18n.t("%s смотрит на вас %s") % [a.display_name, [I18n.t("исподлобья, с неприязнью"), I18n.t("равнодушно, как на мебель"), I18n.t("почти дружелюбно")][m + 1]])
+
+
+# Перенос рядків змінює висоту панелі лише після кадру: знову притиснути до низу екрана
+func _place_bottom() -> void:
+	if not _panel.visible or not _portrait.visible:
+		return
+	_panel.reset_size()
+	_panel.position = Vector2(20.0, get_viewport_rect().size.y - _panel.size.y - 16.0)
+
+
+## Рядок розмови з'являється поступово, як у візуальних новелах
+func _typewrite() -> void:
+	if _type_tween != null and _type_tween.is_valid():
+		_type_tween.kill()
+	_panel_text.visible_ratio = 0.0
+	_type_tween = create_tween()
+	_type_tween.tween_property(_panel_text, "visible_ratio", 1.0, clampf(_panel_text.text.length() * 0.015, 0.2, 1.4))
 
 
 ## Вкладки розмови (Q34, Huzzah 2026-10-27, варіант B): у майстрів багато дій, і «Майстерня»
@@ -1563,9 +1644,18 @@ func _build_ui() -> void:
 	_panel.visible = false
 	_panel.custom_minimum_size = Vector2(440, 0)
 	_ui.add_child(_panel)
+	# Пункт 18: у розмові панель — рядок унизу екрана з портретом того, хто говорить
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 14)
+	_panel.add_child(hb)
+	_portrait = PortraitScript.new()
+	_portrait.visible = false
+	_portrait.inspected.connect(_inspect_speaker)
+	hb.add_child(_portrait)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
-	_panel.add_child(v)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hb.add_child(v)
 	_panel_title = Label.new()
 	_panel_title.add_theme_font_size_override("font_size", 18)
 	_panel_title.add_theme_color_override("font_color", Color("f0d890"))
@@ -1628,13 +1718,26 @@ func _open_panel(kind: String, title: String, text: String, opts: Array, tabs: A
 		_panel_box.add_child(b)
 		_buttons.append(b)
 	var sc: ScrollContainer = _panel_box.get_parent()
+	var vp: Vector2 = get_viewport_rect().size
+	var vn: bool = not _talk_npc.is_empty() and kind in TALK_KINDS
+	_portrait.visible = vn
+	if vn:
+		_portrait.show_for(_talk_npc["actor"], String(_talk_npc["def"].get("role", "citizen")), Dialogue.mood(_dlg(_talk_npc)))
+	_panel.custom_minimum_size.x = vp.x - 40.0 if vn else 440.0
+	_panel_text.custom_minimum_size.x = vp.x - 260.0 if vn else 420.0
+	sc.custom_minimum_size.x = _panel_text.custom_minimum_size.x
 	# Висота списку за справжньою висотою кнопок: у рамок коміксу (Q24) кнопка вища за колишні 34 px
 	var row: float = (_buttons[0].get_combined_minimum_size().y if not _buttons.is_empty() else 34.0) + float(_panel_box.get_theme_constant("separation"))
-	sc.custom_minimum_size.y = minf(opts.size() * row, get_viewport_rect().size.y * 0.55)
+	sc.custom_minimum_size.y = minf(opts.size() * row, vp.y * (0.36 if vn else 0.55))
 	_panel.visible = true
 	_panel.reset_size()
-	var vp: Vector2 = get_viewport_rect().size
-	_panel.position = Vector2(vp.x - _panel.size.x - 20.0, 60.0) if walking else (vp - _panel.size) * 0.5
+	if vn:
+		_panel.position = Vector2(20.0, vp.y - _panel.size.y - 16.0)
+		_place_bottom.call_deferred()
+		_typewrite()
+	else:
+		_panel_text.visible_ratio = 1.0
+		_panel.position = Vector2(vp.x - _panel.size.x - 20.0, 60.0) if walking else (vp - _panel.size) * 0.5
 
 
 func _close_panel() -> void:
@@ -1895,7 +1998,7 @@ func to_dict() -> Dictionary:
 		"city_id": city_id, "hero_pos": [hero_pos.x, hero_pos.y], "fog": Marshalls.raw_to_base64(fog),
 		"discovered": discovered.keys(), "looted": looted.duplicate(), "paid_gate": paid_gate.duplicate(), "npcs": list,
 		"intruder_until": intruder_until, "left": leaving, "growth": growth.duplicate(true), "walking": walking,
-		"trails": trails.to_dict(),
+		"trails": trails.to_dict(), "dialogue": dlg_state.duplicate(true),
 	}
 	if own_bag:
 		d["bag"] = bag.duplicate(true)
@@ -1909,6 +2012,8 @@ func load_dict(d: Dictionary) -> void:
 	if d.has("hero_pos") and not bool(d.get("left", false)):
 		hero_pos = Vector2(d["hero_pos"][0], d["hero_pos"][1])
 		intruder_until = float(d.get("intruder_until", -1.0))
+	if d.get("dialogue") is Dictionary:
+		dlg_state = d["dialogue"].duplicate(true)
 	if d.get("growth") is Dictionary:
 		growth = _growth_from(d["growth"])
 		if Growth.stage(full_def, growth) != stage:
