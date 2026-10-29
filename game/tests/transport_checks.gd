@@ -1,7 +1,7 @@
 extends SceneTree
-## Лошадь и повозка (вопрос Q16, Huzzah 2026-10-24): правила, покупка, скорость и груз, карта, город, бой,
-## сохранение. Нужен экран (xvfb, --rendering-driver opengl3):
-## godot --path game --rendering-driver opengl3 -s res://tests/transport_checks.gd -- [папка_для_снимков]
+## Кінь і віз (питання Q16, Huzzah 2026-10-24): правила, купівля, швидкість і вантаж, карта, місто, бій,
+## збереження. Потрібен екран (xvfb, --rendering-driver opengl3):
+## godot --path game --rendering-driver opengl3 -s res://tests/transport_checks.gd -- [тека_для_знімків]
 
 const Transport := preload("res://characters/transport.gd")
 const Trade := preload("res://city/trade.gd")
@@ -77,7 +77,7 @@ func _shop() -> void:
 	ok(Trade.buy(bag, stock, "horse", a) == "Уже есть", "вторую лошадь не продают")
 	ok(Trade.buy(bag, stock, "cart", a) == "", "повозка куплена за %d" % Trade.buy_price("cart", a))
 	ok(Trade.sell(bag, stock, [], "horse", a) == "" and Trade.count(bag, "horse") == 0, "лошадь можно продать обратно")
-	# Кто продаёт: торговка и кузнец, с этапа «Слобода»
+	# Хто продає: торговка й коваль, з етапу «Село»
 	var def: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/cities/s001.json"))
 	var who: Dictionary = {}
 	for st in [0, 1]:
@@ -85,8 +85,8 @@ func _shop() -> void:
 			for id in ["horse", "cart"]:
 				if int(n.get("stock", {}).get(id, 0)) > 0:
 					who["%s@%d" % [id, st]] = n["id"]
-	ok(not who.has("horse@0") and not who.has("cart@0"), "в «Остроге» лошадей и повозок нет")
-	ok(who.get("horse@1", "") == "trader" and who.get("cart@1", "") == "smith", "в «Слободе» лошадь у торговки, повозка у кузнеца: %s" % who)
+	ok(not who.has("horse@0") and not who.has("cart@0"), "в «Форте» лошадей и повозок нет")
+	ok(who.get("horse@1", "") == "trader" and who.get("cart@1", "") == "smith", "в «Деревне» лошадь у торговки, повозка у кузнеца: %s" % who)
 	var wish: int = Trade.buy_price("horse", a) + Trade.buy_price("cart", a)
 	ok(wish > 40 and wish < 250, "лошадь с повозкой — цель на несколько поручений: %d монет" % wish)
 
@@ -109,7 +109,7 @@ func _speed_and_load() -> void:
 	a.mount = ""
 	var walk_m: float = a.calculate_speed(mtn)
 	ok(cart_m < walk_m and horse_m > walk_m, "горы: повозка %.1f < пешком %.1f < верхом %.1f км/ч" % [cart_m, walk_m, horse_m])
-	# Груз: 60 кг лома пешком — стоит, с лошадью и повозкой — едет
+	# Вантаж: 60 кг брухту пішки — стоїть, з конем і возом — їде
 	var cap0: float = a.carry_capacity()
 	a.carried_kg = cap0 * 2.0
 	ok(a.calculate_speed(env) == 0.0, "двойной перегруз пешком — стоит (%.0f кг из %.0f)" % [a.carried_kg, cap0])
@@ -117,7 +117,7 @@ func _speed_and_load() -> void:
 	ok(is_equal_approx(a.carry_capacity(), cap0 + 310.0) and a.overload_percent() == 0.0, "с лошадью и повозкой тот же груз — без перегруза")
 	a.mount = "cart"
 	ok(a.calculate_speed(env) > walk, "и повозка едет")
-	# Езда тратит меньше энергии и учит верховой езде
+	# Їзда витрачає менше енергії й навчає верхової їзди
 	var b := Actor.new("b", "Б", false, 5)
 	var c := Actor.new("c", "В", false, 5)
 	c.mount = "horse"
@@ -127,7 +127,7 @@ func _speed_and_load() -> void:
 	ok(c.res["energy"] > b.res["energy"], "час в седле — энергии меньше трат: %.1f против %.1f" % [c.res["energy"], b.res["energy"]])
 	c.note_travel(3000.0, env)
 	b.note_travel(3000.0, env)
-	ok(float(c.skills["riding"]["xp"]) > 0.0 and float(b.skills["riding"]["xp"]) == 0.0, "3 км верхом — опыт верховой езды")
+	ok(c.xp > 0.0 and b.xp > 0.0, "3 км пути — опыт персонажу и верхом, и пешком")
 
 
 func _in_game() -> void:
@@ -192,7 +192,7 @@ func _in_game() -> void:
 	await shot("h04_far.png")
 	game.zoom = 40.0
 
-	# Город: там пешком, груз при нём; инвентарь не показывает и не выбрасывает лошадь
+	# Місто: там пішки, вантаж при ньому; інвентар не показує й не викидає коня
 	await W.enter_city("t1", {"return_pos": hb["pos"], "settlement": {"id": "t1", "name": "Проверочный"}, "stub": true})
 	await frames(3)
 	ok(W.current_kind() == "city" and hero.mount == "" and hero.pack_kg == 310.0, "в городе пешком, лошадь с повозкой при герое")
@@ -219,7 +219,7 @@ func _in_game() -> void:
 	await frames(3)
 	ok(hero.mount == "cart", "вышел из города — снова на повозке")
 
-	# Сохранение: лошадь, повозка и «верхом» — в сумке
+	# Збереження: кінь, віз і «верхи» — у сумці
 	ok(WorldSave.write(game, true), "сохранение записано")
 	var saved: Dictionary = WorldSave.read(WorldSave.latest_slot())
 	var inv: Dictionary = saved.get("worlds", {}).get("inventory", {})

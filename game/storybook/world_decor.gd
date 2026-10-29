@@ -1,30 +1,31 @@
 extends Node2D
-## Деревья, горы, кусты и камни общей карты — как в Day R (Huzzah 2026-10-23):
+## Деревья, горы, кусты и камни общей карты — как в  (Huzzah 2026-10-23):
 ## у каждого спрайта свой размер в метрах, поэтому при самом близком зуме у пешки деревья и горы
 ## крупные, а при отдалении они сжимаются и сливаются в пятно своего биома (лес — сплошной лес,
 ## горы — гряды), дальше — только текстура и цвет биома.
 ## По биомам: лес — густые деревья (поляны шейдера — без деревьев, с цветами), проклятый лес — кривые
 ## деревья с лиловым оттенком, болото — редкие кривые деревья и кусты, пустошь — редкие сухие деревья
 ## и камни, горы — горы и скалы в 8–15 м (жаркие — рыжие), берег — камешки.
+## На протоптанной тропе и дороге (world/trails_layer.gd, со ступени «тропа») деревьев и кустов нет.
 ##
-## Быстро: карта делится на клетки CHUNK м; у клетки два MultiMesh (крупное и мелочь) из одного атласа,
-## один вызов отрисовки на клетку. Клетки считаются по нескольку за кадр от центра экрана и
-## запоминаются; сдвиг камеры меняет только преобразование корня.
+## Швидко: карта ділиться на клітинки CHUNK м; у клітинки два MultiMesh (велике й дрібниця) з одного атласу,
+## один виклик малювання на клітинку. Клітинки рахуються по кілька за кадр від центру екрана й
+## запам'ятовуються; зсув камери змінює лише перетворення кореня.
 
 const Art := preload("res://storybook/art.gd")
 
 const CHUNK: float = 128.0
-const BUILD_MS: float = 5.0            # сколько миллисекунд кадра можно тратить на новые клетки
-const MAX_CACHED: int = 2500           # клеток в памяти (данные), узлы — только видимые
-const BIG_FROM_Z: float = 0.5          # крупное (деревья, горы) видно с этого масштаба (пикселей на метр)
+const BUILD_MS: float = 5.0            # скільки мілісекунд кадру можна витрачати на нові клітинки
+const MAX_CACHED: int = 2500           # клітинок у пам'яті (дані), вузли — лише видимі
+const BIG_FROM_Z: float = 0.5          # велике (дерева, гори) видно з цього масштабу (пікселів на метр)
 const BIG_FULL_Z: float = 0.9
-const SMALL_FROM_Z: float = 3.0        # мелочь (кусты, камни)
+const SMALL_FROM_Z: float = 3.0        # дрібниця (кущі, каміння)
 const SMALL_FULL_Z: float = 5.0
-const SHADOW: float = 0.12             # доля высоты под ногами в ячейке атласа (тень)
+const SHADOW: float = 0.12             # частка висоти під ногами в комірці атласу (тінь)
 
-## Ключ спрайта -> высота ячейки атласа (пикс.)
+## Ключ спрайта -> висота комірки атласу (пікс.)
 const KEYS: Array = ["tree_oak", "tree_light", "tree_crooked", "mountain_gray", "ridge_gray", "peak_gray", "cliff_gray",
-	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock"]
+	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock", "tech_tower"]
 const CELL_PX: int = 288
 const PAD: int = 16
 
@@ -32,12 +33,12 @@ var game: Node2D
 var _root := Node2D.new()
 var _atlas: ImageTexture
 var _uv: Dictionary = {}               # ключ -> Color(u0, v0, du, dv)
-var _aspect: Dictionary = {}           # ключ -> ширина / высота
+var _aspect: Dictionary = {}           # ключ -> ширина / висота
 var _mesh: ArrayMesh
 var _mat: ShaderMaterial
 var _data: Dictionary = {}             # Vector2i -> {big: PackedFloat32Array, small: ...} (по 8 чисел на спрайт)
-var _nodes: Dictionary = {}            # Vector2i -> Node2D с двумя MultiMeshInstance2D
-var _order: Array = []                 # порядок появления данных (для вытеснения)
+var _nodes: Dictionary = {}            # Vector2i -> Node2D із двома MultiMeshInstance2D
+var _order: Array = []                 # порядок появи даних (для витіснення)
 var _noise: Image
 
 
@@ -52,11 +53,12 @@ func _process(_delta: float) -> void:
 		return
 	if _noise == null:
 		_noise = game.get("noise_image")
+	_drop_trodden_chunks()
 	var z: float = game.zoom
 	var vp: Vector2 = get_viewport_rect().size
 	_root.position = vp * 0.5 - game.cam_pos * z
 	_root.scale = Vector2(z, z)
-	# Свет по часам, как у остального декора
+	# Світло за годинником, як у решти декору
 	var hour: float = game.clock.hour_of_day()
 	var daylight: float = clampf(sin((hour - 6.0) / 12.0 * PI) * 1.4, 0.0, 1.0)
 	_root.modulate = Color(0.32, 0.39, 0.51).lerp(Color.WHITE, daylight)
@@ -66,7 +68,7 @@ func _process(_delta: float) -> void:
 		_root.visible = false
 		return
 	_root.visible = true
-	# Видимые клетки (с запасом в половину клетки)
+	# Видимі клітинки (із запасом у пів клітинки)
 	var half: Vector2 = vp * 0.5 / z + Vector2(CHUNK, CHUNK) * 0.5
 	var c0 := Vector2i(floori((game.cam_pos.x - half.x) / CHUNK), floori((game.cam_pos.y - half.y) / CHUNK))
 	var c1 := Vector2i(floori((game.cam_pos.x + half.x) / CHUNK), floori((game.cam_pos.y + half.y) / CHUNK))
@@ -80,12 +82,12 @@ func _process(_delta: float) -> void:
 			want[k] = true
 			if not _nodes.has(k):
 				todo.append(k)
-	# Ушедшие с экрана — убрать узлы
+	# Ті, що пішли з екрана, — прибрати вузли
 	for k in _nodes.keys():
 		if not want.has(k):
 			_nodes[k].queue_free()
 			_nodes.erase(k)
-	# Новые — от центра, сколько успеем за кадр
+	# Нові — від центру, скільки встигнемо за кадр
 	var mid := Vector2(game.cam_pos.x / CHUNK - 0.5, game.cam_pos.y / CHUNK - 0.5)
 	todo.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return Vector2(a).distance_squared_to(mid) < Vector2(b).distance_squared_to(mid))
 	var t0: int = Time.get_ticks_usec()
@@ -105,8 +107,29 @@ func _process(_delta: float) -> void:
 			_data.erase(old)
 
 
+# Змінився ступінь протоптаної клітинки — її ділянка розставляється заново (дорога витоптує ліс)
+func _drop_trodden_chunks() -> void:
+	var tl: Node = game.get("trails")
+	if tl == null:
+		return
+	var cells: Array = tl.take_dirty()
+	if cells.is_empty():
+		return
+	var keys: Dictionary = {}
+	for c in cells:
+		var q: Vector2 = tl.model.center_of(c)
+		var h: float = tl.model.cell_m * 0.5
+		for o in [Vector2(-h, -h), Vector2(h, -h), Vector2(-h, h), Vector2(h, h)]:
+			keys[Vector2i(floori((q.x + o.x) / CHUNK), floori((q.y + o.y) / CHUNK))] = true
+	for k in keys:
+		_data.erase(k)
+		if _nodes.has(k):
+			_nodes[k].queue_free()
+			_nodes.erase(k)
+
+
 # =====================================================================
-# РАССТАНОВКА (детерминированная: та же точка — тот же спрайт)
+# РОЗСТАНОВКА (детермінована: та сама точка — той самий спрайт)
 # =====================================================================
 func _chunk_data(k: Vector2i) -> Dictionary:
 	if _data.has(k):
@@ -114,7 +137,7 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 	var big: Array = []
 	var small: Array = []
 	var o := Vector2(k) * CHUNK
-	# Крупное: деревья по сетке 5,5 м (лес), горы по 9 м, остальное реже
+	# Велике: дерева сіткою 5,5 м (ліс), гори по 9 м, решта рідше
 	_grid(o, 5.5, 1, func(p: Vector2, n: float, b: int):
 		if b == 3 or b == 7:
 			if n > 0.18 and not _clearing(p):
@@ -128,11 +151,15 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 	_grid(o, 9.0, 3, func(p: Vector2, n: float, b: int):
 		if b == 6 and n > 0.12:
 			var hot: bool = game.is_hot(p)
-			# Объём гор: выше по карте высот — скалы крупнее, у вершин — пики (Huzzah 2026-10-24)
+			# Об'єм гір: вище за картою висот — скелі більші, біля вершин — піки (Huzzah 2026-10-24)
 			var up: float = game.height_at(p) / game.HEIGHT_MAX_M if game.has_method("height_at") else 0.5
 			var key: String = ["mountain_hot", "mesa_hot", "ridge_hot"][int(n * 17.0) % 3] if hot else ("peak_gray" if up > 0.75 and n > 0.4 else ["mountain_gray", "ridge_gray", "peak_gray", "cliff_gray"][int(n * 19.0) % 4])
 			big.append([p, key, (8.0 + fposmod(n * 9.1, 1.0) * 7.0) * (0.65 + 0.8 * up), Color.WHITE]))
-	# Мелочь: кусты и камни по 4 м
+	# Техно-артефакти (Q31 B): рідкісні сигнальні вежі 16–24 м — близько однієї на 2 км² суходолу, крім гір і боліт
+	_grid(o, 64.0, 5, func(p: Vector2, n: float, b: int):
+		if b in [2, 3, 4, 7, 8] and n > 0.993:
+			big.append([p, "tech_tower", 16.0 + fposmod(n * 911.0, 1.0) * 8.0, Color.WHITE]))
+	# Дрібниця: кущі й каміння по 4 м
 	_grid(o, 4.0, 4, func(p: Vector2, n: float, b: int):
 		if (b == 3 or b == 7) and _clearing(p) and n > 0.8:
 			small.append([p, "bush_flower", 0.8 + n * 0.6, Color.WHITE])
@@ -150,10 +177,11 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 	return d
 
 
-## Обход сетки шага s в клетке o (глобальная сетка — стыков между клетками нет)
+## Обхід сітки кроку s у клітинці o (глобальна сітка — стиків між клітинками немає)
 func _grid(o: Vector2, s: float, salt: int, f: Callable) -> void:
 	var x0: int = floori(o.x / s)
 	var y0: int = floori(o.y / s)
+	var tl: Node = game.get("trails") if game != null else null
 	var x1: int = floori((o.x + CHUNK) / s)
 	var y1: int = floori((o.y + CHUNK) / s)
 	for y in range(y0, y1 + 1):
@@ -163,11 +191,12 @@ func _grid(o: Vector2, s: float, salt: int, f: Callable) -> void:
 			if p.x < o.x or p.y < o.y or p.x >= o.x + CHUNK or p.y >= o.y + CHUNK:
 				continue
 			var b: int = game.biome_at(p)
-			if b >= 2:
+			# Протоптана стежка й дорога (world/trails_layer.gd) — без дерев і кущів
+			if b >= 2 and (tl == null or not tl.trodden(p)):
 				f.call(p, n, b)
 
 
-## Сортировка по y и упаковка: x, y, ширина, высота, r, g, b, ключ
+## Сортування за y й пакування: x, y, ширина, висота, r, g, b, ключ
 func _pack(items: Array, o: Vector2) -> Array:
 	items.sort_custom(func(a: Array, b: Array) -> bool: return a[0].y < b[0].y)
 	return items.map(func(e: Array) -> Array: return [e[0] - o, e[1], e[2], e[3]])
@@ -194,7 +223,7 @@ func _mm(items: Array) -> MultiMeshInstance2D:
 		var key: String = e[1]
 		var h: float = e[2]
 		var w: float = h * float(_aspect[key])
-		# Зеркало для разнообразия
+		# Дзеркало для різноманіття
 		if fposmod(e[0].x * 0.37 + e[0].y * 0.11, 1.0) > 0.5:
 			w = -w
 		mm.set_instance_transform_2d(i, Transform2D(Vector2(w, 0), Vector2(0, h), e[0]))
@@ -208,7 +237,7 @@ func _mm(items: Array) -> MultiMeshInstance2D:
 	return mi
 
 
-# Поляна в лесу и сухая трава в пустоши — те же пятна, что рисует шейдер (map_shaders.gd)
+# Галявина в лісі й суха трава в пустці — ті самі плями, що малює шейдер (map_shaders.gd)
 func _clearing(p: Vector2) -> bool:
 	return _noise2(p / 520.0 + Vector2(4.3, 9.1)) > 0.66
 
@@ -217,7 +246,7 @@ func _dry_grass(p: Vector2) -> bool:
 	return _noise2(p / 430.0 + Vector2(1.9, 6.2)) > 0.69
 
 
-## noise2 из шейдера: vnoise3(p, 17) по той же текстуре шума
+## noise2 із шейдера: vnoise3(p, 17) за тією самою текстурою шуму
 func _noise2(p: Vector2) -> float:
 	if _noise == null:
 		return 0.0
@@ -232,11 +261,11 @@ func _noise2(p: Vector2) -> float:
 	var t01: Color = _noise.get_pixel(int(b.x), int(b1.y))
 	var t11: Color = _noise.get_pixel(int(b1.x), int(b1.y))
 	var r: float = lerpf(lerpf(t00.r, t10.r, f.x), lerpf(t01.r, t11.r, f.x), f.y)
-	return r   # z целое (17) — смешивать с каналом G не нужно
+	return r   # z ціле (17) — змішувати з каналом G не треба
 
 
 # =====================================================================
-# АТЛАС, СЕТКА, ШЕЙДЕР
+# АТЛАС, СІТКА, ШЕЙДЕР
 # =====================================================================
 func _build_atlas() -> void:
 	var cols: int = 4
@@ -261,7 +290,7 @@ func _build_atlas() -> void:
 		var cx: int = (i % cols) * CELL_PX + PAD
 		var cy: int = (i / cols) * CELL_PX + PAD
 		var foot_y: int = cy + inner - sh_px
-		# Тень под ногами — мягкий эллипс
+		# Тінь під ногами — м'який еліпс
 		var rx: float = ww * 0.32
 		var ry: float = sh_px * 0.55
 		for y in range(maxi(foot_y - int(ry), cy), mini(foot_y + int(ry) + 1, cy + inner)):
@@ -270,7 +299,7 @@ func _build_atlas() -> void:
 				if q < 1.0:
 					img.set_pixel(x, y, Color(0.12, 0.1, 0.07, 0.22 * (1.0 - q)))
 		img.blend_rect(src, Rect2i(0, 0, ww, hh), Vector2i(cx + (inner - ww) / 2, foot_y - hh))
-		# Квад: x от -0,5 до 0,5 ширины, y от -1 до SHADOW/(1-SHADOW) высоты; в атласе — та же доля
+		# Квад: x від -0,5 до 0,5 ширини, y від -1 до SHADOW/(1-SHADOW) висоти; в атласі — та сама частка
 		var w_full: float = float(ww)
 		var u0: float = float(cx + (inner - ww) / 2) / img.get_width()
 		var v0: float = float(foot_y - hh) / img.get_height()

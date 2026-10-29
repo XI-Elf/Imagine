@@ -1,7 +1,7 @@
 extends SceneTree
-## Проверка города на общей карте в настоящей сцене (нужен экран: под xvfb, --rendering-driver opengl3).
-## Щиток издали и очерк вблизи, вход у ворот, проникновение у стены, стена не пропускает героя.
-## godot --path game --rendering-driver opengl3 -s res://tests/settlement_checks.gd -- [папка_для_снимков]
+## Перевірка міста на загальній карті в справжній сцені (потрібен екран: під xvfb, --rendering-driver opengl3).
+## Щиток здалеку й обрис зблизька, вхід біля брами, проникнення біля стіни, стіна не пропускає героя.
+## godot --path game --rendering-driver opengl3 -s res://tests/settlement_checks.gd -- [тека_для_знімків]
 
 var fails: int = 0
 var checks: int = 0
@@ -54,14 +54,14 @@ func stop() -> void:
 		Input.action_release(a)
 
 
-# Перенос героя в точку без «скачка» у самого города: сначала далеко, потом ближе шагами
+# Перенесення героя в точку без «стрибка» біля самого міста: спершу далеко, потім ближче кроками
 func place(hero: Dictionary, to: Vector2, from_dir: Vector2) -> void:
 	for d in [900.0, 750.0, 600.0, 450.0, 300.0, 150.0, 0.0]:
 		hero["pos"] = to + from_dir * d
 		await frames(2)
 
 
-# Идти к цели, пока не всплывёт выбор (или не выйдет время)
+# Іти до цілі, доки не спливе вибір (або не вийде час)
 func walk_until_prompt(st: Node, hero: Dictionary, target: Vector2, limit_s: float = 60.0) -> void:
 	var t1: int = Time.get_ticks_msec()
 	while st.prompt_for.is_empty() and Time.get_ticks_msec() - t1 < limit_s * 1000.0:
@@ -84,14 +84,15 @@ func _run() -> void:
 	while not game.ready_done and Time.get_ticks_msec() - t0 < 120000:
 		await process_frame
 	ok(game.ready_done, "карта загрузилась")
-	game.physics.travel_weather = false   # дождь и гроза замедляют ход: шаги проверяются без погоды
+	game.physics.travel_weather = false   # дощ і гроза сповільнюють хід: кроки перевіряються без погоди
 	var st: Node2D = game.settlements
 	var cast: Node2D = game.cast
 	ok(st != null and st.list.size() == 1, "один город в реестре: %d" % (st.list.size() if st else -1))
 	var city: Dictionary = st.list[0]
 	ok(city["_cells"].size() == int(st.sizes[city["size"]]["cells"]), "%s %s: %d клеток по размеру" % [st.size_name(city), city["name"], city["_cells"].size()])
-	ok(city.has("emblem") and city["walled"] and city["_road"].size() >= 10, "есть эмблема, стена и дорога (%d точек)" % city["_road"].size())
-	# Город целиком в одной области и одном регионе: по клеткам с запасом 20 м границ нет
+	ok(city.has("emblem") and city["walled"], "есть эмблема и стена")
+	ok(not city.has("road") and not city.has("_road"), "готовой дороги к воротам нет: дороги протаптываются (world/trails.gd)")
+	# Місто цілком в одній області й одному регіоні: на клітинках із запасом 20 м меж немає
 	var regs := {}
 	var provs := {}
 	for k in city["_cells"]:
@@ -103,17 +104,12 @@ func _run() -> void:
 	ok(regs.size() == 1 and provs.size() == 1 and int(regs.keys()[0]) == int(city["region"]) and int(provs.keys()[0]) == int(city["province"]),
 		"город в одной области и регионе: области %s, регионы %s" % [provs.keys(), regs.keys()])
 	ok(game.region_at(city["_gate"]) == int(city["region"]), "ворота в том же регионе")
-	var road_ok: bool = true
-	for q in city["_road"]:
-		if game.biome_at(q) <= 1 or st.blocks(q):
-			road_ok = false
-	ok(road_ok, "дорога по суше и вне города")
 	ok(game.cam_pos.distance_to(st.spawn_point()) < 1.0, "новая игра: камера над городом")
 	var ex: Vector2 = st.exit_point(city["id"])
 	ok(ex != Vector2.INF and st.settlement_at(ex).is_empty() and game.biome_at(ex) > 1, "точка выхода на суше вне клеток: %s" % ex)
 	ok(st.zone_of(city, ex) == "gate", "точка выхода — у ворот")
 
-	# Снимки: издали щиток, вблизи очерк
+	# Знімки: здалеку щиток, зблизька обрис
 	game.cam_pos = Vector2(20812.5, 18000.0)
 	await shot("s01_world.png")
 	for z in [0.03, 0.08, 0.15, 0.4]:
@@ -121,9 +117,9 @@ func _run() -> void:
 		game.cam_pos = city["_center"] + Vector2(0, 150)
 		await shot("s02_zoom_%s.png" % str(z).replace(".", "_"))
 
-	# Новый герой у ворот, выбор сразу не спрашивается
-	# Новый герой появляется у ворот (с веткой создания персонажа G открывает экран создания,
-	# а готовый герой ставится туда же — spawn_point)
+	# Новий герой біля брами, вибір одразу не питається
+	# Новий герой з'являється біля брами (з гілкою створення персонажа G відкриває екран створення,
+	# а готовий герой ставиться туди ж — spawn_point)
 	cast.spawn_hero(st.spawn_point())
 	await frames(3)
 	var hero: Dictionary = cast.hero
@@ -138,12 +134,14 @@ func _run() -> void:
 	await key(KEY_ESCAPE)
 	game.zoom = 0.4
 
-	# По дороге к воротам: «Войти»
-	var road: PackedVector2Array = city["_road"]
-	await place(hero, road[6], (road[12] - road[6]).normalized())
-	ok(st.prompt_for.is_empty(), "на дороге в %.0f м от ворот выбора нет" % road[6].distance_to(city["_gate"]))
+	# Просто до брами ззовні: «Увійти»
+	var out_dir: Vector2 = (city["_gate"] - city["_center"]).normalized()
+	var appr: Vector2 = city["_gate"] + out_dir * 240.0
+	ok(game.biome_at(appr) > 1 and not st.blocks(appr), "подход к воротам по суше и вне города")
+	await place(hero, appr, out_dir)
+	ok(st.prompt_for.is_empty(), "в %.0f м от ворот выбора нет" % appr.distance_to(city["_gate"]))
 	await walk_until_prompt(st, hero, city["_gate"])
-	ok(st.prompt_kind == "gate", "по дороге у ворот всплыл выбор «Войти»")
+	ok(st.prompt_kind == "gate", "у ворот всплыл выбор «Войти»")
 	ok(cast.hold_hero, "герой стоит, пока игрок выбирает")
 	var p0: Vector2 = hero["pos"]
 	Input.action_press("ui_up")
@@ -154,7 +152,7 @@ func _run() -> void:
 	await key(KEY_ESCAPE)
 	ok(st.prompt_for.is_empty() and not cast.hold_hero and not game.menu_open, "Esc — продолжить путь, меню паузы не открылось")
 
-	# Стена не пропускает: идём в центр города
+	# Стіна не пропускає: ідемо в центр міста
 	var before: float = st.distance_to(city, hero["pos"])
 	walk((city["_center"] - hero["pos"]).normalized())
 	await create_timer(3.0).timeout
@@ -163,7 +161,7 @@ func _run() -> void:
 	if not st.prompt_for.is_empty():
 		await key(KEY_ESCAPE)
 
-	# К северной стене: «Попытаться проникнуть»
+	# До північної стіни: «Спробувати проникнути»
 	var r: Rect2 = city["_rect"]
 	var north: Vector2 = st.nearest_on_cells(city, Vector2(city["_center"].x, r.position.y - 400.0))
 	await place(hero, north + Vector2(0, -150), Vector2(0, -1))
@@ -173,7 +171,7 @@ func _run() -> void:
 	ok(st._info.text.contains("Шанс"), "шанс показан: %s" % st._info.text)
 	await shot("s04_wall_prompt.png")
 
-	# Шанс зависит от характеристик, ночи, груза, травм
+	# Шанс залежить від характеристик, ночі, вантажу, травм
 	var env: Dictionary = {"night": false}
 	var c0: float = st.sneak_chance(a, env)
 	a.set_stat("agi", int(a.stat("agi")) + 3)
@@ -190,7 +188,7 @@ func _run() -> void:
 	a.mount = "horse"
 	ok(st.sneak_chance(a, env) == 0.0, "верхом через стену нельзя")
 	a.mount = ""
-	# Частота успеха совпадает с шансом
+	# Частота успіху збігається з шансом
 	var wins: int = 0
 	for i in 400:
 		st.alert_until.clear()
@@ -206,8 +204,8 @@ func _run() -> void:
 	a.res["stamina"] = a.max_of("stamina")
 	a.res["health"] = a.max_of("health")
 
-	# Шанс поимки зажат в 0.05…0.95 (settlements.caught_chance): даже при 0 и 1 в правилах
-	# остаётся 5 % обратного исхода, поэтому исход ниже проверяется при фиксированном seed
+	# Шанс спіймання затиснуто в 0.05…0.95 (settlements.caught_chance): навіть за 0 і 1 у правилах
+	# лишається 5 % зворотного результату, тому результат нижче перевіряється за фіксованого seed
 	var saved: Dictionary = st.sneak_rules.duplicate()
 	st.sneak_rules["per_agi_caught"] = 0.0
 	st.sneak_rules["caught_day"] = 0.0
@@ -216,8 +214,8 @@ func _run() -> void:
 	st.sneak_rules["caught_day"] = 1.0
 	st.sneak_rules["caught_night"] = 1.0
 	ok(is_equal_approx(st.caught_chance(a, {"night": false}), 0.95) and is_equal_approx(st.caught_chance(a, {"night": true}), 0.95), "зажим: шанс поимки 1 в правилах → 0.95")
-	# Броски try_sneak: пролез, вывих, поимка. Seed 12345 даёт третий бросок 0.023 (< 0.05),
-	# seed 42 — 0.298 (между 0.05 и 0.95)
+	# Кидки try_sneak: проліз, вивих, спіймання. Seed 12345 дає третій кидок 0.023 (< 0.05),
+	# seed 42 — 0.298 (між 0.05 і 0.95)
 	st.sneak_rules["min"] = 0.0001
 	st.sneak_rules["max"] = 0.0001
 	st.sneak_rules["caught_day"] = 0.0
@@ -228,7 +226,7 @@ func _run() -> void:
 	st.alert_until.clear()
 	a.res["stamina"] = a.max_of("stamina")
 
-	# Неудача без поимки: стража настороже, кнопка неактивна (seed 42: третий бросок 0.298 ≥ 0.05)
+	# Невдача без спіймання: варта насторожі, кнопка неактивна (seed 42: третій кидок 0.298 ≥ 0.05)
 	await frames(2)
 	st._rng.seed = 42
 	await key(KEY_E)
@@ -240,7 +238,7 @@ func _run() -> void:
 	await key(KEY_ESCAPE)
 	st.alert_until.clear()
 
-	# Успех: сигнал с entry "sneak" и стороной
+	# Успіх: сигнал з entry "sneak" і боком
 	var got: Array = []
 	st.enter_requested.connect(func(s: Dictionary) -> void: got.append(s))
 	st.sneak_rules["min"] = 1.0
@@ -257,7 +255,7 @@ func _run() -> void:
 		await create_timer(1.0).timeout
 		ok(hero["pos"].distance_to(ex) < 60.0 and st.prompt_for.is_empty(), "вышел к воротам, выбор не всплыл")
 
-	# Поймали: entry "caught" (seed 42: третий бросок 0.298 < 0.95)
+	# Спіймали: entry "caught" (seed 42: третій кидок 0.298 < 0.95)
 	st.sneak_rules["min"] = 0.0001
 	st.sneak_rules["max"] = 0.0001
 	st.sneak_rules["caught_day"] = 1.0
@@ -274,8 +272,8 @@ func _run() -> void:
 		await create_timer(1.0).timeout
 	st.sneak_rules = saved
 
-	# Вход через ворота: entry "gate"
-	await place(hero, road[6], (road[12] - road[6]).normalized())
+	# Вхід через браму: entry "gate"
+	await place(hero, appr, out_dir)
 	await walk_until_prompt(st, hero, city["_gate"])
 	await key(KEY_E)
 	ok(got.size() == 3 and got[2]["entry"] == "gate", "ворота: entry %s" % (got[2].get("entry") if got.size() > 2 else "-"))
@@ -286,12 +284,12 @@ func _run() -> void:
 
 	ok(game.place_line(city["_center"]).contains(city["name"]), "подсказка: %s" % game.place_line(city["_center"]))
 
-	# Медальон на карте (знамя и картинка по развитию): Чёрнославль — по этапу роста, другие — по размеру
+	# Медальйон на карті (знамено й картинка за розвитком): Эшвик — за етапом росту, інші — за розміром
 	var W2: Node = root.get_node_or_null("Worlds")
 	var saved_states: Dictionary = W2.city_states.duplicate() if W2 != null else {}
 	if W2 != null:
 		W2.city_states.erase(String(city.get("city_id", city["id"])))
-	ok(st.dev_level(city) == 1 and st.medallion_texture(1) != null, "новая игра: медальон «острог»")
+	ok(st.dev_level(city) == 1 and st.medallion_texture(1) != null, "новая игра: медальон «форт»")
 	var done: Array = []
 	for id in city["_plan"]["growth"]["quests"]:
 		for q in city["_plan"]["growth"]["quests"][id]:

@@ -1,12 +1,12 @@
 extends RefCounted
-## Комикс-оформление интерфейса (ответы Huzzah 2026-10-24: Q08 D — формы комикса, тёмная палитра,
-## редкие техно-артефакты; Q24 A — рамки комикса во всех окнах).
-## Картинки — art/comic_ui/*.png, их делает tools/make_comic_ui.py из OPTIONAL_UI комикс-набора:
-## тёмная сталь с ржавчиной и латунными заклёпками, внутри уголь. Поля nine-patch ниже — те же, что пишет
-## инструмент в art/comic_ui/comic_ui.json.
-## Общая тема (theme()) вливается в тему Godot по умолчанию автозагрузкой ui/comic_skin.gd, поэтому кнопки,
-## шкалы, поля ввода и панели без своих стилей получают её сами. Окна со своим стилем берут panel()/button_styles().
-## Техно-артефакт (янтарная линза на стальной пластине) — tech_plate(), только на главных окнах.
+## Комікс-оформлення інтерфейсу (відповіді Huzzah 2026-10-24: Q08 D — форми коміксу, темна палітра,
+## рідкісні техно-артефакти; Q24 A — рамки коміксу в усіх вікнах).
+## Картинки — art/comic_ui/*.png, їх робить tools/make_comic_ui.py з OPTIONAL_UI комікс-набору:
+## темна сталь з іржею й латунними заклепками, усередині вугілля. Поля nine-patch нижче — ті самі, що пише
+## інструмент в art/comic_ui/comic_ui.json.
+## Спільна тема (theme()) вливається в тему Godot за замовчуванням автозавантаженням ui/comic_skin.gd, тому кнопки,
+## шкали, поля введення й панелі без власних стилів отримують її самі. Вікна з власним стилем беруть panel()/button_styles().
+## Техно-артефакт (бурштинова лінза на сталевій пластині) — tech_plate(), лише на головних вікнах.
 
 const T_PANEL := preload("res://art/comic_ui/panel.png")
 const T_BUTTON := preload("res://art/comic_ui/button.png")
@@ -16,19 +16,19 @@ const T_BAR := preload("res://art/comic_ui/bar.png")
 const T_RIBBON := preload("res://art/comic_ui/ribbon.png")
 const T_TECH := preload("res://art/comic_ui/tech_plate.png")
 
-## Поля nine-patch [x, y] в пикселях картинки и отступы содержимого
+## Поля nine-patch [x, y] у пікселях картинки й відступи вмісту
 const MARGIN: Dictionary = {"panel": [30, 27], "button": [16, 14], "slot": [21, 21], "portrait": [25, 26], "bar": [12, 13]}
 const CONTENT: Dictionary = {"panel": [26, 23], "button": [19, 9], "slot": [17, 17], "portrait": [22, 23], "bar": [9, 8]}
 
-## Тёмная палитра
-const COAL := Color("1b1a1e")      # внутренность панелей (совпадает с COAL в make_comic_ui.py)
+## Темна палітра
+const COAL := Color("1b1a1e")      # нутро панелей (збігається з COAL у make_comic_ui.py)
 const STEEL := Color("3e4856")     # сталь рамок
-const STEEL_HI := Color("6f7f94")  # светлая кромка стали
+const STEEL_HI := Color("6f7f94")  # світла крайка сталі
 const INK := Color("0b0b0d")       # контур
 const TEXT := Color("d8cfb0")
 const DIM := Color("8f8a78")
 const GOLD := Color("c9a24b")
-const AMBER := Color("ffb030")     # янтарь — только техника и выбор
+const AMBER := Color("ffb030")     # бурштин — лише техніка й вибір
 const RUST := Color("8a4a2a")
 
 static var _theme: Theme = null
@@ -49,7 +49,7 @@ static func _tex(key: String) -> Texture2D:
 	return T_PANEL
 
 
-## Рамка комикса как StyleBoxTexture. key: panel, button, slot, portrait, bar
+## Рамка коміксу як StyleBoxTexture. key: panel, button, slot, portrait, bar
 static func box(key: String = "panel", modulate: Color = Color.WHITE, alpha: float = 1.0) -> StyleBoxTexture:
 	var st := StyleBoxTexture.new()
 	st.texture = _tex(key)
@@ -67,7 +67,7 @@ static func box(key: String = "panel", modulate: Color = Color.WHITE, alpha: flo
 	return st
 
 
-## Панель окна; content — свой отступ содержимого (если > 0)
+## Панель вікна; content — власний відступ вмісту (якщо > 0)
 static func panel(content: float = -1.0, alpha: float = 1.0) -> StyleBoxTexture:
 	var st := box("panel", Color.WHITE, alpha)
 	if content > 0.0:
@@ -75,7 +75,7 @@ static func panel(content: float = -1.0, alpha: float = 1.0) -> StyleBoxTexture:
 	return st
 
 
-## Стили кнопки: обычная, наведение светлее, нажатая/включённая — с янтарным отливом, выключенная — тусклая
+## Стилі кнопки: звичайна, наведення світліше, натиснута/увімкнена — з бурштиновим полиском, вимкнена — тьмяна
 static func button_box(state: String) -> StyleBox:
 	match state:
 		"hover":
@@ -90,7 +90,7 @@ static func button_box(state: String) -> StyleBox:
 	return box("button")
 
 
-## Перекрасить кнопку в комикс поверх её прежних стилей (для окон, где стили заданы в коде)
+## Перефарбувати кнопку в комікс поверх її колишніх стилів (для вікон, де стилі задано в коді)
 static func button_styles(b: Button, font_size: int = -1) -> void:
 	for n in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 		b.add_theme_stylebox_override(n, button_box(n))
@@ -105,7 +105,7 @@ static func button_styles(b: Button, font_size: int = -1) -> void:
 		b.add_theme_font_size_override("font_size", font_size)
 
 
-## Шкала (загрузка и т. п.): стальная рамка, янтарная заливка
+## Шкала (завантаження тощо): сталева рамка, бурштинова заливка
 static func bar_styles(pb: ProgressBar) -> void:
 	pb.add_theme_stylebox_override("background", box("bar"))
 	pb.add_theme_stylebox_override("fill", bar_fill())
@@ -124,13 +124,13 @@ static func bar_fill() -> StyleBoxFlat:
 	return f
 
 
-## Рисование рамок кодом (окна, которые рисуют себя сами: инвентарь, бой)
+## Малювання рамок кодом (вікна, що малюють себе самі: інвентар, бій)
 static func draw_box(ci: CanvasItem, key: String, r: Rect2, modulate: Color = Color.WHITE) -> void:
 	ci.draw_style_box(box(key, modulate), r)
 
 
-## Техно-артефакт: стальная пластина с янтарной линзой посередине верхней кромки окна.
-## Рисуется поверх рамки сигналом draw, поэтому не мешает раскладке контейнера.
+## Техно-артефакт: сталева пластина з бурштиновою лінзою посередині верхньої крайки вікна.
+## Малюється поверх рамки сигналом draw, тому не заважає розкладці контейнера.
 static func tech_plate(c: Control) -> void:
 	if c.has_meta("comic_tech"):
 		return
@@ -141,14 +141,14 @@ static func tech_plate(c: Control) -> void:
 	c.queue_redraw()
 
 
-## Лента-закладка (метка окна) в левом верхнем углу
+## Стрічка-закладка (мітка вікна) у лівому верхньому куті
 static func ribbon(c: Control, x: float = 26.0) -> void:
 	c.draw.connect(func() -> void:
 		c.draw_texture(T_RIBBON, Vector2(x, -6.0)))
 	c.queue_redraw()
 
 
-## Тема для всего интерфейса: кнопки, панели, шкалы, поля, подсказки, разделители
+## Тема для всього інтерфейсу: кнопки, панелі, шкали, поля, підказки, роздільники
 static func theme() -> Theme:
 	if _theme != null:
 		return _theme

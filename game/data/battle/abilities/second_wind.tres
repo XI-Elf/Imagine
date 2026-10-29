@@ -6,7 +6,7 @@
 script = ExtResource("1_vduyc")
 id = "second_wind"
 title = "Второе дыхание"
-description = "Бонусное действие: восстановить 1d10 + уровень HP. Раз за бой."
+description = "Бонусное действие: восстановить 1d10 + уровень к здоровью. Раз за бой."
 cost = "bonus"
 kind = "heal"
 target = "self"

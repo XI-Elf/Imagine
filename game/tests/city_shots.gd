@@ -1,6 +1,6 @@
 extends SceneTree
-## Снимки Чёрнославля для обзора (под xvfb, --rendering-driver opengl3):
-## godot --path game --rendering-driver opengl3 -s res://tests/city_shots.gd -- папка
+## Знімки Эшвика для огляду (під xvfb, --rendering-driver opengl3):
+## godot --path game --rendering-driver opengl3 -s res://tests/city_shots.gd -- тека
 
 var dir: String = ""
 
@@ -67,7 +67,7 @@ func _run() -> void:
 	at_hour(city, 12.0)
 	settle(city, 2)
 	await shot("city08_ruins.png")
-	# Через стену с севера: чужак у стены
+	# Через стіну з півночі: чужинець біля стіни
 	city.queue_free()
 	await process_frame
 	var c2: Node2D = load("res://city/city_world.tscn").instantiate()
