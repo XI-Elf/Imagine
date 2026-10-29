@@ -26,6 +26,12 @@ const Sheet := preload("res://characters/sheet.gd")
 ## (коло лежить усередині них). На карті замість щитка — мініатюра самого міста: той самий план із
 ## data/cities/<city_id>.json (стіна, вежі, вулиці, площа, будинки, дерева), повернутий брамою до "gate".
 
+## Місто-точка (Huzzah 2026-10-29: «на глобальній карті це має бути точка, а не текстура»; «Увійти» — лише біля
+## самого міста): радіальне місто на загальній карті — точка DOT_PX пікселів за будь-якого масштабу з підписом,
+## без стіни на карті (стіна — у світі міста). Підхід — ближче ENTER_M до точки: удень брама («Увійти»),
+## коли брама замкнена (години з rules плану міста) — «Спробувати перелізти» (той самий шанс проникнення).
+## Мініатюра міста лишилася лише картинкою у вікні вибору.
+
 signal enter_requested(s: Dictionary)
 
 const DATA_FILE := "res://data/world/settlements.json"
@@ -36,6 +42,9 @@ const JUMP_M: float = 200.0         # стрибок героя за кадр (�
 const OUTLINE_CELL_PX: float = 28.0 # з такої клітинки на екрані замість щитка — обрис міста
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталів у ряд на клітинку
+const DOT_PX: float = 7.0           # радіус точки міста на екрані
+const ENTER_M: float = 10.0         # вибір «Увійти» — лише так близько від точки міста
+const CLEAR_M: float = 18.0         # навколо точки декор не садить дерев і кущів
 const MEDAL_MIN_PX: float = 30.0    # радіус медальйона здалеку не менший за цей (місто лишається точкою інтересу)
 const MEDALLION_DIR := "res://art/medallion/"
 const MEDALLIONS: Array = ["m0_camp", "m1_ostrog", "m2_sloboda", "m3_posad", "m4_gorod", "m5_bolshoy_gorod"]
@@ -122,11 +131,15 @@ func _load() -> void:
 		s["_own"] = own
 		s["_center"] = Vector2(s["center"][0], s["center"][1]) if s.has("center") else rect.get_center()
 		s["_radius"] = float(s.get("radius", 0.0))
-		if s["_radius"] > 0.0:
-			rect = Rect2(s["_center"] - Vector2.ONE * s["_radius"], Vector2.ONE * s["_radius"] * 2.0)
-			s["_plan"] = _load_plan(s)
-		s["_rect"] = rect
 		s["_gate"] = Vector2(s["gate"][0], s["gate"][1]) if s.has("gate") else rect.get_center() + Vector2(0.0, rect.size.y * 0.5 + 40.0)
+		if s["_radius"] > 0.0:
+			# Точка: слід міста на карті — коло ENTER_M; брама й вихід із міста — біля точки з боку брами (у колі вибору)
+			s["_radius"] = ENTER_M
+			rect = Rect2(s["_center"] - Vector2.ONE * ENTER_M, Vector2.ONE * ENTER_M * 2.0)
+			s["_plan"] = _load_plan(s)
+			var gd: Vector2 = (s["_gate"] - s["_center"]).normalized()
+			s["_gate"] = s["_center"] + (gd if gd != Vector2.ZERO else Vector2.DOWN) * (ENTER_M - 4.0)
+		s["_rect"] = rect
 		if not s.has("walled"):
 			s["walled"] = SIZE_ORDER.find(s.get("size", "")) >= 2
 		list.append(s)
@@ -206,7 +219,24 @@ func settlement_at(p: Vector2) -> Dictionary:
 ## Стіна: клітинки міста зі стіною на загальній карті не проходяться (вхід — через вибір біля брами чи стіни)
 func blocks(p: Vector2) -> bool:
 	var s: Dictionary = settlement_at(p)
-	return not s.is_empty() and bool(s["walled"])
+	return not s.is_empty() and bool(s["walled"]) and not radial(s)
+
+
+## Точка p ближче CLEAR_M до точки міста (декор тут нічого не садить)
+func near_dot(p: Vector2) -> bool:
+	for s in list:
+		if radial(s) and p.distance_squared_to(s["_center"]) < CLEAR_M * CLEAR_M:
+			return true
+	return false
+
+
+## Брама міста зараз відчинена (години — rules плану міста, як у city/city_world.gd)
+func gate_open_now(s: Dictionary) -> bool:
+	if game == null or game.get("clock") == null:
+		return true
+	var rules: Dictionary = s.get("_plan", {}).get("rules", {})
+	var hour: float = game.clock.hour_of_day()
+	return hour >= float(rules.get("gates_open_h", 6.0)) and hour < float(rules.get("gates_close_h", 22.0))
 
 
 func size_name(s: Dictionary) -> String:
@@ -219,7 +249,8 @@ func exit_point(id: String) -> Vector2:
 	if s.is_empty():
 		return Vector2.INF
 	var g: Vector2 = s["_gate"]
-	if _free_land(g):
+	# Місто-точка: брама — біля самої точки, у колі вибору
+	if _free_land(g) or (radial(s) and game.biome_at(g) > 1):
 		return g
 	var out_dir: Vector2 = (g - s["_center"]).normalized()
 	if out_dir == Vector2.ZERO:
@@ -275,6 +306,10 @@ func side_of(s: Dictionary, p: Vector2) -> String:
 
 # Зона підходу героя: "gate", "wall" або "" (далеко)
 func zone_of(s: Dictionary, p: Vector2) -> String:
+	if radial(s):
+		if p.distance_to(s["_center"]) > ENTER_M:
+			return ""
+		return "gate" if not s["walled"] or gate_open_now(s) else "wall"
 	if p.distance_to(s["_gate"]) <= GATE_R_M:
 		return "gate"
 	if distance_to(s, p) <= APPROACH_M:
@@ -423,6 +458,9 @@ func _refresh_wall_info(h: Dictionary) -> void:
 	var env: Dictionary = WorldEnvRef.sample(game, h["pos"])
 	var c: float = sneak_chance(a, env)
 	var t: String = I18n.t("У %s стены, ворота далеко. ") % SIDE_NAMES.get(prompt_side, "")
+	if radial(prompt_for):
+		var rules: Dictionary = prompt_for.get("_plan", {}).get("rules", {})
+		t = I18n.t("Ворота заперты до %d:00. Можно перелезть через стену. ") % int(rules.get("gates_open_h", 6.0))
 	if left > 0.0:
 		t += I18n.t("Стража настороже: ещё %d мин") % int(ceil(left / 60.0))
 	elif c <= 0.0:
@@ -710,10 +748,10 @@ func _draw() -> void:
 		var hl: bool = s == prompt_for or s == mouse_s
 		if radial(s):
 			var c0: Vector2 = game.world_to_screen(s["_center"])
-			var rp: float = maxf(s["_radius"] * z, MEDAL_MIN_PX)
-			if vp.grow(rp * 1.6).has_point(c0):
-				_draw_medallion(s, c0, rp, hl)
-				_draw_name(s, c0 + Vector2(0, rp + 18.0), font, hl, rp > 80.0)
+			if vp.has_point(c0):
+				_draw_dot(s, c0, hl or s == prompt_for)
+				# Підпис над точкою: герой з'являється під нею, на південь від міста
+				_draw_name(s, c0 - Vector2(0, DOT_PX + 8.0), font, hl, hl)
 		elif cs >= OUTLINE_CELL_PX:
 			if vp.intersects(sr):
 				_draw_outline(s, cs, z)
@@ -882,6 +920,18 @@ func _draw_medallion(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:
 	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0) + 1.5, Color(0.1, 0.07, 0.05, 0.9))
 	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0), gate_col)
 	_draw_banner(c0 + Vector2(0, -rp * 0.86), rp * 0.46, s.get("emblem", {}), hl)
+
+
+## Місто-точка: кружок кольору герба з темною облямівкою; підсвічене — біле кільце
+func _draw_dot(s: Dictionary, c0: Vector2, hl: bool) -> void:
+	var em: Dictionary = s.get("emblem", {})
+	var tint := Color(String(em.get("tint", "#e2b84c")))
+	draw_circle(c0 + Vector2(1.5, 2.0), DOT_PX + 2.0, Color(0, 0, 0, 0.45))
+	draw_circle(c0, DOT_PX + 2.0, Color(0.08, 0.06, 0.05))
+	draw_circle(c0, DOT_PX, tint)
+	draw_circle(c0, DOT_PX * 0.4, Color(String(em.get("field", "#26262c"))))
+	if hl:
+		draw_arc(c0, DOT_PX + 5.0, 0.0, TAU, 32, Color(1.0, 0.92, 0.6), 2.0, true)
 
 
 ## Знамено з гербом: поперечка, полотнище кольору поля з ластівчиним хвостом, фігура герба

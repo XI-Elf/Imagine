@@ -42,6 +42,7 @@ var inv_sel: String = ""        # обрана річ у вкладці «Інв
 var inv_filter: String = "all"  # фільтр сумки (inventory_view.FILTERS)
 var inv_page: int = 0
 var inv_sort: bool = false      # «За типом»
+var inv_stat_pin: String = ""   # показник, на який клацнули в рядку інвентаря (підказка лишається між перебудовами)
 var inv_drop_armed: bool = false   # «Кинути все» натиснуто один раз, чекає підтвердження
 var _drop_t: float = 0.0
 var _undo: Dictionary = {}       # навык -> сколько раз поднят, пока окно открыто (можно вернуть)
@@ -181,7 +182,13 @@ func refresh() -> void:
 			for r in Actor.RESOURCES:
 				sig += "|%d" % int(a.res.get(r, 0.0))
 		if tab == "stats":
-			sig += "|%d" % Time.get_ticks_msec()   # шкали змінюються весь час, на вкладці немає кнопок
+			# Шкали — за цілими значеннями показників (раніше перебудова щопівсекунди: підказки й клік по показнику зникали)
+			for r in Actor.RESOURCES:
+				sig += "|%d" % int(a.res.get(r, 0.0))
+			var bh: int = 0
+			for bf in a.buffs:
+				bh += int(float(bf["left_h"]))
+			sig += "|%s|%d|%d" % [JSON.stringify(a.conditions.map(func(c: Dictionary) -> String: return "%s%d" % [c["id"], int(c.get("stage", 0))])), bh, int(a.distance_m / 100.0)]
 	if sig == _sig:
 		return
 	_sig = sig
@@ -229,7 +236,7 @@ func _fill_stats(a: Actor) -> void:
 	grid.add_theme_constant_override("h_separation", 18)
 	_body.add_child(grid)
 	for s in S.stats_list():
-		grid.add_child(_label(S.stat_name(s), 16, COL_TEXT))
+		grid.add_child(_explain(_label(S.stat_name(s), 16, COL_TEXT), S.stat_name(s), String(S.sect("stat_desc").get(s, ""))))
 		var v: int = S.stat_value(a, s)
 		grid.add_child(_label(str(v), 18, COL_GOLD))
 		grid.add_child(_label(S.stat_level_name(v), 14, COL_TEXT))
@@ -244,7 +251,8 @@ func _fill_stats(a: Actor) -> void:
 	var ch: Dictionary = R.characteristics()
 	for r in Actor.RESOURCES:
 		var row := HBoxContainer.new()
-		var l := _label(String(shown.get(r, ch.get(r, {}).get("name_ru", r))), 15, COL_TEXT)
+		var nm: String = String(shown.get(r, ch.get(r, {}).get("name_ru", r)))
+		var l := _explain(_label(nm, 15, COL_TEXT), nm, String(Inv.STAT_DESC.get(r, "")))
 		l.custom_minimum_size = Vector2(160.0, 0.0)
 		row.add_child(l)
 		var bar := ProgressBar.new()
@@ -667,6 +675,39 @@ func _label(text: String, size: int, color: Color) -> Label:
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
 	return l
+
+
+## Показник з описом (Huzzah 2026-10-29): наведення — підказка, клік — віконце з описом біля курсора
+func _explain(l: Label, title: String, desc: String) -> Label:
+	if desc == "":
+		return l
+	l.tooltip_text = desc
+	l.mouse_filter = Control.MOUSE_FILTER_STOP
+	l.mouse_default_cursor_shape = Control.CURSOR_HELP
+	l.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+			_show_explain(title, desc, l.get_global_mouse_position()))
+	return l
+
+
+var _explain_pop: PopupPanel
+
+
+func _show_explain(title: String, desc: String, at: Vector2) -> void:
+	if _explain_pop == null:
+		_explain_pop = PopupPanel.new()
+		var box := VBoxContainer.new()
+		box.add_child(_label("", 17, COL_GOLD))
+		var t := _wrap("", 14, COL_TEXT)
+		t.custom_minimum_size = Vector2(360.0, 0.0)
+		box.add_child(t)
+		_explain_pop.add_child(box)
+		add_child(_explain_pop)
+	var box: VBoxContainer = _explain_pop.get_child(0)
+	(box.get_child(0) as Label).text = title
+	(box.get_child(1) as Label).text = desc
+	_explain_pop.reset_size()
+	_explain_pop.popup(Rect2i(Vector2i(at) + Vector2i(12, 12), Vector2i(380, 10)))
 
 
 func _wrap(text: String, size: int, color: Color) -> Label:

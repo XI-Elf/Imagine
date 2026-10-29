@@ -54,6 +54,7 @@ var codex: Dictionary = {}          # кодекс: id знайдених зап
 var left_carts: Array = []         # Q32: вози загиблих героїв на карті [{pos: [x, y], until: с гри, items}] (hero_death.gd)
 var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
 var _km_actor: Actor = null
+var sleep_fx: CanvasLayer = null
 var _rng := RandomNumberGenerator.new()
 
 
@@ -68,6 +69,10 @@ func _ready() -> void:
 	_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade_layer.add_child(_fade)
+	# Сон героя: повіки й прискорений час (ui/sleep_fx.gd)
+	sleep_fx = preload("res://ui/sleep_fx.gd").new()
+	sleep_fx.worlds = self
+	add_child(sleep_fx)
 	# Карта могла увійти в дерево раніше за автозавантаження (запуск тестів через -s)
 	for n in get_tree().root.get_children():
 		_on_node_added(n)

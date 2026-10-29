@@ -34,6 +34,10 @@ const WATER_SEARCH_M: float = 1500.0
 const FORAGE_COOLDOWN_S: float = 3.0
 const HEAL_REACH_M: float = 30.0
 const HEAL_RETRY_S: float = 20.0        # реальних секунд між спробами лікування в одного НПС
+const TOWER_REACH_M: float = 8.0        # F біля підніжжя сигнальної вежі — залізти
+const TOWER_VIEW_M: float = 2500.0      # [ВРЕМЕННО] огляд з вежі вдень
+const TOWER_MIN: float = 20.0           # [ВРЕМЕННО] ігрових хвилин на підйом і спуск
+const TOWER_STAMINA: float = 30.0       # [ВРЕМЕННО] сил на підйом
 static var NPC_NAMES: Array = [I18n.t("Эйвинд"), I18n.t("Сигрид"), I18n.t("Кормак"), I18n.t("Айсте"), I18n.t("Годрик"), I18n.t("Ингрид"), I18n.t("Ниалл"), I18n.t("Милда"),
 	I18n.t("Хокон"), I18n.t("Эдит"), I18n.t("Фергус"), I18n.t("Расма"), I18n.t("Леофрик"), I18n.t("Тора"), I18n.t("Витаутас"), I18n.t("Сорха")]
 
@@ -161,7 +165,7 @@ func spawn_hero(at: Vector2, params: Dictionary = {}) -> void:
 	controls_hero = true
 	if OVERWORLD_NPCS and bodies.filter(func(x): return not x["hero"]).is_empty():
 		_spawn_npcs(p)
-	_event(I18n.t("Герой появился: %s") % R.terrain(game.biome_at(p)).get("name", ""))
+	_event(I18n.t("Герой появился: %s") % game.biome_name(p))
 
 
 ## НПС на загальній карті вручну (тести, майбутні поселення): ті самі правила й розпорядок
@@ -455,8 +459,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				var site: Dictionary = Ruins.near(game, hero["pos"])
 				var wm: Node = get_node_or_null("/root/Worlds")
 				var cart_i: int = HeroDeath.cart_near(wm, hero["pos"], game.clock.total_seconds)
+				var tower: Vector2 = tower_near(hero["pos"])
 				if cart_i >= 0:
 					_event(HeroDeath.take_cart(wm, cart_i))
+				elif tower != Vector2.INF:
+					_event(climb_tower(tower))
 				elif not site.is_empty():
 					_event(search_ruins(site))
 				else:
@@ -464,6 +471,47 @@ func _unhandled_input(event: InputEvent) -> void:
 		_:
 			return
 	get_viewport().set_input_as_handled()
+
+
+## Сигнальна вежа поруч із точкою (storybook/world_decor.gd) або Vector2.INF
+func tower_near(p: Vector2) -> Vector2:
+	var d: Node = game.get("decor") if game != null else null
+	if d == null or not d.has_method("tower_near"):
+		return Vector2.INF
+	return d.tower_near(p, TOWER_REACH_M)
+
+
+## Залізти на сигнальну вежу (Huzzah 2026-10-29: «вежа є, а взаємодії немає»): згори видно далеко — туман
+## війни відкривається на TOWER_VIEW_M (уночі вдвічі менше), іде TOWER_MIN ігрових хвилин і TOWER_STAMINA сил.
+## У старому щитку раз на кілька днів (як руїни) — брухт, іноді записка давніх
+func climb_tower(at: Vector2) -> String:
+	var a: Actor = hero["actor"]
+	if float(a.res["stamina"]) < TOWER_STAMINA:
+		return I18n.t("Слишком мало сил, чтобы лезть на вышку")
+	a.add_res("stamina", -TOWER_STAMINA)
+	game.clock.skip(TOWER_MIN * 60.0)
+	var night: bool = bool(WorldEnv.sample(game, at).get("night", false))
+	var view: float = TOWER_VIEW_M * (0.5 if night else 1.0)
+	var fl: Node = game.get("fog")
+	if fl != null and fl.get("model") != null:
+		fl.model.reveal(at, view)
+	a.add_xp("survival", 1.0)
+	var msg: String = I18n.t("Забрались на сигнальную вышку: сверху видно на %.1f км вокруг") % (view / 1000.0)
+	var key: String = "tower:%d:%d" % [int(at.x), int(at.y)]
+	if not Ruins.looted_now(ruins_looted, key, game.clock.total_seconds):
+		ruins_looted[key] = game.clock.total_seconds
+		var w: Node = get_tree().root.get_node_or_null("Worlds") if is_inside_tree() else null
+		var bag: Dictionary = w.inventory if w != null else {}
+		var n_scrap: int = _rng.randi_range(1, 2)
+		if not bag.has("items"):
+			bag["items"] = {}
+		bag["items"]["scrap"] = int(bag["items"].get("scrap", 0)) + n_scrap
+		msg += I18n.t(". В щитке наверху: %s ×%d") % [Trade.item_name("scrap"), n_scrap]
+		if w != null:
+			var note: Dictionary = Codex.find(w.codex, "ruins", _rng, game.clock.total_seconds)
+			if not note.is_empty():
+				msg += I18n.t(". Там же записка: «%s» (дневник героя, вкладка 6)") % note["title"]
+	return msg
 
 
 ## Обшукати руїни поруч із героєм (питання Q04): брухт і монети — у сумку героя (Worlds.inventory)
@@ -622,6 +670,7 @@ func _draw() -> void:
 	var font: Font = ThemeDB.fallback_font
 	var vp: Rect2 = get_viewport_rect().grow(40.0)
 	_draw_ruins(font)
+	_draw_tower_hint(font)
 	for b in bodies:
 		var a: Actor = b["actor"]
 		var sp: Vector2 = game.world_to_screen(b["pos"])
@@ -653,8 +702,10 @@ func _draw() -> void:
 				label += I18n.t(" (спит)")
 			elif b["drowning"]:
 				label += I18n.t(" (тонет!)")
-			draw_string_outline(font, sp + Vector2(-40, -r - 6), label, HORIZONTAL_ALIGNMENT_CENTER, 80, 13, 4, Color(0, 0, 0, 0.9))
-			draw_string(font, sp + Vector2(-40, -r - 6), label, HORIZONTAL_ALIGNMENT_CENTER, 80, 13, col)
+			# Ширина за самим підписом: «(спить)», «(тоне!)» більше не обрізаються (Huzzah 2026-10-29)
+			var lw: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 8.0
+			draw_string_outline(font, sp + Vector2(-lw * 0.5, -r - 6), label, HORIZONTAL_ALIGNMENT_CENTER, lw, 13, 4, Color(0, 0, 0, 0.9))
+			draw_string(font, sp + Vector2(-lw * 0.5, -r - 6), label, HORIZONTAL_ALIGNMENT_CENTER, lw, 13, col)
 			# Смужка здоров'я
 			var w: float = 26.0
 			var hp: float = a.res["health"] / a.max_of("health")
@@ -683,6 +734,17 @@ func _draw_ruins(font: Font) -> void:
 			draw_string(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, Color(0.95, 0.88, 0.7))
 
 
+## Підказка біля героя під сигнальною вежею: F — залізти
+func _draw_tower_hint(font: Font) -> void:
+	if not _hero_alive() or hero_away or tower_near(hero["pos"]) == Vector2.INF:
+		return
+	var t: String = I18n.t("F — залезть на вышку")
+	var hp: Vector2 = game.world_to_screen(hero["pos"]) + Vector2(0, 34)
+	var tw: float = font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+	draw_string_outline(font, hp - Vector2(tw * 0.5, 0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.9))
+	draw_string(font, hp - Vector2(tw * 0.5, 0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.9, 0.55))
+
+
 func _update_status() -> void:
 	var vp: Vector2 = get_viewport_rect().size
 	if hero.is_empty():
@@ -696,7 +758,7 @@ func _update_status() -> void:
 			var alt: float = game.height_at(hero["pos"]) if game.has_method("height_at") else 0.0
 			_status.text = I18n.t("Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d  Воздействие проклятья %d   %s%s, ощущается %d °C, шаг %.1f км/ч%s") % [
 				int(a.res["health"]), int(a.res["hunger"]), int(a.res["thirst"]), int(a.res["energy"]),
-				int(a.res["stamina"]), int(a.res["radiation"]), R.terrain(int(env["biome"])).get("name", ""),
+				int(a.res["stamina"]), int(a.res["radiation"]), game.biome_name(hero["pos"]),
 				I18n.t(", высота %d м") % int(round(alt / 10.0) * 10.0) if alt >= 20.0 else "",
 				int(round(a.feels_temp(env))), a.calculate_speed(env),
 				"" if controls_hero else I18n.t("   (камера свободна, G — к герою)")]

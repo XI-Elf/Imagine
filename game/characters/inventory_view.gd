@@ -38,6 +38,15 @@ const TOOLS: Array = ["rope"]
 const PARTS: Array = ["scrap", "hide"]
 const STAT_KEYS: Array = ["health", "hunger", "thirst", "energy", "stamina", "radiation"]
 static var STAT_NAMES: Dictionary = {"health": I18n.t("Здоровье"), "hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "energy": I18n.t("Энергия"), "stamina": I18n.t("Силы"), "radiation": I18n.t("Воздействие проклятья")}
+## Опис показника для підказки (Huzzah 2026-10-29: наведення й клік на показник — віконце з описом)
+static var STAT_DESC: Dictionary = {
+	"health": I18n.t("Здоровье. На нуле герой погибает. Отнимают его раны, кровотечение, яд, болезни, голод и жажда на нуле. Само понемногу заживает, пока герой сыт, напоен и не истекает кровью. Лечат снадобья из сумки и лекарь."),
+	"hunger": I18n.t("Сытость. Каждый час понемногу падает. На нуле голод отнимает здоровье, и раны перестают заживать. Поднимает еда; искать её — F на карте."),
+	"thirst": I18n.t("Вода. Падает быстрее сытости, в жару ещё быстрее. На нуле жажда отнимает здоровье и бодрость. Напиться: E у реки или озера, колодец в городе, питьё из сумки."),
+	"energy": I18n.t("Энергия — бодрость. Тратится весь день; в пути, на трудной местности и в холод быстрее. Восстанавливает сон: Z на карте, «Ночлег» в городе."),
+	"stamina": I18n.t("Силы — на бег и плавание. Тратятся за секунды и так же быстро возвращаются шагом или на месте. Без сил не побежать, а в воде герой начинает тонуть."),
+	"radiation": I18n.t("Воздействие проклятья. Копится в проклятых лесах, пустошах и болотах, на чистой земле медленно спадает. Набравшись его, герой заболевает проклятой хворью, и чем больше, тем тяжелее."),
+}
 const PAWN := "res://art/storybook/traveler.png"
 
 const W := 900.0
@@ -60,6 +69,10 @@ var armor: Resource = null         # обладунок героя в бою: з
 var loadout_max: int = 3
 var _hits: Array = []              # [Rect2, тип, id]
 var _hover: int = -1
+var _stat_rects: Dictionary = {}   # показник -> прямокутник у рядку згори
+var _stat_hover: String = ""       # показник під курсором
+var _stat_pin: String = ""         # показник, на який клацнули: підказка лишається до наступного кліку
+var _tip_ci: Control
 var _font: Font
 var _wicons: Dictionary = {}
 
@@ -75,6 +88,12 @@ func setup(window: Node, a: Actor, b: Dictionary, item_weapons: Dictionary, lmax
 	_font = ThemeDB.fallback_font
 	custom_minimum_size = Vector2(W, H)
 	_layout()
+	# Підказка показника — окремий верхній шар, щоб кнопки під рядком показників її не перекривали
+	_tip_ci = Control.new()
+	_tip_ci.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_ci.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_tip_ci.draw.connect(_draw_stat_tip)
+	add_child(_tip_ci)
 
 
 # =====================================================================
@@ -265,7 +284,30 @@ static func marble_box(light: bool, hover: bool = false, dim: bool = false) -> S
 	return ComicUI.button_box("hover" if hover else "normal")
 
 
+func _stat_at(p: Vector2) -> String:
+	for k in _stat_rects:
+		if (_stat_rects[k] as Rect2).has_point(p):
+			return k
+	return ""
+
+
 func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		var sk: String = _stat_at(event.position)
+		if sk != _stat_hover:
+			_stat_hover = sk
+			queue_redraw()
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var sk: String = _stat_at(event.position)
+		var was: String = _stat_pin
+		_stat_pin = "" if sk == _stat_pin else sk
+		if win != null and "inv_stat_pin" in win:
+			win.inv_stat_pin = _stat_pin
+		if sk != "" or was != "":
+			queue_redraw()
+		if sk != "":
+			accept_event()
+			return
 	if event is InputEventMouseMotion:
 		var h: int = _hit_at(event.position)
 		if h != _hover:
@@ -361,6 +403,53 @@ func _draw() -> void:
 	var py: float = GRID.y + ROWS * (CELL + GAP) + 2.0
 	_text_c(Vector2(GRID.x + (COLS * (CELL + GAP) - GAP) * 0.5, py + 22), "%d/%d" % [_page() + 1, pages()], 18, TEXT, true)
 	_draw_details(py + 40)
+	if _tip_ci != null:
+		_tip_ci.queue_redraw()
+
+
+## Віконце з описом показника під його значком: наведений або закріплений кліком
+func _draw_stat_tip() -> void:
+	# Вкладка перебудовується, коли змінюються показники: закріплене береться з вікна, наведене — з курсора
+	if win != null and "inv_stat_pin" in win:
+		_stat_pin = String(win.inv_stat_pin)
+	if _stat_hover == "":
+		_stat_hover = _stat_at(get_local_mouse_position())
+	var k: String = _stat_pin if _stat_pin != "" else _stat_hover
+	if k == "" or not _stat_rects.has(k) or actor == null:
+		return
+	var r: Rect2 = _stat_rects[k]
+	var ci: Control = _tip_ci
+	var title: String = "%s: %d / %d" % [STAT_NAMES[k], int(actor.res.get(k, 0.0)), int(actor.max_of(k))]
+	var body: String = String(STAT_DESC.get(k, ""))
+	var w: float = 360.0
+	var fs: int = 15
+	var lines: PackedStringArray = _wrap(body, w - 24.0, fs)
+	var h: float = 44.0 + lines.size() * (fs + 5.0) + 8.0
+	var box := Rect2(Vector2(clampf(r.position.x, 4.0, W - w - 4.0), r.end.y + 8.0), Vector2(w, h))
+	ci.draw_rect(box.grow(6.0), Color(0, 0, 0, 0.5))
+	ComicUI.draw_box(ci, "button", box.grow(4.0))
+	ci.draw_rect(box.grow(-2.0), Color(0.07, 0.07, 0.08, 0.96))
+	ci.draw_rect(box, Color(GOLD, 0.85) if _stat_pin == k else Color(EDGE, 0.85), false, 1.5)
+	ci.draw_string_outline(_font, box.position + Vector2(12, 26), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 4, INK)
+	ci.draw_string(_font, box.position + Vector2(12, 26), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, GOLD)
+	for i in lines.size():
+		ci.draw_string(_font, box.position + Vector2(12, 50 + i * (fs + 5.0)), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, TEXT)
+
+
+## Розбиває текст на рядки не ширші за width пікселів
+func _wrap(text: String, width: float, fs: int) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var line: String = ""
+	for word in text.split(" ", false):
+		var t: String = word if line == "" else line + " " + word
+		if line != "" and _font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
+			out.append(line)
+			line = word
+		else:
+			line = t
+	if line != "":
+		out.append(line)
+	return out
 
 
 ## Рядок показників героя значками (те, що раніше було лише внизу екрана)
@@ -375,6 +464,9 @@ func _draw_stats() -> void:
 		var mx: float = maxf(actor.max_of(k), 1.0)
 		var bad: bool = (v / mx > 0.25) if k == "radiation" else (v / mx < 0.25)
 		var r := Rect2(x - 6, 5, 104, 32)
+		_stat_rects[k] = r
+		if k == _stat_hover or k == _stat_pin:
+			draw_rect(r, Color(GOLD, 0.18))
 		if bad:
 			draw_rect(r, Color(RED_DARK, 0.6))
 			draw_rect(r, RED, false, 2.0)

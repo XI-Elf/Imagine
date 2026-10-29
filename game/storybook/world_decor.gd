@@ -8,9 +8,12 @@ extends Node2D
 ## и камни, горы — горы и скалы в 8–15 м (жаркие — рыжие), берег — камешки.
 ## На протоптанной тропе и дороге (world/trails_layer.gd, со ступени «тропа») деревьев и кустов нет.
 ##
-## Швидко: карта ділиться на клітинки CHUNK м; у клітинки два MultiMesh (велике й дрібниця) з одного атласу,
-## один виклик малювання на клітинку. Клітинки рахуються по кілька за кадр від центру екрана й
+## Швидко: карта ділиться на клітинки CHUNK м; дані клітинки рахуються по кілька за кадр від центру екрана й
 ## запам'ятовуються; зсув камери змінює лише перетворення кореня.
+## Порядок малювання (Huzzah 2026-10-29: дерева не накладаються, кущі й квіти не лежать на кронах): усе — дерева,
+## гори, кущі, каміння — малюється одним списком за висотою ніг (що нижче на екрані, те ближче й перекриває
+## дальнє). Видимий ряд клітинок — один MultiMesh: клітинки ряду зшиваються смугами BAND_M м, тож сусідні
+## клітинки не перекривають одна одну навпаки. Дрібниця проявляється з наближенням через uniform шейдера.
 
 const Art := preload("res://storybook/art.gd")
 
@@ -22,6 +25,10 @@ const BIG_FULL_Z: float = 0.9
 const SMALL_FROM_Z: float = 3.0        # дрібниця (кущі, каміння)
 const SMALL_FULL_Z: float = 5.0
 const SHADOW: float = 0.12             # частка висоти під ногами в комірці атласу (тінь)
+const BAND_M: float = 2.0              # смуга ряду: у межах смуги порядок — зліва направо (помилка не більша за смугу)
+const BANDS: int = int(CHUNK / BAND_M)
+const SMALL_FLAG: float = 0.5          # альфа екземпляра-дрібниці (шейдер підміняє її на small_a)
+const FLOATS: int = 16                 # на екземпляр у буфері MultiMesh: 8 перетворення, 4 колір, 4 custom
 
 ## Ключ спрайта -> висота комірки атласу (пікс.)
 const KEYS: Array = ["tree_oak", "tree_light", "tree_crooked", "mountain_gray", "ridge_gray", "peak_gray", "cliff_gray",
@@ -36,8 +43,9 @@ var _uv: Dictionary = {}               # ключ -> Color(u0, v0, du, dv)
 var _aspect: Dictionary = {}           # ключ -> ширина / висота
 var _mesh: ArrayMesh
 var _mat: ShaderMaterial
-var _data: Dictionary = {}             # Vector2i -> {big: PackedFloat32Array, small: ...} (по 8 чисел на спрайт)
-var _nodes: Dictionary = {}            # Vector2i -> Node2D із двома MultiMeshInstance2D
+var _data: Dictionary = {}             # Vector2i -> {big: [...], small: [...]} — спрайти клітинки (позиція від кута клітинки)
+var _bands: Dictionary = {}            # Vector2i -> Array[PackedFloat32Array] (BANDS смуг готових екземплярів)
+var _rows: Dictionary = {}             # номер ряду -> {node: MultiMeshInstance2D, c0, c1, full}
 var _order: Array = []                 # порядок появи даних (для витіснення)
 var _noise: Image
 
@@ -68,43 +76,42 @@ func _process(_delta: float) -> void:
 		_root.visible = false
 		return
 	_root.visible = true
+	_mat.set_shader_parameter("big_a", big_a)
+	_mat.set_shader_parameter("small_a", small_a)
 	# Видимі клітинки (із запасом у пів клітинки)
 	var half: Vector2 = vp * 0.5 / z + Vector2(CHUNK, CHUNK) * 0.5
-	var c0 := Vector2i(floori((game.cam_pos.x - half.x) / CHUNK), floori((game.cam_pos.y - half.y) / CHUNK))
-	var c1 := Vector2i(floori((game.cam_pos.x + half.x) / CHUNK), floori((game.cam_pos.y + half.y) / CHUNK))
-	var want: Dictionary = {}
-	var todo: Array = []
-	for cy in range(c0.y, c1.y + 1):
+	var max_c := Vector2i(floori(game.MAP_SIZE.x / CHUNK), floori(game.MAP_SIZE.y / CHUNK))
+	var c0 := Vector2i(maxi(floori((game.cam_pos.x - half.x) / CHUNK), 0), maxi(floori((game.cam_pos.y - half.y) / CHUNK), 0))
+	var c1 := Vector2i(mini(floori((game.cam_pos.x + half.x) / CHUNK), max_c.x), mini(floori((game.cam_pos.y + half.y) / CHUNK), max_c.y))
+	# Ряди, що пішли з екрана, — прибрати
+	for cy in _rows.keys():
+		if cy < c0.y or cy > c1.y:
+			_rows[cy]["node"].queue_free()
+			_rows.erase(cy)
+	# Ряди — від центру; дані нових клітинок рахуються, скільки встигнемо за кадр, ряд зшивається, коли готовий
+	var mid_y: float = game.cam_pos.y / CHUNK - 0.5
+	var order: Array = range(c0.y, c1.y + 1)
+	order.sort_custom(func(a: int, b: int) -> bool: return absf(a - mid_y) < absf(b - mid_y))
+	var t0: int = Time.get_ticks_usec()
+	for cy in order:
+		var row: Dictionary = _rows.get(cy, {})
+		if not row.is_empty() and row["c0"] == c0.x and row["c1"] == c1.x and row["full"]:
+			continue
+		if float(Time.get_ticks_usec() - t0) > BUILD_MS * 1000.0 and not row.is_empty():
+			continue
+		var full: bool = true
 		for cx in range(c0.x, c1.x + 1):
 			var k := Vector2i(cx, cy)
-			if cx < 0 or cy < 0 or cx * CHUNK > game.MAP_SIZE.x or cy * CHUNK > game.MAP_SIZE.y:
-				continue
-			want[k] = true
-			if not _nodes.has(k):
-				todo.append(k)
-	# Ті, що пішли з екрана, — прибрати вузли
-	for k in _nodes.keys():
-		if not want.has(k):
-			_nodes[k].queue_free()
-			_nodes.erase(k)
-	# Нові — від центру, скільки встигнемо за кадр
-	var mid := Vector2(game.cam_pos.x / CHUNK - 0.5, game.cam_pos.y / CHUNK - 0.5)
-	todo.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return Vector2(a).distance_squared_to(mid) < Vector2(b).distance_squared_to(mid))
-	var t0: int = Time.get_ticks_usec()
-	for k in todo:
-		if not _data.has(k) and float(Time.get_ticks_usec() - t0) > BUILD_MS * 1000.0:
-			break
-		_nodes[k] = _make_node(k)
-		_root.add_child(_nodes[k])
-	for k in _nodes:
-		var n: Node2D = _nodes[k]
-		n.get_child(1).visible = small_a > 0.0
-		(n.get_child(0) as CanvasItem).self_modulate.a = big_a
-		(n.get_child(1) as CanvasItem).self_modulate.a = small_a
+			if not _bands.has(k):
+				if float(Time.get_ticks_usec() - t0) > BUILD_MS * 1000.0:
+					full = false
+					continue
+				_chunk_bands(k)
+		_build_row(cy, c0.x, c1.x, full)
 	while _order.size() > MAX_CACHED:
 		var old: Vector2i = _order.pop_front()
-		if not _nodes.has(old):
-			_data.erase(old)
+		_data.erase(old)
+		_bands.erase(old)
 
 
 # Змінився ступінь протоптаної клітинки — її ділянка розставляється заново (дорога витоптує ліс)
@@ -123,9 +130,10 @@ func _drop_trodden_chunks() -> void:
 			keys[Vector2i(floori((q.x + o.x) / CHUNK), floori((q.y + o.y) / CHUNK))] = true
 	for k in keys:
 		_data.erase(k)
-		if _nodes.has(k):
-			_nodes[k].queue_free()
-			_nodes.erase(k)
+		_bands.erase(k)
+		if _rows.has(k.y):
+			_rows[k.y]["full"] = false
+			_rows[k.y]["c0"] = -1
 
 
 # =====================================================================
@@ -182,6 +190,9 @@ func _grid(o: Vector2, s: float, salt: int, f: Callable) -> void:
 	var x0: int = floori(o.x / s)
 	var y0: int = floori(o.y / s)
 	var tl: Node = game.get("trails") if game != null else null
+	var st: Node = game.get("settlements") if game != null else null
+	if st != null and not st.has_method("near_dot"):
+		st = null
 	var x1: int = floori((o.x + CHUNK) / s)
 	var y1: int = floori((o.y + CHUNK) / s)
 	for y in range(y0, y1 + 1):
@@ -191,8 +202,8 @@ func _grid(o: Vector2, s: float, salt: int, f: Callable) -> void:
 			if p.x < o.x or p.y < o.y or p.x >= o.x + CHUNK or p.y >= o.y + CHUNK:
 				continue
 			var b: int = game.biome_at(p)
-			# Протоптана стежка й дорога (world/trails_layer.gd) — без дерев і кущів
-			if b >= 2 and (tl == null or not tl.trodden(p)):
+			# Протоптана стежка й дорога (world/trails_layer.gd) і місце міста-точки — без дерев і кущів
+			if b >= 2 and (tl == null or not tl.trodden(p)) and (st == null or not st.near_dot(p)):
 				f.call(p, n, b)
 
 
@@ -202,39 +213,106 @@ func _pack(items: Array, o: Vector2) -> Array:
 	return items.map(func(e: Array) -> Array: return [e[0] - o, e[1], e[2], e[3]])
 
 
-func _make_node(k: Vector2i) -> Node2D:
+## Смуги клітинки: екземпляри (дерева й дрібниця разом) за висотою ніг, координати ряду (x — карти, y — від верху ряду)
+func _chunk_bands(k: Vector2i) -> Array:
+	if _bands.has(k):
+		return _bands[k]
 	var d: Dictionary = _chunk_data(k)
-	var n := Node2D.new()
-	n.position = Vector2(k) * CHUNK
-	n.add_child(_mm(d["big"]))
-	n.add_child(_mm(d["small"]))
-	return n
+	var items: Array = []
+	for e in d["big"]:
+		items.append([e, 1.0])
+	for e in d["small"]:
+		items.append([e, SMALL_FLAG])
+	items.sort_custom(func(a: Array, b: Array) -> bool: return a[0][0].y < b[0][0].y)
+	var bands: Array = []
+	for i in BANDS:
+		bands.append(PackedFloat32Array())
+	var ox: float = float(k.x) * CHUNK
+	for it in items:
+		var e: Array = it[0]
+		var key: String = e[1]
+		var h: float = e[2]
+		var w: float = h * float(_aspect.get(key, 1.0))
+		var p: Vector2 = e[0]
+		var wp := Vector2(ox + p.x, float(k.y) * CHUNK + p.y)
+		# Дзеркало для різноманіття
+		if fposmod(wp.x * 0.37 + wp.y * 0.11, 1.0) > 0.5:
+			w = -w
+		var col: Color = e[3]
+		var uv: Color = _uv.get(key, Color(0, 0, 0, 0))
+		var bi: int = clampi(int(p.y / BAND_M), 0, BANDS - 1)
+		bands[bi].append_array(PackedFloat32Array([w, 0.0, 0.0, wp.x, 0.0, h, 0.0, p.y,
+			col.r, col.g, col.b, it[1], uv.r, uv.g, uv.b, uv.a]))
+	_bands[k] = bands
+	return bands
 
 
-func _mm(items: Array) -> MultiMeshInstance2D:
+## Ряд cy від клітинки c0 до c1 — один MultiMesh: смуга за смугою, у смузі клітинки зліва направо
+func _build_row(cy: int, c0: int, c1: int, full: bool) -> void:
+	var buf := PackedFloat32Array()
+	for bi in BANDS:
+		for cx in range(c0, c1 + 1):
+			var bands: Array = _bands.get(Vector2i(cx, cy), [])
+			if not bands.is_empty():
+				buf.append_array(bands[bi])
+	var row: Dictionary = _rows.get(cy, {})
+	if row.is_empty():
+		var mi := MultiMeshInstance2D.new()
+		mi.texture = _atlas
+		mi.material = _mat
+		mi.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		mi.position = Vector2(0.0, float(cy) * CHUNK)
+		_root.add_child(mi)
+		row = {"node": mi}
+		_rows[cy] = row
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_2D
 	mm.use_colors = true
 	mm.use_custom_data = true
 	mm.mesh = _mesh
-	mm.instance_count = items.size()
-	for i in items.size():
-		var e: Array = items[i]
-		var key: String = e[1]
-		var h: float = e[2]
-		var w: float = h * float(_aspect[key])
-		# Дзеркало для різноманіття
-		if fposmod(e[0].x * 0.37 + e[0].y * 0.11, 1.0) > 0.5:
-			w = -w
-		mm.set_instance_transform_2d(i, Transform2D(Vector2(w, 0), Vector2(0, h), e[0]))
-		mm.set_instance_color(i, e[3])
-		mm.set_instance_custom_data(i, _uv[key])
-	var mi := MultiMeshInstance2D.new()
-	mi.multimesh = mm
-	mi.texture = _atlas
-	mi.material = _mat
-	mi.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	return mi
+	mm.instance_count = buf.size() / FLOATS
+	if buf.size() > 0:
+		mm.buffer = buf
+	row["node"].multimesh = mm
+	row["c0"] = c0
+	row["c1"] = c1
+	row["full"] = full
+	_sort_rows()
+
+
+## Ряди в корені — згори вниз (нижній ряд перекриває верхній)
+func _sort_rows() -> void:
+	var keys: Array = _rows.keys()
+	keys.sort()
+	for i in keys.size():
+		_root.move_child(_rows[keys[i]]["node"], i)
+
+
+## Сигнальна вежа (Q31 B) біля точки p ближче reach м: її місце (ноги) або Vector2.INF.
+## Те саме правило, що й розстановка в _chunk_data: сітка 64 м, сіль 5, рідкісний шум, суходіл без гір і боліт
+func tower_near(p: Vector2, reach: float) -> Vector2:
+	if game == null:
+		return Vector2.INF
+	var s: float = 64.0
+	var tl: Node = game.get("trails")
+	var st: Node = game.get("settlements")
+	for y in range(floori((p.y - reach) / s) - 1, floori((p.y + reach) / s) + 1):
+		for x in range(floori((p.x - reach) / s) - 1, floori((p.x + reach) / s) + 1):
+			var n: float = Art.seed_at(x, y, 5)
+			if n <= 0.993:
+				continue
+			var q := (Vector2(x, y) + Vector2(0.15 + n * 0.7, 0.15 + Art.seed_at(x, y, 14) * 0.7)) * s
+			if q.distance_to(p) > reach or not game.biome_at(q) in [2, 3, 4, 7, 8]:
+				continue
+			if (tl != null and tl.trodden(q)) or (st != null and st.has_method("near_dot") and st.near_dot(q)):
+				continue
+			return q
+	return Vector2.INF
+
+
+## Точка лежить на галявині лісу (b — біом точки): дерев декор тут не садить, шейдер малює луг
+func glade(p: Vector2, b: int) -> bool:
+	return (b == 3 or b == 7) and _clearing(p)
 
 
 # Галявина в лісі й суха трава в пустці — ті самі плями, що малює шейдер (map_shaders.gd)
@@ -321,9 +399,13 @@ func _build_mesh() -> void:
 	_mesh = ArrayMesh.new()
 	_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
 	var sh := Shader.new()
+	# Альфа екземпляра — ознака: 1 велике, SMALL_FLAG дрібниця; проявлення за масштабом — big_a / small_a
 	sh.code = """shader_type canvas_item;
+uniform float big_a = 1.0;
+uniform float small_a = 1.0;
 void vertex() {
 	UV = INSTANCE_CUSTOM.xy + UV * INSTANCE_CUSTOM.zw;
+	COLOR.a = COLOR.a > 0.75 ? big_a : small_a;
 }
 """
 	_mat = ShaderMaterial.new()

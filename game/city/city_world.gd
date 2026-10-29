@@ -56,6 +56,14 @@ const PX: float = 16.0                 # пікселів на метр за м�
 ## Повтор текстур землі/стін/дахів: за найсильнішого наближення (zoom 3) піксель картинки 512 px =
 ## піксель екрана, при віддаленні текстура стискається (Huzzah 2026-10-23)
 const TEX_PERIOD: float = 512.0 / 3.0
+## Справжній розмір візерунка, метрів на повтор текстури (Huzzah 2026-10-29: «розміри мають бути реалістичніші» —
+## раніше брукованка на площі була завбільшки з героя): камінь брукованки ~0,6 м, блок кладки ~0,65 м,
+## дошка ~0,28 м, черепиця ~0,3 м, кущики трави ~0,2 м. Решта — як раніше (TEX_PERIOD)
+const TEX_M: Dictionary = {"cobble": 2.4, "masonry": 2.6, "wood": 1.4, "roof": 1.8, "t03_field1": 4.0, "t04_field2": 4.0,
+	"t01_coast": 5.0, "t07_mountains": 6.0}
+## Висота речей площі, м (було 1,8 м — криниця з дахом нижча за героя): криниця з дашком, ятка з навісом
+const PROP_H: Dictionary = {"well": 2.7, "stall": 2.5}
+const TREE_H: Vector2 = Vector2(6.5, 9.0)   # дерева в місті, м (було 3,7 м)
 const BODY_R: float = 0.35             # радіус тіла, м
 const START_ZOOM: float = 2.2
 const TALK_M: float = 2.4
@@ -849,7 +857,7 @@ func use_place(p: Dictionary) -> void:
 			_search(p)
 		"bed":
 			hero.set_sleep(true)
-			_say(I18n.t("Вы легли на лежанку в своей лачуге. Сон до первого шага"))
+			_say(I18n.t("Вы легли на лежанку в своей лачуге"))
 		"board":
 			_open_note(String(p["name"]), _board_text(p))
 		_:
@@ -1021,7 +1029,7 @@ func rent_room(n: Dictionary) -> void:
 		hero_pos = map.center_of(b["floor"][0])
 	hero.set_sleep(true)
 	_close_panel()
-	_say(I18n.t("Комната снята. Сон до первого шага"))
+	_say(I18n.t("Комната снята"))
 
 
 func heal(n: Dictionary) -> void:
@@ -1235,7 +1243,7 @@ func _draw_ground(l: Node2D) -> void:
 	l.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	var cs: float = map.cell_m * PX
 	var grass: Texture2D = Art.ground("t03_field1")
-	Art.surface(l, grass, Rect2(Vector2(-PX * 40, -PX * 40), map.size_m() * PX + Vector2(PX * 80, PX * 80)), TEX_PERIOD)
+	Art.surface(l, grass, Rect2(Vector2(-PX * 40, -PX * 40), map.size_m() * PX + Vector2(PX * 80, PX * 80)), _period(grass))
 	for y in map.h:
 		for x in map.w:
 			var t: int = map.at(x, y)
@@ -1253,7 +1261,7 @@ func _draw_ground(l: Node2D) -> void:
 			var under_sprite: bool = t in [T.WALL, T.DOOR, T.FLOOR] and _sprite_cell(x, y)
 			if under_sprite:
 				texture = grass
-			Art.surface(l, texture, r, TEX_PERIOD)
+			Art.surface(l, texture, r, _period(texture))
 			if under_sprite:
 				l.draw_rect(r, Color(0.48, 0.53, 0.34, 0.30))
 				continue
@@ -1270,7 +1278,13 @@ func _draw_ground(l: Node2D) -> void:
 	var dirt: Texture2D = Art.ground("t01_coast")
 	for c in trails.stage_of:
 		if map.at(c.x, c.y) in TRAIL_TILES and not _sprite_cell(c.x, c.y):
-			Art.surface(l, dirt, Rect2(Vector2(c) * cs, Vector2(cs, cs)), TEX_PERIOD, Color(1, 1, 1, TRAIL_ALPHA[trails.stage_of[c]]))
+			Art.surface(l, dirt, Rect2(Vector2(c) * cs, Vector2(cs, cs)), _period(dirt), Color(1, 1, 1, TRAIL_ALPHA[trails.stage_of[c]]))
+
+
+## Повтор текстури в пікселях міста: за справжнім розміром візерунка (TEX_M), інакше як раніше
+func _period(t: Texture2D) -> float:
+	var key: String = t.resource_path.get_file().get_basename() if t != null else ""
+	return float(TEX_M[key]) * PX if TEX_M.has(key) else TEX_PERIOD
 
 
 func _sprite_cell(x: int, y: int) -> bool:
@@ -1349,13 +1363,13 @@ func _draw_roofs(l: Node2D) -> void:
 				if map.at(v[0], v[1]) != T.TREE:
 					continue
 				var foot: Vector2 = map.center_of(Vector2i(v[0], v[1])) * PX
-				entries.append({"type": "prop", "key": ["tree_oak", "tree_light", "tree_crooked"][int(Art.seed_at(v[0], v[1]) * 3.0)], "foot": foot, "height": cs * 3.7, "y": foot.y, "sway": true})
+				entries.append({"type": "prop", "key": ["tree_oak", "tree_light", "tree_crooked"][int(Art.seed_at(v[0], v[1]) * 3.0)], "foot": foot, "height": PX * lerpf(TREE_H.x, TREE_H.y, Art.seed_at(v[0], v[1], 3)), "y": foot.y, "sway": true})
 		else:
 			var foot := Vector2.ZERO
 			for v in prop["cells"]:
 				foot += map.center_of(Vector2i(v[0], v[1])) * PX
 			foot /= float(prop["cells"].size())
-			entries.append({"type": "prop", "key": prop["kind"], "foot": foot, "height": cs * float(prop.get("h", 1.8)), "y": foot.y, "sway": false})
+			entries.append({"type": "prop", "key": prop["kind"], "foot": foot, "height": PX * float(prop.get("h", PROP_H.get(prop["kind"], 1.8))), "y": foot.y, "sway": false})
 	# Small garden plants, deterministic and kept off all paths and door cells.
 	for pos in def.get("art_gardens", []):
 		if map.at(pos[0], pos[1]) != T.GRASS:
@@ -1394,7 +1408,7 @@ func _draw_roofs(l: Node2D) -> void:
 					var sprite_rect := Rect2(Vector2(rect.position.x + shift, rect.end.y + cs * 0.35 - h), Vector2(rect.size.x, h))
 					var alpha: float = 0.12 if inside else 1.0
 					if inside:
-						Art.surface(l, Art.tex("wood"), rect, TEX_PERIOD)
+						Art.surface(l, Art.tex("wood"), rect, _period(Art.tex("wood")))
 						l.draw_rect(rect, Color(0.22, 0.18, 0.12, 0.85), false, cs * 0.35)
 					# Герой за будинком (дах вищий за стіну) — будинок напівпрозорий, щоб пішака було видно
 					if not inside and hero_pos.y * PX < rect.position.y and sprite_rect.grow(-cs * 0.3).has_point(hero_pos * PX):
@@ -1444,8 +1458,8 @@ func _draw_roofs(l: Node2D) -> void:
 		for t in towers:
 			var c: Vector2 = map.center_of(t) * PX
 			var tr := Rect2(c - Vector2(cs, cs) * 1.1, Vector2(cs, cs) * 2.2)
-			Art.surface(l, Art.tex("masonry"), tr, TEX_PERIOD)
-			Art.surface(l, Art.tex("roof"), Rect2(c - Vector2(cs, cs) * 0.75, Vector2(cs, cs) * 1.5), TEX_PERIOD)
+			Art.surface(l, Art.tex("masonry"), tr, _period(Art.tex("masonry")))
+			Art.surface(l, Art.tex("roof"), Rect2(c - Vector2(cs, cs) * 0.75, Vector2(cs, cs) * 1.5), _period(Art.tex("roof")))
 			l.draw_rect(tr, Color(0.22, 0.18, 0.12, 0.85), false, 2.0)
 	# Брама: підпис і позначка «замкнена»
 	for g in def.get("gates", []):

@@ -48,6 +48,11 @@ func trodden(p: Vector2) -> bool:
 	return model.stage_at(p) >= CLEAR_STAGE
 
 
+## Назва протоптаного в точці (стежка, дорога; порожньо — не протоптано)
+func stage_name(p: Vector2) -> String:
+	return model.stage_name_at(p)
+
+
 ## Клітинки, де змінився ступінь із минулого виклику (декор перезбирає їхні ділянки)
 func take_dirty() -> Array:
 	var out: Array = model.dirty.keys()
