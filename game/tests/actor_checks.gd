@@ -47,8 +47,8 @@ func _init() -> void:
 
 func _data() -> void:
 	ok(R.characteristics().size() == 6, "6 ресурсов пака")
-	ok(R.traumas().size() == 8 and R.diseases().size() == 10 and R.buffs().size() == 5, "состояния пака")
-	ok(R.skills().size() == 18, "18 навыков")
+	ok(R.traumas().size() == 8 and R.diseases().size() == 10 and R.buffs().size() == 9, "состояния пака (+4 эффекта лагеря, 2026-10-29)")
+	ok(R.skills().size() == 19, "19 навыков (с Картографией)")
 	ok(R.pack_skills().size() == 7, "7 навыков пака остались для таблиц опыта")
 	for id in R.traumas().keys() + R.diseases().keys():
 		ok(R.section("treatments").has(id), "лечение описано: " + id)
