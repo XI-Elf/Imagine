@@ -1725,6 +1725,10 @@ msgid " · вода +%d"
 msgstr " · вода +%d"
 
 #: characters/inventory_view.gd
+msgid " · состояние %d %%"
+msgstr " · стан %d %%"
+
+#: characters/inventory_view.gd
 msgid " · сытость +%d"
 msgstr " · ситість +%d"
 
@@ -2448,6 +2452,30 @@ msgstr "віз"
 msgid "повозка стоит: нет лошади"
 msgstr "віз стоїть: немає коня"
 
+#: characters/wear.gd
+msgid "%s развалилось от износа"
+msgstr "%s розлізлося від зносу"
+
+#: characters/wear.gd
+msgid "Нет набора для починки"
+msgstr "Немає набору для лагодження"
+
+#: characters/wear.gd
+msgid "Подлатал: %s — %d %%"
+msgstr "Підлатав: %s — %d %%"
+
+#: characters/wear.gd
+msgid "Починено за %d монет"
+msgstr "Полагоджено за %d монет"
+
+#: characters/wear.gd
+msgid "Починка стоит %d монет, не хватает"
+msgstr "Лагодження коштує %d монет, не вистачає"
+
+#: characters/wear.gd
+msgid "Чинить нечего"
+msgstr "Лагодити нічого"
+
 #: city/city_menu.gd
 msgid "\nЕсть работа: %d"
 msgstr "\nЄ робота: %d"
@@ -2947,6 +2975,10 @@ msgstr "Доручення (%d)"
 #: city/city_world.gd
 msgid "Поручения: %s"
 msgstr "Доручення: %s"
+
+#: city/city_world.gd
+msgid "Починить вещи (%d)"
+msgstr "Полагодити речі (%d)"
 
 #: city/city_world.gd
 msgid "Продать: %s ×%d — %d"
@@ -4076,6 +4108,10 @@ msgid "Антигельминтные средства"
 msgstr "Протиглисні засоби"
 
 #: data/characters/conditions.json
+msgid "В палатке"
+msgstr "У наметі"
+
+#: data/characters/conditions.json
 msgid "Вправить (навык медицины)"
 msgstr "Вправити (навичка медицини)"
 
@@ -4126,6 +4162,10 @@ msgstr "Цілюща мазь"
 #: data/characters/conditions.json
 msgid "Мази + чистота"
 msgstr "Мазі + чистота"
+
+#: data/characters/conditions.json
+msgid "На спальнике"
+msgstr "На спальнику"
 
 #: data/characters/conditions.json
 msgid "Необработанная рана"
@@ -4212,6 +4252,10 @@ msgid "Согревающие зелья + отдых"
 msgstr "Зігрівальні зілля + відпочинок"
 
 #: data/characters/conditions.json
+msgid "Сон на голой земле"
+msgstr "Сон на голій землі"
+
+#: data/characters/conditions.json
 msgid "Сонная болезнь"
 msgstr "Сонна хвороба"
 
@@ -4230,6 +4274,10 @@ msgstr "Ситна їжа"
 #: data/characters/conditions.json
 msgid "Трупная дрожь"
 msgstr "Трупне тремтіння"
+
+#: data/characters/conditions.json
+msgid "У костра"
+msgstr "Біля вогнища"
 
 #: data/characters/conditions.json
 msgid "Холод + истощение"
@@ -7020,8 +7068,16 @@ msgid "Древная монета"
 msgstr "Давна монета"
 
 #: data/cities/items.json
+msgid "Жареное мясо"
+msgstr "Смажене м'ясо"
+
+#: data/cities/items.json
 msgid "Жаропонижающее"
 msgstr "Жарознижувальне"
+
+#: data/cities/items.json
+msgid "Жир"
+msgstr "Жир"
 
 #: data/cities/items.json
 msgid "Камыш"
@@ -7046,6 +7102,10 @@ msgstr "Спис"
 #: data/cities/items.json
 msgid "Короткий меч"
 msgstr "Короткий меч"
+
+#: data/cities/items.json
+msgid "Кость"
+msgstr "Кістка"
 
 #: data/cities/items.json
 msgid "Кремень"
@@ -7092,6 +7152,10 @@ msgid "Меховой плащ"
 msgstr "Хутряний плащ"
 
 #: data/cities/items.json
+msgid "Набор для починки"
+msgstr "Набір для лагодження"
+
+#: data/cities/items.json
 msgid "Набор цветных углей"
 msgstr "Набір кольорових вуглин"
 
@@ -7112,8 +7176,28 @@ msgid "Очищающее зелье"
 msgstr "Очисне зілля"
 
 #: data/cities/items.json
+msgid "Палатка"
+msgstr "Намет"
+
+#: data/cities/items.json
+msgid "Печёные грибы"
+msgstr "Печені гриби"
+
+#: data/cities/items.json
 msgid "Плавник"
 msgstr "Плавник"
+
+#: data/cities/items.json
+msgid "Подгоревшая еда"
+msgstr "Підгоріла їжа"
+
+#: data/cities/items.json
+msgid "Порченое мясо"
+msgstr "Зіпсоване м'ясо"
+
+#: data/cities/items.json
+msgid "Похлёбка из котелка"
+msgstr "Юшка з казанка"
 
 #: data/cities/items.json
 msgid "Ракушки"
@@ -7138,6 +7222,10 @@ msgstr "Солом'яний капелюх"
 #: data/cities/items.json
 msgid "Сомнительные грибы"
 msgstr "Сумнівні гриби"
+
+#: data/cities/items.json
+msgid "Спальник"
+msgstr "Спальник"
 
 #: data/cities/items.json
 msgid "Суконные штаны"
@@ -8375,6 +8463,38 @@ msgstr "туман"
 msgid "ясно"
 msgstr "ясно"
 
+#: data/world/camp.json
+msgid "Заварить травяной отвар"
+msgstr "Заварити трав'яний відвар"
+
+#: data/world/camp.json
+msgid "Завялить мясо в дыму"
+msgstr "Зав'ялити м'ясо в диму"
+
+#: data/world/camp.json
+msgid "Испечь грибы"
+msgstr "Спекти гриби"
+
+#: data/world/camp.json
+msgid "Набрать и вскипятить воду"
+msgstr "Набрати й закип'ятити воду"
+
+#: data/world/camp.json
+msgid "Пожарить мясо"
+msgstr "Підсмажити м'ясо"
+
+#: data/world/camp.json
+msgid "Сварить грибную похлёбку"
+msgstr "Зварити грибну юшку"
+
+#: data/world/camp.json
+msgid "Сварить мясную похлёбку"
+msgstr "Зварити м'ясну юшку"
+
+#: data/world/camp.json
+msgid "Сварить похлёбку из корней"
+msgstr "Зварити юшку з коріння"
+
 #: data/world/settlements.json
 msgid "городок"
 msgstr "містечко"
@@ -9292,6 +9412,10 @@ msgid "конец хода; после боя — вернуться"
 msgstr "кінець ходу; після бою — повернутися"
 
 #: tutorial/tutorial.gd
+msgid "лагерь: костёр (хворост + кремень или факел), готовка, сон — на земле, на спальнике или в палатке; огонь греет, но выдаёт"
+msgstr "табір: вогнище (хмиз + кремінь або смолоскип), готування, сон — на землі, на спальнику чи в наметі; вогонь гріє, але видає"
+
+#: tutorial/tutorial.gd
 msgid "лечиться у лекаря-НПС, если он рядом (до 30 м)"
 msgstr "лікуватися в лікаря-НПС, якщо він поруч (до 30 м)"
 
@@ -9454,6 +9578,130 @@ msgstr "ця довідка (будь-коли, гра на паузі)"
 #: ui/sleep_fx.gd
 msgid "Сон…  %02d:%02d   энергия %d\nлюбая клавиша — проснуться"
 msgstr "Сон…  %02d:%02d   енергія %d\nбудь-яка клавіша — прокинутися"
+#: world/camp.gd
+msgid " (далеко)"
+msgstr " (далеко)"
+
+#: world/camp.gd
+msgid " — без ножа: мяса меньше, шкуры порваны"
+msgstr " — без ножа: м'яса менше, шкури порвані"
+
+#: world/camp.gd
+msgid "%s (%d мин)%s"
+msgstr "%s (%d хв)%s"
+
+#: world/camp.gd
+msgid ", у огня"
+msgstr ", біля вогню"
+
+#: world/camp.gd
+msgid "Закрыть  [K]"
+msgstr "Закрити  [K]"
+
+#: world/camp.gd
+msgid "Затоптать костёр"
+msgstr "Затоптати вогнище"
+
+#: world/camp.gd
+msgid "Износ: %s"
+msgstr "Знос: %s"
+
+#: world/camp.gd
+msgid "Искры гаснут в сырых ветках. Ещё раз?"
+msgstr "Іскри гаснуть у сирому гіллі. Ще раз?"
+
+#: world/camp.gd
+msgid "Костра нет"
+msgstr "Вогнища немає"
+
+#: world/camp.gd
+msgid "Костёр горит ещё %.1f ч%s"
+msgstr "Вогнище горить ще %.1f год%s"
+
+#: world/camp.gd
+msgid "Костёр затоптан"
+msgstr "Вогнище затоптано"
+
+#: world/camp.gd
+msgid "Костёр разгорелся (%s)"
+msgstr "Вогнище розгорілося (%s)"
+
+#: world/camp.gd
+msgid "Лагерь"
+msgstr "Табір"
+
+#: world/camp.gd
+msgid "Лечь спать (%s%s)"
+msgstr "Лягти спати (%s%s)"
+
+#: world/camp.gd
+msgid "Нечего подбросить"
+msgstr "Нічого підкинути"
+
+#: world/camp.gd
+msgid "Нечем высечь огонь: нужен кремень или факел"
+msgstr "Нічим викресати вогонь: потрібен кремінь або смолоскип"
+
+#: world/camp.gd
+msgid "Нечем топить: нужен хворост или плавник (F — обшарить округу)"
+msgstr "Нічим палити: потрібен хмиз або плавник (F — обнишпорити околицю)"
+
+#: world/camp.gd
+msgid "Ночлег: %s"
+msgstr "Нічліг: %s"
+
+#: world/camp.gd
+msgid "Подбросил дров: гореть ещё %.1f ч"
+msgstr "Підкинув дров: горіти ще %.1f год"
+
+#: world/camp.gd
+msgid "Подбросить дров (+%d ч)"
+msgstr "Підкинути дров (+%d год)"
+
+#: world/camp.gd
+msgid "Подгорело: %s"
+msgstr "Підгоріло: %s"
+
+#: world/camp.gd
+msgid "Подлатать вещь набором"
+msgstr "Підлатати річ набором"
+
+#: world/camp.gd
+msgid "Развести костёр (шанс %d %%)"
+msgstr "Розпалити вогнище (шанс %d %%)"
+
+#: world/camp.gd
+msgid "Разделал туши (%d): %d мин"
+msgstr "Розібрав туші (%d): %d хв"
+
+#: world/camp.gd
+msgid "больше не унести"
+msgstr "більше не винести"
+
+#: world/camp.gd
+msgid "в палатке"
+msgstr "у наметі"
+
+#: world/camp.gd
+msgid "на голой земле"
+msgstr "на голій землі"
+
+#: world/camp.gd
+msgid "на спальнике"
+msgstr "на спальнику"
+
+#: world/camp.gd
+msgid "нет: %s"
+msgstr "немає: %s"
+
+#: world/camp.gd
+msgid "нужен костёр"
+msgstr "потрібне вогнище"
+
+#: world/camp.gd
+msgid "нужна вода рядом"
+msgstr "потрібна вода поруч"
+
 #: world/foraging.gd
 msgid "Здесь искать нечего"
 msgstr "Тут шукати нічого"

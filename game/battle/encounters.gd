@@ -101,6 +101,7 @@ static func concealment(hero: Actor, env: Dictionary, ctx: Dictionary = {}) -> f
 	c -= 0.004 * maxf(hero.carried_kg - 15.0, 0.0)     # брязкіт важкої поклажі
 	if Sheet.has(hero, "ghost"):
 		c += 0.1
+	c += hero._sum("conceal")   # вогнище видає (світло й дим), намет ховає (world/camp.gd, conditions.json)
 	c *= 0.5 + 0.5 * hero.mult("sneak")                # риси «Тихий» / «Гучний»
 	return clampf(c, 0.0, 0.9)
 

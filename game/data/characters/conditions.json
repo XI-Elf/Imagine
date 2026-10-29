@@ -150,6 +150,30 @@
       "effects": {"ignore_pain": true, "energy_restore": 10},
       "duration_hours": 3
     },
+    "by_fire": {
+      "name_ru": "У костра",
+      "name_en": "By the Fire",
+      "effects": {"cold_resist_c": 10, "sleep_energy": 0.15, "conceal": -0.15},
+      "duration_hours": 1.0
+    },
+    "shelter_tent": {
+      "name_ru": "В палатке",
+      "name_en": "In a Tent",
+      "effects": {"cold_resist_c": 5, "sleep_energy": 0.2, "conceal": 0.08},
+      "duration_hours": 1.0
+    },
+    "shelter_bedroll": {
+      "name_ru": "На спальнике",
+      "name_en": "On a Bedroll",
+      "effects": {"cold_resist_c": 3, "sleep_energy": 0.05},
+      "duration_hours": 1.0
+    },
+    "sleep_open": {
+      "name_ru": "Сон на голой земле",
+      "name_en": "Sleeping Rough",
+      "effects": {"cold_resist_c": -2, "sleep_energy": -0.3},
+      "duration_hours": 1.0
+    },
     "rested": {
       "name_ru": "Отдохнувший",
       "name_en": "Rested",
