@@ -10,8 +10,11 @@ extends Node2D
 ## коли пройдено більшу частину. Вага клітинки = 1 / швидкість місцевості; вода й прокляття — дорожчі
 ## (WATER_COST, RAD_COST) [Q19: не баланс, залишено]: річку перепливе там, де вужче, а в калюжу посеред суходолу не полізе.
 ## Протоптані дороги (world/trails.gd) дешевші за ступенем — шлях надає їм перевагу.
+## Пункт 12 (Huzzah 2026-10-29): біля героя, на початку лінії, — скільки лишилося йти, за Розумом героя:
+## 1–3 — словами («рукой подать» … «очень далеко»), 4–6 — округлено, 7+ — точно.
 
 const R := preload("res://characters/actor_rules.gd")
+const Sheet := preload("res://characters/sheet.gd")
 
 const CELLS_ALONG: float = 90.0
 const MIN_CELL_M: float = 12.0
@@ -294,6 +297,37 @@ func steer(pos: Vector2) -> Vector2:
 	return (points[0] - pos).normalized()
 
 
+## Скільки метрів лишилося йти шляхом
+func remaining_m() -> float:
+	if not active() or cast.hero.is_empty():
+		return 0.0
+	var d: float = 0.0
+	var prev: Vector2 = cast.hero["pos"]
+	for q in points:
+		d += prev.distance_to(q)
+		prev = q
+	return d
+
+
+## Відстань для гравця за Розумом (пункт 12)
+static func distance_words(m: float, iq: int) -> String:
+	if iq <= 3:
+		if m < 400.0:
+			return I18n.t("рукой подать")
+		if m < 2000.0:
+			return I18n.t("близко")
+		if m < 7000.0:
+			return I18n.t("далеко")
+		return I18n.t("очень далеко")
+	if iq <= 6:
+		if m < 1000.0:
+			return I18n.t("около %d м") % maxi(int(round(m / 100.0)) * 100, 100)
+		return I18n.t("около %d км") % maxi(int(round(m / 1000.0)), 1)
+	if m < 1000.0:
+		return I18n.t("%d м") % (int(round(m / 10.0)) * 10)
+	return I18n.t("%.1f км") % (m / 1000.0)
+
+
 ## Остання точка шляху (INF — шлях не на останньому відрізку)
 func final_point() -> Vector2:
 	return points[0] if active() and points.size() == 1 else Vector2.INF
@@ -351,6 +385,11 @@ func _draw() -> void:
 	if line.size() > 1:
 		draw_polyline(line, Color(0, 0, 0, 0.55), 4.0, true)
 		draw_polyline(line, col, 2.0, true)
+		var font: Font = ThemeDB.fallback_font
+		var t: String = distance_words(remaining_m(), Sheet.talk_int(cast.hero["actor"]))
+		var at: Vector2 = line[0] + Vector2(14, -14)
+		draw_string_outline(font, at, t, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 5, Color(0, 0, 0, 0.8))
+		draw_string(font, at, t, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
 	var tp: Vector2 = game.world_to_screen(target)
 	draw_arc(tp, 9.0, 0.0, TAU, 24, Color(0, 0, 0, 0.7), 4.0)
 	draw_arc(tp, 9.0, 0.0, TAU, 24, col, 2.0)
