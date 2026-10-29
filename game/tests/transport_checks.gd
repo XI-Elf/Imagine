@@ -162,7 +162,8 @@ func _in_game() -> void:
 	_press_r()
 	await frames(2)
 	ok(hero.mount == "horse" and bool(W.inventory.get("ride", false)), "R — верхом")
-	ok(cast.transport.rider_lift(40.0) > 0.0, "в седле фигурка героя выше")
+	# На карті лише точки (cast.DOTS_ONLY): фігурки немає — і піднімати нічого
+	ok(cast.transport.rider_lift(40.0) > 0.0 if not cast.DOTS_ONLY else cast.transport.rider_lift(40.0) == 0.0, "в седле фигурка героя выше (или на карте только точка)")
 	var start: Vector2 = hb["pos"]
 	Input.action_press("ui_right")
 	await create_timer(1.5).timeout

@@ -33,6 +33,9 @@ const DRINK_REACH_M: float = 25.0
 const WATER_SEARCH_M: float = 1500.0
 const FORAGE_COOLDOWN_S: float = 3.0
 const HEAL_REACH_M: float = 30.0
+## Загальна карта: герой і НПС — лише точки за будь-якого масштабу (Huzzah 2026-10-29: «тут усе ще текстура
+## персонажа, а має бути точка»); фігурки лишилися в місті й у бою
+const DOTS_ONLY: bool = true
 const HEAL_RETRY_S: float = 20.0        # реальних секунд між спробами лікування в одного НПС
 const TOWER_REACH_M: float = 8.0        # F біля підніжжя сигнальної вежі — залізти
 const TOWER_VIEW_M: float = 2500.0      # [ВРЕМЕННО] огляд з вежі вдень
@@ -683,7 +686,7 @@ func _draw() -> void:
 		# На горі фігура ближче до ока: трохи більша, тінь іде далі від ніг
 		var up: float = game.height_at(b["pos"]) / game.HEIGHT_MAX_M if game.has_method("height_at") else 0.0
 		draw_circle(sp, r + 1.5, Color(0, 0, 0, 0.8))
-		if game.zoom > 3.0:
+		if game.zoom > 3.0 and not DOTS_ONLY:
 			var hpx: float = clampf(1.9 * game.zoom, 16.0, 76.0) * (1.0 + up * 0.35)
 			if up > 0.02:
 				draw_set_transform(sp + Vector2(hpx * 0.12, hpx * 0.06) * (1.0 + up * 2.0), 0.0, Vector2(1.0, 0.35))

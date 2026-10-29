@@ -159,7 +159,7 @@ func _hero_px() -> float:
 ## На скільки пікселів підняти фігурку героя (cast._draw): сидить у сідлі або на возі
 func rider_lift(hpx: float) -> float:
 	var a: Actor = _hero()
-	if a == null or cast.hero_away or cast.game.zoom <= 3.0:
+	if a == null or cast.hero_away or cast.game.zoom <= 3.0 or cast.DOTS_ONLY:
 		return 0.0
 	match a.mount:
 		"horse":
@@ -182,8 +182,8 @@ func _draw() -> void:
 	var sp: Vector2 = g.world_to_screen(cast.hero["pos"])
 	if not get_viewport_rect().grow(200.0).has_point(sp):
 		return
-	if g.zoom <= 3.0:
-		# Здалеку: бура точка коня за кружечком героя, віз — квадратик
+	if g.zoom <= 3.0 or cast.DOTS_ONLY:
+		# Здалеку (і завжди, поки на карті лише точки): бура точка коня за кружечком героя, віз — квадратик
 		var r: float = clampf(0.6 * g.zoom, 4.0, 14.0)
 		var hp: Vector2 = sp + Vector2(-_face * r * 1.3, -r * 0.3)
 		if cart:
