@@ -48,6 +48,23 @@ static func add(bag: Dictionary, id: String, n: int = 1) -> void:
 		bag["items"][id] = c
 
 
+## Пункт 11 (Huzzah 2026-10-29): пергамент і вуглик є в кожного персонажа, їх не викинути й не продати
+const KIT: Array = ["parchment", "charcoal_stick"]
+
+
+static func bound(id: String) -> bool:
+	return bool(item(id).get("bound", false))
+
+
+## Покласти в сумку пергамент і вуглик, якщо їх немає
+static func ensure_kit(bag: Dictionary) -> void:
+	if not bag.has("items"):
+		return
+	for id in KIT:
+		if count(bag, id) <= 0:
+			add(bag, id, 1)
+
+
 static func weight(bag: Dictionary) -> float:
 	var kg: float = 0.0
 	for id in bag["items"]:
@@ -98,6 +115,8 @@ static func buy(bag: Dictionary, stock: Dictionary, id: String, buyer: Actor, tr
 static func sell(bag: Dictionary, stock: Dictionary, buys: Array, id: String, seller: Actor, trader: Actor = null) -> String:
 	if count(bag, id) <= 0:
 		return I18n.t("Нечего продать")
+	if bound(id):
+		return I18n.t("Это не продаётся")
 	if not buys.has(id) and not stock.has(id):
 		return I18n.t("Такое здесь не берут")
 	bag["money"] = int(bag["money"]) + sell_price(id, seller, trader)

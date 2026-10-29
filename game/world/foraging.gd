@@ -1,6 +1,7 @@
 extends RefCounted
 ## Пошук у полі (F, пункт 16 Huzzah 2026-10-29): звідки беруться їжа й матеріали поза містом.
-## Пошук займає час і сили, знахідки йдуть у сумку героя. Що можна знайти — за біомом (data/world/forage.json),
+## Пошук займає годину гри й сили; знайдене показується у вікні «Найдено» (world/loot_window.gd), гравець бере, що
+## унесе, решта лишається на місці stash_h годин. Інструменти в сумці (forage.json tools) і факел уночі дають більше. Що можна знайти — за біомом (data/world/forage.json),
 ## шанс множиться на search_efficiency (Чутьё, Виживання, дари). Обшукане місце (клітина cell_m)
 ## порожнє regrow_h годин. Сумнівні гриби трапляються героям із низьким Чуттям.
 ## Числа [ВРЕМЕННО]. Пошук шумить: після нього Worlds кидає перевірку нападу (battle/encounters.gd).
@@ -44,9 +45,22 @@ static func table(biome: int) -> Dictionary:
 	return data().get("biomes", {}).get(str(biome), {})
 
 
-## Пошук. searched — пам'ять обшуканих клітин (зберігається з героєм), bag — сумка.
+## Інструменти в сумці: множники шансу для речей (пошук, як у виживанні: з топором — хмиз, з ножем — трави)
+static func tool_mult(id: String, bag: Dictionary, night: bool) -> float:
+	var m: float = 1.0
+	var tools: Dictionary = data().get("tools", {})
+	for t in tools:
+		if Trade.count(bag, t) > 0:
+			m *= float(tools[t].get(id, 1.0))
+	if night:
+		m *= 1.0 if Trade.count(bag, "torch") > 0 else num("night_mult", 0.6)
+	return m
+
+
+## Пошук. searched — пам'ять обшуканих клітин, bag — сумка (інструменти). Знайдене НЕ кладеться в сумку:
+## гравець сам вибирає у вікні «Найдено» (world/loot_window.gd), решта лишається на місці (stash).
 ## Повертає {ok, found: {id: n}, text, minutes}. ok = false: шукати тут не можна (вода, обшукано, немає сил)
-static func search(a: Actor, biome: int, p: Vector2, now: float, searched: Dictionary, bag: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+static func search(a: Actor, biome: int, p: Vector2, now: float, searched: Dictionary, bag: Dictionary, rng: RandomNumberGenerator, night: bool = false) -> Dictionary:
 	var out: Dictionary = {"ok": false, "found": {}, "text": "", "minutes": 0.0}
 	var t: Dictionary = table(biome)
 	if t.is_empty():
@@ -61,14 +75,14 @@ static func search(a: Actor, biome: int, p: Vector2, now: float, searched: Dicti
 		out["text"] = I18n.t("Нет сил шарить по кустам: отдохните")
 		return out
 	out["ok"] = true
-	out["minutes"] = num("minutes", 30.0)
+	out["minutes"] = num("minutes", 60.0)
 	a.add_res("stamina", -cost)
-	searched[cell_key(p)] = now + num("regrow_h", 24.0) * 3600.0
+	searched[cell_key(p)] = now + num("regrow_h", 72.0) * 3600.0
 	var eff: float = float(a.derived()["search_efficiency"])
 	var found: Dictionary = out["found"]
 	for id in t:
 		var l: Array = t[id]
-		if rng.randf() >= minf(float(l[0]) * eff, 0.95):
+		if rng.randf() >= minf(float(l[0]) * eff * tool_mult(String(id), bag, night), 0.95):
 			continue
 		var n: int = rng.randi_range(int(l[1]), int(l[2]))
 		var got: String = String(id)
@@ -76,18 +90,44 @@ static func search(a: Actor, biome: int, p: Vector2, now: float, searched: Dicti
 		if got == "mushrooms" and a.stat("per") < num("toadstool_below_per", 5.0) and rng.randf() < num("toadstool_chance", 0.35):
 			got = "toadstool"
 		found[got] = int(found.get(got, 0)) + n
-	for id in found:
-		Trade.add(bag, id, int(found[id]))
 	a.add_xp("survival", 1.0 + 0.5 * found.size())
-	var parts: PackedStringArray = []
-	for id in found:
-		parts.append("%s ×%d" % [Trade.item_name(id), int(found[id])])
-	out["text"] = I18n.t("Обшарил округу (%d мин): %s") % [int(out["minutes"]), I18n.t("ничего") if parts.is_empty() else ", ".join(parts)]
+	out["text"] = I18n.t("Обшарил округу (%d мин): %s") % [int(out["minutes"]), I18n.t("ничего") if found.is_empty() else found_text(found)]
 	return out
 
 
+static func found_text(found: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for id in found:
+		parts.append("%s ×%d" % [Trade.item_name(id), int(found[id])])
+	return ", ".join(parts)
+
+
+## Що лишилося на місці після вибору (stash: клітина -> {until, items}); з'єднується з новою знахідкою
+static func take_stash(stash: Dictionary, p: Vector2, now: float) -> Dictionary:
+	var k: String = cell_key(p)
+	var e: Dictionary = stash.get(k, {})
+	stash.erase(k)
+	if e.is_empty() or float(e.get("until", 0.0)) <= now:
+		return {}
+	return e.get("items", {})
+
+
+static func leave_stash(stash: Dictionary, p: Vector2, now: float, items: Dictionary) -> void:
+	var rest: Dictionary = {}
+	for id in items:
+		if int(items[id]) > 0:
+			rest[id] = int(items[id])
+	if rest.is_empty():
+		stash.erase(cell_key(p))
+	else:
+		stash[cell_key(p)] = {"until": now + num("stash_h", 72.0) * 3600.0, "items": rest}
+
+
 ## Для збереження: прибрати клітини, що вже відросли
-static func prune(searched: Dictionary, now: float) -> void:
+static func prune(searched: Dictionary, now: float, stash: Dictionary = {}) -> void:
 	for k in searched.keys():
 		if float(searched[k]) <= now:
 			searched.erase(k)
+	for k in stash.keys():
+		if float(stash[k].get("until", 0.0)) <= now:
+			stash.erase(k)

@@ -24,6 +24,8 @@ const Codex := preload("res://world/codex.gd")
 const Trade := preload("res://city/trade.gd")
 const TransportScript := preload("res://characters/transport.gd")
 const Foraging := preload("res://world/foraging.gd")
+const ParchmentScript := preload("res://world/parchment.gd")
+const LootWindow := preload("res://world/loot_window.gd")
 
 const OVERWORLD_NPCS: bool = false
 const NPC_COUNT: int = 8
@@ -58,11 +60,14 @@ var _last_clock: float = -1.0
 var _forage_cd: float = 0.0
 var ruins_looted: Dictionary = {}       # руїни на карті (world/ruins.gd): "x:y" -> ігрові секунди обшуку
 var field_searched: Dictionary = {}     # пошук у полі (world/foraging.gd): клітина -> до коли порожня
+var field_stash: Dictionary = {}        # не взяте після пошуку: клітина -> {until, items}
+var loot: CanvasLayer                   # вікно «Найдено» (world/loot_window.gd)
 var _rng := RandomNumberGenerator.new()
 var _status: Label
 var route: Node2D               # хід мишею: шлях героя до точки (hero_route.gd)
 var transport: Node2D           # кінь і віз героя (transport.gd): R — верхи / пішки
 var death: Node                 # екран загибелі героя й нового персонажа (hero_death.gd)
+var parchment: CanvasLayer      # карта героя на M: пергамент, вуглик, обривки карти (world/parchment.gd)
 
 
 func setup(g: Node2D) -> void:
@@ -89,6 +94,9 @@ func setup(g: Node2D) -> void:
 	death = HeroDeath.new()
 	add_child(death)
 	death.setup(self)
+	parchment = ParchmentScript.new()
+	add_child(parchment)
+	parchment.setup(g)
 
 
 # Спільна сумка героя — у менеджера світів (worlds/worlds.gd); без нього своя
@@ -167,6 +175,10 @@ func spawn_hero(at: Vector2, params: Dictionary = {}) -> void:
 	hero = _add(a, p, true)
 	if route != null:
 		route.cancel()
+	# Новий персонаж — новий чистий аркуш пергаменту й вуглик (пункт 11)
+	if parchment != null:
+		parchment.clear()
+	Trade.ensure_kit(_inventory())
 	controls_hero = true
 	if OVERWORLD_NPCS and bodies.filter(func(x): return not x["hero"]).is_empty():
 		_spawn_npcs(p)
@@ -412,7 +424,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
-	if _creator != null or (death != null and death.active):
+	if _creator != null or (death != null and death.active) or (loot != null and loot.is_open()) or (parchment != null and parchment.is_open()):
 		return
 	match event.physical_keycode:
 		KEY_G:
@@ -539,18 +551,43 @@ func search_ruins(site: Dictionary) -> String:
 	return msg
 
 
-## Пошук у полі (пункт 16): час іде, знахідки в сумку; шум пошуку може привернути ворогів (Worlds.noise_check)
+## Пошук у полі (пункт 16): година гри, знайдене (з тим, що лишилося тут раніше) — у вікні «Найдено»;
+## шум пошуку може привернути ворогів (Worlds.noise_check), тоді знахідки лишаються на місці
 func search_field() -> String:
 	var a: Actor = hero["actor"]
 	var now: float = game.clock.total_seconds
-	var r: Dictionary = Foraging.search(a, game.biome_at(hero["pos"]), hero["pos"], now, field_searched, _inventory(), _rng)
+	var pos: Vector2 = hero["pos"]
+	var env: Dictionary = WorldEnv.sample(game, pos)
+	var r: Dictionary = Foraging.search(a, game.biome_at(pos), pos, now, field_searched, _inventory(), _rng, bool(env.get("night", false)))
 	if not bool(r["ok"]):
 		return String(r["text"])
+	var found: Dictionary = r["found"]
+	var old: Dictionary = Foraging.take_stash(field_stash, pos, now)
+	for id in old:
+		found[id] = int(found.get(id, 0)) + int(old[id])
 	game.clock._set_total(now + float(r["minutes"]) * 60.0)
 	var wm: Node = get_node_or_null("/root/Worlds")
-	if wm != null and wm.has_method("noise_check"):
-		wm.noise_check(float(r["minutes"]) / 60.0)
+	if wm != null and wm.has_method("noise_check") and wm.noise_check(float(r["minutes"]) / 60.0):
+		Foraging.leave_stash(field_stash, pos, game.clock.total_seconds, found)
+		return I18n.t("Пока искали, вас выследили")
+	if found.is_empty():
+		return String(r["text"])
+	open_loot(found, pos)
 	return String(r["text"])
+
+
+func open_loot(found: Dictionary, pos: Vector2) -> void:
+	if loot == null:
+		loot = LootWindow.new()
+		add_child(loot)
+	hold_hero = true
+	loot.open(found, I18n.t("Найдено"), _inventory(), hero["actor"])
+	var cb := func(rest: Dictionary) -> void:
+		hold_hero = false
+		Foraging.leave_stash(field_stash, pos, game.clock.total_seconds, rest)
+		if not rest.is_empty():
+			_event(I18n.t("Оставлено на месте: %s") % Foraging.found_text(rest))
+	loot.done.connect(cb, CONNECT_ONE_SHOT)
 
 
 func _hero_alive() -> bool:
@@ -826,8 +863,9 @@ func to_dict() -> Dictionary:
 	var list: Array = []
 	for b in bodies:
 		list.append({"actor": b["actor"].to_dict(), "pos": b["pos"], "home": b["home"], "hero": b["hero"], "kit": b["kit"], "restock_at": b["restock_at"]})
-	Foraging.prune(field_searched, game.clock.total_seconds if game != null and game.clock != null else 0.0)
-	return {"bodies": list, "controls_hero": controls_hero, "ruins_looted": ruins_looted.duplicate(), "field_searched": field_searched.duplicate()}
+	Foraging.prune(field_searched, game.clock.total_seconds if game != null and game.clock != null else 0.0, field_stash)
+	return {"bodies": list, "controls_hero": controls_hero, "ruins_looted": ruins_looted.duplicate(), "field_searched": field_searched.duplicate(), "field_stash": field_stash.duplicate(true),
+		"parchment": parchment.to_dict() if parchment != null else {}}
 
 
 func load_dict(d: Dictionary) -> void:
@@ -846,6 +884,11 @@ func load_dict(d: Dictionary) -> void:
 	controls_hero = bool(d.get("controls_hero", false)) and not hero.is_empty()
 	ruins_looted = d.get("ruins_looted", {}).duplicate()
 	field_searched = d.get("field_searched", {}).duplicate()
+	field_stash = d.get("field_stash", {}).duplicate(true)
+	if parchment != null:
+		parchment.load_dict(d.get("parchment", {}))
+	if not hero.is_empty():
+		Trade.ensure_kit(_inventory())
 	_last_clock = -1.0
 	if route != null:
 		route.cancel()
