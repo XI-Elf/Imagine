@@ -21,6 +21,7 @@ ComicSkin="*res://ui/comic_skin.gd"
 Worlds="*res://worlds/worlds.gd"
 Tutorial="*res://tutorial/tutorial.gd"
 Sfx="*res://audio/sfx.gd"
+Music="*res://audio/music.gd"
 
 [display]
 
