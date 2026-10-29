@@ -244,7 +244,7 @@ func _game() -> void:
 	ok(a.traits.has("quiet") and a.profile.has("biography"), "у героя черты и история")
 	if game.get("settlements") != null:
 		ok(cast.hero["pos"].distance_to(game.settlements.spawn_point()) < 600.0, "герой у ворот города")
-	ok(W == null or (W.inventory["items"] == {"leather_jacket": 1, "water_flask": 2} and String(W.inventory.get("equipped", {}).get("body", "")) == "leather_jacket" and int(W.inventory["money"]) == 0), "новая игра: надетая кожаная куртка (доспех в бою) и две фляги воды")
+	ok(W == null or (W.inventory["items"] == {"leather_jacket": 1, "water_flask": 2, "parchment": 1, "charcoal_stick": 1} and String(W.inventory.get("equipped", {}).get("body", "")) == "leather_jacket" and int(W.inventory["money"]) == 0), "новая игра: надетая кожаная куртка (доспех в бою), две фляги воды, пергамент и уголёк")
 	game.zoom = 0.6
 	key(KEY_I)
 	await frames(3)
