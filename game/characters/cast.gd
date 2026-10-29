@@ -26,6 +26,7 @@ const TransportScript := preload("res://characters/transport.gd")
 const Foraging := preload("res://world/foraging.gd")
 const ParchmentScript := preload("res://world/parchment.gd")
 const LootWindow := preload("res://world/loot_window.gd")
+const CampScript := preload("res://world/camp.gd")
 
 const OVERWORLD_NPCS: bool = false
 const NPC_COUNT: int = 8
@@ -55,6 +56,7 @@ var ruins_looted: Dictionary = {}       # руїни на карті (world/ruin
 var field_searched: Dictionary = {}     # пошук у полі (world/foraging.gd): клітина -> до коли порожня
 var field_stash: Dictionary = {}        # не взяте після пошуку: клітина -> {until, items}
 var loot: CanvasLayer                   # вікно «Найдено» (world/loot_window.gd)
+var camp: CanvasLayer                   # табір у полі на K: вогнище, готування, сон в укритті (world/camp.gd)
 var _rng := RandomNumberGenerator.new()
 var _status: Label
 var route: Node2D               # хід мишею: шлях героя до точки (hero_route.gd)
@@ -90,6 +92,9 @@ func setup(g: Node2D) -> void:
 	parchment = ParchmentScript.new()
 	add_child(parchment)
 	parchment.setup(g)
+	camp = CampScript.new()
+	add_child(camp)
+	camp.setup(self)
 
 
 # Спільна сумка героя — у менеджера світів (worlds/worlds.gd); без нього своя
@@ -313,6 +318,8 @@ func _process(delta: float) -> void:
 	_last_clock = now
 	_forage_cd = maxf(_forage_cd - delta, 0.0)
 	var focus: Vector2 = hero["pos"] if not hero.is_empty() else game.cam_pos
+	if camp != null and not hero.is_empty() and hero["actor"].alive:
+		camp.tick()
 	for b in bodies:
 		var a: Actor = b["actor"]
 		if not a.alive:
@@ -417,7 +424,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
-	if _creator != null or (death != null and death.active) or (loot != null and loot.is_open()) or (parchment != null and parchment.is_open()):
+	if _creator != null or (death != null and death.active) or (loot != null and loot.is_open()) or (parchment != null and parchment.is_open()) or (camp != null and camp.is_open()):
 		return
 	match event.physical_keycode:
 		KEY_G:
@@ -433,6 +440,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_TAB:
 			if not hero.is_empty():
 				window.toggle("bag")
+		KEY_K:
+			if _hero_alive():
+				camp.open()
 		KEY_Z:
 			if _hero_alive():
 				hero["actor"].set_sleep(not hero["actor"].sleeping)
@@ -523,6 +533,21 @@ func search_field() -> String:
 		return String(r["text"])
 	open_loot(found, pos)
 	return String(r["text"])
+
+
+## Після бою на загальній карті: туші вбитих звірів — розібрати (world/camp.gd), здобич — у вікно «Найдено»
+func after_battle(result: Dictionary) -> void:
+	if String(result.get("text", "")) != "":
+		_event(String(result["text"]))
+	if String(result.get("outcome", "")) != "win" or not _hero_alive() or camp == null:
+		return
+	var r: Dictionary = camp.butcher(result.get("beasts", []))
+	if r["found"].is_empty():
+		return
+	game.clock._set_total(game.clock.total_seconds + float(r["minutes"]) * 60.0)
+	hero["actor"].add_xp("survival", 1.0)
+	_event(String(r["text"]))
+	open_loot(r["found"], hero["pos"])
 
 
 func open_loot(found: Dictionary, pos: Vector2) -> void:
@@ -675,6 +700,7 @@ func _draw() -> void:
 	var font: Font = ThemeDB.fallback_font
 	var vp: Rect2 = get_viewport_rect().grow(40.0)
 	_draw_ruins(font)
+	_draw_campfire()
 	for b in bodies:
 		var a: Actor = b["actor"]
 		var sp: Vector2 = game.world_to_screen(b["pos"])
@@ -713,6 +739,21 @@ func _draw() -> void:
 			var hp: float = a.res["health"] / a.max_of("health")
 			draw_rect(Rect2(sp + Vector2(-w / 2, r + 4), Vector2(w, 4)), Color(0, 0, 0, 0.8))
 			draw_rect(Rect2(sp + Vector2(-w / 2, r + 4), Vector2(w * hp, 4)), Color(0.85, 0.2, 0.2) if hp < 0.3 else Color(0.4, 0.85, 0.35))
+
+
+## Вогнище табору (world/camp.gd): жар і язики полум'я, що тремтять
+func _draw_campfire() -> void:
+	if camp == null or not camp.fire_lit():
+		return
+	var sp: Vector2 = game.world_to_screen(camp.fire_pos())
+	var r: float = clampf(1.2 * game.zoom, 5.0, 26.0)
+	var t: float = Time.get_ticks_msec() / 1000.0
+	draw_circle(sp, r * 2.2, Color(1.0, 0.55, 0.15, 0.12))
+	draw_circle(sp, r, Color(0.35, 0.18, 0.08))
+	for k in 3:
+		var fl: float = r * (0.9 + 0.25 * sin(t * 7.0 + k * 2.1))
+		draw_colored_polygon(PackedVector2Array([sp + Vector2(-r * 0.5 + k * r * 0.5 - r * 0.25, 0), sp + Vector2(-r * 0.25 + k * r * 0.5, -fl * 1.4), sp + Vector2(k * r * 0.5 - r * 0.25 + r * 0.25, 0)]),
+			Color(1.0, 0.45 + 0.2 * k, 0.1, 0.85))
 
 
 ## Руїни на карті — руїни машин (Q31 B): кістяк крокуючої машини або купол бункера (за клітинкою руїн) і каміння;
@@ -800,7 +841,7 @@ func to_dict() -> Dictionary:
 		list.append({"actor": b["actor"].to_dict(), "pos": b["pos"], "home": b["home"], "hero": b["hero"], "kit": b["kit"], "restock_at": b["restock_at"]})
 	Foraging.prune(field_searched, game.clock.total_seconds if game != null and game.clock != null else 0.0, field_stash)
 	return {"bodies": list, "controls_hero": controls_hero, "ruins_looted": ruins_looted.duplicate(), "field_searched": field_searched.duplicate(), "field_stash": field_stash.duplicate(true),
-		"parchment": parchment.to_dict() if parchment != null else {}}
+		"parchment": parchment.to_dict() if parchment != null else {}, "campfire": camp.to_dict() if camp != null else {}}
 
 
 func load_dict(d: Dictionary) -> void:
@@ -822,6 +863,8 @@ func load_dict(d: Dictionary) -> void:
 	field_stash = d.get("field_stash", {}).duplicate(true)
 	if parchment != null:
 		parchment.load_dict(d.get("parchment", {}))
+	if camp != null:
+		camp.load_dict(d.get("campfire", {}))
 	if not hero.is_empty():
 		Trade.ensure_kit(_inventory())
 	_last_clock = -1.0

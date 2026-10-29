@@ -3017,7 +3017,9 @@
         "knife": 2,
         "horse": 1,
         "color_charcoals": 2,
-        "map_fragment": 3
+        "map_fragment": 3,
+        "bedroll": 2,
+        "tent": 1
       },
       "buys": [
         "hide",
@@ -3036,7 +3038,10 @@
         "flint",
         "reed",
         "brushwood",
-        "driftwood"
+        "driftwood",
+        "raw_meat",
+        "bone",
+        "fat"
       ],
       "lines": [
         "Всё нужное в дорогу, недорого.",
@@ -3126,7 +3131,8 @@
         "knife": 4,
         "axe": 3,
         "splint": 2,
-        "cart": 1
+        "cart": 1,
+        "repair_kit": 3
       },
       "buys": [
         "scrap",

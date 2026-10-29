@@ -144,6 +144,7 @@ var _portrait: Control                   # портрет співрозмовн
 var _type_tween: Tween
 var dlg_state: Dictionary = {}           # пункт 7: id жителя -> {node, attitude, flags} (city/dialogue.gd)
 const Dialogue := preload("res://city/dialogue.gd")
+const WearRef := preload("res://characters/wear.gd")
 const PortraitScript := preload("res://city/portrait.gd")
 const TALK_KINDS: Array = ["talk", "quests", "trade", "craft"]
 var craft_rng := RandomNumberGenerator.new()   # удача роботи своїми руками в майстерні (craft.gd)
@@ -971,6 +972,13 @@ func talk(n: Dictionary) -> void:
 		var sv: Dictionary = nd.get("services", {})
 		if sv.has("room") and working:
 			opts.append([I18n.t("Снять комнату до утра (%d)") % int(sv["room"]), func(): rent_room(n)])
+		# Механіка 6: майстер лагодить речі свого ремесла (characters/wear.gd)
+		var rm: String = String(nd.get("id", "")) if String(nd.get("id", "")) in ["smith", "tanner", "weaver"] else ""
+		if rm != "" and working and not WearRef.damaged(bag, rm).is_empty():
+			var fee: int = 0
+			for wid in WearRef.damaged(bag, rm):
+				fee += WearRef.repair_fee(bag, wid)
+			opts.append([I18n.t("Починить вещи (%d)") % fee, func(): _say(WearRef.repair_at(bag, rm)); talk(n)])
 		if sv.has("heal") and working:
 			opts.append([I18n.t("Лечиться (%d)") % int(sv["heal"]), func(): heal(n)])
 		if nd.has("gate") and map.closed_gates.has(String(nd["gate"])):

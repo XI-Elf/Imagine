@@ -32,6 +32,7 @@ const BATTLE_SCENE := "res://battle/battle.tscn"
 const ENCOUNTERS := "res://battle/encounters.gd"
 const WorldEnv := preload("res://characters/world_env.gd")
 const JournalScript := preload("res://characters/quest_journal.gd")
+const WearRef := preload("res://characters/wear.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
@@ -224,6 +225,10 @@ func _on_hero_km(_total_km: int, h: Actor) -> void:
 		return
 	var enc: Script = load(ENCOUNTERS)
 	var env: Dictionary = WorldEnv.sample(game, hero_body()["pos"])
+	# Механіка 6: дорога зношує одяг на герої
+	for t in WearRef.on_km(inventory):
+		game.event_text = t
+		game.event_timer = 5.0
 	if enc.roll_on_km(h, env, _rng):
 		start_battle({})
 
@@ -445,6 +450,14 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
 			a.die("wounds")
 	if String(result.get("outcome", "")) == "win":
 		battles_won += 1
+		# Механіка 2: убиті звірі — на розбирання (Camp.butcher), шаблони з actor_id вороґів
+		var enc: Script = load(ENCOUNTERS) if ResourceLoader.exists(ENCOUNTERS) else null
+		if enc != null:
+			result["beasts"] = e["req"].get("enemies", []).map(func(a): return enc.kind_of(a)).filter(func(k): return k != "")
+	# Механіка 6: бій зношує зброю й обладунок
+	var worn: PackedStringArray = WearRef.on_battle(inventory)
+	if not worn.is_empty():
+		result["text"] = (String(result.get("text", "")) + " " + " ".join(worn)).strip_edges()
 	result["origin"] = result.get("origin", e["req"]["origin"])
 	result["return_pos"] = result.get("return_pos", e["req"]["return_pos"])
 
@@ -498,6 +511,8 @@ func _leave_now(result: Dictionary) -> void:
 			game.cam_pos = p
 			game._clamp_camera()
 		_activate_overworld()
+		if e["kind"] == "battle" and game.cast != null and game.cast.has_method("after_battle"):
+			game.cast.after_battle(result)
 	else:
 		var top: Node = stack[-1]["node"]
 		_show_tree(top)

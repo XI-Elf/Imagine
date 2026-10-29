@@ -468,6 +468,8 @@ func _draw_details(y: float) -> void:
 		info += I18n.t(" · вода +%d") % int(u["drink"])
 	if weapons.has(s):
 		info += " · " + (I18n.t("в бою") if bag.get("battle_loadout", []).has(s) else I18n.t("не в бою"))
+	if bag.get("wear", {}).has(s):
+		info += I18n.t(" · состояние %d %%") % int(float(bag["wear"][s]))
 	_text(Vector2(GRID.x, y + 38), info, 13, DIM)
 	_text(Vector2(GRID.x, y + 56), I18n.t("%.1f кг · %d мон. за шт.") % [float(it.get("weight", 0.0)) * n, int(it.get("price", 0))], 13, DIM)
 

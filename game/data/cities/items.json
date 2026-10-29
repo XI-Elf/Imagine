@@ -59,6 +59,17 @@
     "parchment":        {"name": "Лист пергамента",     "price": 0,  "weight": 0.05, "bound": true},
     "charcoal_stick":   {"name": "Уголёк для рисования", "price": 0, "weight": 0.02, "bound": true},
     "color_charcoals":  {"name": "Набор цветных углей", "price": 15, "weight": 0.1, "unique": true},
-    "map_fragment":     {"name": "Отрывок карты",       "price": 12, "weight": 0.02}
+    "map_fragment":     {"name": "Отрывок карты",       "price": 12, "weight": 0.02},
+    "raw_meat":         {"name": "Сырое мясо",          "price": 3,  "weight": 0.5, "use": {"eat": 10, "kind": "raw_meat"}},
+    "tainted_meat":     {"name": "Порченое мясо",       "price": 0,  "weight": 0.5, "use": {"eat": 10, "kind": "spoiled_food"}},
+    "roasted_meat":     {"name": "Жареное мясо",        "price": 6,  "weight": 0.4, "use": {"eat": 25, "kind": "cooked"}},
+    "field_stew":       {"name": "Похлёбка из котелка", "price": 6,  "weight": 0.8, "use": {"eat": 30, "kind": "warm"}},
+    "roasted_mushrooms": {"name": "Печёные грибы",      "price": 3,  "weight": 0.3, "use": {"eat": 14, "kind": "cooked"}},
+    "charred_food":     {"name": "Подгоревшая еда",     "price": 0,  "weight": 0.3, "use": {"eat": 6, "kind": "cooked"}},
+    "bone":             {"name": "Кость",               "price": 1,  "weight": 0.3},
+    "fat":              {"name": "Жир",                 "price": 3,  "weight": 0.3},
+    "bedroll":          {"name": "Спальник",            "price": 12, "weight": 2.0, "unique": true},
+    "tent":             {"name": "Палатка",             "price": 35, "weight": 5.0, "unique": true},
+    "repair_kit":       {"name": "Набор для починки",   "price": 15, "weight": 0.8}
   }
 }
