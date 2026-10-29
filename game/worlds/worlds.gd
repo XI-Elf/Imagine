@@ -174,7 +174,8 @@ func _attach(g: Node2D) -> void:
 
 # Сумка нового героя: у новій грі й після загибелі колишнього (characters/hero_death.gd)
 func start_inventory() -> Dictionary:
-	return {"money": 0, "items": {"leather_jacket": 1, "water_flask": 2}, "equipped": {"body": "leather_jacket"}}
+	# пергамент і вуглик — у кожного персонажа (пункт 11, Trade.KIT)
+	return {"money": 0, "items": {"leather_jacket": 1, "water_flask": 2, "parchment": 1, "charcoal_stick": 1}, "equipped": {"body": "leather_jacket"}}
 
 
 # Карта вивантажується (вихід у меню): усі світи поверх неї йдуть разом із нею
