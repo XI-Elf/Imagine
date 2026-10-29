@@ -154,7 +154,7 @@ func _add(actor: Actor, pos: Vector2, is_hero: bool) -> Dictionary:
 	bodies.append(b)
 	actor.died.connect(func(cause: String) -> void: _on_died(b, cause))
 	if is_hero:
-		actor.leveled_up.connect(func(lv: int) -> void: _event("Новый уровень %d: очки навыков%s — окно героя (I)" % [lv, " и дар" if actor.perk_picks > 0 else ""]))
+		actor.leveled_up.connect(func(lv: int) -> void: _event(I18n.t("Новый уровень %d: очки навыков%s — окно героя (I)") % [lv, I18n.t(" и дар") if actor.perk_picks > 0 else ""]))
 	return b
 
 

@@ -7,7 +7,7 @@ extends RefCounted
 const Sheet := preload("res://characters/sheet.gd")
 const Trade := preload("res://city/trade.gd")
 const FILE := "res://data/dialogue/dialogues.json"
-const STAT_TAGS: Dictionary = {"str": "Сила", "per": "Чутьё", "end": "Стойкость", "cha": "Обаяние", "int": "Ум", "agi": "Ловкость", "luck": "Удача"}
+static var STAT_TAGS: Dictionary = {"str": I18n.t("Сила"), "per": I18n.t("Чутьё"), "end": I18n.t("Стойкость"), "cha": I18n.t("Обаяние"), "int": I18n.t("Ум"), "agi": I18n.t("Ловкость"), "luck": I18n.t("Удача")}
 
 static var _data: Dictionary = {}
 
@@ -67,7 +67,7 @@ static func label(opt: Dictionary) -> String:
 	if st.is_empty():
 		return t
 	var k: String = String(st.keys()[0])
-	return "[%s] %s" % [I18n.t(STAT_TAGS.get(k, k)), t]
+	return "[%s] %s" % [STAT_TAGS.get(k, k), t]
 
 
 ## Застосувати наслідки; відповідь — рядок для підказки ("" — нічого)

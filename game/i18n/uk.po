@@ -733,10 +733,6 @@ msgid "Атака: %s%s против: %s → %s."
 msgstr "Атака: %s%s проти: %s → %s."
 
 #: battle/combat_rules.gd
-msgid "защита %d (%d + ЛОВ %d%s%s%s)"
-msgstr "захист %d (%d + СПР %d%s%s%s)"
-
-#: battle/combat_rules.gd
 msgid "Зона попадания"
 msgstr "Зона влучання"
 
@@ -815,6 +811,10 @@ msgstr "далі звичайної дистанції"
 #: battle/combat_rules.gd
 msgid "дробящий"
 msgstr "дробильна"
+
+#: battle/combat_rules.gd
+msgid "защита %d (%d + ЛОВ %d%s%s%s)"
+msgstr "захист %d (%d + СПР %d%s%s%s)"
 
 #: battle/combat_rules.gd
 msgid "кислота"
@@ -944,6 +944,26 @@ msgstr "перешкода"
 msgid "преим."
 msgstr "перев."
 
+#: battle/encounters.gd
+msgid "в тени"
+msgstr "в тіні"
+
+#: battle/encounters.gd
+msgid "заметен"
+msgstr "помітний"
+
+#: battle/encounters.gd
+msgid "на виду"
+msgstr "на виду"
+
+#: battle/encounters.gd
+msgid "невидим"
+msgstr "невидимий"
+
+#: battle/encounters.gd
+msgid "укрыт"
+msgstr "укритий"
+
 #: characters/actor.gd
 msgid "болезнь"
 msgstr "хвороба"
@@ -1041,6 +1061,10 @@ msgid " (тонет!)"
 msgstr " (тоне!)"
 
 #: characters/cast.gd
+msgid " и дар"
+msgstr " і дар"
+
+#: characters/cast.gd
 msgid " нет"
 msgstr " немає"
 
@@ -1133,24 +1157,32 @@ msgid "Милда"
 msgstr "Мілда"
 
 #: characters/cast.gd
-msgid "Напился из реки"
-msgstr "Напився з річки"
+msgid "Найдено"
+msgstr "Знайдено"
 
 #: characters/cast.gd
-msgid "Нашёл еду"
-msgstr "Знайшов їжу"
+msgid "Напился из реки"
+msgstr "Напився з річки"
 
 #: characters/cast.gd
 msgid "Ниалл"
 msgstr "Ніалл"
 
 #: characters/cast.gd
-msgid "Ничего съедобного"
-msgstr "Нічого їстівного"
+msgid "Новый уровень %d: очки навыков%s — окно героя (I)"
+msgstr "Новий рівень %d: очки навичок%s — вікно героя (I)"
 
 #: characters/cast.gd
 msgid "Обыскал руины: %s"
 msgstr "Обшукав руїни: %s"
+
+#: characters/cast.gd
+msgid "Оставлено на месте: %s"
+msgstr "Залишено на місці: %s"
+
+#: characters/cast.gd
+msgid "Пока искали, вас выследили"
+msgstr "Поки шукали, вас вистежили"
 
 #: characters/cast.gd
 msgid "Проснулся"
@@ -1525,6 +1557,14 @@ msgid "энергия %+.1f/ч"
 msgstr "енергія %+.1f/год"
 
 #: characters/hero_route.gd
+msgid "%.1f км"
+msgstr "%.1f км"
+
+#: characters/hero_route.gd
+msgid "%d м"
+msgstr "%d м"
+
+#: characters/hero_route.gd
 msgid "Дальше не пройти"
 msgstr "Далі не пройти"
 
@@ -1536,9 +1576,37 @@ msgstr "Шляху туди немає"
 msgid "Туда не дойти: за краем мира"
 msgstr "Туди не дійти: за краєм світу"
 
+#: characters/hero_route.gd
+msgid "близко"
+msgstr "близько"
+
+#: characters/hero_route.gd
+msgid "далеко"
+msgstr "далеко"
+
+#: characters/hero_route.gd
+msgid "около %d км"
+msgstr "близько %d км"
+
+#: characters/hero_route.gd
+msgid "около %d м"
+msgstr "близько %d м"
+
+#: characters/hero_route.gd
+msgid "очень далеко"
+msgstr "дуже далеко"
+
+#: characters/hero_route.gd
+msgid "рукой подать"
+msgstr "рукою подати"
+
 #: characters/hero_window.gd
 msgid " (снято: %s)"
 msgstr " (знято: %s)"
+
+#: characters/hero_window.gd
+msgid "%s всегда при себе"
+msgstr "%s завжди при собі"
 
 #: characters/hero_window.gd
 msgid "+ %s (%.0f ч)"
@@ -1592,7 +1660,6 @@ msgstr "Навички"
 msgid "Надето: %s%s"
 msgstr "Вдягнено: %s%s"
 
-#: characters/hero_window.gd
 #: characters/hero_window.gd
 msgid "Пока пусто. Записки лежат в руинах на карте и в тайниках городов (F у руин, E у тайника). Найденное само складывается в книгу по разделам."
 msgstr "Поки порожньо. Записки лежать у руїнах на мапі й у схованках міст (F біля руїн, E біля схованки). Знайдене саме складається в книгу за розділами."
@@ -1696,6 +1763,10 @@ msgstr "Здоров'я"
 #: characters/inventory_view.gd
 msgid "Инструменты"
 msgstr "Інструменти"
+
+#: characters/inventory_view.gd
+msgid "Карта  [M]"
+msgstr "Мапа  [M]"
 
 #: characters/inventory_view.gd
 msgid "Клик — выбрать вещь"
@@ -1828,6 +1899,470 @@ msgstr "Руки"
 #: characters/paper_doll.gd
 msgid "Тело"
 msgstr "Тіло"
+
+#: characters/quest_journal.gd
+msgid "%s.\nЗаписано наспех, огрызком угля: %s Не забыть — в этих краях забытое слово стоит жизни."
+msgstr "%s.\nЗаписано поспіхом, недогризком вугілля: %s Не забути — у цих краях забуте слово коштує життя."
+
+#: characters/quest_journal.gd
+msgid "Герой записывает как есть."
+msgstr "Герой записує як є."
+
+#: characters/quest_journal.gd
+msgid "Журнал заданий  ·  J — закрыть"
+msgstr "Журнал завдань  ·  J — закрити"
+
+#: characters/quest_journal.gd
+msgid "Закрыть"
+msgstr "Закрити"
+
+#: characters/quest_journal.gd
+msgid "Записать"
+msgstr "Записати"
+
+#: characters/quest_journal.gd
+msgid "Записей нет. Напишите внизу, что вам поручили."
+msgstr "Записів немає. Напишіть унизу, що вам доручили."
+
+#: characters/quest_journal.gd
+msgid "Сделано"
+msgstr "Зроблено"
+
+#: characters/quest_journal.gd
+msgid "Снова"
+msgstr "Знову"
+
+#: characters/quest_journal.gd
+msgid "Стереть"
+msgstr "Стерти"
+
+#: characters/quest_journal.gd
+msgid "Ум высокий: записи подробные и с прикрасами."
+msgstr "Розум високий: записи докладні й з прикрасами."
+
+#: characters/quest_journal.gd
+msgid "Ум низкий: герой чертит каракули и пару слов — остальное не запомнит."
+msgstr "Розум низький: герой креслить карлючки й пару слів — решту не запам'ятає."
+
+#: characters/quest_journal.gd
+msgid "Что поручили, кто, где и за сколько…"
+msgstr "Що доручили, хто, де й за скільки…"
+
+#: characters/quest_journal.gd
+msgid "бандит"
+msgstr "бандит"
+
+#: characters/quest_journal.gd
+msgid "бандитов"
+msgstr "бандитів"
+
+#: characters/quest_journal.gd
+msgid "башн"
+msgstr "веж"
+
+#: characters/quest_journal.gd
+msgid "бить"
+msgstr "бит"
+
+#: characters/quest_journal.gd
+msgid "бой"
+msgstr "бій"
+
+#: characters/quest_journal.gd
+msgid "вод"
+msgstr "вод"
+
+#: characters/quest_journal.gd
+msgid "волк"
+msgstr "вовк"
+
+#: characters/quest_journal.gd
+msgid "волков"
+msgstr "вовків"
+
+#: characters/quest_journal.gd
+msgid "ворот"
+msgstr "брам"
+
+#: characters/quest_journal.gd
+msgid "восток"
+msgstr "схід"
+
+#: characters/quest_journal.gd
+msgid "враг"
+msgstr "ворог"
+
+#: characters/quest_journal.gd
+msgid "выделанная шкура"
+msgstr "вичинена шкура"
+
+#: characters/quest_journal.gd
+msgid "город"
+msgstr "місто"
+
+#: characters/quest_journal.gd
+msgid "горькая трава с обочины"
+msgstr "гірка трава з узбіччя"
+
+#: characters/quest_journal.gd
+msgid "горькие травы с обочин"
+msgstr "гіркі трави з узбіч"
+
+#: characters/quest_journal.gd
+msgid "гриб"
+msgstr "гриб"
+
+#: characters/quest_journal.gd
+msgid "деньг"
+msgstr "грош"
+
+#: characters/quest_journal.gd
+msgid "деревн"
+msgstr "сел"
+
+#: characters/quest_journal.gd
+msgid "дом"
+msgstr "дім"
+
+#: characters/quest_journal.gd
+msgid "достав"
+msgstr "достав"
+
+#: characters/quest_journal.gd
+msgid "желез"
+msgstr "залiз"
+
+#: characters/quest_journal.gd
+msgid "запад"
+msgstr "захід"
+
+#: characters/quest_journal.gd
+msgid "зель"
+msgstr "зілл"
+
+#: characters/quest_journal.gd
+msgid "золот"
+msgstr "золот"
+
+#: characters/quest_journal.gd
+msgid "иди"
+msgstr "іди"
+
+#: characters/quest_journal.gd
+msgid "идти"
+msgstr "іти"
+
+#: characters/quest_journal.gd
+msgid "инструм"
+msgstr "інструм"
+
+#: characters/quest_journal.gd
+msgid "клыкастый кабан"
+msgstr "іклатий кабан"
+
+#: characters/quest_journal.gd
+msgid "ковать"
+msgstr "кува"
+
+#: characters/quest_journal.gd
+msgid "кож"
+msgstr "шкір"
+
+#: characters/quest_journal.gd
+msgid "кожев"
+msgstr "кожум"
+
+#: characters/quest_journal.gd
+msgid "кожевнику"
+msgstr "кожум'яці"
+
+#: characters/quest_journal.gd
+msgid "кожевнику с чёрными от дубильни руками"
+msgstr "кожум'яці з чорними від чинбарні руками"
+
+#: characters/quest_journal.gd
+msgid "колод"
+msgstr "криниц"
+
+#: characters/quest_journal.gd
+msgid "корен"
+msgstr "корін"
+
+#: characters/quest_journal.gd
+msgid "кост"
+msgstr "кіст"
+
+#: characters/quest_journal.gd
+msgid "кузн"
+msgstr "кузн"
+
+#: characters/quest_journal.gd
+msgid "кузнец"
+msgstr "коваль"
+
+#: characters/quest_journal.gd
+msgid "куп"
+msgstr "куп"
+
+#: characters/quest_journal.gd
+msgid "лекар"
+msgstr "лікар"
+
+#: characters/quest_journal.gd
+msgid "лекарь"
+msgstr "лікар"
+
+#: characters/quest_journal.gd
+msgid "лекарь, пропахший уксусом"
+msgstr "лікар, що просмердівся оцтом"
+
+#: characters/quest_journal.gd
+msgid "лекарю"
+msgstr "лікареві"
+
+#: characters/quest_journal.gd
+msgid "лекарю, пропахшему уксусом"
+msgstr "лікареві, що просмердівся оцтом"
+
+#: characters/quest_journal.gd
+msgid "лом"
+msgstr "брухт"
+
+#: characters/quest_journal.gd
+msgid "медные монеты"
+msgstr "мідні монети"
+
+#: characters/quest_journal.gd
+msgid "медных монет"
+msgstr "мідних монет"
+
+#: characters/quest_journal.gd
+msgid "мертв"
+msgstr "мертв"
+
+#: characters/quest_journal.gd
+msgid "метал"
+msgstr "метал"
+
+#: characters/quest_journal.gd
+msgid "мех"
+msgstr "хутр"
+
+#: characters/quest_journal.gd
+msgid "могил"
+msgstr "могил"
+
+#: characters/quest_journal.gd
+msgid "монет"
+msgstr "монет"
+
+#: characters/quest_journal.gd
+msgid "монеты"
+msgstr "монети"
+
+#: characters/quest_journal.gd
+msgid "мёртв"
+msgstr "мерц"
+
+#: characters/quest_journal.gd
+msgid "найти"
+msgstr "знайти"
+
+#: characters/quest_journal.gd
+msgid "напад"
+msgstr "напад"
+
+#: characters/quest_journal.gd
+msgid "оборванец с большой дороги"
+msgstr "обірванець із битого шляху"
+
+#: characters/quest_journal.gd
+msgid "оборванцев с большой дороги"
+msgstr "обірванців із битого шляху"
+
+#: characters/quest_journal.gd
+msgid "остро"
+msgstr "остро"
+
+#: characters/quest_journal.gd
+msgid "отвар"
+msgstr "відвар"
+
+#: characters/quest_journal.gd
+msgid "отнес"
+msgstr "віднес"
+
+#: characters/quest_journal.gd
+msgid "пить"
+msgstr "пити"
+
+#: characters/quest_journal.gd
+msgid "плат"
+msgstr "плат"
+
+#: characters/quest_journal.gd
+msgid "посад"
+msgstr "посад"
+
+#: characters/quest_journal.gd
+msgid "приве"
+msgstr "приве"
+
+#: characters/quest_journal.gd
+msgid "принес"
+msgstr "принес"
+
+#: characters/quest_journal.gd
+msgid "прода"
+msgstr "прода"
+
+#: characters/quest_journal.gd
+msgid "проклят"
+msgstr "проклят"
+
+#: characters/quest_journal.gd
+msgid "псов"
+msgstr "псів"
+
+#: characters/quest_journal.gd
+msgid "пёс"
+msgstr "пес"
+
+#: characters/quest_journal.gd
+msgid "разбойн"
+msgstr "розбійн"
+
+#: characters/quest_journal.gd
+msgid "река"
+msgstr "річк"
+
+#: characters/quest_journal.gd
+msgid "ржавый лом"
+msgstr "іржавий брухт"
+
+#: characters/quest_journal.gd
+msgid "руин"
+msgstr "руїн"
+
+#: characters/quest_journal.gd
+msgid "север"
+msgstr "північ"
+
+#: characters/quest_journal.gd
+msgid "серебр"
+msgstr "срібл"
+
+#: characters/quest_journal.gd
+msgid "серый волк из промозглой чащи"
+msgstr "сірий вовк із промерзлої хащі"
+
+#: characters/quest_journal.gd
+msgid "серый город за гнилым частоколом"
+msgstr "сіре місто за гнилим частоколом"
+
+#: characters/quest_journal.gd
+msgid "серых волков, что воют за частоколом"
+msgstr "сірих вовків, що виють за частоколом"
+
+#: characters/quest_journal.gd
+msgid "слобод"
+msgstr "слобід"
+
+#: characters/quest_journal.gd
+msgid "смерт"
+msgstr "смерт"
+
+#: characters/quest_journal.gd
+msgid "старому старосте с мутным взглядом"
+msgstr "старому старості з каламутним поглядом"
+
+#: characters/quest_journal.gd
+msgid "староста"
+msgstr "староста"
+
+#: characters/quest_journal.gd
+msgid "старосте"
+msgstr "старості"
+
+#: characters/quest_journal.gd
+msgid "старый староста с мутным взглядом"
+msgstr "старий староста з каламутним поглядом"
+
+#: characters/quest_journal.gd
+msgid "стен"
+msgstr "стін"
+
+#: characters/quest_journal.gd
+msgid "стража"
+msgstr "варт"
+
+#: characters/quest_journal.gd
+msgid "сход"
+msgstr "сход"
+
+#: characters/quest_journal.gd
+msgid "торгов"
+msgstr "торгов"
+
+#: characters/quest_journal.gd
+msgid "трав"
+msgstr "трав"
+
+#: characters/quest_journal.gd
+msgid "трава"
+msgstr "трава"
+
+#: characters/quest_journal.gd
+msgid "травы"
+msgstr "трави"
+
+#: characters/quest_journal.gd
+msgid "уб"
+msgstr "вб"
+
+#: characters/quest_journal.gd
+msgid "хворост"
+msgstr "хмиз"
+
+#: characters/quest_journal.gd
+msgid "цвет"
+msgstr "квіт"
+
+#: characters/quest_journal.gd
+msgid "цен"
+msgstr "цін"
+
+#: characters/quest_journal.gd
+msgid "человек"
+msgstr "люд"
+
+#: characters/quest_journal.gd
+msgid "чудищ"
+msgstr "чудовиськ"
+
+#: characters/quest_journal.gd
+msgid "шкур"
+msgstr "шкур"
+
+#: characters/quest_journal.gd
+msgid "шкура"
+msgstr "шкура"
+
+#: characters/quest_journal.gd
+msgid "шкуры"
+msgstr "шкури"
+
+#: characters/quest_journal.gd
+msgid "шкуры, пахнущие дымом и кровью"
+msgstr "шкури, що тхнуть димом і кров'ю"
+
+#: characters/quest_journal.gd
+msgid "юг"
+msgstr "півд"
+
+#: characters/quest_journal.gd
+msgid "ягод"
+msgstr "ягід"
 
 #: characters/transport.gd
 msgid "R — сесть"
@@ -2038,10 +2573,6 @@ msgid "ворота открыты"
 msgstr "брама відчинена"
 
 #: city/city_menu.gd
-msgid "город"
-msgstr "місто"
-
-#: city/city_menu.gd
 msgid "по городу"
 msgstr "містом"
 
@@ -2090,6 +2621,10 @@ msgid "\n\nСейчас не торгует: приходите в часы ра
 msgstr "\n\nЗараз не торгує: приходьте в години роботи (%d–%d)."
 
 #: city/city_world.gd
+msgid "\nСтражник совсем рядом — заметит."
+msgstr "\nВартовий зовсім поруч — помітить."
+
+#: city/city_world.gd
 msgid "   (спит)"
 msgstr "   (спить)"
 
@@ -2104,6 +2639,10 @@ msgstr "   замкнені: "
 #: city/city_world.gd
 msgid "  (нет материалов)"
 msgstr "  (немає матеріалів)"
+
+#: city/city_world.gd
+msgid " (верёвка поможет)"
+msgstr " (мотузка допоможе)"
 
 #: city/city_world.gd
 msgid " (взято: %s)"
@@ -2152,6 +2691,10 @@ msgstr "%s відмикає браму"
 #: city/city_world.gd
 msgid "%s рассказал, где что стоит: весь город теперь на плане (M)."
 msgstr "%s розповів, де що стоїть: усе місто тепер на плані (M)."
+
+#: city/city_world.gd
+msgid "%s смотрит на вас %s"
+msgstr "%s дивиться на вас %s"
 
 #: city/city_world.gd
 msgid "%s узнал чужака: штраф %d, выводят за ворота"
@@ -2218,6 +2761,10 @@ msgid "Ворота заперты до %d:00. %s"
 msgstr "Брама замкнена до %d:00. %s"
 
 #: city/city_world.gd
+msgid "Ворота заперты до утра. Стена сырая, камни шатаются.\nШанс перелезть: %d %%%s"
+msgstr "Брама замкнена до ранку. Стіна сира, каміння хитається.\nШанс перелізти: %d %%%s"
+
+#: city/city_world.gd
 msgid "Вы выспались и встали"
 msgstr "Ви виспалися й підвелися"
 
@@ -2242,6 +2789,10 @@ msgid "Город вырастет."
 msgstr "Місто виросте."
 
 #: city/city_world.gd
+msgid "Городская стена"
+msgstr "Міська стіна"
+
+#: city/city_world.gd
 msgid "Готово: %s"
 msgstr "Готово: %s"
 
@@ -2250,12 +2801,12 @@ msgid "Деньги: %d   Груз: %.1f / %.0f кг   Торговля: у ва
 msgstr "Гроші: %d   Вантаж: %.1f / %.0f кг   Торгівля: у вас %d %%, у торговця %d %%"
 
 #: city/city_world.gd
-msgid "Заказать у мастера (%d)"
-msgstr "Замовити в майстра (%d)"
+msgid "Днём через стену не лезут: ворота открыты, а стража смотрит. Идите в ворота."
+msgstr "Удень через стіну не лізуть: брама відчинена, а варта дивиться. Ідіть у браму."
 
 #: city/city_world.gd
-msgid "Закрыть"
-msgstr "Закрити"
+msgid "Заказать у мастера (%d)"
+msgstr "Замовити в майстра (%d)"
 
 #: city/city_world.gd
 msgid "Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d   Деньги %d   Груз %.1f кг%s"
@@ -2310,6 +2861,10 @@ msgid "Напился из колодца"
 msgstr "Напився з колодязя"
 
 #: city/city_world.gd
+msgid "Не вышло: камни скользкие"
+msgstr "Не вийшло: каміння слизьке"
+
+#: city/city_world.gd
 msgid "Не хватает денег"
 msgstr "Бракує грошей"
 
@@ -2324,6 +2879,14 @@ msgstr "Нових доручень немає."
 #: city/city_world.gd
 msgid "Нужен навык: %d"
 msgstr "Потрібна навичка: %d"
+
+#: city/city_world.gd
+msgid "Перелез через стену и спрыгнул в темноту"
+msgstr "Переліз через стіну й зістрибнув у темряву"
+
+#: city/city_world.gd
+msgid "Перелезть стену"
+msgstr "Перелізти стіну"
 
 #: city/city_world.gd
 msgid "Поручение"
@@ -2374,8 +2937,16 @@ msgid "Снять комнату до утра (%d)"
 msgstr "Зняти кімнату до ранку (%d)"
 
 #: city/city_world.gd
+msgid "Сорвался со стены и ушиб руку"
+msgstr "Зірвався зі стіни й забив руку"
+
+#: city/city_world.gd
 msgid "Спит. Будить не стоит."
 msgstr "Спить. Будити не варто."
+
+#: city/city_world.gd
+msgid "Стража стащила со стены: штраф %d"
+msgstr "Варта стягнула зі стіни: штраф %d"
 
 #: city/city_world.gd
 msgid "Торговля: %s"
@@ -2406,16 +2977,16 @@ msgid "житель"
 msgstr "мешканець"
 
 #: city/city_world.gd
+msgid "исподлобья, с неприязнью"
+msgstr "спідлоба, з неприязню"
+
+#: city/city_world.gd
 msgid "казарму"
 msgstr "казарму"
 
 #: city/city_world.gd
 msgid "кожевник"
 msgstr "кожум'яка"
-
-#: city/city_world.gd
-msgid "кузнец"
-msgstr "коваль"
 
 #: city/city_world.gd
 msgid "лечь спать"
@@ -2434,16 +3005,20 @@ msgid "осмотреть"
 msgstr "оглянути"
 
 #: city/city_world.gd
-msgid "пить"
-msgstr "пити"
-
-#: city/city_world.gd
 msgid "побед %d из %d"
 msgstr "перемог %d з %d"
 
 #: city/city_world.gd
+msgid "почти дружелюбно"
+msgstr "майже приязно"
+
+#: city/city_world.gd
 msgid "пройдено %.1f из %d км"
 msgstr "пройдено %.1f з %d км"
+
+#: city/city_world.gd
+msgid "равнодушно, как на мебель"
+msgstr "байдуже, як на меблі"
 
 #: city/city_world.gd
 msgid "стража поймала вас у стены и привела в %s. Штраф %d"
@@ -2496,6 +3071,34 @@ msgstr "Потрібна навичка %d"
 #: city/craft.gd
 msgid "Слишком устали: нужно %d выносливости"
 msgstr "Надто втомилися: потрібно %d витривалості"
+
+#: city/dialogue.gd
+msgid "Ловкость"
+msgstr "Спритність"
+
+#: city/dialogue.gd
+msgid "Обаяние"
+msgstr "Чарівність"
+
+#: city/dialogue.gd
+msgid "Сила"
+msgstr "Сила"
+
+#: city/dialogue.gd
+msgid "Стойкость"
+msgstr "Стійкість"
+
+#: city/dialogue.gd
+msgid "Удача"
+msgstr "Удача"
+
+#: city/dialogue.gd
+msgid "Ум"
+msgstr "Розум"
+
+#: city/dialogue.gd
+msgid "Чутьё"
+msgstr "Чуття"
 
 #: city/endless_quests.gd
 msgid "Больных нечем кормить. Принеси %s с огородов."
@@ -2806,16 +3409,12 @@ msgid "пучок овощей"
 msgstr "пучок овочів"
 
 #: city/endless_quests.gd
-msgid "шкур"
-msgstr "шкур"
-
-#: city/endless_quests.gd
 msgid "шкуру"
 msgstr "шкуру"
 
-#: city/endless_quests.gd
-msgid "шкуры"
-msgstr "шкури"
+#: city/portrait.gd
+msgid "Присмотреться"
+msgstr "Придивитися"
 
 #: city/trade.gd
 msgid "%s: так не используется"
@@ -2844,6 +3443,10 @@ msgstr "Таке тут не беруть"
 #: city/trade.gd
 msgid "Уже есть"
 msgstr "Уже є"
+
+#: city/trade.gd
+msgid "Это не продаётся"
+msgstr "Це не продається"
 
 #: data/audio/sounds.json
 msgid "Ambience Redo by TenPlus1 (зеркало gitlab.com/minetest-mirrors/ambience, ветка master)"
@@ -5589,34 +6192,6 @@ msgstr "Лють пораненого"
 msgid "Ясный ум"
 msgstr "Ясний розум"
 
-#: data/characters/rules.json
-msgid "Ловкость"
-msgstr "Спритність"
-
-#: data/characters/rules.json
-msgid "Обаяние"
-msgstr "Чарівність"
-
-#: data/characters/rules.json
-msgid "Сила"
-msgstr "Сила"
-
-#: data/characters/rules.json
-msgid "Стойкость"
-msgstr "Стійкість"
-
-#: data/characters/rules.json
-msgid "Удача"
-msgstr "Удача"
-
-#: data/characters/rules.json
-msgid "Ум"
-msgstr "Розум"
-
-#: data/characters/rules.json
-msgid "Чутьё"
-msgstr "Чуття"
-
 #: data/characters/sheet.json
 msgid "\n\n(Вы мычите что-то невнятное и тычете пальцем. Собеседник говорит медленно и громко, как с ребёнком.)"
 msgstr "\n\n(Ви мукаєте щось нерозбірливе й тицяєте пальцем. Співрозмовник говорить повільно й голосно, як із дитиною.)"
@@ -5732,6 +6307,10 @@ msgstr "Зір, слух, чуття. Хто ходить першим у бою
 #: data/characters/sheet.json
 msgid "Изящество"
 msgstr "Витонченість"
+
+#: data/characters/sheet.json
+msgid "Картография"
+msgstr "Картографія"
 
 #: data/characters/sheet.json
 msgid "Ковка, шитьё, выделка кож, починка снаряжения. От него зависит работа в кузне и дубильне."
@@ -5872,6 +6451,10 @@ msgstr "Рани затягуються швидко, але тіло безза
 #: data/characters/sheet.json
 msgid "Ремесло"
 msgstr "Ремесло"
+
+#: data/characters/sheet.json
+msgid "Рисовать и читать карты. Выше 50 — герой знает, где он на своём листе. Растёт, когда рисуешь карту."
+msgstr "Малювати й читати мапи. Понад 50 — герой знає, де він на своєму аркуші. Зростає, коли малюєш мапу."
 
 #: data/characters/sheet.json
 msgid "Рукопашный бой"
@@ -6046,10 +6629,6 @@ msgid "вправление вывиха"
 msgstr "вправлення вивиху"
 
 #: data/characters/skills.json
-msgid "дом"
-msgstr "дім"
-
-#: data/characters/skills.json
 msgid "зелье лечения"
 msgstr "зілля лікування"
 
@@ -6186,6 +6765,14 @@ msgid "Горячая похлёбка"
 msgstr "Гаряча юшка"
 
 #: data/cities/items.json
+msgid "Грибы"
+msgstr "Гриби"
+
+#: data/cities/items.json
+msgid "Дикие травы"
+msgstr "Дикі трави"
+
+#: data/cities/items.json
 msgid "Дорожный плащ"
 msgstr "Дорожній плащ"
 
@@ -6196,6 +6783,10 @@ msgstr "Давна монета"
 #: data/cities/items.json
 msgid "Жаропонижающее"
 msgstr "Жарознижувальне"
+
+#: data/cities/items.json
+msgid "Камыш"
+msgstr "Очерет"
 
 #: data/cities/items.json
 msgid "Кожаная куртка"
@@ -6218,6 +6809,10 @@ msgid "Короткий меч"
 msgstr "Короткий меч"
 
 #: data/cities/items.json
+msgid "Кремень"
+msgstr "Кремінь"
+
+#: data/cities/items.json
 msgid "Крепкое зелье"
 msgstr "Міцне зілля"
 
@@ -6232,6 +6827,14 @@ msgstr "Шматок бурштину"
 #: data/cities/items.json
 msgid "Латы"
 msgstr "Лати"
+
+#: data/cities/items.json
+msgid "Лесные ягоды"
+msgstr "Лісові ягоди"
+
+#: data/cities/items.json
+msgid "Лист пергамента"
+msgstr "Аркуш пергаменту"
 
 #: data/cities/items.json
 msgid "Льняная рубаха"
@@ -6250,6 +6853,10 @@ msgid "Меховой плащ"
 msgstr "Хутряний плащ"
 
 #: data/cities/items.json
+msgid "Набор цветных углей"
+msgstr "Набір кольорових вуглин"
+
+#: data/cities/items.json
 msgid "Нож"
 msgstr "Ніж"
 
@@ -6258,8 +6865,20 @@ msgid "Овощи"
 msgstr "Овочі"
 
 #: data/cities/items.json
+msgid "Отрывок карты"
+msgstr "Уривок мапи"
+
+#: data/cities/items.json
 msgid "Очищающее зелье"
 msgstr "Очисне зілля"
+
+#: data/cities/items.json
+msgid "Плавник"
+msgstr "Плавник"
+
+#: data/cities/items.json
+msgid "Ракушки"
+msgstr "Мушлі"
 
 #: data/cities/items.json
 msgid "Рукавицы"
@@ -6278,8 +6897,16 @@ msgid "Соломенная шляпа"
 msgstr "Солом'яний капелюх"
 
 #: data/cities/items.json
+msgid "Сомнительные грибы"
+msgstr "Сумнівні гриби"
+
+#: data/cities/items.json
 msgid "Суконные штаны"
 msgstr "Сукняні штани"
+
+#: data/cities/items.json
+msgid "Съедобные корни"
+msgstr "Їстівне коріння"
 
 #: data/cities/items.json
 msgid "Толчёный уголь"
@@ -6294,12 +6921,20 @@ msgid "Травяной отвар"
 msgstr "Трав'яний відвар"
 
 #: data/cities/items.json
+msgid "Уголёк для рисования"
+msgstr "Вуглик для малювання"
+
+#: data/cities/items.json
 msgid "Факел"
 msgstr "Смолоскип"
 
 #: data/cities/items.json
 msgid "Фляга чистой воды"
 msgstr "Фляга чистої води"
+
+#: data/cities/items.json
+msgid "Хворост"
+msgstr "Хмиз"
 
 #: data/cities/items.json
 msgid "Хлеб"
@@ -6320,10 +6955,6 @@ msgstr "Шкура"
 #: data/cities/items.json
 msgid "Шкурная безрукавка"
 msgstr "Шкіряна безрукавка"
-
-#: data/cities/items.json
-msgid "монеты"
-msgstr "монети"
 
 #: data/cities/recipes.json
 msgid "Дубильня"
@@ -7008,6 +7639,322 @@ msgstr "Південна брама"
 #: data/cities/s001.json
 msgid "Я знаю, где в обрушенной башне тайник!"
 msgstr "Я знаю, де в обваленій вежі схованка!"
+
+#: data/dialogue/dialogues.json
+msgid "[1 монета] Держи, на хлеб."
+msgstr "[1 монета] Тримай, на хліб."
+
+#: data/dialogue/dialogues.json
+msgid "[2 монеты] А можно меня не записывать?"
+msgstr "[2 монети] А можна мене не записувати?"
+
+#: data/dialogue/dialogues.json
+msgid "[Донести] Видел у ворот подозрительного."
+msgstr "[Донести] Бачив біля брами підозрілого."
+
+#: data/dialogue/dialogues.json
+msgid "[Обаяние] Такой город держать — не каждому по плечу."
+msgstr "[Чарівність] Таке місто тримати — не кожному під силу."
+
+#: data/dialogue/dialogues.json
+msgid "[Обаяние] Тяжёлая служба у вас."
+msgstr "[Чарівність] Важка у вас служба."
+
+#: data/dialogue/dialogues.json
+msgid "[Ум] Назваться чужим именем."
+msgstr "[Розум] Назватися чужим ім'ям."
+
+#: data/dialogue/dialogues.json
+msgid "«Быстрее — значит, где-то срезал. Срезал — значит, кто-то потом придёт ко мне жаловаться. Делай как велено.»"
+msgstr "«Швидше — значить, десь зрізав. Зрізав — значить, хтось потім прийде до мене скаржитися. Роби, як велено.»"
+
+#: data/dialogue/dialogues.json
+msgid "«В лесу — горькая трава от жара, на болоте — камыш да кислая ягода. Грибы бери, только если отличаешь поганку. Дурак не отличает.»"
+msgstr "«У лісі — гірка трава від жару, на болоті — очерет та кисла ягода. Гриби бери, лише якщо відрізниш поганку. Дурень не відрізнить.»"
+
+#: data/dialogue/dialogues.json
+msgid "«Волки ходят там, где лес гуще. Ты их не ищешь — они тебя находят. Сиди тихо, держи нож при себе.»"
+msgstr "«Вовки ходять там, де ліс густіший. Ти їх не шукаєш — вони тебе знаходять. Сиди тихо, тримай ніж при собі.»"
+
+#: data/dialogue/dialogues.json
+msgid "«Всё пишу. Кто с кем пил, кто что сказал про Олдермена. Бумага всё стерпит, а люди потом не стерпят.»"
+msgstr "«Усе пишу. Хто з ким пив, хто що сказав про Олдермена. Папір усе стерпить, а люди потім не стерплять.»"
+
+#: data/dialogue/dialogues.json
+msgid "«Есть клочки. Кто рисовал — не спрашивай: один уже не нарисует. Бери, приложишь к своему пергаменту.»"
+msgstr "«Є клапті. Хто малював — не питай: один уже не намалює. Бери, прикладеш до свого пергаменту.»"
+
+#: data/dialogue/dialogues.json
+msgid "«Записал.» Перо скрипит долго, дольше, чем нужно для одного имени."
+msgstr "«Записав.» Перо рипить довго, довше, ніж треба для одного імені."
+
+#: data/dialogue/dialogues.json
+msgid "«Молчание у нас бесплатное. А болтовня дорого стоит. Иди.»"
+msgstr "«Мовчання в нас безплатне. А балачки дорого коштують. Іди.»"
+
+#: data/dialogue/dialogues.json
+msgid "«Нету там тайника, я врал. Там Ульфа нашли. Мамка сказала — молчи, а то и нас найдут.»"
+msgstr "«Нема там схованки, я брехав. Там Ульфа знайшли. Мамка сказала — мовчи, бо й нас знайдуть.»"
+
+#: data/dialogue/dialogues.json
+msgid "«Отвар бесплатно, если однажды понадобится. Больше у меня ничего нет. И у тебя скоро не будет.»"
+msgstr "«Відвар безплатно, якщо колись знадобиться. Більше в мене нічого нема. І в тебе скоро не буде.»"
+
+#: data/dialogue/dialogues.json
+msgid "«Работа есть у тех, кто не задаёт вопросов. Поручения — во вкладке, плата — по сделанному. Наперёд не плачу никому.»"
+msgstr "«Робота є в тих, хто не ставить питань. Доручення — у вкладці, плата — за зроблене. Наперед не плачу нікому.»"
+
+#: data/dialogue/dialogues.json
+msgid "«С шести утра до десяти вечера. Ночью — за плату. Или лезь через стену, если шею не жалко.» Он хмыкает."
+msgstr "«З шостої ранку до десятої вечора. Уночі — за плату. Або лізь через стіну, якщо шиї не шкода.» Він хмикає."
+
+#: data/dialogue/dialogues.json
+msgid "«Стены стоят, ворота на ночь запираем, писарь всех записывает. Кто не записан — того и нет. Понял?»"
+msgstr "«Стіни стоять, браму на ніч замикаємо, писар усіх записує. Хто не записаний — того й нема. Зрозумів?»"
+
+#: data/dialogue/dialogues.json
+msgid "«Ягоды, грибы, корни, травы, кремень, хворост. Дёшево. Дороже — шкуры и янтарь. Всё остальное — мусор.»"
+msgstr "«Ягоди, гриби, коріння, трави, кремінь, хмиз. Дешево. Дорожче — шкури й бурштин. Усе інше — сміття.»"
+
+#: data/dialogue/dialogues.json
+msgid "А если сделаю быстрее?"
+msgstr "А якщо зроблю швидше?"
+
+#: data/dialogue/dialogues.json
+msgid "А если спросят — что мне за молчание?"
+msgstr "А якщо спитають — що мені за мовчання?"
+
+#: data/dialogue/dialogues.json
+msgid "Благодарю."
+msgstr "Дякую."
+
+#: data/dialogue/dialogues.json
+msgid "Бригит вытирает руки о передник, пятна на нём бурые и старые. «Покажи, где болит. Или зачем пришёл?»"
+msgstr "Бригіт витирає руки об фартух, плями на ньому бурі й старі. «Покажи, де болить. Або навіщо прийшов?»"
+
+#: data/dialogue/dialogues.json
+msgid "Бригит нюхает пучок, кривится. «Сорвал вместе с землёй. Ладно. Две монеты.»"
+msgstr "Бригіт нюхає пучок, кривиться. «Зірвав разом із землею. Гаразд. Дві монети.»"
+
+#: data/dialogue/dialogues.json
+msgid "Взять монеты."
+msgstr "Узяти монети."
+
+#: data/dialogue/dialogues.json
+msgid "Говорят, лекарей у нас не любят."
+msgstr "Кажуть, лікарів у вас не люблять."
+
+#: data/dialogue/dialogues.json
+msgid "Держись."
+msgstr "Тримайся."
+
+#: data/dialogue/dialogues.json
+msgid "Договорились."
+msgstr "Домовилися."
+
+#: data/dialogue/dialogues.json
+msgid "Донос оплачен: +5 монет"
+msgstr "Донос оплачено: +5 монет"
+
+#: data/dialogue/dialogues.json
+msgid "Есть отрывки карты?"
+msgstr "Є уривки мапи?"
+
+#: data/dialogue/dialogues.json
+msgid "Запомню."
+msgstr "Запам'ятаю."
+
+#: data/dialogue/dialogues.json
+msgid "Ищу работу."
+msgstr "Шукаю роботу."
+
+#: data/dialogue/dialogues.json
+msgid "Как найти зверя на шкуру?"
+msgstr "Як знайти звіра на шкуру?"
+
+#: data/dialogue/dialogues.json
+msgid "Когда ворота откроют?"
+msgstr "Коли браму відчинять?"
+
+#: data/dialogue/dialogues.json
+msgid "Ладно."
+msgstr "Гаразд."
+
+#: data/dialogue/dialogues.json
+msgid "Мальчишка в рваной рубахе вытирает нос рукавом. «А ты из-за стены? Там правда люди без кожи ходят?»"
+msgstr "Хлопчисько в рваній сорочці витирає носа рукавом. «А ти з-за стіни? Там правда люди без шкіри ходять?»"
+
+#: data/dialogue/dialogues.json
+msgid "Мальчишка подсказал: северная стена"
+msgstr "Хлопчисько підказав: північна стіна"
+
+#: data/dialogue/dialogues.json
+msgid "Может, и из таких. Сколько платите за молчание?"
+msgstr "Може, й із таких. Скільки платите за мовчання?"
+
+#: data/dialogue/dialogues.json
+msgid "Молчи тогда."
+msgstr "Мовчи тоді."
+
+#: data/dialogue/dialogues.json
+msgid "Монеты исчезают так быстро, будто их не было. «Кого? Никого не вижу.»"
+msgstr "Монети зникають так швидко, ніби їх і не було. «Кого? Нікого не бачу.»"
+
+#: data/dialogue/dialogues.json
+msgid "Назвать себя честно."
+msgstr "Назватися чесно."
+
+#: data/dialogue/dialogues.json
+msgid "Не спросят от меня."
+msgstr "Від мене не спитають."
+
+#: data/dialogue/dialogues.json
+msgid "Нет. Просто спросил."
+msgstr "Ні. Просто спитав."
+
+#: data/dialogue/dialogues.json
+msgid "Ничего. Мимо иду."
+msgstr "Нічого. Мимо йду."
+
+#: data/dialogue/dialogues.json
+msgid "Ничего. Ухожу."
+msgstr "Нічого. Іду."
+
+#: data/dialogue/dialogues.json
+msgid "Олдермен впервые садится. «Не каждому. Половина этих — воры, другая — доносчики. Я держу и тех и других.» Он суёт тебе медяк, как собаке кость."
+msgstr "Олдермен уперше сідає. «Не кожному. Половина цих — злодії, друга — донощики. Я тримаю і тих, і других.» Він тицяє тобі мідяка, як собаці кістку."
+
+#: data/dialogue/dialogues.json
+msgid "Олдермен опускает глаза на тебя впервые. «Пропадают те, кто ходит, где не просят. Ты ведь не из таких?»"
+msgstr "Олдермен уперше опускає очі на тебе. «Зникають ті, хто ходить, де не просять. Ти ж не з таких?»"
+
+#: data/dialogue/dialogues.json
+msgid "Олдермен смотрит поверх твоей головы, будто считает, сколько с тебя можно взять. «Говори. Коротко.»"
+msgstr "Олдермен дивиться поверх твоєї голови, ніби рахує, скільки з тебе можна взяти. «Кажи. Коротко.»"
+
+#: data/dialogue/dialogues.json
+msgid "Он долго смотрит. «Дубильня хоть честно воняет. Иди, умник. Таких, как ты, тут недолго терпят.»"
+msgstr "Він довго дивиться. «Чинбарня хоч чесно смердить. Іди, розумнику. Таких, як ти, тут недовго терплять.»"
+
+#: data/dialogue/dialogues.json
+msgid "Он кивает писарю, не глядя. «Вот это разговор. Держи за усердие. И помни: кто донёс раз, на того потом тоже донесут.»"
+msgstr "Він киває писареві, не дивлячись. «Оце розмова. Тримай за старанність. І пам'ятай: хто доніс раз, на того потім теж донесуть.»"
+
+#: data/dialogue/dialogues.json
+msgid "Он оживляется. «Тяжёлая. Жалованье — медь, а спрашивают как за серебро. Олдермену доносят, если улыбнёшься не тому.»"
+msgstr "Він пожвавлюється. «Важка. Платня — мідь, а питають як за срібло. Олдерменові доносять, якщо всміхнешся не тому.»"
+
+#: data/dialogue/dialogues.json
+msgid "Он усмехается одними губами. «Кто записан — тот на виду. На виду жить дольше, если не умничать.»"
+msgstr "Він усміхається самими губами. «Хто записаний — той на виду. На виду жити довше, якщо не мудрувати.»"
+
+#: data/dialogue/dialogues.json
+msgid "Он хватает монету и шепчет: «В северной стене камни шатаются. Ночью там можно перелезть, только стражник Лоркан ходит.»"
+msgstr "Він хапає монету й шепоче: «У північній стіні каміння хитається. Уночі там можна перелізти, тільки вартовий Лоркан ходить.»"
+
+#: data/dialogue/dialogues.json
+msgid "Она оглядывается на дверь. «Не любят тех, кто читает. Я не читаю. Я варю. Запомни это, если спросят.»"
+msgstr "Вона озирається на двері. «Не люблять тих, хто читає. Я не читаю. Я варю. Запам'ятай це, якщо спитають.»"
+
+#: data/dialogue/dialogues.json
+msgid "Оставлю себе."
+msgstr "Залишу собі."
+
+#: data/dialogue/dialogues.json
+msgid "От кожевника несёт дубильней так, что слезятся глаза. «Шкуры есть? Нет — так не стой в дверях.»"
+msgstr "Від кожум'яки тхне чинбарнею так, що сльозяться очі. «Шкури є? Нема — то не стій у дверях.»"
+
+#: data/dialogue/dialogues.json
+msgid "Отдать травы за 2 монеты."
+msgstr "Віддати трави за 2 монети."
+
+#: data/dialogue/dialogues.json
+msgid "Писарь вас «не видел»"
+msgstr "Писар вас «не бачив»"
+
+#: data/dialogue/dialogues.json
+msgid "Писарь кивает и записывает. Ты видишь, что он ставит рядом крестик. «Хорошее имя. Редкое.»"
+msgstr "Писар киває й записує. Ти бачиш, що він ставить поруч хрестик. «Гарне ім'я. Рідкісне.»"
+
+#: data/dialogue/dialogues.json
+msgid "Писарь макает перо, не глядя на тебя. «Имя. Откуда. Зачем. Быстро, у меня очередь.» Очереди нет."
+msgstr "Писар умочає перо, не дивлячись на тебе. «Ім'я. Звідки. Навіщо. Швидко, у мене черга.» Черги немає."
+
+#: data/dialogue/dialogues.json
+msgid "Понял."
+msgstr "Зрозумів."
+
+#: data/dialogue/dialogues.json
+msgid "Понял. А кто записан — тот есть?"
+msgstr "Зрозумів. А хто записаний — той є?"
+
+#: data/dialogue/dialogues.json
+msgid "Правда. Иди домой."
+msgstr "Правда. Іди додому."
+
+#: data/dialogue/dialogues.json
+msgid "Принёс дикие травы."
+msgstr "Приніс дикі трави."
+
+#: data/dialogue/dialogues.json
+msgid "Расскажи про тайник в башне."
+msgstr "Розкажи про схованку у вежі."
+
+#: data/dialogue/dialogues.json
+msgid "Сигрид считает монеты, не поднимая глаз. «Покупаешь — покупай. Болтаешь — плати за время.»"
+msgstr "Сигрід рахує монети, не підводячи очей. «Купуєш — купуй. Базікаєш — плати за час.»"
+
+#: data/dialogue/dialogues.json
+msgid "Слышал, у вас за стеной пропадают люди."
+msgstr "Чув, у вас за стіною зникають люди."
+
+#: data/dialogue/dialogues.json
+msgid "Спасибо."
+msgstr "Дякую."
+
+#: data/dialogue/dialogues.json
+msgid "Справедливо."
+msgstr "Справедливо."
+
+#: data/dialogue/dialogues.json
+msgid "Стражник в засаленной куртке ковыряет ногтем в зубах. «Чего надо?»"
+msgstr "Вартовий у засмальцьованій куртці колупає нігтем у зубах. «Чого треба?»"
+
+#: data/dialogue/dialogues.json
+msgid "Уйти, пока цел."
+msgstr "Піти, поки цілий."
+
+#: data/dialogue/dialogues.json
+msgid "Уйти."
+msgstr "Піти."
+
+#: data/dialogue/dialogues.json
+msgid "Ухожу."
+msgstr "Іду."
+
+#: data/dialogue/dialogues.json
+msgid "Чем у вас пахнет хуже — дубильней или страхом?"
+msgstr "Чим у вас тхне гірше — чинбарнею чи страхом?"
+
+#: data/dialogue/dialogues.json
+msgid "Что берёте из найденного в поле?"
+msgstr "Що берете зі знайденого в полі?"
+
+#: data/dialogue/dialogues.json
+msgid "Что за травы тут растут?"
+msgstr "Що за трави тут ростуть?"
+
+#: data/dialogue/dialogues.json
+msgid "Что ты ещё пишешь?"
+msgstr "Що ти ще пишеш?"
+
+#: data/dialogue/dialogues.json
+msgid "Что у вас в городе творится?"
+msgstr "Що у вас у місті коїться?"
+
+#: data/dialogue/dialogues.json
+msgid "Ясно."
+msgstr "Ясно."
 
 #: data/lore/notes.json
 msgid "Alvaren, альбы, зимуют общим запасом. Растратить зимние припасы или загрязнить колодец у них тяжелейший проступок. Община держится на этом, а не на добродетели: зимний провал снабжения губит всех сразу."
@@ -7722,10 +8669,6 @@ msgid "Город Эшвик"
 msgstr "Місто Ешвік"
 
 #: tutorial/tutorial.gd
-msgid "Городская стена"
-msgstr "Міська стіна"
-
-#: tutorial/tutorial.gd
 msgid "До катастрофы жила цивилизация, знавшая больше, чем нынешние народы. Остались руины, герметичные камеры и обрывки процедур, смысл которых забыт. Их потомки называют это магией, но чаще это уцелевшая технология, обряд или особенность тела."
 msgstr "До катастрофи жила цивілізація, що знала більше, ніж нинішні народи. Лишилися руїни, герметичні камери й уривки процедур, сенс яких забуто. Їхні нащадки називають це магією, але частіше це вціліла технологія, обряд або особливість тіла."
 
@@ -8078,10 +9021,6 @@ msgid "игра на паузе · F1 или Esc — закрыть"
 msgstr "гра на паузі · F1 або Esc — закрити"
 
 #: tutorial/tutorial.gd
-msgid "идти"
-msgstr "іти"
-
-#: tutorial/tutorial.gd
 msgid "идти (видна цена хода в клетках и угроза атаки по возможности)"
 msgstr "іти (видно ціну ходу у футах і загрозу атаки за нагоди)"
 
@@ -8256,6 +9195,110 @@ msgstr "шанс влучання, шкода, AC, укриття"
 #: tutorial/tutorial.gd
 msgid "эта справка (в любой момент, игра на паузе)"
 msgstr "ця довідка (будь-коли, гра на паузі)"
+
+#: world/foraging.gd
+msgid "Здесь искать нечего"
+msgstr "Тут шукати нічого"
+
+#: world/foraging.gd
+msgid "Здесь уже всё обшарено: загляните через %d ч"
+msgstr "Тут уже все обнишпорено: загляньте через %d год"
+
+#: world/foraging.gd
+msgid "Нет сил шарить по кустам: отдохните"
+msgstr "Нема сил нишпорити по кущах: відпочиньте"
+
+#: world/foraging.gd
+msgid "Обшарил округу (%d мин): %s"
+msgstr "Обнишпорив околицю (%d хв): %s"
+
+#: world/loot_window.gd
+msgid "%s ×%d   (%.1f кг)"
+msgstr "%s ×%d   (%.1f кг)"
+
+#: world/loot_window.gd
+msgid "Больше ничего нет"
+msgstr "Більше нічого немає"
+
+#: world/loot_window.gd
+msgid "Взять"
+msgstr "Узяти"
+
+#: world/loot_window.gd
+msgid "Взять всё  [E]"
+msgstr "Узяти все  [E]"
+
+#: world/loot_window.gd
+msgid "Все"
+msgstr "Усі"
+
+#: world/loot_window.gd
+msgid "Груз: %.1f / %.0f кг"
+msgstr "Вантаж: %.1f / %.0f кг"
+
+#: world/loot_window.gd
+msgid "Не унести: %s слишком тяжело (свободно %.1f кг)"
+msgstr "Не винести: %s надто важко (вільно %.1f кг)"
+
+#: world/loot_window.gd
+msgid "Оставить остальное  [Esc]"
+msgstr "Залишити решту  [Esc]"
+
+#: world/parchment.gd
+msgid "   ·   ЛАСТИК"
+msgstr "   ·   ГУМКА"
+
+#: world/parchment.gd
+msgid " (выше %d — видно, где вы)"
+msgstr " (понад %d — видно, де ви)"
+
+#: world/parchment.gd
+msgid "Жирно"
+msgstr "Жирно"
+
+#: world/parchment.gd
+msgid "Закрыть  [M]"
+msgstr "Закрити  [M]"
+
+#: world/parchment.gd
+msgid "К герою"
+msgstr "До героя"
+
+#: world/parchment.gd
+msgid "Картография %d"
+msgstr "Картографія %d"
+
+#: world/parchment.gd
+msgid "ЛКМ — рисовать углём, Shift+ЛКМ — стереть, ПКМ — двигать лист, колесо — масштаб"
+msgstr "ЛКМ — малювати вугликом, Shift+ЛКМ — стерти, ПКМ — рухати аркуш, коліщатко — масштаб"
+
+#: world/parchment.gd
+msgid "Ластик"
+msgstr "Гумка"
+
+#: world/parchment.gd
+msgid "На пергаменте нет места: сотрите лишнее"
+msgstr "На пергаменті нема місця: зітріть зайве"
+
+#: world/parchment.gd
+msgid "Приложил к пергаменту отрывков карты: %d"
+msgstr "Приклав до пергаменту уривків мапи: %d"
+
+#: world/parchment.gd
+msgid "Тонко"
+msgstr "Тонко"
+
+#: world/parchment.gd
+msgid "Уголёк"
+msgstr "Вуглик"
+
+#: world/parchment.gd
+msgid "Цветной уголь (нужен набор цветных углей)"
+msgstr "Кольорове вугілля (потрібен набір кольорових вуглин)"
+
+#: world/parchment.gd
+msgid "цветные угли продаёт торговец"
+msgstr "кольорові вуглини продає торговець"
 
 #: world/settlements.gd
 msgid " и наполнил флягу"
@@ -8438,5 +9481,13 @@ msgid "Сохранение"
 msgstr "Збереження"
 
 #: worlds/worlds.gd
+msgid "Вас выследили!"
+msgstr "Вас вистежили!"
+
+#: worlds/worlds.gd
 msgid "Город: "
 msgstr "Місто: "
+
+#: worlds/worlds.gd
+msgid "Застали врасплох во сне!"
+msgstr "Заскочили зненацька уві сні!"
