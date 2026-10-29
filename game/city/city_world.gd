@@ -841,10 +841,81 @@ func interact() -> void:
 	if not n.is_empty():
 		talk(n)
 		return
+	var br: Dictionary = _nearest_breach()
+	if not br.is_empty():
+		open_wall(br)
+		return
 	var p: Dictionary = _nearest_place()
 	if p.is_empty():
 		return
 	use_place(p)
+
+
+# =====================================================================
+# ПЕРЕЛІЗТИ СТІНУ (пункт 14): біля місця breaches зсередини, коли брама зачинена
+# =====================================================================
+const WallClimb := preload("res://city/wall_climb.gd")
+const BREACH_M: float = 4.0
+var climb_rng := RandomNumberGenerator.new()
+
+
+func _nearest_breach() -> Dictionary:
+	for b in def.get("breaches", []):
+		if map.center_of(Vector2i(b["cell"][0], b["cell"][1])).distance_to(hero_pos) < BREACH_M:
+			return b
+	return {}
+
+
+func _guard_dist() -> float:
+	var best: float = INF
+	for n in npcs:
+		if n["def"].get("role", "") == "guard" and n["actor"].alive and not n["actor"].sleeping:
+			best = minf(best, n["pos"].distance_to(hero_pos))
+	return best
+
+
+func open_wall(b: Dictionary) -> void:
+	if gates_open():
+		_open_panel("talk", I18n.t("Городская стена"), I18n.t("Днём через стену не лезут: ворота открыты, а стража смотрит. Идите в ворота."), [[I18n.t("Уйти"), _close_panel]])
+		return
+	var c: float = WallClimb.chance(hero, bag)
+	var g: float = _guard_dist()
+	var t: String = I18n.t("Ворота заперты до утра. Стена сырая, камни шатаются.\nШанс перелезть: %d %%%s") % [int(round(c * 100.0)),
+		I18n.t(" (верёвка поможет)") if Trade.count(bag, "rope") > 0 else ""]
+	if g <= WallClimb.SEEN_GUARD_M:
+		t += I18n.t("\nСтражник совсем рядом — заметит.")
+	_open_panel("talk", I18n.t("Городская стена"), t, [[I18n.t("Перелезть стену"), func(): climb_wall(b)], [I18n.t("Уйти"), _close_panel]])
+
+
+func climb_wall(b: Dictionary) -> String:
+	_close_panel()
+	clock._set_total(clock.total_seconds + WallClimb.MINUTES * 60.0)
+	var r: String = WallClimb.attempt(hero, bag, _guard_dist(), climb_rng)
+	match r:
+		"over":
+			_say(I18n.t("Перелез через стену и спрыгнул в темноту"))
+			_leave(_gate_near_breach(b))
+		"seen":
+			var fine: int = _take_fine(int(rules.get("intruder_fine", 15)))
+			_say(I18n.t("Стража стащила со стены: штраф %d") % fine)
+		"fall":
+			_say(I18n.t("Сорвался со стены и ушиб руку"))
+		_:
+			_say(I18n.t("Не вышло: камни скользкие"))
+	return r
+
+
+## Брама з того ж боку, що й місце біля стіни (туди герой і вийде на загальну карту)
+func _gate_near_breach(b: Dictionary) -> String:
+	var gates: Array = def.get("gates", [])
+	if gates.is_empty():
+		return ""
+	var p: Vector2 = map.center_of(Vector2i(b["cell"][0], b["cell"][1]))
+	var best: Dictionary = gates[0]
+	for g in gates:
+		if (Vector2(g["spawn"][0], g["spawn"][1]) * map.cell_m).distance_to(p) < (Vector2(best["spawn"][0], best["spawn"][1]) * map.cell_m).distance_to(p):
+			best = g
+	return String(best["id"])
 
 
 ## Криниця — пити, схованка — обшукати, решта — прочитати (E поруч або клік мишею)

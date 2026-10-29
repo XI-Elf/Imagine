@@ -100,6 +100,37 @@ func _pure() -> void:
 	ok(Trade.count(kit, "parchment") == 1 and Trade.count(kit, "charcoal_stick") == 1, "у персонажа пергамент и уголёк")
 	ok(Trade.sell(kit, {}, ["parchment"], "parchment", a) != "" and Trade.count(kit, "parchment") == 1, "пергамент не продать")
 
+	# Відстань за Розумом (пункт 12)
+	var Route := preload("res://characters/hero_route.gd")
+	ok(Route.distance_words(300.0, 2) == "рукой подать" and Route.distance_words(9000.0, 3) == "очень далеко", "Ум 1–3: словами")
+	ok(Route.distance_words(2600.0, 5) == "около 3 км", "Ум 4–6: округлённо (%s)" % Route.distance_words(2600.0, 5))
+	ok(Route.distance_words(2440.0, 8) == "2.4 км" or Route.distance_words(2440.0, 8) == "2,4 км", "Ум 7+: точно (%s)" % Route.distance_words(2440.0, 8))
+
+	# Стіна зсередини (пункт 14)
+	var WC := preload("res://city/wall_climb.gd")
+	var climber := Actor.new("c", "C", false, 3)
+	climber.res["stamina"] = climber.max_of("stamina")
+	var c0: float = WC.chance(climber, Trade.new_bag())
+	var rope: Dictionary = Trade.new_bag()
+	Trade.add(rope, "rope")
+	ok(WC.chance(climber, rope) > c0, "верёвка помогает перелезть (%.2f > %.2f)" % [WC.chance(climber, rope), c0])
+	ok(WC.seen_chance(climber, 10.0) > WC.seen_chance(climber, 200.0), "стражник рядом — заметит")
+	var outs: Dictionary = {}
+	for i in 200:
+		climber.res["stamina"] = climber.max_of("stamina")
+		climber.conditions.clear()
+		var o: String = WC.attempt(climber, rope, 200.0, rng)
+		outs[o] = int(outs.get(o, 0)) + 1
+	ok(outs.has("over") and outs.size() >= 3, "исходы попыток: %s" % outs)
+
+	# Журнал (пункт 15)
+	var J := preload("res://characters/quest_journal.gd")
+	var ic: Array = J.icons_for("Убить волков у старого города и принести шкуры старосте за 10 монет")
+	ok(ic.has("sword") and ic.has("house") and ic.has("hide") and ic.has("coin"), "Ум низкий: картинки %s" % [ic])
+	ok(J.crude_words("Убить волков у города").split(" ").size() <= 3, "Ум низкий: пара простых слов")
+	var rt: String = J.rich_text({"text": "принести шкуры старосте", "place": "Эшвик"}, "1 Хомана")
+	ok(rt.contains("Эшвик") and rt.contains("старосте с мутным") and rt.length() > 60, "Ум высокий: подробно")
+
 
 func _run() -> void:
 	var game: Node2D = load("res://game.tscn").instantiate()
@@ -177,6 +208,18 @@ func _run() -> void:
 	Input.parse_input_event(_key(KEY_M))
 	await frames(2)
 	ok(not pm.is_open() and not game.clock.paused, "M закрывает пергамент, время идёт")
+
+	# Журнал на J: запис зберігається, читається за Розумом
+	if wm != null:
+		Input.parse_input_event(_key(KEY_J))
+		await frames(3)
+		ok(wm.journal.is_open() and game.typing, "J открывает журнал, герой не ходит")
+		wm.journal._edit.text = "Принести старосте три шкуры волка"
+		wm.journal.add(wm.journal._edit.text)
+		await shot("s03_journal.png")
+		wm.journal.close()
+		await frames(2)
+		ok(not game.typing and wm.to_dict()["journal"].size() == 1, "запись в журнале сохраняется")
 
 	# Збереження
 	var d: Dictionary = cast.to_dict()

@@ -31,6 +31,7 @@ const CITY_SCENE := "res://city/city_world.tscn"
 const BATTLE_SCENE := "res://battle/battle.tscn"
 const ENCOUNTERS := "res://battle/encounters.gd"
 const WorldEnv := preload("res://characters/world_env.gd")
+const JournalScript := preload("res://characters/quest_journal.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
@@ -55,6 +56,8 @@ var left_carts: Array = []         # Q32: вози загиблих героїв
 var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
 var _km_actor: Actor = null
 var sleep_fx: CanvasLayer = null
+var journal: CanvasLayer          # журнал завдань на J (characters/quest_journal.gd), пише гравець
+var _journal_typing: bool = false
 var idle_attacks: bool = true      # пункт 17: напади, поки герой стоїть або спить у полі (тести вимикають)
 var _idle_s: float = 0.0           # ігрові секунди, які герой простояв на місці з останньої перевірки
 var _idle_pos := Vector2.INF
@@ -77,6 +80,9 @@ func _ready() -> void:
 	sleep_fx = preload("res://ui/sleep_fx.gd").new()
 	sleep_fx.worlds = self
 	add_child(sleep_fx)
+	journal = JournalScript.new()
+	add_child(journal)
+	journal.setup(hero_actor, func() -> float: return game.clock.total_seconds if game != null else 0.0, _journal_place, _journal_weather)
 	# Карта могла увійти в дерево раніше за автозавантаження (запуск тестів через -s)
 	for n in get_tree().root.get_children():
 		_on_node_added(n)
@@ -107,7 +113,21 @@ func is_battle() -> bool:
 
 # Чи відкрите меню паузи гри (Esc): поки відкрите, світ не рухає героя
 func menu_open() -> bool:
-	return game != null and bool(game.menu_open)
+	return game != null and (bool(game.menu_open) or (journal != null and journal.visible))
+
+
+func _journal_place() -> String:
+	if is_away():
+		return place_text()
+	var b: Dictionary = hero_body()
+	return game.place_line(b["pos"]) if not b.is_empty() and game.has_method("place_line") else ""
+
+
+func _journal_weather() -> String:
+	var b: Dictionary = hero_body()
+	if b.is_empty() or game.physics == null:
+		return ""
+	return String(game.physics.weather_here(b["pos"]).get("name", "")).to_lower()
 
 
 func hero_body() -> Dictionary:
@@ -191,6 +211,10 @@ func _process(delta: float) -> void:
 		if h != null and not h.km_passed.is_connected(_on_hero_km.bind(h)):
 			h.km_passed.connect(_on_hero_km.bind(h))
 	_track_idle()
+	# Поки відкритий журнал, клавіші — у поле запису: карта й герой стоять
+	if journal != null and journal.visible != _journal_typing:
+		_journal_typing = journal.visible
+		game.typing = _journal_typing
 	# Карта, поки її не видно, не рахує автозбереження — рахуємо тут (у бою не зберігаємо)
 	if is_away() and not is_battle():
 		_autosave_t += delta
@@ -262,6 +286,12 @@ func _on_enter_requested(s: Dictionary) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if game == null or not game.ready_done or busy:
+		return
+	# J — журнал завдань (і на карті, і в місті); не в бою й не поки набирають текст
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_J \
+			and journal != null and not journal.visible and hero_actor() != null and not is_battle() and not game.typing and not game.menu_open:
+		journal.open()
+		get_viewport().set_input_as_handled()
 		return
 	# У місті й у бою Esc, який світ не забрав собі, відкриває меню паузи гри
 	if is_away():
@@ -597,7 +627,8 @@ func to_dict() -> Dictionary:
 			list.append({"kind": "battle", "req": r, "state": state, "clock_was_paused": _clock_was_paused})
 	var cities: Dictionary = city_states.duplicate()
 	return {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
-		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true), "codex": codex.duplicate()}
+		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true), "codex": codex.duplicate(),
+		"journal": journal.to_array() if journal != null else []}
 
 
 # Після завантаження карти (world_save.apply_late): заново входить у збережені міста й бій, без затемнення
@@ -616,6 +647,8 @@ func load_dict(d: Dictionary) -> void:
 	battles_won = int(d.get("battles_won", 0))
 	left_carts = d.get("left_carts", []).duplicate(true) if d.get("left_carts") is Array else []
 	codex = d.get("codex", {}).duplicate() if d.get("codex") is Dictionary else {}
+	if journal != null:
+		journal.load_array(d.get("journal", []))
 	if not list.is_empty() and game.get("cast") != null:
 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))
 	for e in list:
