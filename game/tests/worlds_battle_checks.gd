@@ -1,6 +1,6 @@
 extends SceneTree
-## Бой ветки «Боевая сцена» (battle/battle.tscn) через Worlds: вход, сохранение, загрузка, возврат.
-## godot --path game --rendering-driver opengl3 -s res://tests/worlds_battle_checks.gd -- [папка_для_снимков]
+## Бій гілки «Бойова сцена» (battle/battle.tscn) через Worlds: вхід, збереження, завантаження, повернення.
+## godot --path game --rendering-driver opengl3 -s res://tests/worlds_battle_checks.gd -- [тека_для_знімків]
 
 const WorldSave := preload("res://world_save.gd")
 var fails: int = 0
@@ -44,7 +44,7 @@ func _run() -> void:
 	var hb: Dictionary = game.cast.hero
 	var here: Vector2 = hb["pos"]
 	await frames(3)
-	# Отладочной K больше нет (Q07): бой как от случайного нападения, враги — из encounters.gd
+	# Налагоджувальної K більше немає (Q07): бій як від випадкового нападу, вороги — з encounters.gd
 	W.start_battle({})
 	await frames(2)
 	while W.busy:

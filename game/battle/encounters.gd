@@ -1,10 +1,11 @@
 extends RefCounted
-## Кто нападает и когда. Нападение проверяется на каждый пройденный километр (событие km_passed пака),
-## враги собираются по местности из шаблонов res://data/battle/creatures. Враги — обычные Actor;
-## шаблон зашит в actor_id: "foe:<шаблон>:<n>", чтобы пережить сохранение через Actor.to_dict.
-## Числа [ВРЕМЕННО].
+## Хто нападає й коли. Напад перевіряється на кожен пройдений кілометр (подія km_passed пакета),
+## вороги збираються за місцевістю із шаблонів res://data/battle/creatures. Вороги — звичайні Actor;
+## шаблон зашито в actor_id: "foe:<шаблон>:<n>", щоб пережити збереження через Actor.to_dict.
+## Числа [Q19: перевіряє tests/balance_checks.gd].
 
 const Data := preload("res://battle/battle_data.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const TERRAINS: Array = ["", "water", "coast", "forest", "wasteland", "swamp", "mountains", "rad_forest", "rad_wasteland", "rad_swamp"]
 const PER_KM: float = 0.06
 const NIGHT_MULT: float = 1.5
@@ -19,7 +20,11 @@ const BY_TERRAIN: Dictionary = {
 	"rad_wasteland": {"hounds": 3, "bandits": 1},
 	"rad_swamp": {"hounds": 3},
 }
-## [шаблон, от, до]
+## Q30 (Huzzah 2026-10-27, варіант B): поки місто, що росте, на етапі «Форт», у STARTER_KM від нього
+## замість зграї виходить один обірванець із палицею (Q19, bandit_ragged) — перший бій із ножем під силу. Прапорець starter ставить Worlds._start_battle_now
+const STARTER_KM: float = 8.0
+const STARTER_GROUPS: Array = ["bandits", "gang"]
+## [шаблон, від, до]
 const GROUPS: Dictionary = {
 	"bandits": [["bandit", 1, 2], ["bandit_archer", 0, 1], ["bandit_chief", 0, 0]],
 	"gang": [["bandit_chief", 1, 1], ["bandit", 1, 2], ["bandit_archer", 1, 1]],
@@ -52,7 +57,16 @@ static func roll_on_km(hero: Actor, env: Dictionary, rng: RandomNumberGenerator 
 	if hero == null or not hero.alive:
 		return false
 	var r: float = rng.randf() if rng != null else randf()
-	return r < chance_per_km(env)
+	# дары «Странник» — реже нападают, «Друг зверей» — реже звери (по их доле в местности)
+	var w: Dictionary = BY_TERRAIN.get(terrain_key(int(env.get("biome", 4))), {})
+	var total: float = 0.0
+	var beasts: float = 0.0
+	for k in w:
+		total += float(w[k])
+		if k in ["wolves", "boar", "hounds"]:
+			beasts += float(w[k])
+	var m: float = 1.0 + Sheet.eff(hero, "encounter") + Sheet.eff(hero, "encounter_beast") * (beasts / total if total > 0.0 else 0.0)
+	return r < chance_per_km(env) * maxf(m, 0.0)
 
 
 static func pick_group(terrain: String, rng: RandomNumberGenerator) -> String:
@@ -79,11 +93,14 @@ static func make_enemies(req: Dictionary, rng: RandomNumberGenerator) -> Array:
 		group = pick_group(String(req.get("terrain", "wasteland")), rng)
 	var out: Array = []
 	var n: int = 0
+	if bool(req.get("starter", false)) and group in STARTER_GROUPS:
+		req["group"] = group
+		return [make_enemy("bandit_ragged", 0, rng)]
 	for m in GROUPS[group]:
 		for i in rng.randi_range(int(m[1]), int(m[2])):
 			out.append(make_enemy(String(m[0]), n, rng))
 			n += 1
-	# не больше, чем по силам стороне героя: союзников × cap + extra [ВРЕМЕННО]
+	# не більше, ніж під силу стороні героя: союзників × cap + extra [Q19: перевіряє tests/balance_checks.gd]
 	var allies: int = req.get("allies", []).size()
 	if allies > 0 and not bool(req.get("no_cap", false)):
 		var cfg: BattleConfig = Data.config()

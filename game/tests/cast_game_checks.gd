@@ -1,12 +1,20 @@
 extends SceneTree
-## Проверка героя и НПС в настоящей сцене карты (нужен экран: под xvfb, --rendering-driver opengl3).
-## godot --path game --rendering-driver opengl3 -s res://tests/cast_game_checks.gd -- [папка_для_снимков]
+## Перевірка героя й НПС у справжній сцені карти (потрібен екран: під xvfb, --rendering-driver opengl3).
+## godot --path game --rendering-driver opengl3 -s res://tests/cast_game_checks.gd -- [тека_для_знімків]
 
 const WorldSave := preload("res://world_save.gd")
 
 var fails: int = 0
 var checks: int = 0
 var shots: String = ""
+
+
+func _key(code: int) -> InputEventKey:
+	var k := InputEventKey.new()
+	k.physical_keycode = code
+	k.keycode = code
+	k.pressed = true
+	return k
 
 
 func ok(cond: bool, what: String) -> void:
@@ -46,14 +54,14 @@ func _run() -> void:
 	var cast: Node2D = game.cast
 	ok(cast != null, "персонажи подключены")
 
-	# Герой на суше у центра карты, рядом НПС
+	# Герой на суходолі біля центру карти, поруч НПС
 	game.cam_pos = Vector2(20812.0, 18000.0)
 	cast.spawn_hero(game.cam_pos)
 	var hero: Dictionary = cast.hero
 	ok(not hero.is_empty() and cast._land(hero["pos"]), "герой на суше: %s" % hero.get("pos"))
 	ok(cast.bodies.size() == 1, "НПС снаружи города не появляются (их %d)" % (cast.bodies.size() - 1))
 	ok(is_equal_approx(game.clock.current_rate(), 96.0 * GameClock.GAME_SPEED) or not game.clock.active, "часы ×%d" % int(game.clock.current_rate()))
-	# Для проверки распорядка НПС — восемь вручную, по тем же правилам; знахарь пятый
+	# Для перевірки розпорядку НПС — восьмеро вручну, за тими самими правилами; лікар п'ятий
 	var R := preload("res://characters/actor_rules.gd")
 	var sk: Array = R.skills().keys()
 	for i in 8:
@@ -64,7 +72,7 @@ func _run() -> void:
 	await frames(5)
 	await shot("c01_hero_spawn.png")
 
-	# Идёт вправо 3 секунды
+	# Іде праворуч 3 секунди
 	var start: Vector2 = hero["pos"]
 	Input.action_press("ui_right")
 	await create_timer(3.0).timeout
@@ -74,10 +82,10 @@ func _run() -> void:
 	ok(game.cam_pos.distance_to(hero["pos"]) < 1.0, "камера идёт за героем")
 	await shot("c02_hero_walked.png")
 
-	# Бег быстрее
+	# Біг швидший
 	start = hero["pos"]
 	Input.action_press("ui_left")
-	Input.action_press("ui_accept")   # не мешает
+	Input.action_press("ui_accept")   # не заважає
 	var ev := InputEventKey.new()
 	ev.physical_keycode = KEY_SHIFT
 	ev.keycode = KEY_SHIFT
@@ -90,7 +98,7 @@ func _run() -> void:
 	Input.parse_input_event(ev)
 	print("бег: %.0f м за 2 с, силы %d" % [hero["pos"].distance_to(start), int(hero["actor"].res["stamina"])])
 
-	# НПС живут: время идёт, нужды падают, кто-то ходит
+	# НПС живуть: час іде, потреби падають, хтось ходить
 	var npc_start: Array = cast.bodies.filter(func(b): return not b["hero"]).map(func(b): return b["pos"])
 	game.clock.speed_index = 1
 	await create_timer(6.0).timeout
@@ -105,7 +113,7 @@ func _run() -> void:
 		print("  %s: план %s, голод %d, жажда %d, энергия %d" % [b["actor"].display_name, b["plan"], int(b["actor"].res["hunger"]), int(b["actor"].res["thirst"]), int(b["actor"].res["energy"])])
 	ok(hero["actor"].res["thirst"] < 80.0, "у героя растёт жажда: %.1f" % hero["actor"].res["thirst"])
 
-	# Лист персонажа
+	# Аркуш персонажа
 	cast.window.open("stats")
 	game.zoom = 1.0
 	await frames(5)
@@ -113,19 +121,19 @@ func _run() -> void:
 	ok(cast.window.visible and cast.sheet_visible, "окно героя (лист персонажа)")
 	cast.window.close()
 
-	# Сохранение и загрузка
+	# Збереження й завантаження
 	var d: Dictionary = WorldSave.build(game)
 	ok(d.has("cast") and d["cast"]["bodies"].size() == cast.bodies.size(), "в сохранении персонажи")
 	var hero_pos: Vector2 = hero["pos"]
 	cast.load_dict(d["cast"])
 	ok(not cast.hero.is_empty() and cast.hero["pos"].distance_to(hero_pos) < 0.01, "загрузка: герой на месте")
 	ok(cast.bodies.size() == 1, "НПС с общей карты из сохранения не грузятся")
-	# Знахарь для проверки лечения — снова вручную
-	var hk := Actor.new("healer_t", "Знахарь", true, 77)
+	# Лікар для перевірки лікування — знову вручну
+	var hk := Actor.new("healer_t", "Лекарь", true, 77)
 	hk.add_xp("medicine", 300.0)
 	cast.spawn_npc(hk, cast.hero["pos"] + Vector2(300, 0), cast.all_remedies())
 
-	# Вода: герой у воды может пить, в воде плывёт
+	# Вода: герой біля води може пити, у воді пливе
 	var w: Vector2 = cast._nearest_water(cast.hero["pos"])
 	if w == Vector2.INF:
 		w = cast._nearest_water(Vector2(20812.0, 14000.0))
@@ -140,12 +148,21 @@ func _run() -> void:
 		await frames(3)
 		await shot("c04_swimming.png")
 
-	# Знахарь лечит героя (клавиша T) и любой НПС по тем же правилам
+	# Лікар лікує героя (клавіша T) і будь-якого НПС за тими самими правилами
 	var healer: Dictionary = cast._nearest_healer(cast.hero)
-	ok(not healer.is_empty(), "среди НПС есть знахарь: %s" % healer.get("actor", Actor.new()).display_name)
+	ok(not healer.is_empty(), "среди НПС есть лекарь: %s" % healer.get("actor", Actor.new()).display_name)
 	if not healer.is_empty():
 		cast.hero["pos"] = healer["pos"] + Vector2(5, 0)
 		cast.hero["actor"].add_condition("laceration")
+		# Q36: лікування платне, запас лікаря скінченний
+		var bag: Dictionary = cast._inventory()
+		bag["money"] = 0
+		cast._unhandled_input(_key(KEY_T))
+		ok(cast.hero["actor"].has_condition("laceration") and game.event_text.contains("не хватает денег"), "без денег лекарь не лечит: " + game.event_text)
+		bag["money"] = 1000
+		ok(int(healer["kit"].get("bandage", 0)) == 3, "у лекаря 3 бинта (medicine.npc_kit_each)")
+		healer["kit"]["bandage"] = 10   # щоб три невдачі поспіль не зробили перевірку випадковою
+		var bandages0: int = 10
 		var healed := false
 		for i in 30:
 			var key := InputEventKey.new()
@@ -160,10 +177,21 @@ func _run() -> void:
 			if not cast.hero["actor"].has_condition("laceration"):
 				healed = true
 				break
-		ok(healed, "знахарь вылечил рану героя: " + game.event_text)
-		ok(healer["actor"].skills["medicine"]["xp"] > 0.0, "знахарь получил опыт")
+		ok(healed, "лекарь вылечил рану героя: " + game.event_text)
+		var spent: int = bandages0 - int(healer["kit"].get("bandage", 0))
+		ok(spent >= 1 and int(bag["money"]) == 1000 - 6 * spent, "каждая попытка — бинт и 6 монет: бинтов −%d, денег %d" % [spent, int(bag["money"])])
+		for it in healer["kit"]:
+			healer["kit"][it] = 0
+		ok(cast._nearest_healer(cast.hero).is_empty(), "лекарь с пустым запасом не лечит")
+		healer["restock_at"] = game.clock.total_seconds - 1.0
+		cast._restock(healer)
+		ok(int(healer["kit"]["bandage"]) == 3 and healer["restock_at"] > game.clock.total_seconds, "сходил в город — запас снова полный")
+		var saved_cast: Dictionary = cast.to_dict()
+		ok(saved_cast["bodies"].any(func(e): return e["kit"] is Dictionary and int(e["kit"].get("bandage", 0)) == 3), "запас лекаря в сохранении")
+		ok(cast.as_kit(["bandage"]) == {"bandage": 3}, "старый сейв: список лекарств → запас по 3")
+		ok(healer["actor"].xp > 0.0, "лекарь получил опыт")
 
-	# Жаркие горы (ветка terrain): температура из карты, жажда в жару быстрее
+	# Спекотні гори (гілка terrain): температура з карти, спрага в спеку швидша
 	if game.has_method("is_hot"):
 		var hot := Vector2(30359.0, 8769.0)
 		var henv: Dictionary = preload("res://characters/world_env.gd").sample(game, hot)

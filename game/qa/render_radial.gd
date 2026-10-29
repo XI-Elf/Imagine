@@ -1,6 +1,6 @@
 extends SceneTree
-## Снимки радиального города: мир города (обзор, вблизи) и миниатюра на общей карте на разных масштабах.
-## godot --path game --rendering-driver opengl3 -s res://qa/render_radial.gd  (папка снимков — AMBER_QA_OUT)
+## Знімки радіального міста: світ міста (огляд, зблизька) і мініатюра на загальній карті на різних масштабах.
+## godot --path game --rendering-driver opengl3 -s res://qa/render_radial.gd  (тека знімків — AMBER_QA_OUT)
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://radial_previews/"
 
 

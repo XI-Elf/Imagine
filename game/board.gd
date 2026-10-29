@@ -1,16 +1,16 @@
 extends RefCounted
-## Доска-шестиугольник плоской стороной вверх 41625 x 36000 м: форма и размер игровой карты.
-## Подключается по пути: preload("res://board.gd"). Координаты карты X Y в метрах доски.
-## Рисунок и слой биомов переносятся на доску инструментом tools/make_new_map.py.
-## to_src / to_board (прежняя развёртка S 36000 x 18000) оставлены для tools/board_proj.py:
-## по ним инструмент раскладывает сушу новой карты для модели атмосферы.
+## Дошка-шестикутник пласкою стороною вгору 41625 x 36000 м: форма й розмір ігрової карти.
+## Підключається за шляхом: preload("res://board.gd"). Координати карти X Y у метрах дошки.
+## Малюнок і шар біомів переносяться на дошку інструментом tools/make_new_map.py.
+## to_src / to_board (колишня розгортка S 36000 x 18000) залишено для tools/board_proj.py:
+## за ними інструмент розкладає суходіл нової карти для моделі атмосфери.
 
 const SRC := Vector2(36000.0, 18000.0)
 const SIZE := Vector2(41625.0, 36000.0)
 const CENTER := Vector2(20812.5, 18000.0)
 const APO: float = 18000.0
 const C30: float = 0.8660254037844386
-# Растры доски (art/board/*.png): 4736 x 4096, клетка 8,7890625 м
+# Растри дошки (art/board/*.png): 4736 x 4096, клітинка 8,7890625 м
 const RAS_NX: int = 4736
 const RAS_NY: int = 4096
 const RAS_M: float = 8.7890625
@@ -30,7 +30,7 @@ static func _hex_c(u: Vector2) -> float:
 	return maxf(absf(u.y), maxf(absf(C30 * u.x + 0.5 * u.y), absf(-C30 * u.x + 0.5 * u.y)))
 
 
-# «Шестиугольная длина» вектора: APO на краю доски
+# «Шестикутна довжина» вектора: APO на краю дошки
 static func hex_norm(v: Vector2) -> float:
 	return maxf(absf(v.y), maxf(absf(C30 * v.x + 0.5 * v.y), absf(-C30 * v.x + 0.5 * v.y)))
 
@@ -39,7 +39,7 @@ static func inside(p: Vector2, margin: float = 0.0) -> bool:
 	return hex_norm(p - CENTER) <= APO - margin
 
 
-# Точка доски, втянутая внутрь гекса (с отступом margin от края)
+# Точка дошки, втягнута всередину гекса (з відступом margin від краю)
 static func clamp_inside(p: Vector2, margin: float = 0.0) -> Vector2:
 	var v: Vector2 = p - CENTER
 	var hn: float = hex_norm(v)
@@ -49,7 +49,7 @@ static func clamp_inside(p: Vector2, margin: float = 0.0) -> Vector2:
 	return CENTER + v * (lim / hn)
 
 
-# S (прежняя развёртка) -> P (доска)
+# S (колишня розгортка) -> P (дошка)
 static func to_board(s: Vector2) -> Vector2:
 	var t: float = clampf(s.y / SRC.y, 0.0, 1.0)
 	var lam: float = (s.x - SRC.x * 0.5) / SRC.x * TAU
@@ -58,7 +58,7 @@ static func to_board(s: Vector2) -> Vector2:
 	return CENTER + u * rho
 
 
-# Доля пути от Северного полюса к Южному (0..1, за краем больше 1)
+# Частка шляху від Північного полюса до Південного (0..1, за краєм більше 1)
 static func colat_t(p: Vector2) -> float:
 	var v: Vector2 = p - CENTER
 	var rho: float = v.length()
@@ -73,7 +73,7 @@ static func colat_t(p: Vector2) -> float:
 	return t
 
 
-# P (доска) -> S (прежняя развёртка)
+# P (дошка) -> S (колишня розгортка)
 static func to_src(p: Vector2) -> Vector2:
 	var v: Vector2 = p - CENTER
 	if v.length() < 0.001:
@@ -83,7 +83,7 @@ static func to_src(p: Vector2) -> Vector2:
 	return Vector2(sx, clampf(colat_t(p), 0.0, 1.0) * SRC.y)
 
 
-# Местные направления на доске: юг (от центра) и восток (против часовой стрелки)
+# Місцеві напрямки на дошці: південь (від центру) і схід (проти годинникової стрілки)
 static func south_dir(p: Vector2) -> Vector2:
 	var v: Vector2 = p - CENTER
 	if v.length() < 0.001:
@@ -96,12 +96,12 @@ static func east_dir(p: Vector2) -> Vector2:
 	return Vector2(s.y, -s.x)
 
 
-# Вектор в местных осях (восток, север) -> вектор на доске
+# Вектор у місцевих осях (схід, північ) -> вектор на дошці
 static func en_to_board(p: Vector2, east: float, north: float) -> Vector2:
 	return east_dir(p) * east - south_dir(p) * north
 
 
-# Направление x восток, y юг, z вверх (как WorldPhysics._dir_enu) -> оси доски (x, y экрана, z вверх)
+# Напрямок x схід, y південь, z угору (як WorldPhysics._dir_enu) -> осі дошки (x, y екрана, z угору)
 static func enu_to_board(p: Vector2, d: Vector3) -> Vector3:
 	var xy: Vector2 = east_dir(p) * d.x + south_dir(p) * d.y
 	return Vector3(xy.x, xy.y, d.z)

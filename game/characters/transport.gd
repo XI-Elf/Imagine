@@ -1,12 +1,12 @@
 extends Node2D
-## Лошадь и повозка (вопрос Q16, Huzzah 2026-10-24): только транспорт — быстрее ехать и больше везти,
-## в бою не участвуют. Владение — вещи horse и cart в сумке героя (Worlds.inventory, data/cities/items.json);
-## лошадь продаёт торговка, повозку — кузнец, оба с этапа «Слобода». Повозке нужна лошадь (Trade.buy).
-## R на карте — сесть верхом (с повозкой — на повозку) или спешиться; выбор — ключ ride в сумке,
-## поэтому сохраняется вместе с ней. Пешком лошадь идёт в поводу и груз везёт всё равно.
-## Каждый кадр: Actor.mount по выбору (в городе и в бою — пешком), Actor.pack_kg — сколько везут
-## животные, Actor.carried_kg — вес сумки. Числа — data/characters/transport.json и movement.json пака.
-## Рисуется под фигуркой героя (show_behind_parent): лошадь и повозка нарисованы кодом, картинок пока нет.
+## Кінь і віз (питання Q16, Huzzah 2026-10-24): лише транспорт — швидше їхати й більше везти,
+## у бою не беруть участі. Володіння — речі horse і cart у сумці героя (Worlds.inventory, data/cities/items.json);
+## коня продає торговка, віз — коваль, обидва з етапу «Село». Возу потрібен кінь (Trade.buy).
+## R на карті — сісти верхи (з возом — на віз) або спішитися; вибір — ключ ride у сумці,
+## тому зберігається разом із нею. Пішки кінь іде на поводі й вантаж везе все одно.
+## Щокадру: Actor.mount за вибором (у місті й у бою — пішки), Actor.pack_kg — скільки везуть
+## тварини, Actor.carried_kg — вага сумки. Числа — data/characters/transport.json і movement.json пакета.
+## Малюється під фігуркою героя (show_behind_parent): кінь і віз намальовані кодом, картинок поки немає.
 
 const R := preload("res://characters/actor_rules.gd")
 const Trade := preload("res://city/trade.gd")
@@ -19,7 +19,7 @@ const WOOD_DARK := Color("5e4529")
 
 var cast: Node2D
 var hud: Label
-var _face: float = 1.0          # 1 — смотрит вправо, -1 — влево
+var _face: float = 1.0          # 1 — дивиться праворуч, -1 — ліворуч
 var _last_pos: Vector2 = Vector2.INF
 var _moving: bool = false
 var _t: float = 0.0
@@ -29,7 +29,7 @@ static func owns(bag: Dictionary, id: String) -> bool:
 	return bag.has("items") and Trade.count(bag, id) > 0
 
 
-## Сколько кг везут: лошадь — вьюки, повозка — ещё сверху; повозка без лошади стоит
+## Скільки кг везуть: кінь — в'юки, віз — ще згори; віз без коня стоїть
 static func pack_kg(bag: Dictionary) -> float:
 	if not owns(bag, "horse"):
 		return 0.0
@@ -40,27 +40,27 @@ static func pack_kg(bag: Dictionary) -> float:
 	return kg
 
 
-## Как едет герой: "" пешком (лошадь в поводу), "horse" верхом, "cart" на повозке
+## Як їде герой: "" пішки (кінь на поводі), "horse" верхи, "cart" на возі
 static func mode(bag: Dictionary) -> String:
 	if not owns(bag, "horse") or not bool(bag.get("ride", false)):
 		return ""
 	return "cart" if owns(bag, "cart") else "horse"
 
 
-## Сесть или спешиться. Ответ: текст для игрока
+## Сісти або спішитися. Відповідь: текст для гравця
 static func toggle(bag: Dictionary) -> String:
 	if not owns(bag, "horse"):
-		return "Лошади нет: её продаёт торговка в городе"
+		return I18n.t("Лошади нет: её продаёт торговка в городе")
 	bag["ride"] = not bool(bag.get("ride", false))
 	match mode(bag):
 		"horse":
-			return "Верхом"
+			return I18n.t("Верхом")
 		"cart":
-			return "На повозке"
-	return "Пешком, лошадь в поводу"
+			return I18n.t("На повозке")
+	return I18n.t("Пешком, лошадь в поводу")
 
 
-## Транспорт к герою: mount, груз животных, вес сумки. away — герой в городе или в бою: там пешком
+## Транспорт до героя: mount, вантаж тварин, вага сумки. away — герой у місті або в бою: там пішки
 static func apply(a: Actor, bag: Dictionary, away: bool) -> void:
 	if a == null:
 		return
@@ -132,31 +132,31 @@ func _update_hud(a: Actor, bag: Dictionary) -> void:
 	if owns(bag, "horse"):
 		match a.mount:
 			"horse":
-				parts.append("Верхом")
+				parts.append(I18n.t("Верхом"))
 			"cart":
-				parts.append("На повозке")
+				parts.append(I18n.t("На повозке"))
 			_:
-				parts.append("Лошадь в поводу")
+				parts.append(I18n.t("Лошадь в поводу"))
 	if owns(bag, "cart"):
-		parts.append("повозка" if owns(bag, "horse") else "повозка стоит: нет лошади")
-	parts.append("груз %.0f / %.0f кг" % [a.carried_kg, a.carry_capacity()])
+		parts.append(I18n.t("повозка") if owns(bag, "horse") else I18n.t("повозка стоит: нет лошади"))
+	parts.append(I18n.t("груз %.0f / %.0f кг") % [a.carried_kg, a.carry_capacity()])
 	if owns(bag, "horse"):
-		parts.append("R — спешиться" if a.mount != "" else "R — сесть")
+		parts.append(I18n.t("R — спешиться") if a.mount != "" else I18n.t("R — сесть"))
 	hud.text = "  ·  ".join(parts)
 	hud.position = Vector2(14.0, get_viewport_rect().size.y - 56.0)
 
 
 # =====================================================================
-# РИСОВАНИЕ
+# МАЛЮВАННЯ
 # =====================================================================
-# Высота фигурки героя в пикселях, как в cast._draw (вблизи — картинка, издали — кружок)
+# Висота фігурки героя в пікселях, як у cast._draw (зблизька — картинка, здалеку — кружечок)
 func _hero_px() -> float:
 	var g: Node = cast.game
 	var up: float = g.height_at(cast.hero["pos"]) / g.HEIGHT_MAX_M if g.has_method("height_at") else 0.0
 	return clampf(1.9 * g.zoom, 16.0, 76.0) * (1.0 + up * 0.35)
 
 
-## На сколько пикселей поднять фигурку героя (cast._draw): сидит в седле или на повозке
+## На скільки пікселів підняти фігурку героя (cast._draw): сидить у сідлі або на возі
 func rider_lift(hpx: float) -> float:
 	var a: Actor = _hero()
 	if a == null or cast.hero_away or cast.game.zoom <= 3.0:
@@ -183,7 +183,7 @@ func _draw() -> void:
 	if not get_viewport_rect().grow(200.0).has_point(sp):
 		return
 	if g.zoom <= 3.0:
-		# Издали: бурая точка лошади за кружком героя, повозка — квадратик
+		# Здалеку: бура точка коня за кружечком героя, віз — квадратик
 		var r: float = clampf(0.6 * g.zoom, 4.0, 14.0)
 		var hp: Vector2 = sp + Vector2(-_face * r * 1.3, -r * 0.3)
 		if cart:
@@ -193,7 +193,7 @@ func _draw() -> void:
 		draw_circle(hp, r * 0.95, INK)
 		draw_circle(hp, r * 0.8, COAT)
 		return
-	var m: float = _hero_px() / 1.9      # пикселей на метр у фигурки героя
+	var m: float = _hero_px() / 1.9      # пікселів на метр у фігурки героя
 	var ground: Vector2 = sp
 	var horse_at: Vector2
 	var cart_at: Vector2
@@ -201,11 +201,11 @@ func _draw() -> void:
 		"horse":
 			horse_at = ground
 		"cart":
-			# Герой на передке повозки, колесо видно за ним
+			# Герой на передку воза, колесо видно за ним
 			cart_at = ground + Vector2(-_face * 0.6 * m, 0)
 			horse_at = cart_at + Vector2(_face * 2.0 * m, 0)
 		_:
-			# Пешком: лошадь в поводу за плечом, чуть дальше от глаза
+			# Пішки: кінь на поводі за плечем, трохи далі від ока
 			horse_at = ground + Vector2(-_face * 1.1 * m, -0.25 * m)
 	if cart and a.mount != "cart":
 		cart_at = horse_at + Vector2(-_face * 2.1 * m, 0)
@@ -215,7 +215,7 @@ func _draw() -> void:
 	_draw_horse(horse_at, m)
 
 
-# Лошадь сбоку, мордой по _face; p — земля под серединой брюха, m — пикселей на метр
+# Кінь збоку, мордою за _face; p — земля під серединою черева, m — пікселів на метр
 func _draw_horse(p: Vector2, m: float) -> void:
 	var lw: float = maxf(1.0, m * 0.04)
 	draw_set_transform(p + Vector2(0, 1.5), 0.0, Vector2(1, 0.28))
@@ -242,20 +242,20 @@ func _draw_horse(p: Vector2, m: float) -> void:
 	draw_circle(Vector2(1.18, -1.66), 0.035, INK)
 	var sway: float = sin(_t * 4.0) * 0.05 if _moving else 0.0
 	draw_polyline(PackedVector2Array([Vector2(-0.84, -1.2), Vector2(-1.0 + sway, -0.95), Vector2(-1.02 + sway, -0.6)]), COAT_DARK.darkened(0.4), 0.1)
-	# Седло и вьюки
+	# Сідло й в'юки
 	draw_colored_polygon(_ellipse(Vector2(0.05, -1.4), 0.3, 0.08), Color("3a2a1c"))
 	draw_rect(Rect2(Vector2(-0.38, -1.3), Vector2(0.3, 0.32)), Color("8c7a52"))
 	draw_rect(Rect2(Vector2(-0.38, -1.3), Vector2(0.3, 0.32)), INK, false, lw / m)
 	draw_set_transform(Vector2.ZERO)
 
 
-# Повозка сбоку: короб на одном видимом колесе, оглобли к лошади, сверху груз по заполнению fill
+# Віз збоку: короб на одному видимому колесі, голоблі до коня, згори вантаж за заповненням fill
 func _draw_cart(p: Vector2, m: float, fill: float, horse_at: Vector2) -> void:
 	var lw: float = maxf(1.0, m * 0.04)
 	draw_set_transform(p + Vector2(0, 1.5), 0.0, Vector2(1, 0.28))
 	draw_circle(Vector2.ZERO, m * 1.0, Color(0.12, 0.10, 0.07, 0.22))
 	draw_set_transform(p, 0.0, Vector2(_face * m, m))
-	# Оглобли до груди лошади
+	# Голоблі до грудей коня
 	var reach: float = (horse_at.x - p.x) / (_face * m)
 	draw_line(Vector2(0.9, -0.78), Vector2(reach + 0.55, -1.12), WOOD_DARK, 0.07)
 	var lumps: int = int(ceil(fill * 4.0))

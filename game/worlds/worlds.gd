@@ -1,27 +1,27 @@
 extends Node
-## Переключатель миров (автозагрузка Worlds, project.godot [autoload]).
-## Общая карта (game.tscn) — основной мир. Город и бой — отдельные сцены поверх неё:
-## общая карта на это время остаётся в дереве, но спрятана и не принимает ввод; часы и погода идут дальше.
-## Миры лежат стеком: карта → город → бой. leave() снимает верхний мир и возвращает в тот, откуда пришли:
-## из города — на общую карту к воротам города, из боя — туда, где бой начался (карта или город).
+## Перемикач світів (автозавантаження Worlds, project.godot [autoload]).
+## Загальна карта (game.tscn) — основний світ. Місто й бій — окремі сцени поверх неї:
+## загальна карта на цей час лишається в дереві, але схована й не приймає введення; годинник і погода йдуть далі.
+## Світи лежать стеком: карта → місто → бій. leave() знімає верхній світ і повертає в той, звідки прийшли:
+## з міста — на загальну карту до брами міста, з бою — туди, де бій почався (карта чи місто).
 ##
-## Город: res://city/city_world.tscn (ветка «Мир города»).
-##   После add_child: city.enter(city_id, hero: Actor|null, ctx). Выход: сигнал exit_requested(city_id, gate_id)
-##   или Worlds.leave(). Сохранение: to_dict() / load_dict(state) (load_dict сразу после enter).
-## Бой: res://battle/battle.tscn (ветка «Боевая сцена»).
-##   До add_child: battle.setup(req). Выход: сигнал battle_finished(result)
+## Місто: res://city/city_world.tscn (гілка «Світ міста»).
+##   Після add_child: city.enter(city_id, hero: Actor|null, ctx). Вихід: сигнал exit_requested(city_id, gate_id)
+##   або Worlds.leave(). Збереження: to_dict() / load_dict(state) (load_dict одразу після enter).
+## Бій: res://battle/battle.tscn (гілка «Бойова сцена»).
+##   До add_child: battle.setup(req). Вихід: сигнал battle_finished(result)
 ##   {outcome: win|lose|flee, origin, return_pos, game_minutes, dead: [actor_id]}.
-##   На время боя часы мира стоят, после боя к ним прибавляется result.game_minutes.
-## Города на карте (ветка «Города на общей карте»): если у game есть settlements с сигналом
-##   enter_requested(s), вход в город идёт по нему; выход — к settlements.exit_point(id).
-## Нужды героя в городе считает characters/cast.gd по игровым часам, как на карте (мир не должен вызывать tick).
-## Сохранение: ключ "worlds" в world_save.gd (to_dict / load_dict). Бой в сохранении — его запрос:
-##   после загрузки бой начинается заново с теми же врагами.
-## Деньги и вещи героя: Worlds.inventory {money, items: {id: count}} — один словарь на игру, по ссылке в ctx
-##   города и req боя, сохраняется здесь. Состояние каждого города (to_dict) помнится по city_id между визитами.
-## Случайные нападения: на каждый пройденный героем км спрашивается battle/encounters.gd roll_on_km(hero, env, rng).
-## Отладочных клавиш нет (вопрос Q07, Huzzah 2026-10-24: F8, K и заглушки из игры убраны). Заглушки города и боя
-## живут в tests/doubles/ и подставляются только тестами: test_doubles = {"city": Script, "battle": Script} и "stub": true.
+##   На час бою годинник світу стоїть, після бою до нього додається result.game_minutes.
+## Міста на карті (гілка «Міста на загальній карті»): якщо в game є settlements із сигналом
+##   enter_requested(s), вхід у місто йде через нього; вихід — до settlements.exit_point(id).
+## Потреби героя в місті рахує characters/cast.gd за ігровими годинами, як на карті (світ не має викликати tick).
+## Збереження: ключ "worlds" у world_save.gd (to_dict / load_dict). Бій у збереженні — його запит:
+##   після завантаження бій починається заново з тими самими ворогами.
+## Гроші й речі героя: Worlds.inventory {money, items: {id: count}} — один словник на гру, за посиланням у ctx
+##   міста й req бою, зберігається тут. Стан кожного міста (to_dict) пам'ятається за city_id між візитами.
+## Випадкові напади: на кожен пройдений героєм км запитується battle/encounters.gd roll_on_km(hero, env, rng).
+## Налагоджувальних клавіш немає (питання Q07, Huzzah 2026-10-24: F8, K і заглушки з гри прибрано). Заглушки міста й бою
+## живуть у tests/doubles/ і підставляються лише тестами: test_doubles = {"city": Script, "battle": Script} і "stub": true.
 
 signal world_changed(kind: String, id: String)
 signal battle_finished(result: Dictionary)
@@ -34,14 +34,14 @@ const WorldEnv := preload("res://characters/world_env.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
-# Ключи местности для боя, по номерам биомов game.BIOME_NAMES (0 — как battle/encounters.gd terrain_key: пустошь)
+# Ключі місцевості для бою, за номерами біомів game.BIOME_NAMES (0 — як battle/encounters.gd terrain_key: пустка)
 const TERRAIN_KEYS: Array = ["wasteland", "water", "coast", "forest", "wasteland", "swamp", "mountains",
 	"rad_forest", "rad_wasteland", "rad_swamp"]
 
-var game: Node2D = null          # общая карта (game.tscn)
-var stack: Array = []            # миры поверх карты: {kind: "city"|"battle", id, node, ctx | req}
-var busy: bool = false           # идёт переход (затемнение)
-var test_doubles: Dictionary = {}  # только для тестов: {"city"|"battle": Script} — заглушки из tests/doubles/
+var game: Node2D = null          # загальна карта (game.tscn)
+var stack: Array = []            # світи поверх карти: {kind: "city"|"battle", id, node, ctx | req}
+var busy: bool = false           # іде перехід (затемнення)
+var test_doubles: Dictionary = {}  # лише для тестів: {"city"|"battle": Script} — заглушки з tests/doubles/
 var _linked_settlements: Object = null
 var _fade_layer: CanvasLayer
 var _fade: ColorRect
@@ -49,8 +49,10 @@ var _clock_was_paused: bool = false
 var _hero_controlled: bool = false
 var _autosave_t: float = 0.0
 var inventory: Dictionary = {"money": 0, "items": {}}
-var city_states: Dictionary = {}   # city_id -> to_dict() города после последнего визита
-var battles_won: int = 0           # победы героя в боях за игру (поручения «победить» в городах, city_growth.gd)
+var city_states: Dictionary = {}   # city_id -> to_dict() міста після останнього візиту
+var codex: Dictionary = {}          # кодекс: id знайдених записок -> ігрові секунди (world/codex.gd); живе довше за героя
+var left_carts: Array = []         # Q32: вози загиблих героїв на карті [{pos: [x, y], until: с гри, items}] (hero_death.gd)
+var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
 var _km_actor: Actor = null
 var _rng := RandomNumberGenerator.new()
 
@@ -66,13 +68,13 @@ func _ready() -> void:
 	_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade_layer.add_child(_fade)
-	# Карта могла войти в дерево раньше автозагрузки (запуск тестов через -s)
+	# Карта могла увійти в дерево раніше за автозавантаження (запуск тестів через -s)
 	for n in get_tree().root.get_children():
 		_on_node_added(n)
 
 
 # =====================================================================
-# СОСТОЯНИЕ
+# СТАН
 # =====================================================================
 func current_kind() -> String:
 	return "overworld" if stack.is_empty() else String(stack[-1]["kind"])
@@ -94,7 +96,7 @@ func is_battle() -> bool:
 	return current_kind() == "battle"
 
 
-# Открыто ли меню паузы игры (Esc): пока открыто, мир не двигает героя
+# Чи відкрите меню паузи гри (Esc): поки відкрите, світ не рухає героя
 func menu_open() -> bool:
 	return game != null and bool(game.menu_open)
 
@@ -110,18 +112,18 @@ func hero_actor() -> Actor:
 	return b["actor"] if not b.is_empty() else null
 
 
-# Строка «где герой» для заголовка сохранения
+# Рядок «де герой» для заголовка збереження
 func place_text() -> String:
 	for i in range(stack.size() - 1, -1, -1):
 		var e: Dictionary = stack[i]
 		if e["kind"] == "city":
 			var s: Dictionary = e["ctx"].get("settlement", {})
-			return "Город: " + String(s.get("name", e["id"]))
+			return I18n.t("Город: ") + String(s.get("name", e["id"]))
 	return ""
 
 
 # =====================================================================
-# ПОДКЛЮЧЕНИЕ К ОБЩЕЙ КАРТЕ
+# ПІДКЛЮЧЕННЯ ДО ЗАГАЛЬНОЇ КАРТИ
 # =====================================================================
 func _on_node_added(n: Node) -> void:
 	if n.scene_file_path == GAME_SCENE and n != game:
@@ -134,21 +136,23 @@ func _attach(g: Node2D) -> void:
 	_linked_settlements = null
 	_km_actor = null
 	_autosave_t = 0.0
-	# Старт: на герое кожаная куртка — это его доспех в бою (раньше доспех давался из настроек боя
-	# невидимо и снять его было нельзя; patch 01 к 2D 07). В сумке две фляги воды (вопрос Q20: без воды герой
-	# умирал за ~22 реальных минуты; скорость нужд не меняем)
+	# Старт: на герої шкіряна куртка — це його обладунок у бою (раніше обладунок видавався з налаштувань бою
+	# невидимо й зняти його було не можна; patch 01 до 2D 07). У сумці дві фляги води (питання Q20: без води герой
+	# помирав за ~22 реальні хвилини; швидкість потреб не змінюємо)
 	inventory = start_inventory()
 	city_states = {}
+	left_carts = []
+	codex = {}
 	battles_won = 0
 	g.tree_exiting.connect(_on_game_exiting.bind(g))
 
 
-# Сумка нового героя: в новой игре и после гибели прежнего (characters/hero_death.gd)
+# Сумка нового героя: у новій грі й після загибелі колишнього (characters/hero_death.gd)
 func start_inventory() -> Dictionary:
 	return {"money": 0, "items": {"leather_jacket": 1, "water_flask": 2}, "equipped": {"body": "leather_jacket"}}
 
 
-# Карта выгружается (выход в меню): все миры поверх неё уходят вместе с ней
+# Карта вивантажується (вихід у меню): усі світи поверх неї йдуть разом із нею
 func _on_game_exiting(g: Node) -> void:
 	if g != game:
 		return
@@ -177,7 +181,7 @@ func _process(delta: float) -> void:
 		_km_actor = h
 		if h != null and not h.km_passed.is_connected(_on_hero_km.bind(h)):
 			h.km_passed.connect(_on_hero_km.bind(h))
-	# Карта, пока её не видно, не считает автосохранение — считаем здесь (в бою не сохраняем)
+	# Карта, поки її не видно, не рахує автозбереження — рахуємо тут (у бою не зберігаємо)
 	if is_away() and not is_battle():
 		_autosave_t += delta
 		if _autosave_t >= AUTOSAVE_SEC:
@@ -185,7 +189,7 @@ func _process(delta: float) -> void:
 			game.save_world()
 
 
-# Случайное нападение в пути (правила шанса — в ветке боя, battle/encounters.gd)
+# Випадковий напад у дорозі (правила шансу — у гілці бою, battle/encounters.gd)
 func _on_hero_km(_total_km: int, h: Actor) -> void:
 	if h != hero_actor() or is_away() or busy or not h.alive or not ResourceLoader.exists(ENCOUNTERS):
 		return
@@ -197,7 +201,7 @@ func _on_hero_km(_total_km: int, h: Actor) -> void:
 
 func _on_enter_requested(s: Dictionary) -> void:
 	var id: String = String(s.get("city_id", s.get("id", "")))
-	# entry: gate — через ворота, sneak — пробрался через стену, caught — пойман при попытке; side — сторона города
+	# entry: gate — через браму, sneak — пробрався через стіну, caught — спійманий під час спроби; side — бік міста
 	var ctx: Dictionary = {"settlement": s, "entry": String(s.get("entry", "gate")), "side": String(s.get("side", "south"))}
 	var st: Object = game.get("settlements")
 	if st != null and st.has_method("exit_point"):
@@ -210,7 +214,7 @@ func _on_enter_requested(s: Dictionary) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if game == null or not game.ready_done or busy:
 		return
-	# В городе и в бою Esc, который мир не забрал себе, открывает меню паузы игры
+	# У місті й у бою Esc, який світ не забрав собі, відкриває меню паузи гри
 	if is_away():
 		if event.is_action_pressed("ui_cancel"):
 			game._toggle_menu()
@@ -219,10 +223,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # =====================================================================
-# ГОРОД
+# МІСТО
 # =====================================================================
-## Войти в город. ctx: {return_pos: Vector2 метры доски, settlement: запись города, gate: "south"…, stub: true — заглушка}.
-## Город получает ещё game, clock, inventory и state (что было в городе в прошлый визит; его же — в load_dict)
+## Увійти в місто. ctx: {return_pos: Vector2 метри дошки, settlement: запис міста, gate: "south"…, stub: true — заглушка}.
+## Місто отримує ще game, clock, inventory і state (що було в місті минулого візиту; його ж — у load_dict)
 func enter_city(city_id: String, ctx: Dictionary = {}) -> bool:
 	if busy or game == null or not game.ready_done:
 		return false
@@ -258,7 +262,7 @@ func _enter_city_now(city_id: String, ctx: Dictionary, state: Variant = null) ->
 	return node
 
 
-# Точка у ворот города на общей карте: от узла городов, иначе запомненная при входе
+# Точка біля брами міста на загальній карті: від вузла міст, інакше запам'ятована під час входу
 func _exit_point(city_id: String, ctx: Dictionary, fallback: Vector2) -> Vector2:
 	var st: Object = game.get("settlements") if game != null else null
 	var sid: String = String(ctx.get("settlement", {}).get("id", city_id))
@@ -270,10 +274,10 @@ func _exit_point(city_id: String, ctx: Dictionary, fallback: Vector2) -> Vector2
 
 
 # =====================================================================
-# БОЙ
+# БІЙ
 # =====================================================================
-## Начать бой. req (см. ветку «Боевая сцена»): enemies: Array[Actor], allies: Array[Actor] (по умолчанию герой),
-## return_pos (по умолчанию где стоит герой); origin, terrain, biome, hot, night, seed дописываются сами
+## Почати бій. req (див. гілку «Бойова сцена»): enemies: Array[Actor], allies: Array[Actor] (за замовчуванням герой),
+## return_pos (за замовчуванням де стоїть герой); origin, terrain, biome, hot, night, seed дописуються самі
 func start_battle(req: Dictionary = {}) -> bool:
 	if busy or game == null or not game.ready_done:
 		return false
@@ -302,6 +306,8 @@ func _start_battle_now(req: Dictionary, state: Variant = null) -> Node:
 		r["night"] = game.physics.sun_elevation_deg_at(deg_to_rad(game.MAP_LAT_DEG), 0.0) < 0.0
 	if not r.has("allies"):
 		r["allies"] = _allies_near_hero()
+	if not r.has("starter"):
+		r["starter"] = _starter_zone(here)
 	r["inventory"] = inventory
 	if not r.has("enemies"):
 		r["enemies"] = []
@@ -324,7 +330,7 @@ func _start_battle_now(req: Dictionary, state: Variant = null) -> Node:
 	return node
 
 
-# Герой и живые неспящие НПС рядом с ним на общей карте (в городе — только герой)
+# Герой і живі неплячі НПС поруч із ним на загальній карті (у місті — лише герой)
 func _allies_near_hero() -> Array:
 	var hb: Dictionary = hero_body()
 	if hb.is_empty() or not hb["actor"].alive:
@@ -338,7 +344,15 @@ func _allies_near_hero() -> Array:
 	return out
 
 
-# Где герой на общей карте (для города — точка у его ворот)
+# Де герой на загальній карті (для міста — точка біля його брами)
+## Q30: у міста, що росте, на етапі «Форт» (у STARTER_KM) бандити нападають по одному (battle/encounters.gd)
+func _starter_zone(p: Vector2) -> bool:
+	var st: Node = game.get("settlements") if game != null else null
+	if st == null or not st.has_method("growth_stage_near") or not ResourceLoader.exists(ENCOUNTERS):
+		return false
+	return st.growth_stage_near(p, float(load(ENCOUNTERS).STARTER_KM) * 1000.0) == 0
+
+
 func _overworld_pos() -> Vector2:
 	for i in range(stack.size() - 1, -1, -1):
 		if stack[i]["kind"] == "city":
@@ -362,9 +376,9 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
 
 
 # =====================================================================
-# ВОЗВРАТ
+# ПОВЕРНЕННЯ
 # =====================================================================
-## Покинуть верхний мир и вернуться туда, откуда в него вошли
+## Покинути верхній світ і повернутися туди, звідки в нього увійшли
 func leave(result: Dictionary = {}) -> bool:
 	if busy or stack.is_empty():
 		return false
@@ -376,8 +390,8 @@ func leave(result: Dictionary = {}) -> bool:
 	return true
 
 
-# Выход, о котором попросил сам мир (ворота, конец боя): если идёт затемнение, ждём его, а не теряем просьбу —
-# иначе город с leaving = true или законченный бой остаются на экране навсегда
+# Вихід, про який попросив сам світ (брама, кінець бою): якщо йде затемнення, чекаємо його, а не губимо прохання —
+# інакше місто з leaving = true або закінчений бій лишаються на екрані назавжди
 func _leave_when_free(node: Node, result: Dictionary) -> void:
 	while busy and is_inside_tree():
 		await get_tree().process_frame
@@ -390,7 +404,7 @@ func _leave_now(result: Dictionary) -> void:
 	if e["kind"] == "battle":
 		_apply_battle_result(e, result)
 	elif is_instance_valid(e["node"]) and e["node"].has_method("to_dict"):
-		# Город помечает, что из него вышли (в отличие от сохранения внутри города)
+		# Місто позначає, що з нього вийшли (на відміну від збереження всередині міста)
 		if e["node"].has_method("prepare_leave"):
 			e["node"].prepare_leave()
 		city_states[e["id"]] = e["node"].to_dict()
@@ -422,7 +436,7 @@ func _leave_now(result: Dictionary) -> void:
 
 
 # =====================================================================
-# ПОКАЗАТЬ / СПРЯТАТЬ МИРЫ
+# ПОКАЗАТИ / СХОВАТИ СВІТИ
 # =====================================================================
 func _deactivate_top() -> void:
 	if stack.is_empty():
@@ -433,7 +447,7 @@ func _deactivate_top() -> void:
 		_hide_tree(top)
 
 
-# Карта спрятана: нет рисунка, подсказки, ввода; часы, погода и НПС живут (это дети game и cast)
+# Карта схована: немає малюнка, підказки, введення; годинник, погода й НПС живуть (це діти game і cast)
 func _deactivate_overworld() -> void:
 	if game.typing:
 		game._close_goto()
@@ -445,8 +459,8 @@ func _deactivate_overworld() -> void:
 	var cast: Node = game.get("cast")
 	if cast != null:
 		_hero_controlled = cast.controls_hero
-		cast.controls_hero = false   # герой на карте стоит, но его нужды идут по часам
-		cast.set("hero_away", true)  # и cast не тратит его силы на месте: в городе их считает город
+		cast.controls_hero = false   # герой на карті стоїть, але його потреби йдуть за годинником
+		cast.set("hero_away", true)  # і cast не витрачає його сили на місці: у місті їх рахує місто
 		cast.set_process_unhandled_input(false)
 		_hide_tree(cast)
 	var st: Node = game.get("settlements")
@@ -473,7 +487,7 @@ func _activate_overworld() -> void:
 		_show_tree(st)
 
 
-# Прячет узел и все слои CanvasLayer под ним (слои не прячутся вместе с родителем), запоминая, что было видно
+# Ховає вузол і всі шари CanvasLayer під ним (шари не ховаються разом із батьком), запам'ятовуючи, що було видно
 func _hide_tree(n: Node) -> void:
 	if n == null or n.has_meta("_worlds_vis"):
 		return
@@ -511,7 +525,7 @@ func _fade_to(a: float) -> void:
 
 
 # =====================================================================
-# СОХРАНЕНИЕ
+# ЗБЕРЕЖЕННЯ
 # =====================================================================
 func to_dict() -> Dictionary:
 	var list: Array = []
@@ -534,15 +548,15 @@ func to_dict() -> Dictionary:
 			list.append({"kind": "battle", "req": r, "state": state, "clock_was_paused": _clock_was_paused})
 	var cities: Dictionary = city_states.duplicate()
 	return {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
-		"inventory": inventory, "city_states": cities, "battles_won": battles_won}
+		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true), "codex": codex.duplicate()}
 
 
-# После загрузки карты (world_save.apply_late): заново входит в сохранённые города и бой, без затемнения
+# Після завантаження карти (world_save.apply_late): заново входить у збережені міста й бій, без затемнення
 func load_dict(d: Dictionary) -> void:
 	if game == null:
 		return
 	var list: Array = d.get("stack", []) if d.get("stack") is Array else []
-	# Сумка — {money, items}: без этих ключей Trade и город падают на первом же обращении
+	# Сумка — {money, items}: без цих ключів Trade і місто падають на першому ж зверненні
 	var inv: Variant = d.get("inventory", inventory)
 	if inv is Dictionary:
 		if not (inv.get("items") is Dictionary):
@@ -551,6 +565,8 @@ func load_dict(d: Dictionary) -> void:
 		inventory = inv
 	city_states = d.get("city_states", {}) if d.get("city_states") is Dictionary else {}
 	battles_won = int(d.get("battles_won", 0))
+	left_carts = d.get("left_carts", []).duplicate(true) if d.get("left_carts") is Array else []
+	codex = d.get("codex", {}).duplicate() if d.get("codex") is Dictionary else {}
 	if not list.is_empty() and game.get("cast") != null:
 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))
 	for e in list:
