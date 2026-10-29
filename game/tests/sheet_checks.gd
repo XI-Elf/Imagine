@@ -1,5 +1,5 @@
 extends SceneTree
-## Система персонажа (characters/sheet.gd, Huzzah 2026-10-28): характеристики, производные, 18 навыков, отметки,
+## Система персонажа (characters/sheet.gd, Huzzah 2026-10-28): характеристики, производные, 19 навыков, отметки,
 ## цена очков, уровни и опыт, дары, черты, создание, старые сохранения, торговля, перевод в бой.
 ## godot --headless --path game -s res://tests/sheet_checks.gd
 
@@ -35,7 +35,7 @@ func _init() -> void:
 
 func _data() -> void:
 	ok(S.stats_list() == ["str", "per", "end", "cha", "int", "agi", "luck"], "характеристики по порядку")
-	ok(S.skill_list().size() == 18, "18 навыков")
+	ok(S.skill_list().size() == 19, "19 навыков (з Картографією, 2026-10-29)")
 	ok(S.traits().size() == 17 and S.perks().size() >= 75, "черт 17, даров %d" % S.perks().size())
 	for k in S.skill_list():
 		ok(String(S.skills()[k].get("name", "")) != "" and String(S.skills()[k].get("desc", "")) != "", "навык описан: " + k)
