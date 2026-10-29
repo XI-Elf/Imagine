@@ -1,9 +1,9 @@
 extends SceneTree
-## Гибель героя и новый персонаж (characters/hero_death.gd, вопросы Q06 и Q27, Huzzah 2026-10-24):
-## смерть в городе, в бою и в сохранении открывает экран со случайным новым героем; «Продолжить» оставляет
-## прогресс поселений и мира, но не деньги, вещи, навыки, победы, взятые поручения и план города; «Начать заново» —
-## экран создания и новый мир.
-## godot --path game --rendering-driver opengl3 -s res://tests/hero_death_checks.gd -- [папка_для_снимков]
+## Загибель героя й новий персонаж (characters/hero_death.gd, питання Q06 і Q27, Huzzah 2026-10-24):
+## смерть у місті, у бою й у збереженні відкриває екран із випадковим новим героєм; «Продовжити» лишає
+## поступ поселень і світу, але не гроші, речі, навички, перемоги, узяті доручення й план міста; «Почати заново» —
+## екран створення й новий світ.
+## godot --path game --rendering-driver opengl3 -s res://tests/hero_death_checks.gd -- [тека_для_знімків]
 
 const P := preload("res://characters/hero_profile.gd")
 const Growth := preload("res://city/city_growth.gd")
@@ -78,7 +78,7 @@ func wait_free() -> void:
 	await frames(2)
 
 
-# Ждём, пока экран гибели откроется (из города он сначала выводит на карту)
+# Чекаємо, доки екран загибелі відкриється (з міста він спершу виводить на карту)
 func wait_death(cast: Node2D) -> void:
 	for i in 600:
 		if cast.death.active:
@@ -101,7 +101,7 @@ func _run() -> void:
 	ok(a.alive and not cast.death.active, "живой герой — экрана нет")
 	var gate: Vector2 = cast.hero["pos"]
 
-	# ---- Прогресс в городе: сданное и взятое поручения, деньги, вещи, победы, навыки
+	# ---- Поступ у місті: здане й узяте доручення, гроші, речі, перемоги, навички
 	ok(await W.enter_city("s001", {"return_pos": gate}), "в город s001")
 	await frames(5)
 	var city: Node = W.current_node()
@@ -119,7 +119,7 @@ func _run() -> void:
 	var t_before: float = game.clock.total_seconds
 	cast.ruins_looted["1:1"] = 10.0
 
-	# ---- Смерть в городе: выход к воротам, экран со случайным героем
+	# ---- Смерть у місті: вихід до брами, екран із випадковим героєм
 	a.die("thirst")
 	await wait_death(cast)
 	ok(W.current_kind() == "overworld", "погиб в городе — вышли на общую карту")
@@ -132,7 +132,7 @@ func _run() -> void:
 	var st: Dictionary = W.city_states.get("s001", {})
 	ok(Array(st.get("growth", {}).get("done", [])).has("test_done"), "город запомнил сданное поручение")
 
-	# ---- Клавиши героя и G не работают, пока экран открыт
+	# ---- Клавіші героя й G не працюють, поки екран відкритий
 	key(KEY_G)
 	await frames(3)
 	ok(cast._creator == null and cast.death.active, "G не открывает старое создание героя")
@@ -143,7 +143,7 @@ func _run() -> void:
 	await frames(2)
 	ok(cast.death._layer.visible, "меню закрыто: экран снова виден")
 
-	# ---- Продолжить (Enter): новый герой у ворот, мир прежний, всё прежнего героя — нет
+	# ---- Продовжити (Enter): новий герой біля брами, світ колишній, усього колишнього героя — немає
 	var new_name: String = String(p["name"])
 	key(KEY_ENTER)
 	await frames(3)
@@ -155,7 +155,7 @@ func _run() -> void:
 	ok(cast.hero["pos"].distance_to(spawn) < 200.0, "появился у ворот города")
 	ok(W.inventory == W.start_inventory(), "сумка как в новой игре: деньги и лом пропали")
 	ok(W.battles_won == 0, "счётчик побед сброшен")
-	ok(b.skill_level("medicine") == int(P.skill_levels(p).get("medicine", 0)), "навыки прежнего героя не перешли")
+	ok(b.skill("doctor") == int(P.skill_values(p)["doctor"]) and b.level == 1 and b.xp == 0.0, "навыки и уровень прежнего героя не перешли")
 	ok(game.clock.total_seconds >= t_before, "время мира не сброшено")
 	ok(cast.ruins_looted.has("1:1"), "обысканные руины помнятся")
 	st = W.city_states.get("s001", {})
@@ -165,7 +165,7 @@ func _run() -> void:
 	ok(not st.has("fog") and st["discovered"].is_empty(), "план города забыт")
 	await shot("d02_new_hero.png")
 
-	# ---- Город с новым героем: рост на месте, поручение можно взять заново
+	# ---- Місто з новим героєм: ріст на місці, доручення можна взяти заново
 	ok(await W.enter_city("s001", {"return_pos": cast.hero["pos"]}), "новый герой входит в город")
 	await frames(5)
 	city = W.current_node()
@@ -175,14 +175,14 @@ func _run() -> void:
 	await W.leave()
 	await wait_free()
 
-	# ---- Смерть в бою (заглушка): бой заканчивается, экран на карте
+	# ---- Смерть у бою (заглушка): бій закінчується, екран на карті
 	await W.start_battle({"stub": true, "enemies": [Actor.new("wolf", "Волк", true, 3)]})
 	W.current_node().battle_finished.emit({"outcome": "lose", "game_minutes": 5.0, "dead": ["hero"]})
 	await wait_death(cast)
 	ok(W.current_kind() == "overworld" and not b.alive and cast.death.active, "гибель в бою — экран на карте")
 	ok(cast.death._cause.text.contains("раны"), "причина — раны")
 
-	# ---- Сохранение с погибшим героем: после загрузки экран открывается снова
+	# ---- Збереження із загиблим героєм: після завантаження екран відкривається знову
 	ok(game.save_world(true), "сохранение с погибшим героем")
 	var slot: String = preload("res://world_save.gd").latest_slot()
 	game.queue_free()
@@ -192,7 +192,7 @@ func _run() -> void:
 	await wait_death(cast)
 	ok(not cast.hero.is_empty() and not cast.hero["actor"].alive and cast.death.active, "загрузка: погибший герой — экран гибели")
 
-	# ---- Начать заново: экран создания, Esc — назад, «Создать» — новый мир
+	# ---- Почати заново: екран створення, Esc — назад, «Створити» — новий світ
 	cast.death.start_over()
 	await frames(3)
 	ok(cast.death._creator != null and not cast.death._layer.visible, "«Начать заново» — экран создания героя")
@@ -218,7 +218,36 @@ func _run() -> void:
 	ok(W.city_states.is_empty() and W.battles_won == 0 and W.inventory == W.start_inventory(), "новый мир: города, победы и сумка с нуля")
 	ok(not game.cast.death.active, "в новом мире экрана нет")
 
-	# ---- forget_hero без Worlds не падает
+	# ---- Q32: кінь гине з героєм, віз із речами лишається на місці загибелі три дні
+	var now: float = game.clock.total_seconds
+	W.inventory = {"money": 40, "items": {"horse": 1, "cart": 1, "leather_jacket": 1, "scrap": 5, "hide": 2}, "equipped": {"body": "leather_jacket"}}
+	W.left_carts = []
+	var spot := Vector2(1234.0, 5678.0)
+	ok(HeroDeath.leave_cart(W, spot, now) and W.left_carts.size() == 1, "Q32: повозка осталась на месте гибели")
+	var cart: Dictionary = W.left_carts[0]
+	ok(not cart["items"].has("horse") and not cart["items"].has("leather_jacket") and cart["items"].get("cart", 0) == 1 and cart["items"].get("scrap", 0) == 5 and cart["items"].get("hide", 0) == 2, "Q32: в повозке вещи без лошади и надетого: %s" % [cart["items"]])
+	ok(is_equal_approx(float(cart["until"]), now + 3.0 * 86400.0), "Q32: повозка пропадёт через 3 дня")
+	ok(W.to_dict().get("left_carts", []).size() == 1, "Q32: повозка в сохранении мира")
+	W.codex = {"old_3": 5.0}
+	ok(W.to_dict().get("codex", {}).has("old_3"), "кодекс в сохранении мира")
+	var saved: Dictionary = W.to_dict()
+	W.codex = {}
+	W.load_dict(saved)
+	ok(W.codex.has("old_3"), "кодекс читается из сохранения (переживает героя)")
+	W.codex = {}
+	HeroDeath.forget_hero(W)
+	ok(Trade.count(W.inventory, "horse") == 0 and Trade.count(W.inventory, "cart") == 0, "Q32: у нового героя нет ни лошади, ни повозки")
+	ok(HeroDeath.cart_near(W, spot + Vector2(200.0, 0.0), now) == -1, "Q32: далеко от места гибели повозки нет")
+	ok(HeroDeath.cart_near(W, spot + Vector2(10.0, 0.0), now + 2.9 * 86400.0) == 0, "Q32: через 2,9 дня повозка на месте")
+	var said: String = HeroDeath.take_cart(W, 0)
+	ok(Trade.count(W.inventory, "cart") == 1 and Trade.count(W.inventory, "scrap") == 5 and W.left_carts.is_empty(), "Q32: новый герой забрал повозку: %s" % said)
+	HeroDeath.leave_cart(W, spot, now)
+	ok(HeroDeath.cart_near(W, spot, now + 3.01 * 86400.0) == -1 and W.left_carts.is_empty(), "Q32: через 3 дня повозка исчезла вместе с вещами")
+	W.inventory = {"money": 0, "items": {"horse": 1}, "equipped": {}}
+	ok(not HeroDeath.leave_cart(W, spot, now) and W.left_carts.is_empty(), "Q32: без повозки ничего не остаётся (лошадь погибла)")
+	W.inventory = W.start_inventory()
+
+	# ---- forget_hero без Worlds не падає
 	HeroDeath.forget_hero(null)
 	ok(true, "forget_hero(null) без ошибок")
 

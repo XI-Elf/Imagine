@@ -1,6 +1,6 @@
 class_name BattleAbility
 extends Resource
-## Способность или «заклинание» (в Амбере — алхимия, бомбы, приёмы). Механика 5e:
+## Способность или «заклинание» (в Амбере — алхимия, бомбы, приёмы). Механика:
 ## kind "attack" — бросок атаки против AC; "save" — цель бросает спасбросок против DC;
 ## "heal" — лечение; "self" — эффект на себя. Цель: enemy, ally, self, cell (по площади).
 
@@ -14,7 +14,7 @@ extends Resource
 @export var range_ft: int = 30
 @export var radius_ft: int = 0
 @export var save_stat: String = "dex"
-## Компоненты урона, как у оружия: [{type, dice, bonus}]; модификатор характеристики сюда не входит
+## Складники шкоди, як у зброї: [{type, dice, bonus}]; модифікатор характеристики сюди не входить
 @export var damage: Array = []
 @export var penetration: Dictionary = {}
 @export var attack_bonus: int = 0              # A_ATK
@@ -23,5 +23,5 @@ extends Resource
 @export var heal_add_level: bool = false
 @export var apply_effect: String = ""
 @export var effect_on_fail_only: bool = true
-@export var uses_per_battle: int = 0             # 0 — без ограничения
+@export var uses_per_battle: int = 0             # 0 — без обмеження
 @export var proficient: bool = true

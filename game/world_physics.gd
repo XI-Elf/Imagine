@@ -2,8 +2,8 @@ class_name WorldPhysics
 extends Node
 ## Фізика планети. Окрема сцена: бере час із GameClock і рахує астрономію (схилення сонця,
 ## фаза й схилення місяця) і сезон. Погода простая: по сезону и биому (weather/simple_weather.gd,
-## таблицы в data/weather/weather.json). Отсюда шейдер получает облака, дождь и ветер текстурами
-## atm_a/atm_b (сетка NX x NY на всю планету, считается только окно карты), а правила персонажа —
+## таблиці в data/weather/weather.json). Звідси шейдер отримує хмари, дощ і вітер текстурами
+## atm_a/atm_b (сітка NX x NY на всю планету, рахується лише вікно карти), а правила персонажа —
 ## погоду в точке (weather_here). Усе, що залежить від місця (висота сонця, місцевий час), шейдер
 ## рахує сам за широтою і довготою.
 ## Тут же реєструються повільні процеси (фізичні й хімічні), які ідуть за ігровим часом.
@@ -12,24 +12,24 @@ signal weather_updated
 
 # Мінімальне освітлення вночі (0 = повна темрява)
 @export var night_light: float = 0.10
-# Скорость погоды: сколько часов погоды проходит за час игры (клавиши , и .)
+# Швидкість погоди: скільки годин погоди минає за годину гри (клавіші , і .)
 @export var weather_speed: float = 1.0
-# Не чаще стольких пересчётов текстур погоды в секунду
+# Не частіше за стільки перерахунків текстур погоди на секунду
 @export var updates_per_second: float = 2.0
 
 # Не частіше 30 разів на секунду
 const MIN_INTERVAL: float = 1.0 / 30.0
-# Период сдвига мелких деталей облаков в шейдере, секунды игры
+# Період зсуву дрібних деталей хмар у шейдері, секунди гри
 const FLOW_PERIOD: float = 7200.0
-# Доступные скорости погоды (клавиши , и .)
+# Доступні швидкості погоди (клавіші , і .)
 const WEATHER_SPEEDS: Array = [0.25, 0.5, 1.0, 2.0, 4.0]
-const COMPASS: Array = ["С", "СВ", "В", "ЮВ", "Ю", "ЮЗ", "З", "СЗ"]
-# Сетка текстур погоды на всю планету (как была у модели атмосферы: шейдер берёт окно ATM_*)
+static var COMPASS: Array = [I18n.t("С"), I18n.t("СВ"), I18n.t("В"), I18n.t("ЮВ"), I18n.t("Ю"), I18n.t("ЮЗ"), I18n.t("З"), I18n.t("СЗ")]
+# Сітка текстур погоди на всю планету (як була в моделі атмосфери: шейдер бере вікно ATM_*)
 const NX: int = 144
 const NY: int = 72
-# Версия состояния погоды в сохранении
+# Версія стану погоди в збереженні
 const STATE_VERSION: int = 1
-# Сколько клеток окна погоды пересчитывать за кадр (окно ~700 клеток)
+# Скільки клітинок вікна погоди перераховувати за кадр (вікно ~700 клітинок)
 const CELLS_PER_FRAME: int = 120
 const SimpleWeather := preload("res://weather/simple_weather.gd")
 const WorldEnv := preload("res://characters/world_env.gd")
@@ -39,7 +39,7 @@ var world_w: float = 36000.0
 var world_h: float = 18000.0
 
 var clock: GameClock
-# Карта мира (game.gd): биомы и окно ATM_ORIGIN / ATM_SPAN / MAP_SIZE. Без неё всё — пустошь
+# Карта світу (game.gd): біоми й вікно ATM_ORIGIN / ATM_SPAN / MAP_SIZE. Без неї все — пустка
 var game: Node
 # Лічильник змін: коли він росте, треба передати нові значення в шейдер
 var version: int = 0
@@ -63,32 +63,32 @@ var drift_scale: float = 0.02
 var flow_phase: float = 0.0
 var tex_a: ImageTexture
 var tex_b: ImageTexture
-# Время погоды, часы (идёт со скоростью weather_speed от игрового)
+# Час погоди, години (іде зі швидкістю weather_speed від ігрового)
 var weather_hours: float = 0.0
-# Совместимость с world_save.gd: фонового потока больше нет
+# Сумісність із world_save.gd: фонового потоку більше немає
 var model: Object = null
-# Погода мешает ходу героя и НПС (world_env). Автотесты, где важен темп шагов, выключают
+# Погода заважає ходу героя й НПС (world_env). Автотести, де важливий темп кроків, вимикають
 var travel_weather: bool = true
 var turbo: bool = false
-var preload_state := PackedByteArray()   # задать до setup, чтобы продолжить с сохранённой погоды
+var preload_state := PackedByteArray()   # задати до setup, щоб продовжити зі збереженої погоди
 
 var _since: float = 0.0
 var _last_t: float = -1.0
 var _processes: Array = []
 var _last_weather_t: float = 0.0
 var _upd_since: float = 1.0e9
-# Клетки текстуры в окне карты: индекс, точка карты (м), биом
+# Клітинки текстури у вікні карти: індекс, точка карти (м), біом
 var _cells_idx := PackedInt32Array()
 var _cells_p := PackedVector2Array()
 var _cells_biome := PackedInt32Array()
 var _cells_ready: bool = false
-# Проход по окну: позиция, игровые часы с прошлого прохода, день, час, температура биомов без погоды
+# Прохід по вікну: позиція, ігрові години з минулого проходу, день, година, температура біомів без погоди
 var _pass_pos: int = 0
 var _pass_game_h: float = 0.0
 var _pass_doy: float = 0.0
 var _pass_hour: float = 0.0
 var _pass_base_t: Dictionary = {}
-# Облачность 0..1 и дождь мм/ч по клеткам до сглаживания
+# Хмарність 0..1 і дощ мм/год за клітинками до згладжування
 var _cloud := PackedFloat32Array()
 var _rain := PackedFloat32Array()
 var _img_a: Image
@@ -105,7 +105,7 @@ func setup(game_clock: GameClock, width_m: float, height_m: float) -> void:
 	world_w = width_m
 	world_h = height_m
 	weather = SimpleWeather.new()
-	# Скорость из старых сохранений (модель атмосферы, 10..240) — к обычной
+	# Швидкість зі старих збережень (модель атмосфери, 10..240) — до звичайної
 	if not WEATHER_SPEEDS.has(weather_speed):
 		weather_speed = 1.0
 	var n: int = NX * NY
@@ -131,7 +131,7 @@ func setup(game_clock: GameClock, width_m: float, height_m: float) -> void:
 	force_update()
 	_update_weather(true)
 	# Приклад повільного процесу: щогодини перераховуємо, де сонце в зеніті
-	register_process("точка в зените", 3600.0, _proc_subsolar)
+	register_process(I18n.t("точка в зените"), 3600.0, _proc_subsolar)
 	_proc_subsolar(0.0)
 
 
@@ -160,14 +160,14 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------------
 # ПОГОДА
 # ---------------------------------------------------------------------
-# Точка карты (м) для точки исходной сетки планеты (src: 0..world_w, 0..world_h)
+# Точка карти (м) для точки вихідної сітки планети (src: 0..world_w, 0..world_h)
 func _map_of_src(src: Vector2) -> Vector2:
 	if game == null:
 		return src
 	return (src - game.ATM_ORIGIN) / game.ATM_SPAN * game.MAP_SIZE
 
 
-# Точка карты для широты и долготы (радианы), обратно lat_of / lon_of
+# Точка карти для широти й довготи (радіани), зворотно lat_of / lon_of
 func map_point(lat: float, lon: float) -> Vector2:
 	return _map_of_src(Vector2((lon / TAU + 0.5) * world_w, (0.5 - lat / PI) * world_h))
 
@@ -178,8 +178,8 @@ func _biome(p: Vector2) -> int:
 	return 4
 
 
-# Клетки текстуры над картой (с полем в клетку) и их биом: что чаще всего на 4x4 точках клетки.
-# Карта грузится после setup, поэтому вызывается, пока биомы не появятся
+# Клітинки текстури над картою (з полем у клітинку) і їхній біом: що найчастіше на 4x4 точках клітинки.
+# Карта вантажиться після setup, тому викликається, поки біоми не з'являться
 func _build_cells() -> void:
 	_cells_idx = PackedInt32Array()
 	_cells_p = PackedVector2Array()
@@ -212,8 +212,8 @@ func _build_cells() -> void:
 	_cells_ready = seen_land or game == null
 
 
-# Время погоды идёт за игровым. Окно карты пересчитывается проходами: за кадр не больше
-# CELLS_PER_FRAME клеток, текстуры обновляются в конце прохода (без рывков кадра). force — весь проход сразу
+# Час погоди йде за ігровим. Вікно карти перераховується проходами: за кадр не більше
+# CELLS_PER_FRAME клітинок, текстури оновлюються наприкінці проходу (без ривків кадру). force — увесь прохід одразу
 func _update_weather(force: bool) -> void:
 	if weather == null:
 		return
@@ -253,12 +253,12 @@ func _update_weather(force: bool) -> void:
 	_write_textures()
 	tex_a.update(_img_a)
 	tex_b.update(_img_b)
-	# Детали облаков в шейдере сносит ветром (~4,5 м/с) примерно с той же скоростью, что и пятна погоды
+	# Деталі хмар у шейдері зносить вітром (~4,5 м/с) приблизно з тією самою швидкістю, що й плями погоди
 	drift_scale = float(weather.rules.get("drift_kmh", 1.2)) / 3.6 / 4.5 * weather_speed
 	weather_updated.emit()
 
 
-# Облака и дождь в текстуру сглаженными (два прохода 3x3): у пятен погоды прямые края по клеткам сетки
+# Хмари й дощ у текстуру згладженими (два проходи 3x3): у плям погоди прямі краї по клітинках сітки
 func _write_textures() -> void:
 	var c: PackedFloat32Array = _cloud
 	var r: PackedFloat32Array = _rain
@@ -290,20 +290,20 @@ func _write_textures() -> void:
 		_img_b.set_pixel(i, j, Color(clampf((_snap_u[k] + 25.0) / 50.0, 0.0, 1.0), clampf((_snap_v[k] + 25.0) / 50.0, 0.0, 1.0), 0.5, 0.0))
 
 
-## Погода в точке карты (м): type ("clear", "cloudy", "fog", "rain", "storm", "snow"), name, cloud,
-## rain_mm_h, wind (м/с, x восток, y север), temp_c, pressure. Одна функция для игрока, НПС и подсказки
+## Погода в точці карти (м): type ("clear", "cloudy", "fog", "rain", "storm", "snow"), name, cloud,
+## rain_mm_h, wind (м/с, x схід, y північ), temp_c, pressure. Одна функція для гравця, НПС і підказки
 func weather_here(p: Vector2) -> Dictionary:
 	if weather == null or clock == null:
 		return {}
 	return weather.sample(p, _biome(p), weather_hours, clock.day_of_year(), clock.hour_of_day())
 
 
-# Сохранение мира: время погоды и осадки за год (погода по времени восстанавливается сама)
+# Збереження світу: час погоди й опади за рік (погода за часом відновлюється сама)
 func export_state() -> PackedByteArray:
 	return var_to_bytes({"v": STATE_VERSION, "hours": weather_hours, "ry": _snap_ry})
 
 
-# Состояние из сохранения; чужое (старой модели атмосферы) пропускается, погода начнётся заново
+# Стан зі збереження; чужий (старої моделі атмосфери) пропускається, погода почнеться заново
 func load_state(bytes: PackedByteArray) -> bool:
 	if bytes.size() < 8:
 		return false
@@ -330,7 +330,7 @@ func change_weather_speed(step: int) -> void:
 	weather_speed = float(WEATHER_SPEEDS[idx])
 
 
-# Подготовки атмосферы больше нет: погода готова сразу
+# Підготовки атмосфери більше немає: погода готова одразу
 func spinup_progress() -> float:
 	return 1.0
 
@@ -341,7 +341,7 @@ func is_spinning_up() -> bool:
 
 # Рядок стану погоди для підказки
 func status_text() -> String:
-	return "Погода: сезон %s, скорость x%s (клавиши , и .)" % [GameClock.SEASON_NAMES[clock.season()], str(weather_speed)]
+	return I18n.t("Погода: сезон %s, скорость x%s (клавиши , и .)") % [GameClock.SEASON_NAMES[clock.season()], str(weather_speed)]
 
 
 # Білінійна вибірка з сітки погоди за широтою і довготою в радіанах
@@ -367,17 +367,17 @@ func wind_at(lat: float, lon: float) -> Vector2:
 	return w.get("wind", Vector2.ZERO)
 
 
-# Осадки, накопленные в текущем игровом году, мм
+# Опади, накопичені в поточному ігровому році, мм
 func rain_year_at(lat: float, lon: float) -> float:
 	return _sample(_snap_ry, lat, lon)
 
 
-# Новый игровой год: накопленные осадки обнуляются
+# Новий ігровий рік: накопичені опади обнуляються
 func _on_year_changed(_year: int) -> void:
 	_snap_ry.fill(0.0)
 
 
-# Температура воздуха у земли, °C: сезон, час, биом и погода в этом месте
+# Температура повітря біля землі, °C: сезон, година, біом і погода в цьому місці
 func temperature_at(lat: float, lon: float) -> float:
 	var w: Dictionary = weather_here(map_point(lat, lon))
 	return float(w.get("temp_c", NAN))
@@ -388,7 +388,7 @@ func pressure_at(lat: float, lon: float) -> float:
 	return float(weather_here(map_point(lat, lon)).get("pressure", 1013.0))
 
 
-# Название погоды в точке (широта, долгота) для подсказки
+# Назва погоди в точці (широта, довгота) для підказки
 func weather_name_at(lat: float, lon: float) -> String:
 	return str(weather_here(map_point(lat, lon)).get("name", ""))
 
@@ -530,9 +530,9 @@ func wind_from_name(wv: Vector2) -> String:
 
 func moon_name() -> String:
 	if moon_phase < 0.06 or moon_phase > 0.94:
-		return "новолуние"
+		return I18n.t("новолуние")
 	if moon_phase < 0.44:
-		return "растущая"
+		return I18n.t("растущая")
 	if moon_phase < 0.56:
-		return "полнолуние"
-	return "убывающая"
+		return I18n.t("полнолуние")
+	return I18n.t("убывающая")

@@ -1,14 +1,15 @@
 extends Node2D
-## Ход героя мышью по общей карте: ЛКМ по точке — герой идёт туда сам, в обход стен города и края мира,
-## по возможности посуху и мимо радиации; удерживать ЛКМ — вести за курсором; ПКМ — остановиться.
-## Клик по городу (щиток, очерк, клетки) — путь к воротам, там открывается обычный выбор «Войти».
-## WASD перебивает путь. Shift — бежать по пути. Пока открыт выбор у поселения — герой стоит,
-## «Продолжить путь» — идёт дальше (если целью был не этот город).
+## Хід героя мишею загальною картою: ЛКМ по точці — герой іде туди сам, в обхід стін міста й краю світу,
+## по змозі суходолом і повз прокляття; утримувати ЛКМ — вести за курсором; ПКМ — зупинитися.
+## Клік по місту (щиток, обрис, клітинки) — шлях до брами, там відкривається звичайний вибір «Увійти».
+## WASD перебиває шлях. Shift — бігти шляхом. Поки відкритий вибір біля поселення — герой стоїть,
+## «Продовжити шлях» — іде далі (якщо ціллю було не це місто).
 ##
-## Путь — AStarGrid2D на сетке вокруг отрезка «герой — цель»: клетка тем крупнее, чем дальше цель
-## (CELLS_ALONG клеток на весь путь, от MIN_CELL_M до MAX_CELL_M), и путь пересчитывается мельче,
-## когда пройдена большая часть. Вес клетки = 1 / скорость местности; вода и радиация — дороже
-## (WATER_COST, RAD_COST) [ВРЕМЕННО]: реку переплывёт там, где уже, а в лужу посреди суши не полезет.
+## Шлях — AStarGrid2D на сітці довкола відрізка «герой — ціль»: клітинка тим більша, що далі ціль
+## (CELLS_ALONG клітинок на весь шлях, від MIN_CELL_M до MAX_CELL_M), і шлях перераховується дрібніше,
+## коли пройдено більшу частину. Вага клітинки = 1 / швидкість місцевості; вода й прокляття — дорожчі
+## (WATER_COST, RAD_COST) [Q19: не баланс, залишено]: річку перепливе там, де вужче, а в калюжу посеред суходолу не полізе.
+## Протоптані дороги (world/trails.gd) дешевші за ступенем — шлях надає їм перевагу.
 
 const R := preload("res://characters/actor_rules.gd")
 
@@ -16,21 +17,23 @@ const CELLS_ALONG: float = 90.0
 const MIN_CELL_M: float = 12.0
 const MAX_CELL_M: float = 450.0
 const MARGIN_CELLS: int = 14
-const MAX_GRID: int = 260            # клеток по стороне сетки, не больше
+const MAX_GRID: int = 260            # клітинок по стороні сітки, не більше
 const WATER_COST: float = 14.0
 const RAD_COST: float = 4.0
-const SNAP_LAND_M: float = 400.0     # клик в воду — к ближайшему берегу не дальше этого
-const REPLAN_SHARE: float = 0.45     # осталось меньше этой доли пути — пересчитать мельче
+const SNAP_LAND_M: float = 400.0     # клік у воду — до найближчого берега не далі за це
+const REPLAN_SHARE: float = 0.45     # лишилося менше цієї частки шляху — перерахувати дрібніше
 const STUCK_S: float = 0.6
-const HOLD_RETARGET_S: float = 0.25  # при удержании ЛКМ — новая цель не чаще
-const CITY_PICK_PX: float = 26.0     # щиток города издали: попадание в этот радиус от центра
-const WALL_RING_COST: float = 8.0    # полоса у стены города (где спрашивают «проникнуть»): путь её обходит
+const HOLD_RETARGET_S: float = 0.25  # за утримання ЛКМ — нова ціль не частіше
+const CITY_PICK_PX: float = 26.0     # щиток міста здалеку: влучання в цей радіус від центру
+const WALL_RING_COST: float = 8.0    # смуга біля стіни міста (де питають «проникнути»): шлях її оминає
+const TRAIL_MAX_CELL_M: float = 100.0  # стежки враховуються, поки клітинка сітки не більша за це
+const Trails := preload("res://world/trails.gd")
 
 var cast: Node2D
 var game: Node2D
-var points: PackedVector2Array = PackedVector2Array()   # оставшиеся точки пути (метры)
+var points: PackedVector2Array = PackedVector2Array()   # решта точок шляху (метри)
 var target: Vector2 = Vector2.INF
-var goal_city: String = ""           # id города, если шли к его воротам
+var goal_city: String = ""           # id міста, якщо йшли до його брами
 var _plan_len: float = 0.0
 var _plan_cell: float = 0.0
 var _stuck_t: float = 0.0
@@ -58,7 +61,7 @@ func cancel() -> void:
 
 
 # =====================================================================
-# ВВОД
+# ВВЕДЕННЯ
 # =====================================================================
 func _unhandled_input(event: InputEvent) -> void:
 	if game == null or not game.ready_done or game.typing or game.menu_open:
@@ -77,14 +80,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Клик по точке экрана (открыт для тестов). true — путь задан
+## Клік по точці екрана (відкритий для тестів). true — шлях задано
 func click(screen_pos: Vector2) -> bool:
 	if not cast.controls_hero or not cast._hero_alive() or cast.hero_away or cast.sheet_visible:
 		return false
 	return go_to(game._screen_world(screen_pos), _city_on_screen(screen_pos))
 
 
-## Идти к точке p карты; city — поселение, по которому щёлкнули (пусто — нет)
+## Іти до точки p карти; city — поселення, по якому клацнули (порожньо — немає)
 func go_to(p: Vector2, city: Dictionary = {}) -> bool:
 	var st: Node = game.get("settlements")
 	var h: Dictionary = cast.hero
@@ -94,23 +97,23 @@ func go_to(p: Vector2, city: Dictionary = {}) -> bool:
 	if not city.is_empty() and st != null:
 		city_id = String(city["id"])
 		to = st.exit_point(city_id)
-		# Уже у этих ворот — снова показать выбор
+		# Уже біля цієї брами — знову показати вибір
 		st.dismissed.erase(city_id + ":gate")
 		st.dismissed.erase(city_id + ":wall")
 	elif game.biome_at(to) == 0:
-		cast._event("Туда не дойти: за краем мира")
+		cast._event(I18n.t("Туда не дойти: за краем мира"))
 		return false
 	elif game.biome_at(to) == 1:
 		var shore: Vector2 = cast._find_land(to, SNAP_LAND_M)
 		if shore != to:
 			to = shore
-	# Выбор у другого поселения открыт — клик по карте значит «Продолжить путь»
+	# Вибір біля іншого поселення відкритий — клік по карті означає «Продовжити шлях»
 	if st != null and not st.prompt_for.is_empty() and String(st.prompt_for["id"]) != city_id:
 		st.choose_continue()
 	if a.sleeping:
 		a.set_sleep(false)
 	if not _plan(h["pos"], to):
-		cast._event("Пути туда нет")
+		cast._event(I18n.t("Пути туда нет"))
 		cancel()
 		return false
 	goal_city = city_id
@@ -118,7 +121,7 @@ func go_to(p: Vector2, city: Dictionary = {}) -> bool:
 	return true
 
 
-# Поселение под курсором: на клетках или (издали) в щитке
+# Поселення під курсором: на клітинках або (здалеку) у щитку
 func _city_on_screen(sp: Vector2) -> Dictionary:
 	var st: Node = game.get("settlements")
 	if st == null:
@@ -134,7 +137,7 @@ func _city_on_screen(sp: Vector2) -> Dictionary:
 
 
 # =====================================================================
-# ПОИСК ПУТИ
+# ПОШУК ШЛЯХУ
 # =====================================================================
 func _plan(from: Vector2, to: Vector2) -> bool:
 	var dist: float = from.distance_to(to)
@@ -145,7 +148,7 @@ func _plan(from: Vector2, to: Vector2) -> bool:
 		_plan_cell = MIN_CELL_M
 		queue_redraw()
 		return true
-	# Не нашёлся путь в окне вокруг отрезка — окно вчетверо шире (обход вдоль моря, края мира)
+	# Не знайшовся шлях у вікні довкола відрізка — вікно вчетверо ширше (обхід уздовж моря, краю світу)
 	if _plan_in(from, to, 1.0) or _plan_in(from, to, 4.0):
 		return true
 	target = Vector2.INF
@@ -160,7 +163,7 @@ func _plan_in(from: Vector2, to: Vector2, widen: float) -> bool:
 	var pad: float = (cell * MARGIN_CELLS + dist * 0.15) * widen
 	lo -= Vector2(pad, pad)
 	hi += Vector2(pad, pad)
-	# Город на пути целиком в окне, с запасом на обход
+	# Місто на шляху цілком у вікні, із запасом на обхід
 	var st: Node = game.get("settlements")
 	if st != null:
 		for s in st.list:
@@ -194,8 +197,9 @@ func _plan_in(from: Vector2, to: Vector2, widen: float) -> bool:
 				if float(ter.get("radiation_h", 0.0)) > 0.0:
 					w *= RAD_COST
 			grid.set_point_weight_scale(Vector2i(x, y), w)
-	# Стены городов: клетки сетки, задевающие клетки поселения со стеной (сетка бывает крупнее их).
-	# Полоса подхода у стены дорогая: мимо города путь идёт дальше, чем там спрашивают «проникнуть»
+	_prefer_trails(grid, lo, size, cell)
+	# Стіни міст: клітинки сітки, що зачіпають клітинки поселення зі стіною (сітка буває більша за них).
+	# Смуга підходу біля стіни дорога: повз місто шлях іде далі, ніж там питають «проникнути»
 	if st != null:
 		var area := Rect2(lo, hi - lo)
 		for s in st.list:
@@ -212,7 +216,7 @@ func _plan_in(from: Vector2, to: Vector2, widen: float) -> bool:
 					if not grid.is_point_solid(gp) and c.distance_to(st.nearest_on_cells(s, c)) < ring:
 						grid.set_point_weight_scale(gp, grid.get_point_weight_scale(gp) * WALL_RING_COST)
 			if st.radial(s):
-				# Круглый город: клетки сетки, задевающие круг стены
+				# Кругле місто: клітинки сітки, що зачіпають коло стіни
 				var cr: Rect2 = s["_rect"]
 				var c0 := Vector2i(floori((cr.position.x - lo.x) / cell), floori((cr.position.y - lo.y) / cell))
 				var c1 := Vector2i(floori((cr.end.x - lo.x) / cell), floori((cr.end.y - lo.y) / cell))
@@ -232,10 +236,10 @@ func _plan_in(from: Vector2, to: Vector2, widen: float) -> bool:
 						grid.set_point_solid(Vector2i(gx, gy), true)
 	var ca := Vector2i(floori((from.x - lo.x) / cell), floori((from.y - lo.y) / cell)).clamp(Vector2i.ZERO, size - Vector2i.ONE)
 	var cb := Vector2i(floori((to.x - lo.x) / cell), floori((to.y - lo.y) / cell)).clamp(Vector2i.ZERO, size - Vector2i.ONE)
-	# Свои клетки (герой и цель) проходимы всегда: герой может стоять у самой стены
+	# Свої клітинки (герой і ціль) прохідні завжди: герой може стояти біля самої стіни
 	grid.set_point_solid(ca, false)
 	grid.set_point_solid(cb, false)
-	# Неполный путь годится, если кончается рядом с целью (цель у самого края мира, в узкой щели)
+	# Неповний шлях годиться, якщо закінчується поруч із ціллю (ціль біля самого краю світу, у вузькій щілині)
 	var path: PackedVector2Array = grid.get_point_path(ca, cb, true)
 	if path.is_empty() or path[path.size() - 1].distance_to(to) > cell * 2.5:
 		return false
@@ -249,10 +253,27 @@ func _plan_in(from: Vector2, to: Vector2, widen: float) -> bool:
 	return true
 
 
+# Протоптані дороги (world/trails.gd) дешевші: шлях мишею звертає на них, і стежка від цього міцніє.
+# Лише на дрібній сітці: на великій одна клітинка стежки здешевила б сотні метрів довкола
+func _prefer_trails(grid: AStarGrid2D, lo: Vector2, size: Vector2i, cell: float) -> void:
+	var tl: Node = game.get("trails")
+	if tl == null or cell > TRAIL_MAX_CELL_M or tl.model.stage_of.is_empty():
+		return
+	var best := {}
+	for c in tl.model.stage_of:
+		var q: Vector2 = tl.model.center_of(c)
+		var g := Vector2i(floori((q.x - lo.x) / cell), floori((q.y - lo.y) / cell))
+		if g.x >= 0 and g.y >= 0 and g.x < size.x and g.y < size.y:
+			best[g] = maxi(int(best.get(g, 0)), int(tl.model.stage_of[c]))
+	for g in best:
+		if not grid.is_point_solid(g):
+			grid.set_point_weight_scale(g, grid.get_point_weight_scale(g) * float(Trails.ROUTE_WEIGHT[best[g]]))
+
+
 # =====================================================================
-# ХОД
+# ХІД
 # =====================================================================
-## Направление на этот кадр (зовёт cast._drive_hero); ZERO — стоять
+## Напрямок на цей кадр (кличе cast._drive_hero); ZERO — стояти
 func steer(pos: Vector2) -> Vector2:
 	if not active():
 		return Vector2.ZERO
@@ -262,7 +283,7 @@ func steer(pos: Vector2) -> Vector2:
 	if points.size() == 1 and pos.distance_to(points[0]) < 0.05:
 		cancel()
 		return Vector2.ZERO
-	# Ближе к цели — путь мельче (крупная сетка не видит узкие места)
+	# Ближче до цілі — шлях дрібніший (велика сітка не бачить вузьких місць)
 	var left: float = pos.distance_to(target)
 	if _plan_cell > MIN_CELL_M * 1.5 and left < _plan_len * REPLAN_SHARE and left > 60.0:
 		var keep: String = goal_city
@@ -273,12 +294,12 @@ func steer(pos: Vector2) -> Vector2:
 	return (points[0] - pos).normalized()
 
 
-## Последняя точка пути (INF — путь не на последнем отрезке)
+## Остання точка шляху (INF — шлях не на останньому відрізку)
 func final_point() -> Vector2:
 	return points[0] if active() and points.size() == 1 else Vector2.INF
 
 
-## Итог шага за кадр: застрял — пересчитать, второй раз — бросить путь
+## Підсумок кроку за кадр: застряг — перерахувати, удруге — покинути шлях
 func stepped(moved: bool, delta: float) -> void:
 	if not active():
 		return
@@ -290,7 +311,7 @@ func stepped(moved: bool, delta: float) -> void:
 	var keep: String = goal_city
 	if _replans_stuck > 2 or not _plan(cast.hero["pos"], target):
 		cancel()
-		cast._event("Дальше не пройти")
+		cast._event(I18n.t("Дальше не пройти"))
 		return
 	goal_city = keep
 
@@ -298,7 +319,7 @@ func stepped(moved: bool, delta: float) -> void:
 func _process(delta: float) -> void:
 	if game == null or not game.ready_done:
 		return
-	# Удержание ЛКМ: цель идёт за курсором
+	# Утримання ЛКМ: ціль іде за курсором
 	if _hold and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_hold_t += delta
 		if _hold_t >= HOLD_RETARGET_S and game.pointer_over_map() and not game.menu_open:
@@ -310,7 +331,7 @@ func _process(delta: float) -> void:
 		_hold = false
 	if active() and (not cast._hero_alive() or cast.hero_away or not cast.controls_hero):
 		cancel()
-	# Дошли до ворот своего города: открылся выбор — путь окончен
+	# Дійшли до брами свого міста: відкрився вибір — шлях закінчено
 	var st: Node = game.get("settlements")
 	if active() and st != null and not st.prompt_for.is_empty() and String(st.prompt_for["id"]) == goal_city:
 		cancel()
@@ -318,7 +339,7 @@ func _process(delta: float) -> void:
 
 
 # =====================================================================
-# РИСОВАНИЕ
+# МАЛЮВАННЯ
 # =====================================================================
 func _draw() -> void:
 	if not active() or not cast._hero_alive():

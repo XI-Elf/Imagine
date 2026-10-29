@@ -65,7 +65,7 @@
     },
     "radiation_sickness": {
       "name_ru": "Проклятая хворь",
-      "name_en": "Radiation Sickness",
+      "name_en": "Curse Sickness",
       "effects": {"health_decay": 0.03, "exhaustion": 0.05, "emaciation": 0.06},
       "treatment": "Снизить воздействие проклятья + специальные зелья",
       "cause": "Сильное воздействие проклятья"
@@ -139,8 +139,8 @@
       "duration_hours": 8
     },
     "anti_radiation": {
-      "name_ru": "Антирад",
-      "name_en": "Anti-Radiation",
+      "name_ru": "Очищение",
+      "name_en": "Cleansing",
       "effects": {"radiation_decay": 5.0},
       "duration_hours": 6
     },
