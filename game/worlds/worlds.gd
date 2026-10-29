@@ -55,6 +55,10 @@ var left_carts: Array = []         # Q32: вози загиблих героїв
 var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
 var _km_actor: Actor = null
 var sleep_fx: CanvasLayer = null
+var idle_attacks: bool = true      # пункт 17: напади, поки герой стоїть або спить у полі (тести вимикають)
+var _idle_s: float = 0.0           # ігрові секунди, які герой простояв на місці з останньої перевірки
+var _idle_pos := Vector2.INF
+var _idle_clock: float = -1.0
 var _rng := RandomNumberGenerator.new()
 
 
@@ -186,6 +190,7 @@ func _process(delta: float) -> void:
 		_km_actor = h
 		if h != null and not h.km_passed.is_connected(_on_hero_km.bind(h)):
 			h.km_passed.connect(_on_hero_km.bind(h))
+	_track_idle()
 	# Карта, поки її не видно, не рахує автозбереження — рахуємо тут (у бою не зберігаємо)
 	if is_away() and not is_battle():
 		_autosave_t += delta
@@ -202,6 +207,45 @@ func _on_hero_km(_total_km: int, h: Actor) -> void:
 	var env: Dictionary = WorldEnv.sample(game, hero_body()["pos"])
 	if enc.roll_on_km(h, env, _rng):
 		start_battle({})
+
+
+## Пункт 17: герой стоїть, спить або відпочиває в полі — щогодини гри кидається напад за маскуванням
+func _track_idle() -> void:
+	var b: Dictionary = hero_body()
+	var now: float = game.clock.total_seconds
+	if b.is_empty() or is_away() or busy or not b["actor"].alive or not idle_attacks or bool(game.cast.get("hold_hero")):
+		_idle_clock = now
+		_idle_pos = Vector2.INF
+		_idle_s = 0.0
+		return
+	var p: Vector2 = b["pos"]
+	if _idle_clock >= 0.0 and _idle_pos != Vector2.INF and p.distance_to(_idle_pos) < 2.0:
+		_idle_s += maxf(now - _idle_clock, 0.0)
+	else:
+		_idle_s = 0.0
+	_idle_pos = p
+	_idle_clock = now
+	if _idle_s >= 3600.0:
+		var hours: float = floor(_idle_s / 3600.0)
+		_idle_s -= hours * 3600.0
+		noise_check(hours)
+
+
+## Перевірка нападу за hours годин на місці (стоїть, спить, шукає у полі); true — почався бій
+func noise_check(hours: float) -> bool:
+	var h: Actor = hero_actor()
+	if h == null or is_away() or busy or not idle_attacks or not ResourceLoader.exists(ENCOUNTERS):
+		return false
+	var enc: Script = load(ENCOUNTERS)
+	var env: Dictionary = WorldEnv.sample(game, hero_body()["pos"])
+	if not enc.roll_for_hours(h, env, hours, _rng):
+		return false
+	var slept: bool = h.sleeping
+	h.set_sleep(false)
+	game.event_text = I18n.t("Застали врасплох во сне!") if slept else I18n.t("Вас выследили!")
+	game.event_timer = 4.0
+	start_battle({"ambush": slept})
+	return true
 
 
 func _on_enter_requested(s: Dictionary) -> void:

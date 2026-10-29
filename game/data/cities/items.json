@@ -45,6 +45,17 @@
     "plate_armor":      {"name": "Латы",                "price": 180, "weight": 15.0, "wear": {"slot": "body", "look": "jacket", "color": "a7abb2", "armor": "plate"}},
     "spear":            {"name": "Копьё",               "price": 14, "weight": 2.0},
     "mace":             {"name": "Булава",              "price": 22, "weight": 2.5},
-    "shortsword":       {"name": "Короткий меч",        "price": 40, "weight": 1.5}
+    "shortsword":       {"name": "Короткий меч",        "price": 40, "weight": 1.5},
+    "berries":          {"name": "Лесные ягоды",        "price": 1,  "weight": 0.2, "use": {"eat": 6, "kind": "raw"}},
+    "mushrooms":        {"name": "Грибы",               "price": 2,  "weight": 0.3, "use": {"eat": 9, "kind": "raw"}},
+    "toadstool":        {"name": "Сомнительные грибы",  "price": 0,  "weight": 0.3, "use": {"eat": 9, "kind": "spoiled_food"}},
+    "roots":            {"name": "Съедобные корни",     "price": 1,  "weight": 0.3, "use": {"eat": 7, "kind": "raw"}},
+    "shellfish":        {"name": "Ракушки",             "price": 2,  "weight": 0.4, "use": {"eat": 10, "kind": "raw_meat"}},
+    "wild_herbs":       {"name": "Дикие травы",         "price": 3,  "weight": 0.1},
+    "brushwood":        {"name": "Хворост",             "price": 1,  "weight": 1.5},
+    "driftwood":        {"name": "Плавник",             "price": 1,  "weight": 2.0},
+    "reed":             {"name": "Камыш",               "price": 1,  "weight": 0.5},
+    "flint":            {"name": "Кремень",             "price": 2,  "weight": 0.3},
+    "map_local":        {"name": "Карта местности",     "price": 25, "weight": 0.1, "unique": true}
   }
 }

@@ -8,7 +8,7 @@ const Art := preload("res://storybook/art.gd")
 ## НПС далеко від героя й камери рахуються шматками по FAR_TICK_S ігрових секунд, за тими самими правилами.
 ##
 ## Клавіші: G — створити героя (біля брами міста) / узяти або відпустити керування, WASD — іти, Shift — бігти,
-## Z — спати/прокинутися, E — пити біля води, F — шукати їжу, T — лікуватися в лікаря поруч, I — аркуш персонажа.
+## Z — спати/прокинутися, E — пити біля води, F — шукати їжу й матеріали (world/foraging.gd), T — лікуватися в лікаря поруч, I — аркуш персонажа.
 ## Миша (characters/hero_route.gd): ЛКМ — іти в точку (містом — до брами), тримати ЛКМ — за курсором, ПКМ — стоп.
 
 const WorldEnv := preload("res://characters/world_env.gd")
@@ -23,6 +23,7 @@ const Ruins := preload("res://world/ruins.gd")
 const Codex := preload("res://world/codex.gd")
 const Trade := preload("res://city/trade.gd")
 const TransportScript := preload("res://characters/transport.gd")
+const Foraging := preload("res://world/foraging.gd")
 
 const OVERWORLD_NPCS: bool = false
 const NPC_COUNT: int = 8
@@ -56,6 +57,7 @@ var _creator: CanvasLayer           # екран створення героя (
 var _last_clock: float = -1.0
 var _forage_cd: float = 0.0
 var ruins_looted: Dictionary = {}       # руїни на карті (world/ruins.gd): "x:y" -> ігрові секунди обшуку
+var field_searched: Dictionary = {}     # пошук у полі (world/foraging.gd): клітина -> до коли порожня
 var _rng := RandomNumberGenerator.new()
 var _status: Label
 var route: Node2D               # хід мишею: шлях героя до точки (hero_route.gd)
@@ -470,7 +472,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				elif not site.is_empty():
 					_event(search_ruins(site))
 				else:
-					_event(I18n.t("Нашёл еду") if forage(hero) else I18n.t("Ничего съедобного"))
+					_event(search_field())
 		_:
 			return
 	get_viewport().set_input_as_handled()
@@ -535,6 +537,20 @@ func search_ruins(site: Dictionary) -> String:
 		if not n.is_empty():
 			msg += I18n.t(". Среди обломков записка: «%s» (дневник героя, вкладка 6)") % n["title"]
 	return msg
+
+
+## Пошук у полі (пункт 16): час іде, знахідки в сумку; шум пошуку може привернути ворогів (Worlds.noise_check)
+func search_field() -> String:
+	var a: Actor = hero["actor"]
+	var now: float = game.clock.total_seconds
+	var r: Dictionary = Foraging.search(a, game.biome_at(hero["pos"]), hero["pos"], now, field_searched, _inventory(), _rng)
+	if not bool(r["ok"]):
+		return String(r["text"])
+	game.clock._set_total(now + float(r["minutes"]) * 60.0)
+	var wm: Node = get_node_or_null("/root/Worlds")
+	if wm != null and wm.has_method("noise_check"):
+		wm.noise_check(float(r["minutes"]) / 60.0)
+	return String(r["text"])
 
 
 func _hero_alive() -> bool:
@@ -810,7 +826,8 @@ func to_dict() -> Dictionary:
 	var list: Array = []
 	for b in bodies:
 		list.append({"actor": b["actor"].to_dict(), "pos": b["pos"], "home": b["home"], "hero": b["hero"], "kit": b["kit"], "restock_at": b["restock_at"]})
-	return {"bodies": list, "controls_hero": controls_hero, "ruins_looted": ruins_looted.duplicate()}
+	Foraging.prune(field_searched, game.clock.total_seconds if game != null and game.clock != null else 0.0)
+	return {"bodies": list, "controls_hero": controls_hero, "ruins_looted": ruins_looted.duplicate(), "field_searched": field_searched.duplicate()}
 
 
 func load_dict(d: Dictionary) -> void:
@@ -828,6 +845,7 @@ func load_dict(d: Dictionary) -> void:
 			hero = b
 	controls_hero = bool(d.get("controls_hero", false)) and not hero.is_empty()
 	ruins_looted = d.get("ruins_looted", {}).duplicate()
+	field_searched = d.get("field_searched", {}).duplicate()
 	_last_clock = -1.0
 	if route != null:
 		route.cancel()
