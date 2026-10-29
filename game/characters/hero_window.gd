@@ -577,8 +577,8 @@ func drop_all() -> void:
 	inv_drop_armed = false
 	var n: int = 0
 	for id in bag.get("items", {}).keys():
-		if Trade.item(id).has("transport"):
-			continue   # коня й віз не викинути (characters/transport.gd)
+		if Trade.item(id).has("transport") or Trade.bound(id):
+			continue   # коня й віз не викинути (characters/transport.gd), пергамент і вуглик теж
 		if inv_filter == "all" or Inv.cat_of(id, _item_weapons()) == inv_filter:
 			n += Trade.count(bag, id)
 			Trade.add(bag, id, -Trade.count(bag, id))
@@ -602,9 +602,20 @@ func use_item(id: String) -> void:
 	refresh()
 
 
+## Кнопка «Карта» біля пергаменту в інвентарі: закрити вікно й розгорнути аркуш (world/parchment.gd)
+func open_parchment() -> void:
+	var c: Node = get_parent()
+	if c != null and c.get("parchment") != null:
+		close()
+		c.parchment.open()
+
+
 func drop_item(id: String) -> void:
 	var bag: Dictionary = _bag()
 	if bag.is_empty():
+		return
+	if Trade.bound(id):
+		_say(I18n.t("%s всегда при себе") % Trade.item_name(id))
 		return
 	Trade.add(bag, id, -1)
 	if Trade.count(bag, id) <= 0 and bag.has("battle_loadout"):

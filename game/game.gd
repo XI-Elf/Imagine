@@ -360,10 +360,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_O:
 			observer_mode = not observer_mode
 			observer_marker.visible = observer_mode
-		# M — глобальна карта (увесь світ), ще раз — назад до героя; Shift+M — перехід за координатами X Y
+		# M — карта героя на пергаменті (пункт 11, world/parchment.gd); без героя — увесь світ; Shift+M — перехід за координатами X Y
 		if event.physical_keycode == KEY_M:
 			if event.shift_pressed:
 				_open_goto()
+			elif cast != null and not cast.hero.is_empty() and cast.parchment != null:
+				cast.parchment.open()
 			else:
 				toggle_global_map()
 		# Швидкість погоди

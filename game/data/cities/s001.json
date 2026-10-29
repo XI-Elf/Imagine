@@ -3015,7 +3015,9 @@
         "torch": 12,
         "bandage": 6,
         "knife": 2,
-        "horse": 1
+        "horse": 1,
+        "color_charcoals": 2,
+        "map_fragment": 3
       },
       "buys": [
         "hide",
@@ -3025,7 +3027,16 @@
         "rope",
         "torch",
         "knife",
-        "vegetables"
+        "vegetables",
+        "berries",
+        "mushrooms",
+        "roots",
+        "shellfish",
+        "wild_herbs",
+        "flint",
+        "reed",
+        "brushwood",
+        "driftwood"
       ],
       "lines": [
         "Всё нужное в дорогу, недорого.",

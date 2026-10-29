@@ -1,5 +1,5 @@
 {
-  "_note": "Предметы для торговли в городах. price — базовая цена в монетах, weight — кг. use: eat/drink — что делает при использовании (Actor.eat/drink), treat — ключ для лечения (rules.json treatments). wear — одежда: slot (head, body, back, hands, legs, feet), look — как рисуется на кукле героя (characters/paper_doll.gd), color. transport — лошадь или повозка (characters/transport.gd, вопрос Q16): в сумке, но не в сетке инвентаря; unique — одна на героя; requires — что нужно иметь до покупки. Все числа [Q19: проверяет tests/balance_checks.gd].",
+  "_note": "Предметы для торговли в городах. price — базовая цена в монетах, weight — кг. use: eat/drink — что делает при использовании (Actor.eat/drink), treat — ключ для лечения (rules.json treatments). wear — одежда: slot (head, body, back, hands, legs, feet), look — как рисуется на кукле героя (characters/paper_doll.gd), color. bound — вещь при герое всегда (пергамент и уголёк для карты, M): не выбросить и не продать. transport — лошадь или повозка (characters/transport.gd, вопрос Q16): в сумке, но не в сетке инвентаря; unique — одна на героя; requires — что нужно иметь до покупки. Все числа [Q19: проверяет tests/balance_checks.gd].",
   "currency": "монеты",
   "items": {
     "bread":            {"name": "Хлеб",                 "price": 3,  "weight": 0.5, "use": {"eat": 20, "kind": "cooked"}},
@@ -56,6 +56,9 @@
     "driftwood":        {"name": "Плавник",             "price": 1,  "weight": 2.0},
     "reed":             {"name": "Камыш",               "price": 1,  "weight": 0.5},
     "flint":            {"name": "Кремень",             "price": 2,  "weight": 0.3},
-    "map_local":        {"name": "Карта местности",     "price": 25, "weight": 0.1, "unique": true}
+    "parchment":        {"name": "Лист пергамента",     "price": 0,  "weight": 0.05, "bound": true},
+    "charcoal_stick":   {"name": "Уголёк для рисования", "price": 0, "weight": 0.02, "bound": true},
+    "color_charcoals":  {"name": "Набор цветных углей", "price": 15, "weight": 0.1, "unique": true},
+    "map_fragment":     {"name": "Отрывок карты",       "price": 12, "weight": 0.02}
   }
 }
