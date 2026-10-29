@@ -116,7 +116,7 @@ func _refresh() -> void:
 	for id in items:
 		var row := HBoxContainer.new()
 		var l := Label.new()
-		l.text = "%s ×%d   (%.1f кг)" % [Trade.item_name(id), int(items[id]), float(Trade.item(id).get("weight", 0.0)) * int(items[id])]
+		l.text = I18n.t("%s ×%d   (%.1f кг)") % [Trade.item_name(id), int(items[id]), float(Trade.item(id).get("weight", 0.0)) * int(items[id])]
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(l)
 		row.add_child(_btn(I18n.t("Взять"), take.bind(id, 1)))
