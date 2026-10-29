@@ -21,6 +21,7 @@ const HeroDeath := preload("res://characters/hero_death.gd")
 const HeroRoute := preload("res://characters/hero_route.gd")
 const Ruins := preload("res://world/ruins.gd")
 const Codex := preload("res://world/codex.gd")
+const Chronicle := preload("res://characters/chronicle.gd")
 const Trade := preload("res://city/trade.gd")
 const TransportScript := preload("res://characters/transport.gd")
 const Foraging := preload("res://world/foraging.gd")
@@ -166,7 +167,13 @@ func _add(actor: Actor, pos: Vector2, is_hero: bool) -> Dictionary:
 	bodies.append(b)
 	actor.died.connect(func(cause: String) -> void: _on_died(b, cause))
 	if is_hero:
-		actor.leveled_up.connect(func(lv: int) -> void: _event(I18n.t("Новый уровень %d: очки навыков%s — окно героя (I)") % [lv, I18n.t(" и дар") if actor.perk_picks > 0 else ""]))
+		actor.leveled_up.connect(func(lv: int) -> void:
+			_event(I18n.t("Новый уровень %d: очки навыков%s — окно героя (I)") % [lv, I18n.t(" и дар") if actor.perk_picks > 0 else ""])
+			_chronicle("level", I18n.t("Достиг уровня %d.") % lv, "level:%d" % lv))
+		actor.condition_added.connect(func(id: String) -> void:
+			var c: Dictionary = R.condition(id)
+			if not c.is_empty():
+				_chronicle("body", I18n.t("Слёг с бедой: %s.") % String(c.get("name_ru", id)).to_lower()))
 	return b
 
 
@@ -178,6 +185,8 @@ func spawn_hero(at: Vector2, params: Dictionary = {}) -> void:
 	if not params.is_empty():
 		HeroProfile.apply(a, params)
 	hero = _add(a, p, true)
+	if not params.is_empty():
+		_chronicle("start", HeroProfile.biography(params))
 	if route != null:
 		route.cancel()
 	# Новий персонаж — новий чистий аркуш пергаменту й вуглик (пункт 11)
@@ -302,6 +311,13 @@ func _on_died(b: Dictionary, cause: String) -> void:
 	_event(I18n.t("%s погиб: %s") % [a.display_name, Actor.DEATH_CAUSES.get(cause, cause)])
 	if b["hero"]:
 		controls_hero = false
+		_chronicle("death", I18n.t("Погиб: %s.") % String(Actor.DEATH_CAUSES.get(cause, cause)).to_lower())
+
+
+## Запис у хроніку героя (characters/chronicle.gd) з поточним ігровим часом
+func _chronicle(kind: String, text: String, key: String = "") -> void:
+	var w: Node = get_tree().root.get_node_or_null("Worlds") if is_inside_tree() else null
+	Chronicle.add(w, kind, text, game.clock.total_seconds if game != null and game.get("clock") != null else 0.0, key)
 
 
 func _event(text: String) -> void:
@@ -558,6 +574,7 @@ func search_ruins(site: Dictionary) -> String:
 		var n: Dictionary = Codex.find(w.codex, "ruins", _rng, game.clock.total_seconds)
 		if not n.is_empty():
 			msg += I18n.t(". Среди обломков записка: «%s» (дневник героя, вкладка 6)") % n["title"]
+			_chronicle("note", I18n.t("В руинах нашёл записку: «%s».") % n["title"], "note:" + String(n["id"]))
 	return msg
 
 

@@ -53,6 +53,15 @@ static func unfound(found: Dictionary, src: String) -> Array:
 	return out
 
 
+## Розповіді жителя who (src "talk"), які герой ще не чув; порядок — як у файлі
+static func tales(found: Dictionary, who: String) -> Array:
+	var out: Array = []
+	for e in notes():
+		if String(e.get("src", "")) == "talk" and String(e.get("who", "")) == who and not found.has(String(e["id"])):
+			out.append(e)
+	return out
+
+
 ## Знахідка при обшуку: з шансом chance[src] випадкова ненайдена записка джерела src. Записує її в found.
 ## Повертає записку або {} (шанс не спрацював чи все знайдено)
 static func find(found: Dictionary, src: String, rng: RandomNumberGenerator, now: float) -> Dictionary:

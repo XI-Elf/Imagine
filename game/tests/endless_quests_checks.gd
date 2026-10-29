@@ -48,7 +48,7 @@ func do_quest(city: Node, n: Dictionary, q: Dictionary) -> void:
 			Trade.add(city.bag, String(q["item"]), int(q["n"]))
 		"pay":
 			city.bag["money"] = int(city.bag["money"]) + int(q["money"])
-	city.turn_in(n, q)
+	city.turn_in(n, q, "complicit")
 
 
 func _run() -> void:

@@ -128,7 +128,10 @@ func _rules() -> void:
 		if not Cx.find(found, "ruins", crng, 1.0).is_empty():
 			got += 1
 	ok(got == Cx.unfound({}, "ruins").size() and Cx.unfound(found, "ruins").is_empty(), "кодекс: все записки руин находятся по одному разу (%d)" % got)
-	ok(Cx.find(found, "ruins", crng, 2.0).is_empty() and Cx.progress(found)["found"] == got and Cx.progress({})["total"] == 18, "кодекс: повторов нет, всего 18 записок")
+	ok(Cx.find(found, "ruins", crng, 2.0).is_empty() and Cx.progress(found)["found"] == got and Cx.progress({})["total"] == 25, "кодекс: повторов нет, всего 25 записок")
+	# Розповіді жителів (src talk): історія світу з розмов, не з довідки; руїни й тайники їх не віддають
+	ok(Cx.unfound({}, "talk").size() == 7 and Cx.tales({}, "posadnik").size() == 2 and Cx.tales({"old_5": 1.0}, "posadnik").size() == 1, "кодекс: 7 историй в разговорах, у олдермена две")
+	ok(Cx.find({}, "ruins", crng, 1.0).get("src", "ruins") == "ruins" and Cx.tales({}, "nobody").is_empty(), "кодекс: руины не отдают разговорные истории")
 	ok(Cx.note("hum_1").get("chapter") == "humans" and Cx.chapters().size() == 9, "кодекс: записки и 9 разделов")
 	# Риси працюють через ефекти: ненажера голодніє швидше
 	var plain := Actor.new("x", "x", false, 1)
@@ -285,6 +288,29 @@ func _game() -> void:
 		ok(cast.window._body.get_child_count() >= 7, "дневник: книга из найденных записок (%d блоков)" % cast.window._body.get_child_count())
 		await shot("h06c_diary_notes.png")
 		W.codex = {}
+	# Хроніка героя (вкладка 7): події життя героя, не історія світу
+	if W != null:
+		W.chronicle = []
+	key(KEY_7)
+	await frames(3)
+	ok(cast.window.tab == "chronicle", "7 — хроника героя")
+	await shot("h07a_chronicle_empty.png")
+	if W != null:
+		var Ch := load("res://characters/chronicle.gd")
+		Ch.add(W, "start", "Эдгар, 25 лет. Горожанин, ремесло — кузнец.", 0.0)
+		Ch.add(W, "city", "Впервые вошёл в город Эшвик.", 3600.0, "city:s001")
+		Ch.add(W, "city", "Впервые вошёл в город Эшвик.", 7200.0, "city:s001")
+		ok(W.chronicle.size() == 2, "хроника: запись с тем же ключом не дублируется")
+		Ch.add(W, "quest", "Выполнил поручение «Скобы для частокола» для Олдермен.", 90000.0, "quest:elder_1")
+		cast.window.refresh_bag()
+		await frames(3)
+		ok(cast.window._body.get_child_count() >= 8, "хроника: 3 события с датами (%d блоков)" % cast.window._body.get_child_count())
+		await shot("h07b_chronicle_events.png")
+		var snap: Dictionary = W.to_dict()
+		W.chronicle = []
+		W.load_dict(snap)
+		ok(W.chronicle.size() == 3 and String(W.chronicle[2]["kind"]) == "quest", "хроника входит в сохранение мира")
+		W.chronicle = []
 	key(KEY_TAB)
 	await frames(3)
 	# У сумці їжа й ніж: з'їсти, узяти в бій, викинути

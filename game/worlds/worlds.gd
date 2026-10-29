@@ -33,6 +33,7 @@ const ENCOUNTERS := "res://battle/encounters.gd"
 const WorldEnv := preload("res://characters/world_env.gd")
 const JournalScript := preload("res://characters/quest_journal.gd")
 const WearRef := preload("res://characters/wear.gd")
+const Chronicle := preload("res://characters/chronicle.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
@@ -52,6 +53,7 @@ var _hero_controlled: bool = false
 var _autosave_t: float = 0.0
 var inventory: Dictionary = {"money": 0, "items": {}}
 var city_states: Dictionary = {}   # city_id -> to_dict() міста після останнього візиту
+var chronicle: Array = []           # хроніка героя: ключові події (characters/chronicle.gd); зникає разом з героєм
 var codex: Dictionary = {}          # кодекс: id знайдених записок -> ігрові секунди (world/codex.gd); живе довше за героя
 var left_carts: Array = []         # Q32: вози загиблих героїв на карті [{pos: [x, y], until: с гри, items}] (hero_death.gd)
 var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
@@ -173,6 +175,7 @@ func _attach(g: Node2D) -> void:
 	city_states = {}
 	left_carts = []
 	codex = {}
+	chronicle = []
 	battles_won = 0
 	g.tree_exiting.connect(_on_game_exiting.bind(g))
 
@@ -454,7 +457,8 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
 	for a in e["req"].get("allies", []):
 		if a is Actor and a.alive and dead.has(a.actor_id):
 			a.die("wounds")
-	if String(result.get("outcome", "")) == "win":
+	var outcome: String = String(result.get("outcome", ""))
+	if outcome == "win":
 		battles_won += 1
 		# Механіка 2: убиті звірі — на розбирання (Camp.butcher), шаблони з actor_id вороґів
 		var enc: Script = load(ENCOUNTERS) if ResourceLoader.exists(ENCOUNTERS) else null
@@ -464,8 +468,24 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
 	var worn: PackedStringArray = WearRef.on_battle(inventory)
 	if not worn.is_empty():
 		result["text"] = (String(result.get("text", "")) + " " + " ".join(worn)).strip_edges()
+	_log_battle(outcome)
 	result["origin"] = result.get("origin", e["req"]["origin"])
 	result["return_pos"] = result.get("return_pos", e["req"]["return_pos"])
+
+
+## Хроніка героя: перша перемога, кожна п'ята, поразка, втеча. Решта боїв — не ключові події
+func _log_battle(outcome: String) -> void:
+	var t: float = game.clock.total_seconds if game != null and game.get("clock") != null else 0.0
+	match outcome:
+		"win":
+			if battles_won == 1:
+				Chronicle.add(self, "battle", I18n.t("Первая победа в бою. Дорога научила: живой враг приходит снова, мёртвый — нет."), t, "battle:first")
+			elif battles_won % 5 == 0:
+				Chronicle.add(self, "battle", I18n.t("Выиграно боёв: %d.") % battles_won, t, "battle:%d" % battles_won)
+		"lose":
+			Chronicle.add(self, "battle", I18n.t("Проиграл бой и чудом остался жив."), t)
+		"flee":
+			Chronicle.add(self, "battle", I18n.t("Бросил бой и ушёл. Стыдно, зато цел."), t)
 
 
 # =====================================================================
@@ -644,7 +664,7 @@ func to_dict() -> Dictionary:
 	var cities: Dictionary = city_states.duplicate()
 	return {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
 		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true), "codex": codex.duplicate(),
-		"journal": journal.to_array() if journal != null else []}
+		"journal": journal.to_array() if journal != null else [], "chronicle": chronicle.duplicate(true)}
 
 
 # Після завантаження карти (world_save.apply_late): заново входить у збережені міста й бій, без затемнення
@@ -665,6 +685,7 @@ func load_dict(d: Dictionary) -> void:
 	codex = d.get("codex", {}).duplicate() if d.get("codex") is Dictionary else {}
 	if journal != null:
 		journal.load_array(d.get("journal", []))
+	chronicle = d.get("chronicle", []).duplicate(true) if d.get("chronicle") is Array else []
 	if not list.is_empty() and game.get("cast") != null:
 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))
 	for e in list:
