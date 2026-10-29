@@ -2888,6 +2888,202 @@ msgstr "Таке тут не беруть"
 msgid "Уже есть"
 msgstr "Уже є"
 
+#: data/audio/music.json
+msgid "Арфа"
+msgstr "Арфа"
+
+#: data/audio/music.json
+msgid "Барокко"
+msgstr "Бароко"
+
+#: data/audio/music.json
+msgid "Барочная труба"
+msgstr "Барокова труба"
+
+#: data/audio/music.json
+msgid "Бойран"
+msgstr "Бойран"
+
+#: data/audio/music.json
+msgid "Большой орган"
+msgstr "Великий орган"
+
+#: data/audio/music.json
+msgid "Валторна"
+msgstr "Валторна"
+
+#: data/audio/music.json
+msgid "Варган"
+msgstr "Варган"
+
+#: data/audio/music.json
+msgid "Виола да гамба"
+msgstr "Віола да гамба"
+
+#: data/audio/music.json
+msgid "Виолончель"
+msgstr "Віолончель"
+
+#: data/audio/music.json
+msgid "Виолончель пиццикато"
+msgstr "Віолончель піцикато"
+
+#: data/audio/music.json
+msgid "Волны Мартено"
+msgstr "Хвилі Мартено"
+
+#: data/audio/music.json
+msgid "Восток"
+msgstr "Схід"
+
+#: data/audio/music.json
+msgid "Гобой"
+msgstr "Гобой"
+
+#: data/audio/music.json
+msgid "Гран-касса"
+msgstr "Гран-каса"
+
+#: data/audio/music.json
+msgid "Гусли"
+msgstr "Гуслі"
+
+#: data/audio/music.json
+msgid "Дарбука"
+msgstr "Дарбука"
+
+#: data/audio/music.json
+msgid "Дудук"
+msgstr "Дудук"
+
+#: data/audio/music.json
+msgid "Кастаньеты"
+msgstr "Кастаньєти"
+
+#: data/audio/music.json
+msgid "Клавесин"
+msgstr "Клавесин"
+
+#: data/audio/music.json
+msgid "Кларнет"
+msgstr "Кларнет"
+
+#: data/audio/music.json
+msgid "Колокола"
+msgstr "Дзвони"
+
+#: data/audio/music.json
+msgid "Колёсная лира"
+msgstr "Колісна ліра"
+
+#: data/audio/music.json
+msgid "Контрабас"
+msgstr "Контрабас"
+
+#: data/audio/music.json
+msgid "Кото"
+msgstr "Кото"
+
+#: data/audio/music.json
+msgid "Литавры"
+msgstr "Литаври"
+
+#: data/audio/music.json
+msgid "Лютня"
+msgstr "Лютня"
+
+#: data/audio/music.json
+msgid "Малый барабан"
+msgstr "Малий барабан"
+
+#: data/audio/music.json
+msgid "Мандолина"
+msgstr "Мандоліна"
+
+#: data/audio/music.json
+msgid "Никельхарпа"
+msgstr "Нікельгарпа"
+
+#: data/audio/music.json
+msgid "Позитив"
+msgstr "Позитив"
+
+#: data/audio/music.json
+msgid "Северная сага"
+msgstr "Північна сага"
+
+#: data/audio/music.json
+msgid "Серпент"
+msgstr "Серпент"
+
+#: data/audio/music.json
+msgid "Ситар"
+msgstr "Ситар"
+
+#: data/audio/music.json
+msgid "Скрипка"
+msgstr "Скрипка"
+
+#: data/audio/music.json
+msgid "Собор"
+msgstr "Собор"
+
+#: data/audio/music.json
+msgid "Стеклянная гармоника"
+msgstr "Скляна гармоніка"
+
+#: data/audio/music.json
+msgid "Табла"
+msgstr "Табла"
+
+#: data/audio/music.json
+msgid "Тайко"
+msgstr "Тайко"
+
+#: data/audio/music.json
+msgid "Тамбурелло"
+msgstr "Тамбурелло"
+
+#: data/audio/music.json
+msgid "Тарелки"
+msgstr "Тарілки"
+
+#: data/audio/music.json
+msgid "Терменвокс"
+msgstr "Терменвокс"
+
+#: data/audio/music.json
+msgid "Треугольник"
+msgstr "Трикутник"
+
+#: data/audio/music.json
+msgid "Фагот"
+msgstr "Фагот"
+
+#: data/audio/music.json
+msgid "Фисгармония"
+msgstr "Фісгармонія"
+
+#: data/audio/music.json
+msgid "Флейта-траверсо"
+msgstr "Флейта-траверсо"
+
+#: data/audio/music.json
+msgid "Цимбалы"
+msgstr "Цимбали"
+
+#: data/audio/music.json
+msgid "Челеста"
+msgstr "Челеста"
+
+#: data/audio/music.json
+msgid "Шэн"
+msgstr "Шен"
+
+#: data/audio/music.json
+msgid "Эфир"
+msgstr "Ефір"
+
 #: data/audio/sounds.json
 msgid "Ambience Redo by TenPlus1 (зеркало gitlab.com/minetest-mirrors/ambience, ветка master)"
 msgstr "Ambience Redo by TenPlus1 (дзеркало gitlab.com/minetest-mirrors/ambience, гілка master)"
@@ -8187,6 +8383,10 @@ msgstr "повільніше / швидше погода"
 #: tutorial/tutorial.gd
 msgid "меню паузы: сохранить, выйти в меню"
 msgstr "меню паузи: зберегти, вийти в меню"
+
+#: tutorial/tutorial.gd
+msgid "музыка вкл/выкл; Shift+F10 — громкость музыки 100/75/50/25 %"
+msgstr "музика увімк./вимк.; Shift+F10 — гучність музики 100/75/50/25 %"
 
 #: tutorial/tutorial.gd
 msgid "облака сверху"
