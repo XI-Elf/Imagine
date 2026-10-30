@@ -1061,6 +1061,10 @@ msgid " (тонет!)"
 msgstr " (тоне!)"
 
 #: characters/cast.gd
+msgid " · ночь, без факела хуже видно"
+msgstr " · ніч, без смолоскипа видно гірше"
+
+#: characters/cast.gd
 msgid " и дар"
 msgstr " і дар"
 
@@ -1201,6 +1205,10 @@ msgid "Обыскал руины: %s"
 msgstr "Обшукав руїни: %s"
 
 #: characters/cast.gd
+msgid "Оставлено здесь раньше"
+msgstr "Залишене тут раніше"
+
+#: characters/cast.gd
 msgid "Оставлено на месте: %s"
 msgstr "Залишено на місці: %s"
 
@@ -1209,8 +1217,12 @@ msgid "Погиб: %s."
 msgstr "Загинув: %s."
 
 #: characters/cast.gd
-msgid "Пока искали, вас выследили"
-msgstr "Поки шукали, вас вистежили"
+msgid "Поиск"
+msgstr "Пошук"
+
+#: characters/cast.gd
+msgid "Пока искали, вас выследили. Найденное осталось на месте."
+msgstr "Поки шукали, вас вистежили. Знайдене лишилося на місці."
 
 #: characters/cast.gd
 msgid "Проснулся"
@@ -1279,6 +1291,46 @@ msgstr "Едіт"
 #: characters/cast.gd
 msgid "Эйвинд"
 msgstr "Ейвінд"
+
+#: characters/chronicle.gd
+msgid "(каракули) %s"
+msgstr "(карлючки) %s"
+
+#: characters/chronicle.gd
+msgid "Дальше пишет кто-то другой."
+msgstr "Далі пише хтось інший."
+
+#: characters/chronicle.gd
+msgid "Дорога длинная, а сапоги одни. Посмотрим, что сотрётся раньше."
+msgstr "Дорога довга, а чоботи одні. Побачимо, що зітреться раніше."
+
+#: characters/chronicle.gd
+msgid "Заплатили. Кто кому на самом деле услужил — вопрос, который лучше не задавать вслух."
+msgstr "Заплатили. Хто кому насправді прислужився — питання, яке краще не ставити вголос."
+
+#: characters/chronicle.gd
+msgid "Кто-то писал это, не надеясь, что прочтут. Прочёл я. Неизвестно, к добру ли."
+msgstr "Хтось писав це, не сподіваючись, що прочитають. Прочитав я. Невідомо, чи на добре."
+
+#: characters/chronicle.gd
+msgid "Руки дрожали ещё час. Живой — значит, в этот раз повезло, а не выучился."
+msgstr "Руки тремтіли ще годину. Живий — отже, цього разу пощастило, а не навчився."
+
+#: characters/chronicle.gd
+msgid "Сказано было больше, чем произнесено."
+msgstr "Сказано було більше, ніж вимовлено."
+
+#: characters/chronicle.gd
+msgid "Стены высокие, а люди за ними — те же, что снаружи, только записанные."
+msgstr "Мури високі, а люди за ними ті самі, що й зовні, тільки записані."
+
+#: characters/chronicle.gd
+msgid "Тело напоминает, что оно тоже участвует в походе, и без спросу."
+msgstr "Тіло нагадує, що воно теж бере участь у поході, і без дозволу."
+
+#: characters/chronicle.gd
+msgid "Чему-то научился. Мир от этого не стал понятнее, только я — живучее."
+msgstr "Чогось навчився. Світ від цього не став зрозумілішим, тільки я — живучішим."
 
 #: characters/hero_create.gd
 msgid " Несовместима с «%s»."
@@ -1643,6 +1695,10 @@ msgstr " (знято: %s)"
 #: characters/hero_window.gd
 msgid "%s всегда при себе"
 msgstr "%s завжди при собі"
+
+#: characters/hero_window.gd
+msgid "(Буквы пляшут, разобрать удаётся немногое.) %s"
+msgstr "(Літери танцюють, розібрати вдається небагато.) %s"
 
 #: characters/hero_window.gd
 msgid "+ %s (%.0f ч)"
@@ -3263,6 +3319,10 @@ msgstr "Розум"
 #: city/dialogue.gd
 msgid "Чутьё"
 msgstr "Чуття"
+
+#: city/dialogue.gd
+msgid "Э-э… "
+msgstr "Е-е… "
 
 #: city/endless_quests.gd
 msgid "Больных нечем кормить. Принеси %s с огородов."
@@ -8161,24 +8221,72 @@ msgid "[1 монета] Держи, на хлеб."
 msgstr "[1 монета] Тримай, на хліб."
 
 #: data/dialogue/dialogues.json
+msgid "[1 монета] На. Хлеб."
+msgstr "[1 монета] На. Хліб."
+
+#: data/dialogue/dialogues.json
 msgid "[2 монеты] А можно меня не записывать?"
 msgstr "[2 монети] А можна мене не записувати?"
+
+#: data/dialogue/dialogues.json
+msgid "[2 монеты] Не пиши… меня."
+msgstr "[2 монети] Не пиши… мене."
 
 #: data/dialogue/dialogues.json
 msgid "[Донести] Видел у ворот подозрительного."
 msgstr "[Донести] Бачив біля брами підозрілого."
 
 #: data/dialogue/dialogues.json
+msgid "[Донести] Там… у ворот… плохой!"
+msgstr "[Донести] Там… біля брами… поганий!"
+
+#: data/dialogue/dialogues.json
+msgid "[Обаяние] Стоишь… устал?"
+msgstr "[Чарівність] Стоїш… втомився?"
+
+#: data/dialogue/dialogues.json
 msgid "[Обаяние] Такой город держать — не каждому по плечу."
 msgstr "[Чарівність] Таке місто тримати — не кожному під силу."
+
+#: data/dialogue/dialogues.json
+msgid "[Обаяние] Ты… главный. Сильный."
+msgstr "[Чарівність] Ти… головний. Сильний."
 
 #: data/dialogue/dialogues.json
 msgid "[Обаяние] Тяжёлая служба у вас."
 msgstr "[Чарівність] Важка у вас служба."
 
 #: data/dialogue/dialogues.json
+msgid "[Ум] Весы у тебя врут на четверть. Для меня тоже?"
+msgstr "[Розум] Терези в тебе брешуть на чверть. Для мене теж?"
+
+#: data/dialogue/dialogues.json
+msgid "[Ум] Кто тебя научил так складно врать?"
+msgstr "[Розум] Хто тебе навчив так складно брехати?"
+
+#: data/dialogue/dialogues.json
 msgid "[Ум] Назваться чужим именем."
 msgstr "[Розум] Назватися чужим ім'ям."
+
+#: data/dialogue/dialogues.json
+msgid "[Ум] Писарь пишет больше, чем ему говорят. Кто читает его списки?"
+msgstr "[Розум] Писар пише більше, ніж йому кажуть. Хто читає його списки?"
+
+#: data/dialogue/dialogues.json
+msgid "[Ум] Пряжка у тебя с чужим гербом."
+msgstr "[Розум] Пряжка в тебе з чужим гербом."
+
+#: data/dialogue/dialogues.json
+msgid "[Ум] Пятна на переднике не от трав. Кого ты лечила последним?"
+msgstr "[Розум] Плями на фартуху не від трав. Кого ти лікувала останнім?"
+
+#: data/dialogue/dialogues.json
+msgid "[Ум] Ты ведёшь два списка. Для кого второй?"
+msgstr "[Розум] Ти ведеш два списки. Для кого другий?"
+
+#: data/dialogue/dialogues.json
+msgid "[Ум] Шкуры у тебя волчьи, а волков тут, говорят, давно нет."
+msgstr "[Розум] Шкури в тебе вовчі, а вовків тут, кажуть, давно нема."
 
 #: data/dialogue/dialogues.json
 msgid "«Быстрее — значит, где-то срезал. Срезал — значит, кто-то потом придёт ко мне жаловаться. Делай как велено.»"
@@ -8241,24 +8349,60 @@ msgid "А если спросят — что мне за молчание?"
 msgstr "А якщо спитають — що мені за мовчання?"
 
 #: data/dialogue/dialogues.json
+msgid "Башня… клад?"
+msgstr "Вежа… скарб?"
+
+#: data/dialogue/dialogues.json
 msgid "Благодарю."
 msgstr "Дякую."
+
+#: data/dialogue/dialogues.json
+msgid "Блестяшки. Хочу."
+msgstr "Блищики. Хочу."
+
+#: data/dialogue/dialogues.json
+msgid "Болит. Тут."
+msgstr "Болить. Тут."
 
 #: data/dialogue/dialogues.json
 msgid "Бригит вытирает руки о передник, пятна на нём бурые и старые. «Покажи, где болит. Или зачем пришёл?»"
 msgstr "Бригіт витирає руки об фартух, плями на ньому бурі й старі. «Покажи, де болить. Або навіщо прийшов?»"
 
 #: data/dialogue/dialogues.json
+msgid "Бригит долго молчит. «Того, кого не вылечила. Стража принесла с северной стены. Что с ним было, не спрашивай. Я и сама не спрашивала.»"
+msgstr "Бригіт довго мовчить. «Того, кого не вилікувала. Варта принесла з північного муру. Що з ним було, не питай. Я й сама не питала.»"
+
+#: data/dialogue/dialogues.json
 msgid "Бригит нюхает пучок, кривится. «Сорвал вместе с землёй. Ладно. Две монеты.»"
 msgstr "Бригіт нюхає пучок, кривиться. «Зірвав разом із землею. Гаразд. Дві монети.»"
+
+#: data/dialogue/dialogues.json
+msgid "Бригит щупает тебе лоб и вздыхает. «Ничего у тебя не болит, кроме головы. А это не лечится. Иди.»"
+msgstr "Бригіт мацає тобі лоба й зітхає. «Нічого в тебе не болить, крім голови. А це не лікується. Іди.»"
 
 #: data/dialogue/dialogues.json
 msgid "Взять монеты."
 msgstr "Узяти монети."
 
 #: data/dialogue/dialogues.json
+msgid "Ворота… когда?"
+msgstr "Брама… коли?"
+
+#: data/dialogue/dialogues.json
+msgid "Вот. Трава."
+msgstr "Ось. Трава."
+
+#: data/dialogue/dialogues.json
 msgid "Говорят, лекарей у нас не любят."
 msgstr "Кажуть, лікарів у вас не люблять."
+
+#: data/dialogue/dialogues.json
+msgid "Город… чего тут?"
+msgstr "Місто… чого тут?"
+
+#: data/dialogue/dialogues.json
+msgid "Да. Иди."
+msgstr "Так. Іди."
 
 #: data/dialogue/dialogues.json
 msgid "Держись."
@@ -8273,12 +8417,32 @@ msgid "Донос оплачен: +5 монет"
 msgstr "Донос оплачено: +5 монет"
 
 #: data/dialogue/dialogues.json
+msgid "Еда. Дай."
+msgstr "Їжа. Дай."
+
+#: data/dialogue/dialogues.json
 msgid "Есть отрывки карты?"
 msgstr "Є уривки мапи?"
 
 #: data/dialogue/dialogues.json
+msgid "Забыл."
+msgstr "Забув."
+
+#: data/dialogue/dialogues.json
+msgid "Записан… это хорошо?"
+msgstr "Записаний… це добре?"
+
+#: data/dialogue/dialogues.json
 msgid "Запомню."
 msgstr "Запам'ятаю."
+
+#: data/dialogue/dialogues.json
+msgid "Зверь… где?"
+msgstr "Звір… де?"
+
+#: data/dialogue/dialogues.json
+msgid "Иду."
+msgstr "Іду."
 
 #: data/dialogue/dialogues.json
 msgid "Ищу работу."
@@ -8289,8 +8453,16 @@ msgid "Как найти зверя на шкуру?"
 msgstr "Як знайти звіра на шкуру?"
 
 #: data/dialogue/dialogues.json
+msgid "Карта есть?"
+msgstr "Мапа є?"
+
+#: data/dialogue/dialogues.json
 msgid "Когда ворота откроют?"
 msgstr "Коли браму відчинять?"
+
+#: data/dialogue/dialogues.json
+msgid "Кожевник откладывает скребок. «Говорят много. Волки есть, просто не все на четырёх ходят. Нож бери потолще, умник.»"
+msgstr "Кожум'яка відкладає шкребок. «Кажуть багато. Вовки є, просто не всі на чотирьох ходять. Ніж бери товщий, розумнику.»"
 
 #: data/dialogue/dialogues.json
 msgid "Ладно."
@@ -8305,12 +8477,24 @@ msgid "Мальчишка подсказал: северная стена"
 msgstr "Хлопчисько підказав: північна стіна"
 
 #: data/dialogue/dialogues.json
+msgid "Мальчишка шмыгает носом. «Мамка. Говорит, кто не врёт, того записывают. А кого записали, того потом ищут.»"
+msgstr "Хлопчисько шморгає носом. «Мамка. Каже, хто не бреше, того записують. А кого записали, того потім шукають.»"
+
+#: data/dialogue/dialogues.json
 msgid "Может, и из таких. Сколько платите за молчание?"
 msgstr "Може, й із таких. Скільки платите за мовчання?"
 
 #: data/dialogue/dialogues.json
 msgid "Молчи тогда."
 msgstr "Мовчи тоді."
+
+#: data/dialogue/dialogues.json
+msgid "Молчу — дай денег."
+msgstr "Мовчу — дай грошей."
+
+#: data/dialogue/dialogues.json
+msgid "Молчу… а мне чего?"
+msgstr "Мовчу… а мені що?"
 
 #: data/dialogue/dialogues.json
 msgid "Монеты исчезают так быстро, будто их не было. «Кого? Никого не вижу.»"
@@ -8321,12 +8505,28 @@ msgid "Назвать себя честно."
 msgstr "Назватися чесно."
 
 #: data/dialogue/dialogues.json
+msgid "Нашёл… купишь?"
+msgstr "Знайшов… купиш?"
+
+#: data/dialogue/dialogues.json
 msgid "Не спросят от меня."
 msgstr "Від мене не спитають."
 
 #: data/dialogue/dialogues.json
+msgid "Не спрошу."
+msgstr "Не спитаю."
+
+#: data/dialogue/dialogues.json
+msgid "Не. Так."
+msgstr "Ні. Так."
+
+#: data/dialogue/dialogues.json
 msgid "Нет. Просто спросил."
 msgstr "Ні. Просто спитав."
+
+#: data/dialogue/dialogues.json
+msgid "Ничего не видел."
+msgstr "Нічого не бачив."
 
 #: data/dialogue/dialogues.json
 msgid "Ничего. Мимо иду."
@@ -8337,8 +8537,24 @@ msgid "Ничего. Ухожу."
 msgstr "Нічого. Іду."
 
 #: data/dialogue/dialogues.json
+msgid "Ничё. Иду."
+msgstr "Нічо. Іду."
+
+#: data/dialogue/dialogues.json
+msgid "Ничё. Ухожу."
+msgstr "Нічо. Йду."
+
+#: data/dialogue/dialogues.json
 msgid "Олдермен впервые садится. «Не каждому. Половина этих — воры, другая — доносчики. Я держу и тех и других.» Он суёт тебе медяк, как собаке кость."
 msgstr "Олдермен уперше сідає. «Не кожному. Половина цих — злодії, друга — донощики. Я тримаю і тих, і других.» Він тицяє тобі мідяка, як собаці кістку."
+
+#: data/dialogue/dialogues.json
+msgid "Олдермен впервые смотрит тебе в глаза. «Читаю я. И те, кому я даю. Тебе не дам. Умных у нас записывают первыми, запомни.»"
+msgstr "Олдермен уперше дивиться тобі в очі. «Читаю я. І ті, кому я даю. Тобі не дам. Розумних у нас записують першими, запам'ятай.»"
+
+#: data/dialogue/dialogues.json
+msgid "Олдермен морщится. «Работай — будет еда. Нет — иди отсюда, пока стража не вывела.»"
+msgstr "Олдермен кривиться. «Працюй — буде їжа. Ні — іди звідси, поки варта не вивела.»"
 
 #: data/dialogue/dialogues.json
 msgid "Олдермен опускает глаза на тебя впервые. «Пропадают те, кто ходит, где не просят. Ты ведь не из таких?»"
@@ -8381,8 +8597,16 @@ msgid "От кожевника несёт дубильней так, что сл
 msgstr "Від кожум'яки тхне чинбарнею так, що сльозяться очі. «Шкури є? Нема — то не стій у дверях.»"
 
 #: data/dialogue/dialogues.json
+msgid "Отдать траву (2 монеты)."
+msgstr "Віддати траву (2 монети)."
+
+#: data/dialogue/dialogues.json
 msgid "Отдать травы за 2 монеты."
 msgstr "Віддати трави за 2 монети."
+
+#: data/dialogue/dialogues.json
+msgid "Перо замирает. «Для того, кто платит больше Олдермена. Ты ничего не видел, а я не видел тебя. Так всем спокойнее.»"
+msgstr "Перо завмирає. «Для того, хто платить більше за Олдермена. Ти нічого не бачив, а я не бачив тебе. Так усім спокійніше.»"
 
 #: data/dialogue/dialogues.json
 msgid "Писарь вас «не видел»"
@@ -8417,8 +8641,24 @@ msgid "Расскажи про тайник в башне."
 msgstr "Розкажи про схованку у вежі."
 
 #: data/dialogue/dialogues.json
+msgid "Сигрид будет обвешивать вас меньше"
+msgstr "Сігрід обважуватиме вас менше"
+
+#: data/dialogue/dialogues.json
+msgid "Сигрид поднимает глаза. «Тсс. Врут для всех одинаково, это и есть честность. Для тебя — на осьмушку. Иди, считака.»"
+msgstr "Сігрід підводить очі. «Тсс. Брешуть для всіх однаково, це і є чесність. Для тебе — на восьмушку. Іди, рахубо.»"
+
+#: data/dialogue/dialogues.json
+msgid "Сигрид прикрывает прилавок локтем. «Деньги есть? Нет? Тогда смотри издалека.»"
+msgstr "Сігрід прикриває прилавок ліктем. «Гроші є? Нема? Тоді дивись здалеку.»"
+
+#: data/dialogue/dialogues.json
 msgid "Сигрид считает монеты, не поднимая глаз. «Покупаешь — покупай. Болтаешь — плати за время.»"
 msgstr "Сигрід рахує монети, не підводячи очей. «Купуєш — купуй. Базікаєш — плати за час.»"
+
+#: data/dialogue/dialogues.json
+msgid "Сказать имя."
+msgstr "Сказати ім'я."
 
 #: data/dialogue/dialogues.json
 msgid "Слышал, у вас за стеной пропадают люди."
@@ -8437,6 +8677,30 @@ msgid "Стражник в засаленной куртке ковыряет н
 msgstr "Вартовий у засмальцьованій куртці колупає нігтем у зубах. «Чого треба?»"
 
 #: data/dialogue/dialogues.json
+msgid "Стражник прикрывает пряжку ладонью. «Был чужой, стал здешний. Ты про пряжку забудь, и я про тебя забуду.»"
+msgstr "Вартовий прикриває пряжку долонею. «Був чужий, став тутешній. Ти про пряжку забудь, і я про тебе забуду.»"
+
+#: data/dialogue/dialogues.json
+msgid "Стражник ухмыляется. «Сильнее тебя. Иди, пока не проверили.»"
+msgstr "Вартовий шкіриться. «Сильніший за тебе. Іди, поки не перевірили.»"
+
+#: data/dialogue/dialogues.json
+msgid "Там… люди нету. Куда?"
+msgstr "Там… людей нема. Куди?"
+
+#: data/dialogue/dialogues.json
+msgid "Трава… какая?"
+msgstr "Трава… яка?"
+
+#: data/dialogue/dialogues.json
+msgid "Ты. Сильный?"
+msgstr "Ти. Сильний?"
+
+#: data/dialogue/dialogues.json
+msgid "Угу."
+msgstr "Угу."
+
+#: data/dialogue/dialogues.json
 msgid "Уйти, пока цел."
 msgstr "Піти, поки цілий."
 
@@ -8445,8 +8709,20 @@ msgid "Уйти."
 msgstr "Піти."
 
 #: data/dialogue/dialogues.json
+msgid "Умная у тебя мамка."
+msgstr "Розумна в тебе мамка."
+
+#: data/dialogue/dialogues.json
 msgid "Ухожу."
 msgstr "Іду."
+
+#: data/dialogue/dialogues.json
+msgid "Учту."
+msgstr "Врахую."
+
+#: data/dialogue/dialogues.json
+msgid "Чего пишешь?"
+msgstr "Що пишеш?"
 
 #: data/dialogue/dialogues.json
 msgid "Чем у вас пахнет хуже — дубильней или страхом?"
@@ -8471,6 +8747,10 @@ msgstr "Що у вас у місті коїться?"
 #: data/dialogue/dialogues.json
 msgid "Ясно."
 msgstr "Ясно."
+
+#: data/dialogue/dialogues.json
+msgid "Я… молчу."
+msgstr "Я… мовчу."
 
 #: data/lore/notes.json
 msgid "Alvaren, альбы, зимуют общим запасом. Растратить зимние припасы или загрязнить колодец у них тяжелейший проступок. Община держится на этом, а не на добродетели: зимний провал снабжения губит всех сразу."
@@ -9908,6 +10188,22 @@ msgstr "Нема сил нишпорити по кущах: відпочиньт
 msgid "Обшарил округу (%d мин): %s"
 msgstr "Обнишпорив околицю (%d хв): %s"
 
+#: world/foraging.gd
+msgid "здесь уже кто-то шарил"
+msgstr "тут уже хтось нишпорив"
+
+#: world/foraging.gd
+msgid "нетронутое место"
+msgstr "незаймане місце"
+
+#: world/foraging.gd
+msgid "обшарено до нитки"
+msgstr "обнишпорено до нитки"
+
+#: world/foraging.gd
+msgid "почти всё собрано"
+msgstr "майже все зібрано"
+
 #: world/forks.gd
 msgid "награда пропадёт"
 msgstr "нагорода пропаде"
@@ -9929,36 +10225,80 @@ msgid "−%d монет"
 msgstr "−%d монет"
 
 #: world/loot_window.gd
-msgid "%s ×%d   (%.1f кг)"
-msgstr "%s ×%d   (%.1f кг)"
+msgid "%d мин"
+msgstr "%d хв"
+
+#: world/loot_window.gd
+msgid "%s ×%d, %.1f кг\nЛКМ — взять все, ПКМ — одну"
+msgstr "%s ×%d, %.1f кг\nЛКМ — узяти всі, ПКМ — одну"
+
+#: world/loot_window.gd
+msgid "%s ч"
+msgstr "%s год"
+
+#: world/loot_window.gd
+msgid "0 мин"
+msgstr "0 хв"
 
 #: world/loot_window.gd
 msgid "Больше ничего нет"
 msgstr "Більше нічого немає"
 
 #: world/loot_window.gd
-msgid "Взять"
-msgstr "Узяти"
-
-#: world/loot_window.gd
 msgid "Взять всё  [E]"
 msgstr "Узяти все  [E]"
-
-#: world/loot_window.gd
-msgid "Все"
-msgstr "Усі"
 
 #: world/loot_window.gd
 msgid "Груз: %.1f / %.0f кг"
 msgstr "Вантаж: %.1f / %.0f кг"
 
 #: world/loot_window.gd
+msgid "Запас места: каждый обход его вычерпывает, отрастает за трое суток"
+msgstr "Запас місця: кожен обхід його вичерпує, відростає за три доби"
+
+#: world/loot_window.gd
+msgid "Здесь оставлено с прошлого раза."
+msgstr "Тут залишено з минулого разу."
+
+#: world/loot_window.gd
+msgid "Ищем…"
+msgstr "Шукаємо…"
+
+#: world/loot_window.gd
 msgid "Не унести: %s слишком тяжело (свободно %.1f кг)"
 msgstr "Не винести: %s надто важко (вільно %.1f кг)"
 
 #: world/loot_window.gd
+msgid "Ничего не нашли."
+msgstr "Нічого не знайшли."
+
+#: world/loot_window.gd
+msgid "Обход %d из %d · %s"
+msgstr "Обхід %d з %d · %s"
+
+#: world/loot_window.gd
+msgid "Обход %d: %s"
+msgstr "Обхід %d: %s"
+
+#: world/loot_window.gd
 msgid "Оставить остальное  [Esc]"
 msgstr "Залишити решту  [Esc]"
+
+#: world/loot_window.gd
+msgid "Сколько искать? Чем дольше, тем больше найдёте, но место скудеет с каждым обходом."
+msgstr "Скільки шукати? Що довше, то більше знайдете, але місце біднішає з кожним обходом."
+
+#: world/loot_window.gd
+msgid "Уйти  [Esc]"
+msgstr "Піти  [Esc]"
+
+#: world/loot_window.gd
+msgid "Хватит  [Esc]"
+msgstr "Досить  [Esc]"
+
+#: world/loot_window.gd
+msgid "Хватит искать."
+msgstr "Досить шукати."
 
 #: world/parchment.gd
 msgid "   ·   ЛАСТИК"
