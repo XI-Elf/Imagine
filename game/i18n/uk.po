@@ -10739,3 +10739,67 @@ msgstr "Перша перемога в бою. Дорога навчила: жи
 #: worlds/worlds.gd
 msgid "Проиграл бой и чудом остался жив."
 msgstr "Програв бій і дивом лишився живий."
+
+#: ui/mobile_controls.gd
+msgid "Сумка"
+msgstr "Сумка"
+
+#: ui/mobile_controls.gd
+msgid "Действие"
+msgstr "Дія"
+
+#: ui/mobile_controls.gd
+msgid "✕ Отмена"
+msgstr "✕ Скасувати"
+
+#: ui/mobile_controls.gd
+msgid "⋯"
+msgstr "⋯"
+
+#: ui/mobile_controls.gd
+msgid "Журнал"
+msgstr "Журнал"
+
+#: ui/mobile_controls.gd
+msgid "Привал"
+msgstr "Привал"
+
+#: ui/mobile_controls.gd
+msgid "Транспорт"
+msgstr "Транспорт"
+
+#: ui/mobile_controls.gd
+msgid "Герой/камера"
+msgstr "Герой/камера"
+
+#: ui/mobile_controls.gd
+msgid "Справка"
+msgstr "Довідка"
+
+#: ui/mobile_controls.gd
+msgid "Пауза"
+msgstr "Пауза"
+
+#: ui/mobile_controls.gd
+msgid "Время +"
+msgstr "Час +"
+
+#: ui/mobile_controls.gd
+msgid "Время −"
+msgstr "Час −"
+
+#: ui/mobile_controls.gd
+msgid "Ближе"
+msgstr "Ближче"
+
+#: ui/mobile_controls.gd
+msgid "Дальше"
+msgstr "Далі"
+
+#: ui/mobile_controls.gd
+msgid "Пробел"
+msgstr "Пробіл"
+
+#: ui/mobile_controls.gd
+msgid "Интерфейс"
+msgstr "Інтерфейс"

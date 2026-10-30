@@ -343,6 +343,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_at(event.position, 1.0 / ZOOM_STEP)
 
+	# Сенсор: у вільній камері палець тягне карту (з героєм палець задає шлях, characters/hero_route.gd)
+	if event is InputEventMouseMotion and MobileControls.active and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0 \
+			and not (cast != null and cast.controls_hero):
+		cam_pos -= event.relative / zoom
+		_clamp_camera()
+
 	if event is InputEventKey and event.pressed:
 		# Клавіші + і -: зум до центру екрана
 		var center: Vector2 = get_viewport_rect().size / 2.0
