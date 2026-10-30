@@ -172,6 +172,8 @@ static func forget_hero(w: Node) -> void:
 		w.inventory.clear()
 		w.inventory.merge(w.start_inventory())
 	w.battles_won = 0
+	if w.get("chronicle") is Array:
+		w.chronicle.clear()
 	for id in w.city_states:
 		var st: Variant = w.city_states[id]
 		if not (st is Dictionary):

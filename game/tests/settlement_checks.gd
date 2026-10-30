@@ -106,7 +106,7 @@ func _run() -> void:
 	ok(game.region_at(city["_gate"]) == int(city["region"]), "ворота в том же регионе")
 	ok(game.cam_pos.distance_to(st.spawn_point()) < 1.0, "новая игра: камера над городом")
 	var ex: Vector2 = st.exit_point(city["id"])
-	ok(ex != Vector2.INF and st.settlement_at(ex).is_empty() and game.biome_at(ex) > 1, "точка выхода на суше вне клеток: %s" % ex)
+	ok(ex != Vector2.INF and game.biome_at(ex) > 1 and ex.distance_to(city["_center"]) <= st.ENTER_M, "точка выхода на суше у самой точки города: %s" % ex)
 	ok(st.zone_of(city, ex) == "gate", "точка выхода — у ворот")
 
 	# Знімки: здалеку щиток, зблизька обрис
@@ -152,19 +152,20 @@ func _run() -> void:
 	await key(KEY_ESCAPE)
 	ok(st.prompt_for.is_empty() and not cast.hold_hero and not game.menu_open, "Esc — продолжить путь, меню паузы не открылось")
 
-	# Стіна не пропускає: ідемо в центр міста
-	var before: float = st.distance_to(city, hero["pos"])
-	walk((city["_center"] - hero["pos"]).normalized())
-	await create_timer(3.0).timeout
-	stop()
-	ok(not st.blocks(hero["pos"]), "в город сквозь стену не пройти (%.0f → %.0f м от стены)" % [before, st.distance_to(city, hero["pos"])])
-	if not st.prompt_for.is_empty():
-		await key(KEY_ESCAPE)
+	# Місто-точка (Huzzah 2026-10-29): стіни на карті немає, вибір — лише ближче ENTER_M до точки
+	ok(not st.blocks(city["_center"]) and st.zone_of(city, city["_center"] + Vector2(0, st.ENTER_M + 15.0)) == "" and st.zone_of(city, city["_center"] + Vector2(0, st.ENTER_M - 1.0)) != "",
+		"город — точка: стены на карте нет, «Войти» только в %.0f м от точки" % st.ENTER_M)
 
-	# До північної стіни: «Спробувати проникнути»
+	# Уночі брама замкнена: біля точки — «Спробувати проникнути» (перелізти стіну)
+	var day_s: float = game.clock.total_seconds
+	game.clock.total_seconds = day_s - fposmod(day_s, 86400.0) + 23.0 * 3600.0 + 86400.0
+	ok(st.zone_of(city, city["_center"]) == "wall", "ночью у города — перелезть через стену")
+	# Перемотка часу — героєві не дати померти з голоду й спраги
+	a.res["hunger"] = a.max_of("hunger")
+	a.res["thirst"] = a.max_of("thirst")
 	var r: Rect2 = city["_rect"]
 	var north: Vector2 = st.nearest_on_cells(city, Vector2(city["_center"].x, r.position.y - 400.0))
-	await place(hero, north + Vector2(0, -150), Vector2(0, -1))
+	await place(hero, north + Vector2(0, -60), Vector2(0, -1))
 	await walk_until_prompt(st, hero, north)
 	ok(st.prompt_kind == "wall" and st.prompt_side == "north", "у северной стены выбор «проникнуть» (%s, %s)" % [st.prompt_kind, st.prompt_side])
 	ok(st._act_btn.text.begins_with("Попытаться проникнуть"), "кнопка: %s" % st._act_btn.text)
@@ -232,7 +233,7 @@ func _run() -> void:
 	await key(KEY_E)
 	ok(game.event_text.contains("Не удалось"), "неудача: %s" % game.event_text)
 	ok(st.alert_left_s(city) > 0.0, "стража настороже %.0f мин" % (st.alert_left_s(city) / 60.0))
-	await place(hero, north + Vector2(0, -150), Vector2(0, -1))
+	await place(hero, north + Vector2(0, -60), Vector2(0, -1))
 	await walk_until_prompt(st, hero, north)
 	ok(st._act_btn.disabled and st._info.text.contains("настороже"), "пока стража настороже, проникнуть нельзя: %s" % st._info.text)
 	await key(KEY_ESCAPE)
@@ -243,7 +244,7 @@ func _run() -> void:
 	st.enter_requested.connect(func(s: Dictionary) -> void: got.append(s))
 	st.sneak_rules["min"] = 1.0
 	st.sneak_rules["max"] = 1.0
-	await place(hero, north + Vector2(0, -150), Vector2(0, -1))
+	await place(hero, north + Vector2(0, -60), Vector2(0, -1))
 	await walk_until_prompt(st, hero, north)
 	var wm: Node = root.get_node_or_null("Worlds")
 	await key(KEY_E)
@@ -261,7 +262,7 @@ func _run() -> void:
 	st.sneak_rules["caught_day"] = 1.0
 	st.sneak_rules["caught_night"] = 1.0
 	st.sneak_rules["per_agi_caught"] = 0.0
-	await place(hero, north + Vector2(0, -150), Vector2(0, -1))
+	await place(hero, north + Vector2(0, -60), Vector2(0, -1))
 	await walk_until_prompt(st, hero, north)
 	st._rng.seed = 42
 	await key(KEY_E)
@@ -271,10 +272,14 @@ func _run() -> void:
 		wm.leave()
 		await create_timer(1.0).timeout
 	st.sneak_rules = saved
+	game.clock.total_seconds = game.clock.total_seconds - fposmod(game.clock.total_seconds, 86400.0) + 86400.0 + 10.0 * 3600.0
+	a.res["hunger"] = a.max_of("hunger")
+	a.res["thirst"] = a.max_of("thirst")
+	a.res["health"] = a.max_of("health")
 
 	# Вхід через браму: entry "gate"
-	await place(hero, appr, out_dir)
-	await walk_until_prompt(st, hero, city["_gate"])
+	await place(hero, city["_gate"] + out_dir * 170.0, out_dir)
+	await walk_until_prompt(st, hero, city["_gate"], 150.0)
 	await key(KEY_E)
 	ok(got.size() == 3 and got[2]["entry"] == "gate", "ворота: entry %s" % (got[2].get("entry") if got.size() > 2 else "-"))
 	if wm != null:

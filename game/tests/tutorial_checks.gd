@@ -81,10 +81,8 @@ func _run() -> void:
 	ok(game.cast.hero.is_empty() == not had_hero, "пока открыта справка, G не доходит до игры")
 	T._tabs.current_tab = 4
 	await shot("t03_help_mechanics.png")
-	ok(T._tabs.get_tab_count() == 6 and T._tabs.get_child(5).name == I18n.t("Хроника"), "в справке вкладка «Хроника»")
-	T._tabs.current_tab = 5
-	await shot("t03b_help_chronicle.png")
-	ok(T.CHRONICLE.size() == 7 and not String(T.MECHANICS[0][1]).contains("техномаг"), "хроника: 7 вех, «Мир Тёмной эпохи» без техномагии")
+	ok(T._tabs.get_tab_count() == 5 and not "CHRONICLE" in T, "в справке нет вкладки с историей мира: она открывается в игре")
+	ok(not String(T.MECHANICS[0][1]).contains("техномаг") and String(T.MECHANICS[0][1]).contains("Дневник"), "«Мир Тёмной эпохи» отсылает к дневнику, без техномагии")
 	await key(KEY_F1)
 	ok(not T.is_help_open() and not paused, "F1 ещё раз — закрыть")
 

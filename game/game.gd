@@ -117,6 +117,7 @@ var cast: Node2D
 var settlements: Node2D     # міста й поселення на загальній карті (world/settlements.gd)
 var trails: Node2D          # протоптані дороги (world/trails_layer.gd): з'являються там, де ходять
 var fog: CanvasLayer        # туман війни (world/fog_layer.gd): невідоме закрите, досліджене зберігається
+var decor: Node2D           # дерева, гори, кущі (storybook/world_decor.gd)
 
 
 func _ready() -> void:
@@ -167,7 +168,7 @@ func _startup() -> void:
 	trails = TrailsScript.new()
 	trails.game = self
 	add_child(trails)
-	var decor := preload("res://storybook/world_decor.gd").new()
+	decor = preload("res://storybook/world_decor.gd").new()
 	decor.game = self
 	add_child(decor)
 	# Поселення малюються під персонажами
@@ -455,6 +456,19 @@ func _soft_at(img: Image, p: Vector2) -> float:
 	return lerpf(top, bot, fy)
 
 
+## Назва місцевості так, як її намальовано (Huzzah 2026-10-29: «написано ліс, а лісу немає — це луг»):
+## галявина лісу, де декор не садить дерев, — луг; протоптана стежка чи дорога — своєю назвою
+func biome_name(p: Vector2) -> String:
+	var b: int = biome_at(p)
+	if trails != null and b >= 2 and trails.has_method("trodden") and trails.trodden(p):
+		var nm: String = trails.stage_name(p) if trails.has_method("stage_name") else ""
+		if nm != "":
+			return nm
+	if decor != null and decor.has_method("glade") and decor.glade(p, b):
+		return I18n.t("проклятый луг") if b == 7 else I18n.t("луг")
+	return BIOME_NAMES[b]
+
+
 # Біом у точці карти (номер із BIOME_NAMES): вода за малюнком, інакше шар суходолу map_biomes.png
 func biome_at(p: Vector2) -> int:
 	var b: int = _id_at(biome_img, p)
@@ -724,7 +738,7 @@ func _update_hud() -> void:
 		compact += "\n" + I18n.t("Неизведанная местность")
 		over = false
 	if over:
-		compact += "\n%s   X %d  Y %d" % [BIOME_NAMES[biome_at(m)], int(m.x), int(m.y)]
+		compact += "\n%s   X %d  Y %d" % [biome_name(m), int(m.x), int(m.y)]
 		var tl: String = temperature_line(m)
 		if tl != "":
 			compact += "\n" + tl
@@ -760,7 +774,7 @@ func _update_hud() -> void:
 		text += I18n.t("Неизведанная местность\n")
 	elif Board.inside(m):
 		text += "X %d   Y %d\n" % [int(m.x), int(m.y)]
-		text += I18n.t("Биом: %s\n") % BIOME_NAMES[biome_at(m)]
+		text += I18n.t("Биом: %s\n") % biome_name(m)
 		var tl2: String = temperature_line(m)
 		if tl2 != "":
 			text += I18n.t("Температура: %s\n") % tl2

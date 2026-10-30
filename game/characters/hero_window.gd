@@ -5,7 +5,7 @@ extends CanvasLayer
 ## выбор нового дара), 4 Черты (черты характера, мировоззрение, биография),
 ## 5 Инвентарь (общая сумка Worlds.inventory: деньги, вещи, вес; использовать, выбросить, взять в бой), 6 Дневник (записки кодекса по разделам).
 ## Хозяин (cast.gd на карте, city_world.gd в городе) зовёт setup(герой, сумка) и open(вкладка).
-## Пока окно открыто, клавиши забирает оно: 1–6 вкладки, I / Tab — закрыть или перейти, Esc — закрыть.
+## Пока окно открыто, клавиши забирает оно: 1–7 вкладки, I / Tab — закрыть или перейти, Esc — закрыть.
 
 signal closed
 
@@ -18,8 +18,9 @@ const ComicUI := preload("res://ui/comic_ui.gd")
 const BATTLE_CONFIG := "res://data/battle/config.tres"
 
 const Codex := preload("res://world/codex.gd")
-const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "diary"]
-static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"), "diary": I18n.t("Дневник")}
+const Chronicle := preload("res://characters/chronicle.gd")
+const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "diary", "chronicle"]
+static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
 const COL_TEXT := Color("d8cfb0")
 const COL_DIM := Color("9a9078")
 const COL_GOLD := Color("c9a24b")
@@ -42,6 +43,7 @@ var inv_sel: String = ""        # обрана річ у вкладці «Інв
 var inv_filter: String = "all"  # фільтр сумки (inventory_view.FILTERS)
 var inv_page: int = 0
 var inv_sort: bool = false      # «За типом»
+var inv_stat_pin: String = ""   # показник, на який клацнули в рядку інвентаря (підказка лишається між перебудовами)
 var inv_drop_armed: bool = false   # «Кинути все» натиснуто один раз, чекає підтвердження
 var _drop_t: float = 0.0
 var _undo: Dictionary = {}       # навык -> сколько раз поднят, пока окно открыто (можно вернуть)
@@ -97,7 +99,7 @@ func _ready() -> void:
 	_body.add_theme_constant_override("separation", 4)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.add_child(_body)
-	_note = _label("1–6 вкладки · I характеристики · Tab инвентарь · Esc закрыть", 13, COL_DIM)
+	_note = _label("1–7 вкладки · I характеристики · Tab инвентарь · Esc закрыть", 13, COL_DIM)
 	v.add_child(_note)
 
 
@@ -174,6 +176,8 @@ func refresh() -> void:
 	var sig: String = tab + "|" + JSON.stringify(_bag())
 	if tab == "diary":
 		sig += "|%d" % _codex().size()
+	if tab == "chronicle":
+		sig += "|%d" % Chronicle.entries(get_node_or_null("/root/Worlds")).size()
 	if a != null:
 		sig += "|%s|%s|%s|%d|%s|%d|%d|%d|%d|%s|%s" % [a.display_name, JSON.stringify(a.skills), JSON.stringify(a.traits), int(a.carry_capacity()),
 			JSON.stringify(a.perks), a.skill_points, a.perk_picks, a.level, int(a.xp), JSON.stringify(a.quirks), perk_sel]
@@ -181,7 +185,13 @@ func refresh() -> void:
 			for r in Actor.RESOURCES:
 				sig += "|%d" % int(a.res.get(r, 0.0))
 		if tab == "stats":
-			sig += "|%d" % Time.get_ticks_msec()   # шкали змінюються весь час, на вкладці немає кнопок
+			# Шкали — за цілими значеннями показників (раніше перебудова щопівсекунди: підказки й клік по показнику зникали)
+			for r in Actor.RESOURCES:
+				sig += "|%d" % int(a.res.get(r, 0.0))
+			var bh: int = 0
+			for bf in a.buffs:
+				bh += int(float(bf["left_h"]))
+			sig += "|%s|%d|%d" % [JSON.stringify(a.conditions.map(func(c: Dictionary) -> String: return "%s%d" % [c["id"], int(c.get("stage", 0))])), bh, int(a.distance_m / 100.0)]
 	if sig == _sig:
 		return
 	_sig = sig
@@ -205,6 +215,8 @@ func refresh() -> void:
 			_fill_bag(a)
 		"diary":
 			_fill_diary()
+		"chronicle":
+			_fill_chronicle()
 
 
 # =====================================================================
@@ -229,7 +241,7 @@ func _fill_stats(a: Actor) -> void:
 	grid.add_theme_constant_override("h_separation", 18)
 	_body.add_child(grid)
 	for s in S.stats_list():
-		grid.add_child(_label(S.stat_name(s), 16, COL_TEXT))
+		grid.add_child(_explain(_label(S.stat_name(s), 16, COL_TEXT), S.stat_name(s), String(S.sect("stat_desc").get(s, ""))))
 		var v: int = S.stat_value(a, s)
 		grid.add_child(_label(str(v), 18, COL_GOLD))
 		grid.add_child(_label(S.stat_level_name(v), 14, COL_TEXT))
@@ -244,7 +256,8 @@ func _fill_stats(a: Actor) -> void:
 	var ch: Dictionary = R.characteristics()
 	for r in Actor.RESOURCES:
 		var row := HBoxContainer.new()
-		var l := _label(String(shown.get(r, ch.get(r, {}).get("name_ru", r))), 15, COL_TEXT)
+		var nm: String = String(shown.get(r, ch.get(r, {}).get("name_ru", r)))
+		var l := _explain(_label(nm, 15, COL_TEXT), nm, String(Inv.STAT_DESC.get(r, "")))
 		l.custom_minimum_size = Vector2(160.0, 0.0)
 		row.add_child(l)
 		var bar := ProgressBar.new()
@@ -475,7 +488,7 @@ func _fill_bag(a: Actor) -> void:
 	inv_page = clampi(inv_page, 0, view.pages() - 1)
 	_body.add_child(view)
 	if _say_t <= 0.0:
-		_note.text = "Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–6 вкладки · Esc закрыть"
+		_note.text = "Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–7 вкладки · Esc закрыть"
 
 
 func _codex() -> Dictionary:
@@ -509,6 +522,21 @@ func _fill_diary() -> void:
 		for n in here:
 			_body.add_child(_label(String(n["title"]), 15, COL_GOOD))
 			_body.add_child(_wrap(String(n["text"]), 14, COL_TEXT))
+
+
+# =====================================================================
+# ХРОНІКА: ключові події життя самого героя (не історія світу)
+# =====================================================================
+func _fill_chronicle() -> void:
+	var log: Array = Chronicle.entries(get_node_or_null("/root/Worlds"))
+	if log.is_empty():
+		_body.add_child(_wrap(I18n.t("Пока записать нечего. Хроника ведёт только то, что случилось с этим героем: первый город, первый бой, поручения, болезни, находки. Историю мира она не знает: её приходится выспрашивать, откапывать и читать."), 15, COL_DIM))
+		return
+	_body.add_child(_label(I18n.t("События жизни героя: %d") % log.size(), 17, COL_GOLD))
+	for e in log:
+		_body.add_child(HSeparator.new())
+		_body.add_child(_label("%s  %s" % [Chronicle.mark(String(e.get("kind", ""))), GameClock.date_text(float(e.get("t", 0.0)))], 13, COL_DIM))
+		_body.add_child(_wrap(String(e.get("text", "")), 15, COL_TEXT))
 
 
 func refresh_bag() -> void:
@@ -664,7 +692,7 @@ func _input(event: InputEvent) -> void:
 			toggle("stats")
 		KEY_TAB:
 			toggle("bag")
-		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6:
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7:
 			show_tab(TABS[event.physical_keycode - KEY_1])
 		_:
 			return
@@ -678,6 +706,39 @@ func _label(text: String, size: int, color: Color) -> Label:
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
 	return l
+
+
+## Показник з описом (Huzzah 2026-10-29): наведення — підказка, клік — віконце з описом біля курсора
+func _explain(l: Label, title: String, desc: String) -> Label:
+	if desc == "":
+		return l
+	l.tooltip_text = desc
+	l.mouse_filter = Control.MOUSE_FILTER_STOP
+	l.mouse_default_cursor_shape = Control.CURSOR_HELP
+	l.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+			_show_explain(title, desc, l.get_global_mouse_position()))
+	return l
+
+
+var _explain_pop: PopupPanel
+
+
+func _show_explain(title: String, desc: String, at: Vector2) -> void:
+	if _explain_pop == null:
+		_explain_pop = PopupPanel.new()
+		var box := VBoxContainer.new()
+		box.add_child(_label("", 17, COL_GOLD))
+		var t := _wrap("", 14, COL_TEXT)
+		t.custom_minimum_size = Vector2(360.0, 0.0)
+		box.add_child(t)
+		_explain_pop.add_child(box)
+		add_child(_explain_pop)
+	var box: VBoxContainer = _explain_pop.get_child(0)
+	(box.get_child(0) as Label).text = title
+	(box.get_child(1) as Label).text = desc
+	_explain_pop.reset_size()
+	_explain_pop.popup(Rect2i(Vector2i(at) + Vector2i(12, 12), Vector2i(380, 10)))
 
 
 func _wrap(text: String, size: int, color: Color) -> Label:

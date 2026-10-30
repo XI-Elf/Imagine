@@ -34,6 +34,8 @@ const T = CityMap.T
 const Art := preload("res://storybook/art.gd")
 const Growth := preload("res://city/city_growth.gd")
 const Codex := preload("res://world/codex.gd")
+const Chronicle := preload("res://characters/chronicle.gd")
+const Forks := preload("res://world/forks.gd")
 const CityMenu := preload("res://city/city_menu.gd")
 const Trails := preload("res://world/trails.gd")
 const TRAIL_TILES: Array = [CityMap.T.GRASS, CityMap.T.FIELD]   # де видно протоптане (вулиці й площі й так бруковані)
@@ -56,6 +58,14 @@ const PX: float = 16.0                 # пікселів на метр за м�
 ## Повтор текстур землі/стін/дахів: за найсильнішого наближення (zoom 3) піксель картинки 512 px =
 ## піксель екрана, при віддаленні текстура стискається (Huzzah 2026-10-23)
 const TEX_PERIOD: float = 512.0 / 3.0
+## Справжній розмір візерунка, метрів на повтор текстури (Huzzah 2026-10-29: «розміри мають бути реалістичніші» —
+## раніше брукованка на площі була завбільшки з героя): камінь брукованки ~0,6 м, блок кладки ~0,65 м,
+## дошка ~0,28 м, черепиця ~0,3 м, кущики трави ~0,2 м. Решта — як раніше (TEX_PERIOD)
+const TEX_M: Dictionary = {"cobble": 2.4, "masonry": 2.6, "wood": 1.4, "roof": 1.8, "t03_field1": 4.0, "t04_field2": 4.0,
+	"t01_coast": 5.0, "t07_mountains": 6.0}
+## Висота речей площі, м (було 1,8 м — криниця з дахом нижча за героя): криниця з дашком, ятка з навісом
+const PROP_H: Dictionary = {"well": 2.7, "stall": 2.5}
+const TREE_H: Vector2 = Vector2(6.5, 9.0)   # дерева в місті, м (було 3,7 м)
 const BODY_R: float = 0.35             # радіус тіла, м
 const START_ZOOM: float = 2.2
 const TALK_M: float = 2.4
@@ -279,6 +289,14 @@ func enter(id: String, h: Actor, c: Dictionary) -> void:
 			var fine: int = _take_fine(int(rules.get("intruder_fine", 15)))
 			intruder_until = -1.0
 			arrival = I18n.t("стража поймала вас у стены и привела в %s. Штраф %d") % [jail.get("name", I18n.t("казарму")), fine]
+	if not live:
+		match entry:
+			"sneak":
+				_chronicle("city", I18n.t("Тайком перелез через стену города %s: ворота для таких, как я, не для всех открыты.") % display_name, "city:%s:sneak" % id)
+			"caught":
+				_chronicle("city", I18n.t("Стража взяла у стены города %s и отвела в казарму. Штраф заплачен.") % display_name)
+			_:
+				_chronicle("city", I18n.t("Впервые вошёл в город %s. Здесь каждый смотрит в сторону.") % display_name, "city:%s" % id)
 	_gate_in = String(gate.get("id", ""))
 	var saved_walk: bool = live and bool(c["state"].get("walking", true))
 	if (live and not saved_walk) or (not live and entry == "gate" and bool(c.get("menu", c.has("settlement")))):
@@ -805,6 +823,7 @@ func _search(p: Dictionary) -> void:
 		var n: Dictionary = Codex.find(w.codex, "city", _rng, clock.total_seconds)
 		if not n.is_empty():
 			line += I18n.t(". В тайнике записка: «%s» (дневник героя, вкладка 6)") % n["title"]
+			_chronicle("note", I18n.t("В тайнике нашёл записку: «%s».") % n["title"], "note:" + String(n["id"]))
 	_say(line)
 
 
@@ -927,7 +946,7 @@ func use_place(p: Dictionary) -> void:
 			_search(p)
 		"bed":
 			hero.set_sleep(true)
-			_say(I18n.t("Вы легли на лежанку в своей лачуге. Сон до первого шага"))
+			_say(I18n.t("Вы легли на лежанку в своей лачуге"))
 		"board":
 			_open_note(String(p["name"]), _board_text(p))
 		_:
@@ -983,6 +1002,10 @@ func talk(n: Dictionary) -> void:
 			opts.append([I18n.t("Лечиться (%d)") % int(sv["heal"]), func(): heal(n)])
 		if nd.has("gate") and map.closed_gates.has(String(nd["gate"])):
 			opts.append([I18n.t("Выпусти меня (%d)") % int(rules.get("night_pass_fee", 5)), func(): pay_gate(n)])
+		var tales: Array = _tales_of(n)
+		if not tales.is_empty():
+			var fee: int = int(tales[0].get("fee", 0))
+			opts.append([I18n.t("Расспросить о былом") if fee <= 0 else I18n.t("Расспросить о былом (угостить, %d)") % fee, func(): hear_tale(n)])
 		if role == "elder" and not discovered.has("_plan"):
 			opts.append([I18n.t("Расспросить о городе"), func(): ask_plan(n)])
 	# У дереві розмови є свій варіант «піти»
@@ -1056,6 +1079,34 @@ func _typewrite() -> void:
 	_panel_text.visible_ratio = 0.0
 	_type_tween = create_tween()
 	_type_tween.tween_property(_panel_text, "visible_ratio", 1.0, clampf(_panel_text.text.length() * 0.015, 0.2, 1.4))
+
+
+## Історії світу, які цей житель ще не розповідав (кодекс, src "talk"). Порожньо без Worlds
+func _tales_of(n: Dictionary) -> Array:
+	var w: Node = get_node_or_null("/root/Worlds")
+	if w == null or not (w.get("codex") is Dictionary) or n["actor"].sleeping:
+		return []
+	return Codex.tales(w.codex, String(n["def"]["id"]))
+
+
+## Розпитати про минуле: історія світу відкривається з розмов, а не з довідки. Дехто хоче почастування
+func hear_tale(n: Dictionary) -> void:
+	var tales: Array = _tales_of(n)
+	if tales.is_empty():
+		talk(n)
+		return
+	var tale: Dictionary = tales[0]
+	var fee: int = int(tale.get("fee", 0))
+	if int(bag["money"]) < fee:
+		_say(I18n.t("Без монеты разговор не клеится: нужно %d.") % fee)
+		talk(n)
+		return
+	bag["money"] = int(bag["money"]) - fee
+	var w: Node = get_node_or_null("/root/Worlds")
+	w.codex[String(tale["id"])] = clock.total_seconds
+	_chronicle("talk", I18n.t("Услышал от %s: «%s». Записано в дневник.") % [n["actor"].display_name, tale["title"]], "tale:" + String(tale["id"]))
+	var opts: Array = [[I18n.t("Назад"), func(): talk(n)]]
+	_open_panel("talk", "%s: %s" % [n["actor"].display_name, tale["title"]], "%s\n\n%s" % [tale["text"], I18n.t("Записано в дневник героя (вкладка 6).")], opts)
 
 
 ## Вкладки розмови (Q34, Huzzah 2026-10-27, варіант B): у майстрів багато дій, і «Майстерня»
@@ -1181,7 +1232,7 @@ func rent_room(n: Dictionary) -> void:
 		hero_pos = map.center_of(b["floor"][0])
 	hero.set_sleep(true)
 	_close_panel()
-	_say(I18n.t("Комната снята. Сон до первого шага"))
+	_say(I18n.t("Комната снята"))
 
 
 func heal(n: Dictionary) -> void:
@@ -1395,7 +1446,7 @@ func _draw_ground(l: Node2D) -> void:
 	l.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	var cs: float = map.cell_m * PX
 	var grass: Texture2D = Art.ground("t03_field1")
-	Art.surface(l, grass, Rect2(Vector2(-PX * 40, -PX * 40), map.size_m() * PX + Vector2(PX * 80, PX * 80)), TEX_PERIOD)
+	Art.surface(l, grass, Rect2(Vector2(-PX * 40, -PX * 40), map.size_m() * PX + Vector2(PX * 80, PX * 80)), _period(grass))
 	for y in map.h:
 		for x in map.w:
 			var t: int = map.at(x, y)
@@ -1413,7 +1464,7 @@ func _draw_ground(l: Node2D) -> void:
 			var under_sprite: bool = t in [T.WALL, T.DOOR, T.FLOOR] and _sprite_cell(x, y)
 			if under_sprite:
 				texture = grass
-			Art.surface(l, texture, r, TEX_PERIOD)
+			Art.surface(l, texture, r, _period(texture))
 			if under_sprite:
 				l.draw_rect(r, Color(0.48, 0.53, 0.34, 0.30))
 				continue
@@ -1430,7 +1481,13 @@ func _draw_ground(l: Node2D) -> void:
 	var dirt: Texture2D = Art.ground("t01_coast")
 	for c in trails.stage_of:
 		if map.at(c.x, c.y) in TRAIL_TILES and not _sprite_cell(c.x, c.y):
-			Art.surface(l, dirt, Rect2(Vector2(c) * cs, Vector2(cs, cs)), TEX_PERIOD, Color(1, 1, 1, TRAIL_ALPHA[trails.stage_of[c]]))
+			Art.surface(l, dirt, Rect2(Vector2(c) * cs, Vector2(cs, cs)), _period(dirt), Color(1, 1, 1, TRAIL_ALPHA[trails.stage_of[c]]))
+
+
+## Повтор текстури в пікселях міста: за справжнім розміром візерунка (TEX_M), інакше як раніше
+func _period(t: Texture2D) -> float:
+	var key: String = t.resource_path.get_file().get_basename() if t != null else ""
+	return float(TEX_M[key]) * PX if TEX_M.has(key) else TEX_PERIOD
 
 
 func _sprite_cell(x: int, y: int) -> bool:
@@ -1509,13 +1566,13 @@ func _draw_roofs(l: Node2D) -> void:
 				if map.at(v[0], v[1]) != T.TREE:
 					continue
 				var foot: Vector2 = map.center_of(Vector2i(v[0], v[1])) * PX
-				entries.append({"type": "prop", "key": ["tree_oak", "tree_light", "tree_crooked"][int(Art.seed_at(v[0], v[1]) * 3.0)], "foot": foot, "height": cs * 3.7, "y": foot.y, "sway": true})
+				entries.append({"type": "prop", "key": ["tree_oak", "tree_light", "tree_crooked"][int(Art.seed_at(v[0], v[1]) * 3.0)], "foot": foot, "height": PX * lerpf(TREE_H.x, TREE_H.y, Art.seed_at(v[0], v[1], 3)), "y": foot.y, "sway": true})
 		else:
 			var foot := Vector2.ZERO
 			for v in prop["cells"]:
 				foot += map.center_of(Vector2i(v[0], v[1])) * PX
 			foot /= float(prop["cells"].size())
-			entries.append({"type": "prop", "key": prop["kind"], "foot": foot, "height": cs * float(prop.get("h", 1.8)), "y": foot.y, "sway": false})
+			entries.append({"type": "prop", "key": prop["kind"], "foot": foot, "height": PX * float(prop.get("h", PROP_H.get(prop["kind"], 1.8))), "y": foot.y, "sway": false})
 	# Small garden plants, deterministic and kept off all paths and door cells.
 	for pos in def.get("art_gardens", []):
 		if map.at(pos[0], pos[1]) != T.GRASS:
@@ -1554,7 +1611,7 @@ func _draw_roofs(l: Node2D) -> void:
 					var sprite_rect := Rect2(Vector2(rect.position.x + shift, rect.end.y + cs * 0.35 - h), Vector2(rect.size.x, h))
 					var alpha: float = 0.12 if inside else 1.0
 					if inside:
-						Art.surface(l, Art.tex("wood"), rect, TEX_PERIOD)
+						Art.surface(l, Art.tex("wood"), rect, _period(Art.tex("wood")))
 						l.draw_rect(rect, Color(0.22, 0.18, 0.12, 0.85), false, cs * 0.35)
 					# Герой за будинком (дах вищий за стіну) — будинок напівпрозорий, щоб пішака було видно
 					if not inside and hero_pos.y * PX < rect.position.y and sprite_rect.grow(-cs * 0.3).has_point(hero_pos * PX):
@@ -1604,8 +1661,8 @@ func _draw_roofs(l: Node2D) -> void:
 		for t in towers:
 			var c: Vector2 = map.center_of(t) * PX
 			var tr := Rect2(c - Vector2(cs, cs) * 1.1, Vector2(cs, cs) * 2.2)
-			Art.surface(l, Art.tex("masonry"), tr, TEX_PERIOD)
-			Art.surface(l, Art.tex("roof"), Rect2(c - Vector2(cs, cs) * 0.75, Vector2(cs, cs) * 1.5), TEX_PERIOD)
+			Art.surface(l, Art.tex("masonry"), tr, _period(Art.tex("masonry")))
+			Art.surface(l, Art.tex("roof"), Rect2(c - Vector2(cs, cs) * 0.75, Vector2(cs, cs) * 1.5), _period(Art.tex("roof")))
 			l.draw_rect(tr, Color(0.22, 0.18, 0.12, 0.85), false, 2.0)
 	# Брама: підпис і позначка «замкнена»
 	for g in def.get("gates", []):
@@ -1754,6 +1811,12 @@ func _close_panel() -> void:
 	_talk_npc = {}
 
 
+## Запис у хроніку героя (characters/chronicle.gd) з часом міського годинника
+func _chronicle(kind: String, text: String, key: String = "") -> void:
+	var w: Node = get_node_or_null("/root/Worlds") if is_inside_tree() else null
+	Chronicle.add(w, kind, text, clock.total_seconds if clock != null else 0.0, key)
+
+
 func _say(text: String) -> void:
 	if text == "":
 		return
@@ -1855,17 +1918,31 @@ func take_quest(n: Dictionary, q: Dictionary) -> void:
 	open_quests(n)
 
 
-func turn_in(n: Dictionary, q: Dictionary) -> void:
+## choice: "" (развилки ещё не было), "complicit" или "principled" (Forks, data/cities/forks.json)
+func turn_in(n: Dictionary, q: Dictionary, choice: String = "") -> void:
 	if not Growth.ready(growth, q, bag, hero_km(), battles_won()):
 		_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], I18n.t("«%s»\n\nСейчас: %s.") % [q["ask"], quest_status(q)], [[I18n.t("Назад"), func(): open_quests(n)]])
 		return
+	var fork: Dictionary = Forks.of(String(q["id"]))
+	if choice == "" and not fork.is_empty():
+		_fork_panel(n, q, fork)
+		return
+	var fork_text: String = ""
+	if not fork.is_empty():
+		var fx: Array = _fork_apply(fork, choice)
+		q = q.duplicate()
+		q["reward"] = maxi(int(q.get("reward", 0)) + int(fx[0]), 0)
+		fork_text = String(fx[1])
 	var was: int = stage
 	var nb: int = def.get("buildings", []).size()
 	var nn: int = npcs.size()
 	var id: String = String(n["def"]["id"])
 	var extra: int = _speech_extra(q)
 	Growth.complete(full_def, growth, q, bag)
+	_chronicle("quest", I18n.t("Выполнил поручение «%s» для %s.") % [q["title"], n["actor"].display_name], "quest:" + String(q["id"]))
 	var text: String = "«%s»" % q["done"]
+	if fork_text != "":
+		text = fork_text + "\n\n" + text
 	if int(q.get("reward", 0)) > 0:
 		text += I18n.t("\n\nПолучено %d монет.") % int(q["reward"])
 	if extra > 0:
@@ -1892,6 +1969,59 @@ func turn_in(n: Dictionary, q: Dictionary) -> void:
 		if String(m["def"]["id"]) == id:
 			n = m
 	_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], text, [[I18n.t("Назад"), func(): open_quests(n)]])
+
+
+## Розвилка перед здачею: обидва варіанти з ціною на кнопці, повернутися можна
+func _fork_panel(n: Dictionary, q: Dictionary, fork: Dictionary) -> void:
+	var c: Dictionary = fork["complicit"]
+	var p: Dictionary = fork["principled"]
+	var c_label: String = String(c["label"])
+	if int(c.get("bonus", 0)) > 0:
+		c_label += " (+%d)" % int(c["bonus"])
+	var p_label: String = "%s (%s)" % [p["label"], Forks.cost_text(p.get("cost", {}))]
+	_open_panel("talk", "%s: %s" % [n["actor"].display_name, q["title"]], String(fork["scene"]), [
+		[c_label, func(): turn_in(n, q, "complicit")],
+		[p_label, func(): turn_in(n, q, "principled")],
+		[I18n.t("Назад"), func(): open_quests(n)]])
+
+
+## Наслідки вибору. Повертає [зміна нагороди, текст]. Хроніка героя записує, що він вибрав
+func _fork_apply(fork: Dictionary, choice: String) -> Array:
+	var side: Dictionary = fork["principled"] if choice == "principled" else fork["complicit"]
+	var text: String = String(side["text"])
+	var d_reward: int = 0
+	if choice != "principled":
+		var bonus: int = int(side.get("bonus", 0))
+		bag["money"] = int(bag["money"]) + bonus
+		_chronicle("quest", I18n.t("Выбрал молчание: %s.") % String(side["label"]).to_lower())
+		return [d_reward, text]
+	var cost: Dictionary = side.get("cost", {})
+	match String(cost.get("type", "")):
+		"reward":
+			d_reward = -100000
+		"fine":
+			var pay: int = mini(int(cost.get("amount", 0)), int(bag["money"]))
+			bag["money"] = int(bag["money"]) - pay
+		"wound":
+			hero.add_condition(String(cost.get("cond", "laceration")))
+		"npc_death":
+			var done: bool = false
+			for m in npcs:
+				if String(m["def"]["id"]) == String(cost.get("victim", "")) and m["actor"].alive:
+					m["actor"].die("wounds")
+					done = true
+			if not done:
+				bag["money"] = maxi(int(bag["money"]) - 20, 0)
+		"hero_risk":
+			if _rng.randf() < float(cost.get("p", 0.0)):
+				text += I18n.t(" Тебя нашли в канаве к утру.")
+				_chronicle("death", I18n.t("Поплатился за отказ: %s.") % String(side["label"]).to_lower())
+				hero.die("wounds")
+			else:
+				hero.add_condition(String(cost.get("cond", "laceration")))
+				text += I18n.t(" Ты ушёл живым, но легко не отделался.")
+	_chronicle("quest", I18n.t("Поступил по совести: %s.") % String(side["label"]).to_lower())
+	return [d_reward, text]
 
 
 ## Перебудувати місто за нинішнім етапом: нові будинки й мешканці з'являються одразу, колишні мешканці зберігають стан

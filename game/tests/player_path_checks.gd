@@ -137,7 +137,7 @@ func _run() -> void:
 	for id in ["posadnik", "healer"]:
 		for q in Growth.available(city.full_def, city.growth, id):
 			if first_ids.has(q["id"]) and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won()):
-				city.turn_in(npc(city, id), q)
+				city.turn_in(npc(city, id), q, "complicit")
 	ok(Growth.points(city.growth) == 2 and city.stage == 0, "сданы лом и «пройти»: очков %d, денег %d, нож за %d, этап «Форт»" % [Growth.points(city.growth), W.inventory["money"], Trade.buy_price("knife", a)])
 	ok(Trade.buy(W.inventory, npc(city, "tanner")["stock"], "knife", a) == "" and Trade.count(W.inventory, "knife") == 1, "куплен нож у кожевника")
 	await W.leave()
@@ -193,7 +193,7 @@ func _run() -> void:
 	for id in ["posadnik", "healer", "tanner"]:
 		for q in Growth.available(city.full_def, city.growth, id):
 			if q["kind"] in ["walk", "bring"] and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won()):
-				city.turn_in(npc(city, id), q)
+				city.turn_in(npc(city, id), q, "complicit")
 	ok(Growth.points(city.growth) >= 3, "сданы поручения «пройти» и «принести»: очков %d, денег %d" % [Growth.points(city.growth), W.inventory["money"]])
 	ok(city.stage >= 1, "город вырос до «Деревни» без поручений на бой (запасные поручения, Q03)")
 
@@ -201,7 +201,7 @@ func _run() -> void:
 	var tq: Dictionary = Growth.current(city.full_def, city.growth, "tanner")
 	var pts: int = Growth.points(city.growth)
 	if not tq.is_empty() and tq["kind"] == "win":
-		city.turn_in(npc(city, "tanner"), tq)
+		city.turn_in(npc(city, "tanner"), tq, "complicit")
 	ok(Growth.points(city.growth) == pts + 1, "поручение «победить» сдано")
 	var stage_now: int = city.stage
 	var done_now: Array = city.growth["done"].duplicate()

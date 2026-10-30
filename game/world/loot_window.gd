@@ -130,6 +130,8 @@ func _refresh() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
+	if event.physical_keycode in [KEY_F1, KEY_F10]:
+		return   # довідка й гучність музики працюють і над вікном
 	if event.physical_keycode == KEY_E:
 		take_all()
 	elif event.is_action_pressed("ui_cancel"):

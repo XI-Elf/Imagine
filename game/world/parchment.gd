@@ -418,8 +418,8 @@ func _input(event: InputEvent) -> void:
 			close()
 			get_viewport().set_input_as_handled()
 			return
-	if event is InputEventKey:
-		get_viewport().set_input_as_handled()   # поки відкрито — герой не ходить
+	if event is InputEventKey and not (event.physical_keycode in [KEY_F1, KEY_F10]):
+		get_viewport().set_input_as_handled()   # поки відкрито — герой не ходить; F1 і F10 працюють
 
 
 # =====================================================================

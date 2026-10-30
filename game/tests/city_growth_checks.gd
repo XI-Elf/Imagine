@@ -47,7 +47,7 @@ func do_quest(city: Node, n: Dictionary, q: Dictionary) -> void:
 			Trade.add(city.bag, String(q["item"]), int(q["n"]))
 		"pay":
 			city.bag["money"] = int(city.bag["money"]) + int(q["money"])
-	city.turn_in(n, q)
+	city.turn_in(n, q, "complicit")
 
 
 func _run() -> void:
@@ -100,11 +100,11 @@ func _run() -> void:
 	ok(q.get("id", "") == "elder_1" and q["kind"] == "bring", "у главы первое поручение — принести лом")
 	city.take_quest(elder, q)
 	ok(Growth.taken(city.growth, q) and not Growth.ready(city.growth, q, bag, city.hero_km(), city.battles_won()), "взято, но лома нет")
-	city.turn_in(elder, q)
+	city.turn_in(elder, q, "complicit")
 	ok(Growth.points(city.growth) == 0, "без лома не сдаётся")
 	Trade.add(bag, "scrap", 3)
 	var m0: int = int(bag["money"])
-	city.turn_in(elder, q)
+	city.turn_in(elder, q, "complicit")
 	ok(Growth.points(city.growth) == 1 and Trade.count(bag, "scrap") == 1 and int(bag["money"]) == m0 + int(q["reward"]), "сдано: лом забран, награда выдана")
 	ok(Growth.current(city.full_def, city.growth, "posadnik").is_empty() and Growth.waiting(city.full_def, city.growth, "posadnik"), "следующее поручение главы ждёт роста")
 
@@ -114,7 +114,7 @@ func _run() -> void:
 	hero.distance_m += 2000.0
 	ok(not Growth.ready(city.growth, hq, bag, city.hero_km(), city.battles_won()), "2 км из 3 — рано")
 	hero.distance_m += 1100.0
-	city.turn_in(npc(city, "healer"), hq)
+	city.turn_in(npc(city, "healer"), hq, "complicit")
 	ok(Growth.points(city.growth) == 2, "травы найдены")
 	var tq: Dictionary = Growth.current(city.full_def, city.growth, "tanner")
 	city.test_wins = 4
@@ -122,7 +122,7 @@ func _run() -> void:
 	ok(not Growth.ready(city.growth, tq, bag, city.hero_km(), city.battles_won()), "старые победы не в счёт")
 	city.test_wins += 1
 	var hero_was: Vector2 = city.hero_pos
-	city.turn_in(npc(city, "tanner"), tq)
+	city.turn_in(npc(city, "tanner"), tq, "complicit")
 
 	# Село: коваль, торговка, стражник і їхні будинки з'явилися одразу
 	ok(city.stage == 1, "три поручения — этап Деревня")
