@@ -387,7 +387,13 @@ func _draw() -> void:
 		draw_polyline(line, col, 2.0, true)
 		var font: Font = ThemeDB.fallback_font
 		var t: String = distance_words(remaining_m(), Sheet.talk_int(cast.hero["actor"]))
-		var at: Vector2 = line[0] + Vector2(14, -14)
+		# Відстань — під позначкою цілі, а не біля героя: над героєм його ім'я (Huzzah 2026-10-30).
+		# Ціль зовсім поряд із героєм — підпис під героєм, ім'я ж над ним
+		var tw: float = font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+		var anchor: Vector2 = line[-1]
+		if anchor.distance_to(line[0]) < 70.0:
+			anchor = line[0]
+		var at: Vector2 = anchor + Vector2(-tw * 0.5, 30.0)
 		draw_string_outline(font, at, t, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 5, Color(0, 0, 0, 0.8))
 		draw_string(font, at, t, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
 	var tp: Vector2 = game.world_to_screen(target)

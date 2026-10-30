@@ -158,6 +158,10 @@ func _run() -> void:
 	await W.leave()
 	while W.busy or W.is_away():
 		await process_frame
+	# Новий герой тепер з'являється за 150 м від міста, тож біля брами він уперше лише після виходу — проходимо повз
+	if game.get("settlements") != null and not game.settlements.prompt_for.is_empty():
+		game.settlements.choose_continue()
+	T.seen["gate"] = true
 
 	# Пропуск: підказок більше немає, довідка працює; стан зберігається в user://
 	T.skip_all()

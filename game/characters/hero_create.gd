@@ -304,7 +304,14 @@ func _build_right() -> Control:
 	tg.add_theme_constant_override("h_separation", 4)
 	tg.add_theme_constant_override("v_separation", 3)
 	v.add_child(tg)
-	for t in P.C()["traits"]:
+	# Кожна риса у своїй колонці (Huzzah 2026-10-30): ліворуч достоинства, праворуч недоліки;
+	# протилежна риса стоїть у тому ж рядку, порожня клітинка — у риси без пари
+	tg.add_child(_label(I18n.t("Достоинства"), 13, COL_GOOD))
+	tg.add_child(_label(I18n.t("Недостатки"), 13, COL_BAD))
+	for t in _trait_rows(P.C()["traits"]):
+		if t == "":
+			tg.add_child(Control.new())
+			continue
 		var d: Dictionary = R.trait_def(t)
 		var c: int = int(d.get("cost", 0))
 		var b := Button.new()
@@ -325,6 +332,29 @@ func _build_right() -> Control:
 	_trait_desc.text = I18n.t("Наведите на черту, чтобы увидеть описание. Зелёные — достоинства, красные — недостатки.")
 	v.add_child(_trait_desc)
 	return v
+
+
+## Рядки сітки рис: [достоинство, недолік] парами за «opp»; "" — порожня клітинка
+func _trait_rows(ids: Variant) -> Array:
+	var good: Array = []
+	var bad: Array = []
+	for t in ids:
+		(good if int(R.trait_def(t).get("cost", 0)) > 0 else bad).append(t)
+	var out: Array = []
+	var used: Dictionary = {}
+	for t in good:
+		var o: String = String(R.trait_def(t).get("opp", ""))
+		out.append(t)
+		if bad.has(o):
+			out.append(o)
+			used[o] = true
+		else:
+			out.append("")
+	for t in bad:
+		if not used.has(t):
+			out.append("")
+			out.append(t)
+	return out
 
 
 func _trait_full(t: String) -> String:

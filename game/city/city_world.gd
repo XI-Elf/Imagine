@@ -176,6 +176,10 @@ func _ready() -> void:
 		enter("s001", null, {})
 
 
+var _labels_layer: DrawLayer
+var _labels: Array = []          # [позиція, текст, колір] з останнього малювання дахів
+
+
 func _setup_nodes() -> void:
 	if cam != null:
 		return
@@ -188,6 +192,14 @@ func _setup_nodes() -> void:
 	route = CityRoute.new(self)
 	_path_layer = _layer(func(l: Node2D) -> void: route.draw(l, PX))
 	_fog = _layer(_draw_fog)
+	# Підписи — на окремому шарі над туманом і поза нічним затемненням (CanvasModulate його не чіпає), Huzzah 2026-10-30
+	var lc := CanvasLayer.new()
+	lc.layer = 1
+	lc.follow_viewport_enabled = true
+	add_child(lc)
+	_labels_layer = DrawLayer.new()
+	_labels_layer.fn = _draw_labels
+	lc.add_child(_labels_layer)
 	_night = CanvasModulate.new()
 	add_child(_night)
 	cam = Camera2D.new()
@@ -617,6 +629,7 @@ func _process(delta: float) -> void:
 	_actors.queue_redraw()
 	_roofs.queue_redraw()
 	_path_layer.queue_redraw()
+	_labels_layer.queue_redraw()
 	if _fog_dirty:
 		_fog_dirty = false
 		_fog.queue_redraw()
@@ -1530,12 +1543,26 @@ func _body(l: Node2D, p: Vector2, col: Color, a: Actor, dir: Vector2) -> void:
 		l.draw_arc(p * PX, BODY_R * PX * 1.2 + 4.0, 0.0, TAU, 24, Color(col, 0.8), 1.5)
 
 
-func _label(l: Node2D, font: Font, at: Vector2, text: String, col: Color) -> void:
+## Підпис у світі міста: шар малювання дахів лише запам'ятовує його, малює _draw_labels поверх усього
+func _label(_l: Node2D, _font: Font, at: Vector2, text: String, col: Color) -> void:
+	_labels.append([at, text, col])
+
+
+## Підписи: 15 px на екрані за будь-якого масштабу, на темній плашці з обвідкою, повна непрозорість
+func _draw_labels(l: Node2D) -> void:
+	var font: Font = ThemeDB.fallback_font
 	var k: float = 1.0 / maxf(cam.zoom.x, 0.05)
-	var fs: int = int(13.0 * k)
-	var wd: float = 260.0 * k
-	l.draw_string_outline(font, at + Vector2(-wd / 2, 0), text, HORIZONTAL_ALIGNMENT_CENTER, wd, fs, int(4.0 * k), Color(0, 0, 0, 0.85))
-	l.draw_string(font, at + Vector2(-wd / 2, 0), text, HORIZONTAL_ALIGNMENT_CENTER, wd, fs, col)
+	var fs: int = maxi(int(round(15.0 * k)), 1)
+	for e in _labels:
+		var at: Vector2 = e[0]
+		var text: String = e[1]
+		var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var asc: float = font.get_ascent(fs)
+		var plate := Rect2(at + Vector2(-w * 0.5 - 5.0 * k, -asc - 3.0 * k), Vector2(w + 10.0 * k, asc + font.get_descent(fs) + 6.0 * k))
+		l.draw_rect(plate, Color(0.05, 0.04, 0.03, 0.88))
+		l.draw_rect(plate, Color(0.0, 0.0, 0.0, 0.9), false, maxf(1.0 * k, 1.0))
+		l.draw_string_outline(font, at + Vector2(-w * 0.5, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(int(2.0 * k), 1), Color.BLACK)
+		l.draw_string(font, at + Vector2(-w * 0.5, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, e[2])
 
 
 const ROOF_COLORS: Dictionary = {
@@ -1549,7 +1576,98 @@ const ROOF_COLORS: Dictionary = {
 const DOOR_AT: Dictionary = {"house": 0.43, "inn": 0.66, "hall": 0.5, "temple": 0.45, "smithy": 0.5, "healer": 0.35}
 
 
+# Будівля в місті — вид згори з нахилом до гравця (Huzzah 2026-10-30): дах видно згори, він займає майже весь
+# слід будинку, знизу — невисока передня стіна з дверима до глядача. Слід і зіткнення — ті самі клітинки rect.
+# Передня стіна — нижній поверх зі старого спрайта фасаду, дах — текстура черепиці кольору будівлі [ЗАГЛУШКА: потрібен малюнок 3/4]
+const WALL_M: float = 2.2                       # видима висота передньої стіни, м
+const WALL_CROP: Dictionary = {"house": [0.50, 0.95], "inn": [0.52, 0.93], "hall": [0.60, 0.92], "temple": [0.62, 0.93],
+	"smithy": [0.45, 0.92], "healer": [0.52, 0.94]}
+const ROOF_TINT: Dictionary = {"house": Color(0.93, 0.68, 0.22), "inn": Color(0.72, 0.24, 0.16), "hall": Color(0.27, 0.38, 0.62),
+	"temple": Color(0.36, 0.42, 0.6), "smithy": Color(0.66, 0.25, 0.17), "healer": Color(0.38, 0.52, 0.27)}
+
+
+## Малює будинок 3/4 і повертає прямокутник даху (для диму й прозорості)
+func _draw_house_34(l: Node2D, b: Dictionary, rect: Rect2, key: String, inside: bool, cs: float) -> Rect2:
+	var wall: float = minf(WALL_M * PX, rect.size.y * 0.5)
+	var ov: float = cs * 0.3                    # звис даху
+	var roof := Rect2(rect.position.x - ov, rect.position.y - wall - ov, rect.size.x + ov * 2.0, rect.size.y + ov)
+	if inside:
+		# Герой усередині — даху немає, видно підлогу й обрис стін
+		Art.surface(l, Art.tex("wood"), rect, _period(Art.tex("wood")))
+		l.draw_rect(rect, Color(0.22, 0.18, 0.12, 0.85), false, cs * 0.35)
+		return roof
+	var alpha: float = 1.0
+	# Герой за будинком (дах закриває землю за стіною) — дах напівпрозорий, щоб пішака було видно
+	var hp: Vector2 = hero_pos * PX
+	if roof.has_point(hp) and hp.y < rect.end.y - wall:
+		alpha = 0.4
+	var dark := Color(0.16, 0.12, 0.09, alpha)
+	# Тінь на землі на південний схід
+	l.draw_rect(Rect2(rect.position + Vector2(cs * 0.35, cs * 0.25), rect.size), Color(0, 0, 0, 0.28 * alpha))
+	# Передня стіна: смуга нижнього поверху з фасаду, двері — на клітинці дверей
+	var tex: Texture2D = Art.tex(key)
+	var crop: Array = WALL_CROP.get(key, [0.5, 0.94])
+	var tw: float = float(tex.get_width())
+	var th: float = float(tex.get_height())
+	var span: float = 0.82                      # яку частку ширини фасаду показуємо
+	var door_f: float = clampf(((float(b["door"][0]) + 0.5) * cs - rect.position.x) / rect.size.x, 0.0, 1.0)
+	var u0: float = clampf(float(DOOR_AT.get(key, 0.5)) - door_f * span, 0.0, 1.0 - span)
+	var src := Rect2(u0 * tw, float(crop[0]) * th, span * tw, (float(crop[1]) - float(crop[0])) * th)
+	var front := Rect2(rect.position.x, rect.end.y - wall, rect.size.x, wall)
+	l.draw_texture_rect_region(tex, front, src, Color(1, 1, 1, alpha))
+	l.draw_rect(front, dark, false, 2.0)
+	# Дах згори: черепиця кольору будівлі, гребінь уздовж, північний схил світліший, південний — темніший
+	var tint: Color = ROOF_TINT.get(key, Color(0.7, 0.3, 0.2))
+	var ridge_y: float = roof.position.y + roof.size.y * 0.42
+	var north := Rect2(roof.position, Vector2(roof.size.x, ridge_y - roof.position.y))
+	var south := Rect2(Vector2(roof.position.x, ridge_y), Vector2(roof.size.x, roof.end.y - ridge_y))
+	Art.surface(l, Art.tex("roof"), north, _period(Art.tex("roof")), Color(1, 1, 1, alpha))
+	Art.surface(l, Art.tex("roof"), south, _period(Art.tex("roof")), Color(1, 1, 1, alpha))
+	l.draw_rect(north, Color(tint.r, tint.g, tint.b, 0.55 * alpha))
+	l.draw_rect(south, Color(tint.r * 0.72, tint.g * 0.72, tint.b * 0.72, 0.62 * alpha))
+	# Край даху над стіною — темна смуга-звис, тінь даху падає на стіну
+	l.draw_rect(Rect2(roof.position.x, roof.end.y - cs * 0.12, roof.size.x, cs * 0.12), dark)
+	l.draw_rect(Rect2(front.position.x, front.position.y, front.size.x, cs * 0.25), Color(0, 0, 0, 0.3 * alpha))
+	# Вальмовий дах: ребра від кутів до кінців гребеня, торці трохи темніші
+	var ins: float = minf(roof.size.y * 0.42, roof.size.x * 0.3)
+	var ra := Vector2(roof.position.x + ins, ridge_y)
+	var rb := Vector2(roof.end.x - ins, ridge_y)
+	l.draw_colored_polygon(PackedVector2Array([roof.position, ra, Vector2(roof.position.x, roof.end.y)]), Color(0, 0, 0, 0.16 * alpha))
+	l.draw_colored_polygon(PackedVector2Array([Vector2(roof.end.x, roof.position.y), roof.end, rb]), Color(0, 0, 0, 0.24 * alpha))
+	var edge := Color(tint.lightened(0.3), 0.8 * alpha)
+	for pr in [[roof.position, ra], [Vector2(roof.position.x, roof.end.y), ra], [Vector2(roof.end.x, roof.position.y), rb], [roof.end, rb]]:
+		l.draw_line(pr[0], pr[1], edge, maxf(cs * 0.06, 1.5))
+	l.draw_line(ra, rb, Color(tint.lightened(0.35), alpha), maxf(cs * 0.12, 2.0))
+	l.draw_rect(roof, dark, false, 2.0)
+	if key in ["hall", "temple"]:
+		# Вежа з дзвіницею: квадратний дах, вищий за гребінь
+		var t: float = minf(roof.size.x, roof.size.y) * 0.34
+		var c := Vector2(roof.get_center().x, ridge_y)
+		var tw_r := Rect2(c - Vector2(t, t * 1.6) * 0.5, Vector2(t, t * 1.2))
+		l.draw_rect(Rect2(tw_r.position.x, tw_r.end.y, t, t * 0.5), Color(0.82, 0.77, 0.66, alpha))
+		l.draw_rect(Rect2(tw_r.position.x, tw_r.end.y, t, t * 0.5), dark, false, 2.0)
+		l.draw_colored_polygon(PackedVector2Array([tw_r.position, Vector2(tw_r.end.x, tw_r.position.y), tw_r.get_center()]), Color(tint.lightened(0.15), alpha))
+		l.draw_colored_polygon(PackedVector2Array([Vector2(tw_r.end.x, tw_r.position.y), tw_r.end, tw_r.get_center()]), Color(tint.darkened(0.2), alpha))
+		l.draw_colored_polygon(PackedVector2Array([tw_r.end, Vector2(tw_r.position.x, tw_r.end.y), tw_r.get_center()]), Color(tint.darkened(0.35), alpha))
+		l.draw_colored_polygon(PackedVector2Array([Vector2(tw_r.position.x, tw_r.end.y), tw_r.position, tw_r.get_center()]), Color(tint, alpha))
+		l.draw_rect(tw_r, dark, false, 2.0)
+	else:
+		var ch: Vector2 = _chimney_at(roof, cs)
+		var cr := Rect2(ch - Vector2(cs * 0.3, cs * 0.1), Vector2(cs * 0.6, cs * 0.7))
+		l.draw_rect(Rect2(cr.position.x, cr.end.y - cs * 0.25, cr.size.x, cs * 0.25), Color(0.45, 0.42, 0.38, alpha))
+		l.draw_rect(Rect2(cr.position, Vector2(cr.size.x, cr.size.y - cs * 0.25)), Color(0.62, 0.58, 0.52, alpha))
+		l.draw_rect(Rect2(cr.position + Vector2(cs * 0.12, cs * 0.1), Vector2(cs * 0.36, cs * 0.22)), Color(0.1, 0.08, 0.07, alpha))
+		l.draw_rect(cr, dark, false, 1.5)
+	return roof
+
+
+## Де на даху комин: на північному схилі ближче до правого краю
+func _chimney_at(roof: Rect2, cs: float) -> Vector2:
+	return Vector2(roof.position.x + roof.size.x * 0.72, roof.position.y + roof.size.y * 0.22)
+
+
 func _draw_roofs(l: Node2D) -> void:
+	_labels.clear()
 	if map.w == 0:
 		return
 	var cs: float = map.cell_m * PX
@@ -1603,20 +1721,7 @@ func _draw_roofs(l: Node2D) -> void:
 				else:
 					var inside: bool = int(b["index"]) == _hero_bld
 					var key: String = kind if kind in ["inn", "hall", "temple", "smithy", "healer"] else "house"
-					var texture: Texture2D = Art.tex(key)
-					# Спрайт намальовано фасадом до глядача: ширина — ширина будинку, низ — по південній стіні (трохи нижче, на ґанок),
-					# дах вищий за прямокутник; зсув — щоб двері на картинці припали на клітинку дверей (Huzzah 2026-10-24)
-					var h: float = rect.size.x * float(texture.get_height()) / float(texture.get_width())
-					var shift: float = (float(b["door"][0]) + 0.5) * cs - (rect.position.x + rect.size.x * float(DOOR_AT.get(key, 0.5)))
-					var sprite_rect := Rect2(Vector2(rect.position.x + shift, rect.end.y + cs * 0.35 - h), Vector2(rect.size.x, h))
-					var alpha: float = 0.12 if inside else 1.0
-					if inside:
-						Art.surface(l, Art.tex("wood"), rect, _period(Art.tex("wood")))
-						l.draw_rect(rect, Color(0.22, 0.18, 0.12, 0.85), false, cs * 0.35)
-					# Герой за будинком (дах вищий за стіну) — будинок напівпрозорий, щоб пішака було видно
-					if not inside and hero_pos.y * PX < rect.position.y and sprite_rect.grow(-cs * 0.3).has_point(hero_pos * PX):
-						alpha = 0.45
-					l.draw_texture_rect(texture, sprite_rect, false, Color(1, 1, 1, alpha))
+					var sprite_rect: Rect2 = _draw_house_34(l, b, rect, key, inside, cs)
 					# Actual door position remains visible even when a facade is stylized.
 					var door: Vector2 = map.center_of(Vector2i(b["door"][0], b["door"][1])) * PX
 					if door.distance_to(hero_pos * PX) < cs * 3.0:
@@ -1625,7 +1730,7 @@ func _draw_roofs(l: Node2D) -> void:
 					if not inside and kind in ["inn", "smithy", "house"]:
 						for k in 4:
 							var phase: float = fposmod(art_time * 0.20 + float(k) * 0.25 + float(rr[0]) * 0.03, 1.0)
-							var smoke: Vector2 = sprite_rect.position + Vector2(sprite_rect.size.x * 0.65 + phase * cs * 0.5, cs * 0.4 - phase * cs * 1.6)
+							var smoke: Vector2 = _chimney_at(sprite_rect, cs) + Vector2(phase * cs * 0.5, -phase * cs * 1.6)
 							l.draw_circle(smoke, cs * (0.07 + phase * 0.16), Color(0.68, 0.67, 0.60, (1.0 - phase) * 0.12))
 			"person":
 				var n: Dictionary = e["n"]

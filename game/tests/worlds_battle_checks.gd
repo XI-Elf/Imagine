@@ -37,6 +37,19 @@ func load_game(slot: String = "") -> Node2D:
 	return game
 
 
+func _esc() -> void:
+	var ev := InputEventKey.new()
+	ev.physical_keycode = KEY_ESCAPE
+	ev.keycode = KEY_ESCAPE
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await frames(2)
+	var up: InputEventKey = ev.duplicate()
+	up.pressed = false
+	Input.parse_input_event(up)
+	await frames(2)
+
+
 func _run() -> void:
 	var W: Node = root.get_node("Worlds")
 	var game: Node2D = await load_game()
@@ -55,6 +68,15 @@ func _run() -> void:
 	await create_timer(2.0).timeout
 	if shots != "":
 		root.get_viewport().get_texture().get_image().save_png(shots.path_join("w06_real_battle.png"))
+	# Esc у бою (Huzzah 2026-10-30): вибрана атака — скасувати; далі — меню паузи; ще раз — закрити
+	b.phase = "battle"
+	b.mode = "attack"
+	await _esc()
+	ok(b.mode == "move" and not game.menu_open, "Esc в бою сначала отменяет выбор атаки")
+	await _esc()
+	ok(game.menu_open and game.pause_panel.visible, "Esc в бою открывает меню паузы")
+	await _esc()
+	ok(not game.menu_open, "Esc ещё раз закрывает меню")
 	ok(WorldSave.write(game, true), "сохранение в бою")
 	var slot: String = WorldSave.latest_slot()
 	var t0: float = game.clock.total_seconds

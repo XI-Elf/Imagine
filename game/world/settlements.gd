@@ -42,7 +42,7 @@ const JUMP_M: float = 200.0         # стрибок героя за кадр (�
 const OUTLINE_CELL_PX: float = 28.0 # з такої клітинки на екрані замість щитка — обрис міста
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталів у ряд на клітинку
-const DOT_PX: float = 7.0           # радіус точки міста на екрані
+const DOT_PX: float = 18.0          # радіус знака міста на екрані: більший за точку героя (до 15,5 px), Huzzah 2026-10-30
 const ENTER_M: float = 10.0         # вибір «Увійти» — лише так близько від точки міста
 const CLEAR_M: float = 18.0         # навколо точки декор не садить дерев і кущів
 const MEDAL_MIN_PX: float = 30.0    # радіус медальйона здалеку не менший за цей (місто лишається точкою інтересу)
@@ -101,6 +101,26 @@ func spawn_point() -> Vector2:
 	if list.is_empty():
 		return Vector2.INF
 	return exit_point(String(list[0]["id"]))
+
+
+## Де з'являється новий герой: трохи далі від міста, щоб до нього ще йти (Huzzah 2026-10-30).
+## START_M на південь від брами (у бік виходу), найближчий вільний суходіл
+const START_M: float = 150.0
+
+
+func start_point() -> Vector2:
+	var g: Vector2 = spawn_point()
+	if g == Vector2.INF:
+		return g
+	var c: Vector2 = list[0]["_center"]
+	var dir: Vector2 = (g - c).normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.DOWN
+	for k in 24:
+		var q: Vector2 = c + dir.rotated(TAU * float(k) / 24.0 * (1.0 if k % 2 == 0 else -1.0) * 0.5) * START_M
+		if _free_land(q):
+			return q
+	return g
 
 
 func _load() -> void:
@@ -751,7 +771,7 @@ func _draw() -> void:
 			if vp.has_point(c0):
 				_draw_dot(s, c0, hl or s == prompt_for)
 				# Підпис над точкою: герой з'являється під нею, на південь від міста
-				_draw_name(s, c0 - Vector2(0, DOT_PX + 8.0), font, hl, hl)
+				_draw_name(s, c0 - Vector2(0, DOT_PX + 14.0), font, hl, hl)
 		elif cs >= OUTLINE_CELL_PX:
 			if vp.intersects(sr):
 				_draw_outline(s, cs, z)
@@ -922,16 +942,28 @@ func _draw_medallion(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:
 	_draw_banner(c0 + Vector2(0, -rp * 0.86), rp * 0.46, s.get("emblem", {}), hl)
 
 
-## Місто-точка: кружок кольору герба з темною облямівкою; підсвічене — біле кільце
+## Знак міста: кругла мурована стіна з зубцями кольору герба, всередині — поле герба й ядро;
+## підсвічене — світле кільце. Розмір сталий за будь-якого масштабу, щоб місто не губилося поряд із героєм
 func _draw_dot(s: Dictionary, c0: Vector2, hl: bool) -> void:
 	var em: Dictionary = s.get("emblem", {})
 	var tint := Color(String(em.get("tint", "#e2b84c")))
-	draw_circle(c0 + Vector2(1.5, 2.0), DOT_PX + 2.0, Color(0, 0, 0, 0.45))
-	draw_circle(c0, DOT_PX + 2.0, Color(0.08, 0.06, 0.05))
-	draw_circle(c0, DOT_PX, tint)
-	draw_circle(c0, DOT_PX * 0.4, Color(String(em.get("field", "#26262c"))))
+	var field := Color(String(em.get("field", "#26262c")))
+	var dark := Color(0.08, 0.06, 0.05)
+	var r: float = DOT_PX
+	draw_circle(c0 + Vector2(2.0, 3.0), r + 4.0, Color(0, 0, 0, 0.45))
+	# Зубці стіни: вісім квадратиків по колу
+	for i in 8:
+		var d := Vector2.from_angle(TAU * float(i) / 8.0 - PI * 0.5)
+		var t: Vector2 = c0 + d * (r + 1.0)
+		draw_rect(Rect2(t - Vector2(4.5, 4.5), Vector2(9, 9)), dark)
+		draw_rect(Rect2(t - Vector2(3.0, 3.0), Vector2(6, 6)), tint)
+	draw_circle(c0, r + 2.0, dark)
+	draw_circle(c0, r, tint)
+	draw_circle(c0, r * 0.68, dark)
+	draw_circle(c0, r * 0.6, field)
+	draw_circle(c0, r * 0.24, tint)
 	if hl:
-		draw_arc(c0, DOT_PX + 5.0, 0.0, TAU, 32, Color(1.0, 0.92, 0.6), 2.0, true)
+		draw_arc(c0, r + 9.0, 0.0, TAU, 48, Color(1.0, 0.92, 0.6), 2.5, true)
 
 
 ## Знамено з гербом: поперечка, полотнище кольору поля з ластівчиним хвостом, фігура герба

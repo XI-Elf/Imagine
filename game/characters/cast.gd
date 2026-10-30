@@ -128,7 +128,7 @@ func open_creator() -> void:
 ## Новий герой за вибором з екрана створення (characters/hero_profile.gd) біля брами міста
 func create_hero(params: Dictionary) -> void:
 	bodies = bodies.filter(func(x): return not x["hero"])
-	var at: Vector2 = game.settlements.spawn_point() if game.get("settlements") != null else Vector2.INF
+	var at: Vector2 = game.settlements.start_point() if game.get("settlements") != null else Vector2.INF
 	spawn_hero(at if at != Vector2.INF else game.cam_pos, params)
 
 

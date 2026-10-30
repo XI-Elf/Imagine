@@ -482,8 +482,8 @@ func preview_attack(c, t, wi: int = -1) -> Dictionary:
 	var hi: int = 0
 	for comp in Rules.components(c, w):
 		var rg: Vector2i = DiceRoller.range_of(comp["dice"]) if String(comp["dice"]) != "" else Vector2i.ZERO
-		lo += maxi(0, rg.x + int(comp["F"]))
-		hi += maxi(0, rg.y + int(comp["F"]))
+		lo += maxi(int(comp.get("min", 0)), rg.x + int(comp["F"]))
+		hi += maxi(int(comp.get("min", 0)), rg.y + int(comp["F"]))
 	return {"ok": ca["ok"], "why": ca.get("why", ""), "chance": p, "ac": act, "mod": terms["sum"], "adv": ad["adv"], "dis": ad["dis"],
 		"dmg": Vector2i(lo, hi), "cover": cov, "weapon": w}
 

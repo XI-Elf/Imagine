@@ -6,7 +6,7 @@ extends SceneTree
 const OUT := "res://data/battle/"
 
 const WEAPONS: Array = [
-	{"id": "fists", "icon": "fist", "title": "Кулаки", "damage": [{"type": "bludgeoning", "dice": "", "bonus": 1}], "proficiency": "natural"},
+	{"id": "fists", "icon": "fist", "title": "Кулаки", "damage": [{"type": "bludgeoning", "dice": "1d2", "bonus": 0}], "proficiency": "natural"},
 	{"id": "dagger", "icon": "knife", "title": "Нож", "damage": [{"type": "piercing", "dice": "1d4", "bonus": 0}], "stat": "finesse", "light": true, "range_ft": 20, "long_range_ft": 60},
 	{"id": "club", "icon": "club", "title": "Дубина", "damage": [{"type": "bludgeoning", "dice": "1d4", "bonus": 0}], "light": true},
 	{"id": "handaxe", "icon": "axe", "title": "Топорик", "damage": [{"type": "slashing", "dice": "1d4", "bonus": 0}, {"type": "bludgeoning", "dice": "", "bonus": 1}], "light": true},

@@ -53,6 +53,7 @@ const ATM_SPAN := Vector2(8200.0, 5000.0)
 
 # Найбільше наближення: 40 пікселів на метр
 const MAX_ZOOM := 40.0
+const HERO_MIN_ZOOM := 0.5    # коли герой на карті, колесо віддаляє лише до ~2,7 км навколо нього (Huzzah 2026-10-30); весь світ — M
 const ZOOM_STEP := 1.25
 const CAMERA_SPEED := 500.0
 
@@ -527,9 +528,16 @@ func _on_season_changed(season: int) -> void:
 
 # Змінює зум так, щоб точка під курсором лишалась на місці
 func _zoom_at(screen_pos: Vector2, factor: float) -> void:
-	var new_zoom: float = clampf(zoom * factor, min_zoom, MAX_ZOOM)
+	var lo: float = min_zoom
+	var hero_on: bool = cast != null and not cast.hero.is_empty() and cast.hero["actor"].alive and not global_map
+	if hero_on:
+		lo = maxf(min_zoom, HERO_MIN_ZOOM)
+	var new_zoom: float = clampf(zoom * factor, lo, MAX_ZOOM)
 	if is_equal_approx(new_zoom, zoom):
 		return
+	# З героєм віддалення — навколо героя, а не курсора
+	if hero_on and factor < 1.0:
+		screen_pos = world_to_screen(cast.hero["pos"])
 	var offset: Vector2 = screen_pos - get_viewport_rect().size / 2.0
 	var world_point: Vector2 = cam_pos + offset / zoom
 	zoom = new_zoom

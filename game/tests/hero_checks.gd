@@ -209,6 +209,23 @@ func _menu() -> void:
 	cr._refresh()
 	ok(cr.params()["subspecies"] == "veyran" and cr.sub_text.text.contains("скорость"), "в создании героя выбирается подвид, видны его эффекты")
 	await shot("h01_create.png")
+	# Риси (Huzzah 2026-10-30): ліва колонка — достоинства, права — недоліки, протилежні в одному рядку
+	var tgrid: GridContainer = cr._trait_btns["nimble"].get_parent()
+	var cols_ok: bool = true
+	for t in cr._trait_btns:
+		var i: int = cr._trait_btns[t].get_index()
+		var good: bool = int(R.trait_def(t).get("cost", 0)) > 0
+		if (i % 2 == 0) != good:
+			cols_ok = false
+	ok(cols_ok and tgrid.columns == 2, "черты: достоинства слева, недостатки справа")
+	ok(cr._trait_btns["clumsy"].get_index() == cr._trait_btns["nimble"].get_index() + 1, "противоположная черта в той же строке")
+	var tsc: Node = tgrid.get_parent()
+	while tsc != null and not (tsc is ScrollContainer):
+		tsc = tsc.get_parent()
+	if tsc != null:
+		await frames(2)
+		(tsc as ScrollContainer).ensure_control_visible(cr._trait_btns["light_sleeper"])
+	await shot("h01b_create_traits.png")
 	cr.randomize_all()
 	await shot("h02_create_random.png")
 	cr._set_gender("female")
@@ -246,7 +263,13 @@ func _game() -> void:
 	var a: Actor = cast.hero["actor"]
 	ok(a.traits.has("quiet") and a.profile.has("biography"), "у героя черты и история")
 	if game.get("settlements") != null:
-		ok(cast.hero["pos"].distance_to(game.settlements.spawn_point()) < 600.0, "герой у ворот города")
+		var dc: float = cast.hero["pos"].distance_to(game.settlements.list[0]["_center"])
+		ok(dc > 100.0 and dc < 600.0, "новый герой — чуть поодаль от города, к нему ещё идти (%d м)" % int(dc))
+	# Колесо с героем на карте не отдаляет до всего мира: предел вокруг героя
+	for i in 40:
+		game._zoom_at(Vector2(10, 10), 1.0 / game.ZOOM_STEP)
+	ok(is_equal_approx(game.zoom, maxf(game.min_zoom, game.HERO_MIN_ZOOM)), "колесо: дальше %.2f px/м не отдаляет" % game.HERO_MIN_ZOOM)
+	ok(game.world_to_screen(cast.hero["pos"]).distance_to(root.get_visible_rect().size * 0.5) < 400.0, "отдаление — вокруг героя")
 	ok(W == null or (W.inventory["items"] == {"leather_jacket": 1, "water_flask": 2, "parchment": 1, "charcoal_stick": 1} and String(W.inventory.get("equipped", {}).get("body", "")) == "leather_jacket" and int(W.inventory["money"]) == 0), "новая игра: надетая кожаная куртка (доспех в бою), две фляги воды, пергамент и уголёк")
 	game.zoom = 0.6
 	key(KEY_I)

@@ -192,6 +192,9 @@ static func _terms_text(t: Dictionary) -> String:
 
 
 ## Складники шкоди атакувальника: [{type, dice, F}]. Модифікатор характеристики — один раз, у mod_component
+const FIST_MIN: int = 1             # найменша шкода кулаком за влучання
+
+
 static func components(att, w: BattleWeapon, ab: BattleAbility = null) -> Array:
 	var out: Array = []
 	if ab != null:
@@ -207,7 +210,9 @@ static func components(att, w: BattleWeapon, ab: BattleAbility = null) -> Array:
 			f += att.mod(stat) + att.fo_damage_bonus(w)
 		if String(d.get("type", "")) == "fire":
 			f += int(att.fx("b_dmg_fire"))
-		out.append({"type": String(d.get("type", "bludgeoning")), "dice": String(d.get("dice", "")), "F": f})
+		# Кулаки б'ють хоч на 1, навіть у кволого героя (Huzzah 2026-10-30)
+		out.append({"type": String(d.get("type", "bludgeoning")), "dice": String(d.get("dice", "")), "F": f,
+			"min": FIST_MIN if w.id == "fists" else 0})
 	return out
 
 
@@ -240,7 +245,7 @@ static func damage(roller, tgt, comps: Array, penetration: Dictionary, repeat: i
 		var v: float = maxf(0.0, maxf(float(tgt.vulnerable.get(j, 0.0)), float(tgt.armor.vulnerable.get(j, 0.0)) if tgt.armor != null else 0.0))
 		var imm: bool = tgt.immune.has(j)
 		var mult: float = (1.0 - s) * (1.0 + v) * scale * (1.0 - float(tgt.dr_pct))
-		var fin: int = 0 if imm else int(floor(after * mult + 1e-9))
+		var fin: int = 0 if imm else maxi(int(comp.get("min", 0)), int(floor(after * mult + 1e-9)))
 		total += fin
 		parts.append({"type": j, "Q": q, "F": f, "BASE": base, "DR": dr, "P": p, "DR_EFF": dr_eff, "AFTER": after,
 			"S": s, "V": v, "IMM": imm, "FINAL": fin})

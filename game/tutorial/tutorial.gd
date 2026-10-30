@@ -4,6 +4,7 @@ extends CanvasLayer
 ## Підказки показуються по одній у куті, введення не забирають; кожна — один раз. Що показано й чи вимкнено
 ## навчання, зберігається в user://tutorial.cfg (спільне для всіх збережень). Поки відкрита довідка, гра на паузі.
 
+const Ruins := preload("res://world/ruins.gd")
 const SAVE_PATH := "user://tutorial.cfg"
 const CHECK_S: float = 0.5          # як часто перевіряти умови підказок
 const GAP_S: float = 2.0            # пауза між підказками
@@ -274,6 +275,46 @@ func _make_hints() -> void:
 		{"id": "low_health", "ctx": "", "title": I18n.t("Мало здоровья"),
 			"text": I18n.t("Здоровье падает от голода, жажды, кровотечения, болезней и воздействия проклятья. Поешьте, попейте, выспитесь, вылечите травмы."),
 			"when": func(): return _hero() != null and _hero().res["health"] < 40.0},
+		# Перша зустріч з кожною механікою (Huzzah 2026-10-30): показується раз, коли гравець на неї натрапляє
+		{"id": "route", "ctx": "map", "title": I18n.t("Путь мышью"), "after": "walk", "delay": 15.0,
+			"text": I18n.t("ЛКМ по карте — герой сам идёт к точке, расстояние подписано у цели. ПКМ — стоп."),
+			"when": func(): return _hero() != null and _controls_hero()},
+		{"id": "fog", "ctx": "map", "title": I18n.t("Неизведанное"), "after": "walk", "delay": 40.0,
+			"text": I18n.t("Тёмное на карте — где герой ещё не был. Местность открывается вокруг него по мере пути; с вышки видно дальше."),
+			"when": func(): return _hero() != null},
+		{"id": "search", "ctx": "map", "title": I18n.t("Поиск"), "after": "walk", "delay": 70.0,
+			"text": I18n.t("F — обшарить место вокруг: еда, хворост, ветошь, лом. Обысканное место пустеет на время. Найденное — в сумке (Tab)."),
+			"when": func(): return _hero() != null and _controls_hero()},
+		{"id": "notes", "ctx": "map", "title": I18n.t("Пергамент и журнал"), "after": "status", "delay": 60.0,
+			"text": I18n.t("M — пергамент: карта, которую герой рисует сам угольком. J — журнал заданий."),
+			"when": func(): return _hero() != null},
+		{"id": "parchment_open", "ctx": "map", "title": I18n.t("Пергамент"),
+			"text": I18n.t("На пергаменте только то, что герой видел и зарисовал. Уголёк тратится; обрывки чужих карт добавляют места."),
+			"when": func(): return _cast() != null and _cast().parchment != null and _cast().parchment.visible},
+		{"id": "night", "ctx": "map", "title": I18n.t("Ночь"),
+			"text": I18n.t("Стемнело: видно меньше, ворота города заперты с 22:00 до 6:00. K — лагерь: костёр, готовка, ночлег в укрытии."),
+			"when": func(): return _hero() != null and _night_now()},
+		{"id": "camp_open", "ctx": "map", "title": I18n.t("Лагерь"),
+			"text": I18n.t("Костёр греет и сушит одежду, на нём готовят сырое. Укрытие делает сон спокойнее. Вещи изнашиваются — чините их здесь."),
+			"when": func(): return _cast() != null and _cast().camp != null and _cast().camp.visible},
+		{"id": "tower", "ctx": "map", "title": I18n.t("Сигнальная вышка"),
+			"text": I18n.t("F — залезть: стоит сил и времени, зато открывает местность далеко вокруг. В щитке наверху бывает лом."),
+			"when": func(): return _hero() != null and _cast().has_method("tower_near") and _cast().tower_near(_hero_pos()) != Vector2.INF},
+		{"id": "ruins", "ctx": "map", "title": I18n.t("Руины"),
+			"text": I18n.t("Руины старого мира: F — обыскать. Находки бывают ценные, а через несколько дней тут снова есть что взять."),
+			"when": func(): return _hero() != null and _ruins_near()},
+		{"id": "rain", "ctx": "map", "title": I18n.t("Дождь"),
+			"text": I18n.t("Под дождём одежда мокнет и холодит. Обсушиться — у костра (K) или под крышей."),
+			"when": func(): return _hero() != null and float(_env().get("rain", 0.0)) > 0.5},
+		{"id": "overload", "ctx": "", "title": I18n.t("Перегруз"),
+			"text": I18n.t("Сумка тяжелее, чем герой может нести: шаг медленнее, силы тают. Лишнее — продать или бросить (Tab)."),
+			"when": func(): return _hero() != null and _hero().overload_percent() > 0.0},
+		{"id": "trade", "ctx": "city", "title": I18n.t("Торговля"),
+			"text": I18n.t("Цена зависит от Обаяния и навыка торговли. Ночью лавки закрыты. Вес покупок — в строке внизу."),
+			"when": func(): return _city_panel() == "trade"},
+		{"id": "craft", "ctx": "city", "title": I18n.t("Ремесло"),
+			"text": I18n.t("У мастера можно сделать вещь из своих материалов. Рецепт открывает навык; не хватает — видно, чего."),
+			"when": func(): return _city_panel() == "craft"},
 		{"id": "city", "ctx": "city", "title": I18n.t("Город"),
 			"text": I18n.t("E — говорить, пить у колодца, обыскать, осмотреть. 1–9 — ответ в разговоре.\nTab — инвентарь, I — герой, M — план города, колесо — масштаб. Уйти — через ворота."),
 			"when": func(): return true},
@@ -298,6 +339,30 @@ func _prompt_kind() -> String:
 	if st == null or (st.get("prompt_for") as Dictionary).is_empty():
 		return ""
 	return String(st.get("prompt_kind"))
+
+
+func _city_panel() -> String:
+	var n: Node = _worlds().current_node()
+	return String(n.get("_panel_kind")) if n != null and n.get("_panel_kind") != null else ""
+
+
+func _night_now() -> bool:
+	var g: Node = _game()
+	if g == null or g.get("clock") == null:
+		return false
+	var h: float = g.clock.hour_of_day()
+	return h >= 21.0 or h < 5.0
+
+
+func _ruins_near() -> bool:
+	var g: Node = _game()
+	if g == null:
+		return false
+	var p: Vector2 = _hero_pos()
+	for r in Ruins.in_rect(g, Rect2(p - Vector2(60, 60), Vector2(120, 120))):
+		if r["pos"].distance_to(p) < 50.0:
+			return true
+	return false
 
 
 func _city_intruder() -> bool:

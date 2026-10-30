@@ -293,7 +293,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				var u = core.all[int(hover_hit.substr(4))]
 				hover_cell = u.cell
 		return
+	# Поки відкрите меню паузи, бій не чіпає ні клавіш, ні кліків: Esc іде в меню й закриває його
+	if _menu_open():
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
+		# Esc, якому в бою нічого скасовувати, відкриває меню паузи (його ловить Worlds)
+		if event.physical_keycode == KEY_ESCAPE and _esc_to_menu():
+			return
 		get_viewport().set_input_as_handled()
 		_key(event.physical_keycode)
 	elif event is InputEventMouseButton and event.pressed:
@@ -314,6 +320,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		var cell: Vector2i = screen_to_cell(mouse)
 		if core.grid.in_bounds(cell):
 			click_cell(cell)
+
+
+func _menu_open() -> bool:
+	var w: Node = get_node_or_null("/root/Worlds")
+	return w != null and w.game != null and is_instance_valid(w.game) and bool(w.game.menu_open)
+
+
+## Esc у бою: спершу скасовує вибір дії чи журнал; коли скасовувати нічого — до меню паузи
+func _esc_to_menu() -> bool:
+	if phase == "prep" or phase == "end" or core.outcome != "":
+		return phase == "prep"
+	return mode == "move" and not show_log
 
 
 func _key(k: int) -> void:
@@ -1024,8 +1042,8 @@ func _weapon_card(ci: CanvasItem, r: Rect2, u, i: int, mine: bool) -> void:
 	var hi: int = 0
 	for comp in Rules.components(u, w):
 		var rg: Vector2i = DiceRoller.range_of(comp["dice"]) if String(comp["dice"]) != "" else Vector2i.ZERO
-		lo += maxi(0, rg.x + int(comp["F"]))
-		hi += maxi(0, rg.y + int(comp["F"]))
+		lo += maxi(int(comp.get("min", 0)), rg.x + int(comp["F"]))
+		hi += maxi(int(comp.get("min", 0)), rg.y + int(comp["F"]))
 	_text(ci, Vector2(tx + 22, r.position.y + 48), "%d–%d" % [lo, hi], 17)
 	var line3: String
 	if w.ammo > 0:
@@ -1126,8 +1144,8 @@ func _foe_column(ci: CanvasItem, v: Vector2) -> void:
 			var hi: int = 0
 			for comp in Rules.components(u, w):
 				var rg: Vector2i = DiceRoller.range_of(comp["dice"]) if String(comp["dice"]) != "" else Vector2i.ZERO
-				lo += maxi(0, rg.x + int(comp["F"]))
-				hi += maxi(0, rg.y + int(comp["F"]))
+				lo += maxi(int(comp.get("min", 0)), rg.x + int(comp["F"]))
+				hi += maxi(int(comp.get("min", 0)), rg.y + int(comp["F"]))
 			var wy: float = r.position.y + (82.0 if h >= 90.0 else h - 10.0)
 			Icons.weapon(ci, w.icon, Rect2(Vector2(tx + 92, wy - 16), Vector2(20, 20)))
 			_text(ci, Vector2(tx + 116, wy), "%d–%d" % [lo, hi], 14)
