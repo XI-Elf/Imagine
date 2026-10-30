@@ -75,6 +75,7 @@ var _stat_pin: String = ""         # показник, на який клацн�
 var _tip_ci: Control
 var _font: Font
 var _wicons: Dictionary = {}
+var _doll := Doll.new()
 
 
 func setup(window: Node, a: Actor, b: Dictionary, item_weapons: Dictionary, lmax: int, arm: Resource) -> void:
@@ -507,7 +508,8 @@ func _draw_doll() -> void:
 	draw_set_transform(foot, 0.0, Vector2(1.0, 0.25))
 	draw_circle(Vector2.ZERO, 48.0, Color(0.05, 0.1, 0.2, 0.3))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	pawn_silhouette(self, fig)
+	var female: bool = actor != null and String(actor.profile.get("gender", "")) in ["female", "f", "woman"]
+	_doll.draw(self, fig, female, looks())
 
 
 ## Силует героя за текстурою його фішки: темна заливка зі світлою обвідкою
