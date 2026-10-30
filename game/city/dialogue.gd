@@ -55,12 +55,21 @@ static func allowed(opt: Dictionary, hero: Actor, bag: Dictionary, state: Dictio
 		return false
 	if r.has("attitude") and int(state.get("attitude", 0)) < int(r["attitude"]):
 		return false
+	# Ум у розмові (з дарами): iq — лише для розумних, iq_max — лише для дурних
+	var iq: int = Sheet.talk_int(hero) if hero != null else 5
+	if r.has("iq") and iq < int(r["iq"]):
+		return false
+	if r.has("iq_max") and iq > int(r["iq_max"]):
+		return false
 	return true
 
 
-## Підпис варіанта: текст уже містить мітку, якщо автор її поставив; інакше — мітка характеристики з вимоги
-static func label(opt: Dictionary) -> String:
+## Підпис варіанта: текст уже містить мітку, якщо автор її поставив; інакше — мітка характеристики з вимоги.
+## Герой з Умом 3 і нижче (Sheet.dumb) говорить варіантом dumb, а без нього довга фраза мимриться (mumble)
+static func label(opt: Dictionary, hero: Actor = null) -> String:
 	var t: String = String(opt.get("text", "…"))
+	if hero != null and Sheet.dumb(hero):
+		t = String(opt["dumb"]) if opt.has("dumb") else mumble(t)
 	if t.begins_with("["):
 		return t
 	var st: Dictionary = opt.get("req", {}).get("stat", {})
@@ -68,6 +77,28 @@ static func label(opt: Dictionary) -> String:
 		return t
 	var k: String = String(st.keys()[0])
 	return "[%s] %s" % [STAT_TAGS.get(k, k), t]
+
+
+## Довга фраза в устах дурня: мітка [..] лишається, від решти — два-три слова з «е-е»
+static func mumble(t: String) -> String:
+	var tag: String = ""
+	if t.begins_with("[") and t.contains("]"):
+		tag = t.left(t.find("]") + 1) + " "
+		t = t.substr(t.find("]") + 1).strip_edges()
+	var words: PackedStringArray = t.split(" ", false)
+	if words.size() <= 2:
+		return tag + t
+	var keep: PackedStringArray = []
+	for w in words:
+		var c: String = w.strip_edges().trim_suffix(",").trim_suffix(".").trim_suffix("?").trim_suffix("!").to_lower()
+		if c.length() >= 4:
+			keep.append(c)
+		if keep.size() >= 2:
+			break
+	if keep.is_empty():
+		return tag + t
+	var q: String = "?" if t.ends_with("?") else "."
+	return tag + I18n.t("Э-э… ") + "… ".join(keep) + q
 
 
 ## Застосувати наслідки; відповідь — рядок для підказки ("" — нічого)

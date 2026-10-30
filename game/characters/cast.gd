@@ -510,7 +510,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				elif not site.is_empty():
 					_event(search_ruins(site))
 				else:
-					_event(search_field())
+					var said: String = search_field()
+					if said != "":
+						_event(said)
 		_:
 			return
 	get_viewport().set_input_as_handled()
@@ -578,29 +580,42 @@ func search_ruins(site: Dictionary) -> String:
 	return msg
 
 
-## Пошук у полі (пункт 16): година гри, знайдене (з тим, що лишилося тут раніше) — у вікні «Найдено»;
-## шум пошуку може привернути ворогів (Worlds.noise_check), тоді знахідки лишаються на місці
+## Пошук у полі (пункт 16, переробка 2026-10-30): вікно пошуку — гравець вибирає, скільки шукати, обходи по 15 хв
+## ідуть зі шкалою, знахідки вискакують плитками (world/loot_window.gd). Кожен обхід шумить (Worlds.noise_check):
+## якщо вистежили — пошук уривається, знайдене лишається на місці, починається бій
 func search_field() -> String:
 	var a: Actor = hero["actor"]
 	var now: float = game.clock.total_seconds
 	var pos: Vector2 = hero["pos"]
+	var biome: int = game.biome_at(pos)
+	var why: String = Foraging.check(a, biome, pos, now, field_searched)
+	var here: Dictionary = Foraging.take_stash(field_stash, pos, now)
+	if why != "" and here.is_empty():
+		return why
 	var env: Dictionary = WorldEnv.sample(game, pos)
-	var r: Dictionary = Foraging.search(a, game.biome_at(pos), pos, now, field_searched, _inventory(), _rng, bool(env.get("night", false)))
-	if not bool(r["ok"]):
-		return String(r["text"])
-	var found: Dictionary = r["found"]
-	var old: Dictionary = Foraging.take_stash(field_stash, pos, now)
-	for id in old:
-		found[id] = int(found.get(id, 0)) + int(old[id])
-	game.clock._set_total(now + float(r["minutes"]) * 60.0)
-	var wm: Node = get_node_or_null("/root/Worlds")
-	if wm != null and wm.has_method("noise_check") and wm.noise_check(float(r["minutes"]) / 60.0):
-		Foraging.leave_stash(field_stash, pos, game.clock.total_seconds, found)
-		return I18n.t("Пока искали, вас выследили")
-	if found.is_empty():
-		return String(r["text"])
-	open_loot(found, pos)
-	return String(r["text"])
+	var night: bool = bool(env.get("night", false))
+	var round_fn := func() -> Dictionary:
+		var t: float = game.clock.total_seconds
+		var r: Dictionary = Foraging.search_round(a, biome, pos, t, field_searched, _inventory(), _rng, night)
+		if not bool(r["ok"]):
+			return r
+		game.clock._set_total(t + float(r["minutes"]) * 60.0)
+		var wm: Node = get_node_or_null("/root/Worlds")
+		if wm != null and wm.has_method("noise_check") and wm.noise_check(float(r["minutes"]) / 60.0):
+			r["ambush"] = true
+		return r
+	var r0: float = Foraging.richness(field_searched, pos, now)
+	_loot_window()
+	if why != "":
+		# Шукати вже нема як, але те, що лишили тут раніше, лежить
+		loot.open(here, I18n.t("Оставлено здесь раньше"), _inventory(), a)
+		_hold_loot(pos)
+		return why
+	var names: Array = game.BIOME_NAMES
+	var place: String = "%s · %s%s" % [String(names[biome]).capitalize() if biome >= 0 and biome < names.size() else "", Foraging.richness_word(r0), I18n.t(" · ночь, без факела хуже видно") if night and Trade.count(_inventory(), "torch") <= 0 else ""]
+	loot.begin_search(I18n.t("Поиск"), place, r0, round_fn, _inventory(), a, here, Foraging.num("round_min", 15.0), Foraging.data().get("durations", [1, 2, 4, 8]))
+	_hold_loot(pos)
+	return ""
 
 
 ## Після бою на загальній карті: туші вбитих звірів — розібрати (world/camp.gd), здобич — у вікно «Найдено»
@@ -619,15 +634,26 @@ func after_battle(result: Dictionary) -> void:
 
 
 func open_loot(found: Dictionary, pos: Vector2) -> void:
+	_loot_window()
+	loot.open(found, I18n.t("Найдено"), _inventory(), hero["actor"])
+	_hold_loot(pos)
+
+
+func _loot_window() -> void:
 	if loot == null:
 		loot = LootWindow.new()
 		add_child(loot)
+
+
+## Поки вікно відкрите, герой стоїть; не взяте лишається на місці
+func _hold_loot(pos: Vector2) -> void:
 	hold_hero = true
-	loot.open(found, I18n.t("Найдено"), _inventory(), hero["actor"])
 	var cb := func(rest: Dictionary) -> void:
 		hold_hero = false
 		Foraging.leave_stash(field_stash, pos, game.clock.total_seconds, rest)
-		if not rest.is_empty():
+		if loot.ambushed:
+			_event(I18n.t("Пока искали, вас выследили. Найденное осталось на месте."))
+		elif not rest.is_empty():
 			_event(I18n.t("Оставлено на месте: %s") % Foraging.found_text(rest))
 	loot.done.connect(cb, CONNECT_ONE_SHOT)
 
