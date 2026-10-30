@@ -6,8 +6,13 @@ extends CanvasLayer
 ## ПКМ — тягнути аркуш, колесо — масштаб, M або Esc — закрити. Поки карта відкрита, час стоїть.
 ## Стан (to_dict) зберігається разом із героєм (cast.gd): штрихи й обривки в метрах дошки, тож намальоване
 ## збігається з місцями. Числа [ВРЕМЕННО].
+## Huzzah 2026-10-30: ластик стирає лише ділянку під собою; намальоване розпізнається й за Умом і Чутьём героя
+## підправляється до вигляду карти (world/map_sketch.gd); окремий аркуш на кожну область, де герой побував,
+## край області — легкий пунктир (world/area_outline.gd); у новій області з'являється її обрис.
 
 const Trade := preload("res://city/trade.gd")
+const Sketch := preload("res://world/map_sketch.gd")
+const Outline := preload("res://world/area_outline.gd")
 
 const SELF_MARK_SKILL: int = 50
 const FRAGMENT_R_M: float = 6000.0
@@ -20,12 +25,20 @@ const COLORS: Dictionary = {
 	"green": Color(0.2, 0.42, 0.22), "blue": Color(0.18, 0.3, 0.55)}
 const PAPER := Color(0.86, 0.78, 0.62)
 const PAPER_DARK := Color(0.62, 0.5, 0.34)
+const BORDER := Color(0.35, 0.25, 0.15, 0.55)
+const ERASE_PX: float = 10.0
+const AREA_CHECK_S: float = 0.5
+
+signal area_added(id: int)
 
 signal closed
 
 var game: Node2D
-var strokes: Array = []      # {c: колір, w: товщина px, pts: [x0, y0, x1, y1, …] метри}
+var strokes: Array = []      # штрихи поточного аркуша: {c: колір, w: товщина px, pts: [x0, y0, …] метри, k: вид, q: доведення, m: знаки}
 var fragments: Array = []    # {x, y, r} — прикладені обривки карти
+var sheets: Dictionary = {}  # "номер області" -> {strokes: [...], view: [x, y, z]}; "0" — аркуш без області
+var areas: Array = []        # області, де герой побував, у порядку відвідин
+var area: int = 0            # чий аркуш зараз розгорнуто
 var view_c := Vector2.INF    # центр аркуша в метрах
 var view_z: float = 0.03
 var color: String = "black"
@@ -42,6 +55,8 @@ var _drawing: bool = false
 var _panning: bool = false
 var _was_paused: bool = false
 var _topo: Texture2D
+var _area_pick: OptionButton
+var _area_t: float = 0.0
 
 
 func setup(g: Node2D) -> void:
@@ -49,6 +64,7 @@ func setup(g: Node2D) -> void:
 	layer = 30
 	visible = false
 	_build()
+	show_area(0)
 
 
 func is_open() -> bool:
@@ -83,6 +99,10 @@ func open() -> void:
 	Trade.ensure_kit(bag)
 	var h: Dictionary = _hero()
 	var at: Vector2 = h["pos"] if not h.is_empty() else game.cam_pos
+	note_area(at)
+	var here: int = area_at(at)
+	if here > 0 or areas.is_empty():
+		show_area(here)
 	if view_c == Vector2.INF:
 		view_c = at
 	var added: int = apply_fragments(at)
@@ -92,6 +112,7 @@ func open() -> void:
 	if game.get("cast") != null:
 		game.cast.hold_hero = true
 	visible = true
+	_refresh_areas()
 	_refresh_bar()
 	if added > 0:
 		_hint.text = I18n.t("Приложил к пергаменту отрывков карты: %d") % added
@@ -130,6 +151,113 @@ func apply_fragments(at: Vector2) -> int:
 		fragments.append({"x": at.x + off.x, "y": at.y + off.y, "r": FRAGMENT_R_M * rng.randf_range(0.8, 1.15), "seed": rng.randi()})
 	Trade.add(bag, "map_fragment", -n)
 	return n
+
+
+# =====================================================================
+# ОБЛАСТІ Й АРКУШІ
+# =====================================================================
+func area_at(p: Vector2) -> int:
+	return int(game.province_at(p)) if game != null and game.has_method("province_at") else 0
+
+
+func area_name(id: int) -> String:
+	var n: String = String(game.province_name(id)) if id > 0 and game != null and game.has_method("province_name") else ""
+	return n if n != "" else I18n.t("Без области")
+
+
+## Герой зайшов в область — на пергаменті з'являється її аркуш з обрисом краю. true, якщо область нова
+func note_area(p: Vector2) -> bool:
+	var id: int = area_at(p)
+	if id <= 0 or id in areas:
+		return false
+	areas.append(id)
+	_sheet_of(id)
+	area_added.emit(id)
+	return true
+
+
+func _sheet_of(id: int) -> Dictionary:
+	var k: String = str(id)
+	if not sheets.has(k):
+		sheets[k] = {"strokes": [], "view": []}
+	return sheets[k]
+
+
+## Розгорнути аркуш області id: свої штрихи, свій вигляд; уперше — уся область на аркуші
+func show_area(id: int) -> void:
+	_finish_stroke()
+	if sheets.has(str(area)) and view_c != Vector2.INF:
+		sheets[str(area)]["view"] = [view_c.x, view_c.y, view_z]
+	area = id
+	var sh: Dictionary = _sheet_of(id)
+	strokes = sh["strokes"]
+	var v: Array = sh.get("view", [])
+	if v.size() == 3:
+		view_c = Vector2(float(v[0]), float(v[1]))
+		view_z = clampf(float(v[2]), ZOOM_MIN, ZOOM_MAX)
+	else:
+		fit_area()
+	if _sheet != null:
+		_refresh_areas()
+		_sheet.queue_redraw()
+
+
+func area_bounds(id: int) -> Rect2:
+	if id <= 0 or game == null or game.get("province_img") == null:
+		return Rect2()
+	return Outline.bounds(game.province_img, id, game.MAP_SIZE)
+
+
+func area_loops(id: int) -> Array:
+	if id <= 0 or game == null or game.get("province_img") == null:
+		return []
+	return Outline.loops(game.province_img, id, game.MAP_SIZE)
+
+
+func _sheet_size() -> Vector2:
+	if _sheet != null and _sheet.size.x > 10.0:
+		return _sheet.size
+	var vs: Vector2 = get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(1280, 720)
+	return vs - Vector2(96, 130)
+
+
+## Уся область на аркуші з невеликим полем
+func fit_area() -> void:
+	var b: Rect2 = area_bounds(area)
+	if b.size.x <= 0.0:
+		return
+	var ss: Vector2 = _sheet_size()
+	view_c = b.get_center()
+	view_z = clampf(minf(ss.x / b.size.x, ss.y / b.size.y) * 0.9, ZOOM_MIN, ZOOM_MAX)
+
+
+func _refresh_areas() -> void:
+	if _area_pick == null:
+		return
+	_area_pick.clear()
+	var ids: Array = areas.duplicate()
+	if (ids.is_empty() or area == 0) and not (0 in ids):
+		ids.push_front(0)
+	for id in ids:
+		_area_pick.add_item(area_name(id), id)
+		if id == area:
+			_area_pick.select(_area_pick.item_count - 1)
+	_area_pick.disabled = _area_pick.item_count < 2
+
+
+func _on_area_picked(idx: int) -> void:
+	show_area(_area_pick.get_item_id(idx))
+	_refresh_bar()
+
+
+func _process(delta: float) -> void:
+	_area_t += delta
+	if _area_t < AREA_CHECK_S:
+		return
+	_area_t = 0.0
+	var h: Dictionary = _hero()
+	if not h.is_empty() and note_area(h["pos"]) and visible:
+		_refresh_areas()
 
 
 func point_count() -> int:
@@ -183,6 +311,11 @@ func _build() -> void:
 	_bar.offset_right = -48
 	_bar.add_theme_constant_override("separation", 8)
 	_root.add_child(_bar)
+	_area_pick = OptionButton.new()
+	_area_pick.custom_minimum_size = Vector2(180, 36)
+	_area_pick.tooltip_text = I18n.t("Лист области: на каждую область, где побывал герой, свой лист")
+	_area_pick.item_selected.connect(_on_area_picked)
+	_bar.add_child(_area_pick)
 	for k in COLORS:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(44, 36)
@@ -226,7 +359,7 @@ func _refresh_bar() -> void:
 		b.text = "●" if k == color and not erasing else ""
 	if color != "black" and not col:
 		color = "black"
-	var tips: PackedStringArray = [I18n.t("ЛКМ — рисовать углём, Shift+ЛКМ — стереть, ПКМ — двигать лист, колесо — масштаб")]
+	var tips: PackedStringArray = [area_name(area), I18n.t("ЛКМ — рисовать углём, Shift+ЛКМ — стереть, ПКМ — двигать лист, колесо — масштаб")]
 	if not col:
 		tips.append(I18n.t("цветные угли продаёт торговец"))
 	tips.append(I18n.t("Картография %d") % cartography() + ("" if shows_self() else I18n.t(" (выше %d — видно, где вы)") % SELF_MARK_SKILL))
@@ -236,7 +369,11 @@ func _refresh_bar() -> void:
 func _center_on_hero() -> void:
 	var h: Dictionary = _hero()
 	if not h.is_empty():
+		var id: int = area_at(h["pos"])
+		if id != area and (id in areas):
+			show_area(id)
 		view_c = h["pos"]
+	_refresh_bar()
 	_sheet.queue_redraw()
 
 
@@ -306,27 +443,130 @@ func _finish_stroke() -> void:
 	var h: Dictionary = _hero()
 	if not h.is_empty():
 		h["actor"].add_xp("cartography", minf(_cur.size() / 40.0, 1.0) * 0.2)
+	var s: Dictionary = strokes[-1] if not strokes.is_empty() and strokes[-1]["pts"] == _cur else {}
 	_cur = []
+	if not s.is_empty():
+		var said: String = refine(s, Sketch.quality(h["actor"]) if not h.is_empty() else 0.0)
+		if _hint != null and said != "":
+			_hint.text = said
+	_sheet.queue_redraw()
+
+
+## Розпізнати штрих і підправити його за якістю q (Ум і Чутьё). Повертає підказку для гравця
+func refine(s: Dictionary, q: float) -> String:
+	var raw := PackedVector2Array()
+	var p: Array = s["pts"]
+	for i in range(0, p.size() - 1, 2):
+		raw.append(Vector2(p[i], p[i + 1]))
+	var info: Dictionary = Sketch.classify(raw, view_z, String(s.get("c", "black")), game)
+	var res: Dictionary = Sketch.tidy(raw, info, q, view_z, game, raw.size() * 31 + int(raw[0].x))
+	var flat: Array = []
+	for v in res["pts"]:
+		flat.append(v.x)
+		flat.append(v.y)
+	if flat.size() >= 4:
+		s["pts"] = flat
+	s["k"] = String(info["k"])
+	s["q"] = snappedf(q, 0.01)
+	s["m"] = res["m"]
+	var a: Object = _hero()["actor"] if not _hero().is_empty() else null
+	var nm: String = Sketch.kind_name(String(info["k"]))
+	if q < 0.2 or a == null:
+		return I18n.t("Похоже на: %s") % nm
+	return I18n.t("Похоже на: %s — рука подправила (Ум %d, Чутьё %d)") % [nm, int(a.stat("int")), int(a.stat("per"))]
 
 
 func erase_at(sp: Vector2) -> void:
-	var r_m: float = 10.0 / view_z
-	var w: Vector2 = to_world(sp)
-	var keep: Array = []
-	for s in strokes:
-		var hit: bool = false
-		var p: Array = s["pts"]
-		for i in range(0, p.size() - 2, 2):
-			var a := Vector2(p[i], p[i + 1])
-			var q := Vector2(p[i + 2], p[i + 3])
-			if Geometry2D.get_closest_point_to_segment(w, a, q).distance_to(w) <= r_m:
-				hit = true
-				break
-		if not hit:
-			keep.append(s)
-	if keep.size() != strokes.size():
-		strokes = keep
+	if erase_world(to_world(sp), ERASE_PX / view_z):
 		_sheet.queue_redraw()
+
+
+## Ластик стирає лише ділянку в колі r довкола w: штрих розпадається на шматки поза колом, знаки в колі зникають
+func erase_world(w: Vector2, r_m: float) -> bool:
+	var out: Array = []
+	var changed: bool = false
+	for s in strokes:
+		var marks: Array = []
+		for m in s.get("m", []):
+			if Vector2(m["x"], m["y"]).distance_to(w) > r_m:
+				marks.append(m)
+		var pieces: Array = cut_circle(s["pts"], w, r_m)
+		if pieces.size() == 1 and pieces[0].size() == s["pts"].size() and marks.size() == s.get("m", []).size():
+			out.append(s)
+			continue
+		changed = true
+		for i in pieces.size():
+			var piece: Dictionary = s.duplicate()
+			piece["pts"] = pieces[i]
+			piece["m"] = marks if i == 0 else []
+			out.append(piece)
+		if pieces.is_empty() and not marks.is_empty():
+			var rest: Dictionary = s.duplicate()
+			rest["pts"] = []
+			rest["m"] = marks
+			out.append(rest)
+	if changed:
+		strokes.clear()
+		strokes.append_array(out)
+	return changed
+
+
+## Ламана [x0, y0, x1, y1, …] без ділянки всередині кола: масив шматків (кожен щонайменше 2 точки)
+static func cut_circle(p: Array, c: Vector2, r: float) -> Array:
+	var pieces: Array = []
+	var cur: Array = []
+	var n: int = p.size() / 2
+	if n == 0:
+		return pieces
+	var a := Vector2(p[0], p[1])
+	if a.distance_to(c) > r:
+		cur = [a.x, a.y]
+	if n == 1:
+		return [cur] if not cur.is_empty() else []
+	for i in range(1, n):
+		var b := Vector2(p[i * 2], p[i * 2 + 1])
+		var hit: Vector2 = _circle_span(a, b, c, r)   # частка відрізка [t0, t1] у колі, або (-1, -1)
+		if hit.x < 0.0:
+			if cur.is_empty():
+				cur = [a.x, a.y]
+			cur.append(b.x)
+			cur.append(b.y)
+		else:
+			if hit.x > 0.0:
+				if cur.is_empty():
+					cur = [a.x, a.y]
+				var e: Vector2 = a.lerp(b, hit.x)
+				cur.append(e.x)
+				cur.append(e.y)
+			if cur.size() >= 4:
+				pieces.append(cur)
+			cur = []
+			if hit.y < 1.0:
+				var f: Vector2 = a.lerp(b, hit.y)
+				cur = [f.x, f.y, b.x, b.y]
+		a = b
+	if cur.size() >= 4:
+		pieces.append(cur)
+	return pieces
+
+
+static func _circle_span(a: Vector2, b: Vector2, c: Vector2, r: float) -> Vector2:
+	var d: Vector2 = b - a
+	var f: Vector2 = a - c
+	var A: float = d.dot(d)
+	if A <= 0.0:
+		return Vector2(0.0, 1.0) if f.length() <= r else Vector2(-1, -1)
+	var B: float = 2.0 * f.dot(d)
+	var C: float = f.dot(f) - r * r
+	var disc: float = B * B - 4.0 * A * C
+	if disc <= 0.0:
+		return Vector2(-1, -1)
+	var sq: float = sqrt(disc)
+	var t0: float = (-B - sq) / (2.0 * A)
+	var t1: float = (-B + sq) / (2.0 * A)
+	if t1 <= 0.0 or t0 >= 1.0:
+		return Vector2(-1, -1)
+	return Vector2(maxf(t0, 0.0), minf(t1, 1.0))
 
 
 # =====================================================================
@@ -343,17 +583,83 @@ func _draw_sheet() -> void:
 		_sheet.draw_circle(c, rng.randf_range(20.0, 120.0), Color(PAPER_DARK, rng.randf_range(0.03, 0.08)))
 	for f in fragments:
 		_draw_fragment(f)
+	for loop in area_loops(area):
+		_draw_dashed(loop)
 	for s in strokes:
 		_draw_stroke(s)
+		for m in s.get("m", []):
+			_draw_mark(m)
 	if shows_self():
 		var h: Dictionary = _hero()
-		if not h.is_empty():
+		if not h.is_empty() and (area == 0 or area_at(h["pos"]) == area):
 			var hp: Vector2 = to_screen(h["pos"])
 			_sheet.draw_circle(hp, 7.0, Color(0.55, 0.1, 0.08))
 			_sheet.draw_arc(hp, 11.0, 0.0, TAU, 24, Color(0.55, 0.1, 0.08), 2.0)
 	# обпалений край
 	for k in 6:
 		_sheet.draw_rect(r.grow(-k * 4.0), Color(0.3, 0.2, 0.1, 0.18 - k * 0.025), false, 5.0)
+
+
+## Легкий пунктир краю області
+func _draw_dashed(loop: PackedVector2Array) -> void:
+	var dash: float = 9.0
+	var gap: float = 7.0
+	var on: bool = true
+	var left: float = dash
+	var r: Rect2 = _sheet_rect().grow(20.0)
+	for i in range(1, loop.size()):
+		var a: Vector2 = to_screen(loop[i - 1])
+		var b: Vector2 = to_screen(loop[i])
+		var d: float = a.distance_to(b)
+		if not r.has_point(a) and not r.has_point(b) and d < 400.0:
+			continue
+		var t: float = 0.0
+		while t < d:
+			var step: float = minf(left, d - t)
+			if on:
+				_sheet.draw_line(a.lerp(b, t / d), a.lerp(b, (t + step) / d), BORDER, 1.5, true)
+			t += step
+			left -= step
+			if left <= 0.0:
+				on = not on
+				left = dash if on else gap
+
+
+## Знак карти, домальований рукою героя (world/map_sketch.gd)
+func _draw_mark(m: Dictionary) -> void:
+	var c: Vector2 = to_screen(Vector2(float(m["x"]), float(m["y"])))
+	if not _sheet_rect().grow(30.0).has_point(c):
+		return
+	var k: float = clampf(float(m.get("s", 300.0)) * view_z, 4.0, 22.0) * 0.5
+	var ink := Color(0.14, 0.11, 0.09, 0.85)
+	match String(m.get("k", "")):
+		"tree":
+			_sheet.draw_line(c, c + Vector2(0, k), ink, 1.5)
+			_sheet.draw_arc(c - Vector2(0, k * 0.3), k * 0.7, 0.0, TAU, 12, ink, 1.5)
+		"wave":
+			for row in 2:
+				var o := Vector2(-k, row * k * 0.6)
+				var pts := PackedVector2Array()
+				for i in 7:
+					pts.append(c + o + Vector2(i * k / 3.0, sin(i * PI / 3.0) * k * 0.25))
+				_sheet.draw_polyline(pts, Color(COLORS["blue"], 0.8), 1.3, true)
+		"peak":
+			_sheet.draw_polyline(PackedVector2Array([c + Vector2(-k, k * 0.6), c + Vector2(0, -k * 0.7), c + Vector2(k, k * 0.6)]), ink, 1.6, true)
+			_sheet.draw_line(c + Vector2(0, -k * 0.7), c + Vector2(k * 0.3, k * 0.6), Color(ink, 0.4), 1.0)
+		"tuft":
+			for i in 3:
+				_sheet.draw_line(c + Vector2((i - 1) * k * 0.4, k * 0.4), c + Vector2((i - 1) * k * 0.7, -k * 0.4), ink, 1.2)
+		"house":
+			_sheet.draw_rect(Rect2(c - Vector2(k * 0.6, k * 0.2), Vector2(k * 1.2, k * 0.8)), ink, false, 1.4)
+			_sheet.draw_polyline(PackedVector2Array([c + Vector2(-k * 0.8, -k * 0.1), c + Vector2(0, -k * 0.8), c + Vector2(k * 0.8, -k * 0.1)]), ink, 1.4)
+		"cross":
+			_sheet.draw_line(c - Vector2(k, k), c + Vector2(k, k), COLORS["red"], 2.0)
+			_sheet.draw_line(c + Vector2(-k, k), c + Vector2(k, -k), COLORS["red"], 2.0)
+		"label":
+			var font: Font = ThemeDB.fallback_font
+			var t: String = String(m.get("t", ""))
+			var wdt: float = font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+			_sheet.draw_string(font, c + Vector2(-wdt * 0.5, 16), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, ink)
 
 
 func _draw_stroke(s: Dictionary) -> void:
@@ -426,25 +732,64 @@ func _input(event: InputEvent) -> void:
 # ЗБЕРЕЖЕННЯ
 # =====================================================================
 func to_dict() -> Dictionary:
-	return {"strokes": strokes.duplicate(true), "fragments": fragments.duplicate(true),
-		"view": [view_c.x, view_c.y, view_z] if view_c != Vector2.INF else []}
+	if visible and view_c != Vector2.INF:
+		_sheet_of(area)["view"] = [view_c.x, view_c.y, view_z]
+	return {"sheets": sheets.duplicate(true), "areas": areas.duplicate(), "area": area, "fragments": fragments.duplicate(true)}
 
 
 func load_dict(d: Dictionary) -> void:
-	strokes = []
-	for s in d.get("strokes", []):
-		if s is Dictionary and s.get("pts", []) is Array:
-			strokes.append({"c": String(s.get("c", "black")), "w": float(s.get("w", 3.0)), "pts": Array(s["pts"])})
+	sheets = {}
+	areas = []
+	for id in d.get("areas", []):
+		if int(id) > 0 and not (int(id) in areas):
+			areas.append(int(id))
+	var src: Dictionary = d.get("sheets", {}) if d.get("sheets", {}) is Dictionary else {}
+	for k in src:
+		var sh: Dictionary = src[k] if src[k] is Dictionary else {}
+		var v: Array = sh.get("view", []) if sh.get("view", []) is Array else []
+		_sheet_of(int(k))["strokes"] = _clean_strokes(sh.get("strokes", []))
+		sheets[str(int(k))]["view"] = v.duplicate()
+	# Збереження до 2026-10-30: один аркуш на весь світ — штрихи розходяться по аркушах своїх областей
+	if d.has("strokes"):
+		for s in _clean_strokes(d.get("strokes", [])):
+			var p: Array = s["pts"]
+			var id: int = area_at(Vector2(p[0], p[1])) if p.size() >= 2 else 0
+			_sheet_of(id)["strokes"].append(s)
+			if id > 0 and not (id in areas):
+				areas.append(id)
 	fragments = d.get("fragments", []).duplicate(true)
-	var v: Array = d.get("view", [])
-	if v.size() == 3:
-		view_c = Vector2(float(v[0]), float(v[1]))
-		view_z = clampf(float(v[2]), ZOOM_MIN, ZOOM_MAX)
-	else:
-		view_c = Vector2.INF
+	area = -1
+	var want: int = int(d.get("area", areas[0] if not areas.is_empty() else 0))
+	var old_view: Array = d.get("view", [])
+	if old_view.size() == 3 and not d.has("sheets"):
+		_sheet_of(want)["view"] = old_view.duplicate()
+	view_c = Vector2.INF
+	show_area(want)
+
+
+static func _clean_strokes(src: Variant) -> Array:
+	var out: Array = []
+	if not (src is Array):
+		return out
+	for s in src:
+		if s is Dictionary and s.get("pts", []) is Array:
+			var st: Dictionary = {"c": String(s.get("c", "black")), "w": float(s.get("w", 3.0)), "pts": Array(s["pts"])}
+			if s.has("k"):
+				st["k"] = String(s["k"])
+				st["q"] = float(s.get("q", 0.0))
+			var marks: Array = []
+			for m in s.get("m", []):
+				if m is Dictionary and m.has("x") and m.has("y"):
+					marks.append(m.duplicate())
+			st["m"] = marks
+			out.append(st)
+	return out
 
 
 func clear() -> void:
-	strokes = []
+	sheets = {}
+	areas = []
+	area = -1
 	fragments = []
 	view_c = Vector2.INF
+	show_area(0)

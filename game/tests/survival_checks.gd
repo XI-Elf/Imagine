@@ -240,7 +240,7 @@ func _run() -> void:
 	pm._finish_stroke()
 	await shot("s02_parchment.png")
 	pm.erase_at(Vector2(450, 315))
-	ok(pm.strokes.size() == 1, "ластик стёр красный штрих")
+	ok(pm.strokes.size() == 3, "ластик стёр участок красного штриха: остались два куска")
 	Input.parse_input_event(_key(KEY_M))
 	await frames(2)
 	ok(not pm.is_open() and not game.clock.paused, "M закрывает пергамент, время идёт")
@@ -262,7 +262,7 @@ func _run() -> void:
 	var back: Dictionary = str_to_var(var_to_str(d))
 	pm.clear()
 	cast.load_dict(back)
-	ok(cast.parchment.strokes.size() == 1 and cast.parchment.fragments.size() == 1, "пергамент пережил сохранение")
+	ok(cast.parchment.strokes.size() == 3 and cast.parchment.fragments.size() == 1, "пергамент пережил сохранение")
 	ok(not cast.field_searched.is_empty(), "обшаренные места сохраняются")
 
 	print("SURVIVAL CHECKS: %d/%d" % [checks - fails, checks])
