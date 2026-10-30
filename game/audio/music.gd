@@ -5,6 +5,8 @@ extends Node
 ## Настрій залежить від місця (головне меню, місто вдень/уночі, дика місцевість, прокляті землі, руїни, бій),
 ## стану героя (утома — тихіше й глухіше, голод — менше голосів, прокляття — розлад і «хвилі», сон) і небезпеки
 ## (мало здоров'я, ніч у проклятих землях). Поки грає п'єса, наступна рендериться у фоновому потоці.
+## Музика вмикається сама з запуску гри (головне меню). Налаштування — кнопка «Звук и музыка» в головному меню
+## й у меню Esc (audio/sound_settings.gd): увімк./вимк., гучність, як часто міняється п'єса (від/до хвилин).
 ## F10 — музика ввімк./вимк., Shift+F10 — гучність музики (user://music.cfg). F9 (Sfx) вимикає й музику.
 
 const Synth := preload("res://audio/music_synth.gd")
@@ -15,8 +17,10 @@ const BUS := "Music"
 const RATE: int = 22050
 const OFF_DB: float = -60.0
 const FADE_DB_S: float = 10.0          # швидкість зміни гучності шару, дБ/с
-const PIECE_MIN_S: float = 180.0       # п'єса звучить 3–5 хвилин
+const PIECE_MIN_S: float = 180.0       # типово п'єса звучить 3–5 хвилин (у налаштуваннях — period_min/max)
 const PIECE_MAX_S: float = 300.0
+const PERIOD_LIMITS: Array = [1, 20]   # межі періодичності в налаштуваннях, хвилини
+const MAKEUP_DB: float = 6.0           # підсилення компресора шини: без нього музика тонула під фоном Sfx
 const MOOD_HOLD_S: float = 3.0         # новий настрій має протриматися стільки, щоб змінити п'єсу (бій — одразу)
 const VOLUMES: Array = [1.0, 0.75, 0.5, 0.25]
 const PAN: Array = [-0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0.7]
@@ -47,7 +51,9 @@ const MOODS: Dictionary = {
 const MAJOR_BIOMES: Array = [1, 2, 3]
 
 var enabled: bool = true
-var volume: float = 0.75
+var volume: float = 0.8
+var period_min: float = 3.0            # нова п'єса не раніше, хвилин
+var period_max: float = 5.0            # і не пізніше, хвилин
 var auto: bool = true                  # false у тестових скриптах (-s): музика не грає сама
 var mood: String = ""                  # настрій поточної п'єси
 var mods: Dictionary = {}              # стан героя: tired, hungry, cursed, menu
@@ -100,10 +106,13 @@ func _bus() -> void:
 	AudioServer.add_bus_effect(i, ph)
 	AudioServer.set_bus_effect_enabled(i, 2, false)
 	var cmp := AudioEffectCompressor.new()
-	cmp.threshold = -14.0
-	cmp.ratio = 4.0
+	cmp.threshold = -18.0
+	cmp.ratio = 3.0
+	cmp.gain = MAKEUP_DB
 	AudioServer.add_bus_effect(i, cmp)
-	AudioServer.add_bus_effect(i, AudioEffectHardLimiter.new())
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = -1.0
+	AudioServer.add_bus_effect(i, lim)
 
 
 # =====================================================================
@@ -121,15 +130,29 @@ func set_volume(v: float) -> void:
 	_save_cfg()
 
 
-## Гучність шини Music: своя гучність × загальна гучність звуків Sfx; F9 (Sfx вимкнено) глушить і музику
+## Як часто міняється п'єса: від a до b хвилин (1–20). Поточна п'єса теж підлаштовується
+func set_period(a: float, b: float) -> void:
+	period_min = clampf(minf(a, b), PERIOD_LIMITS[0], PERIOD_LIMITS[1])
+	period_max = clampf(maxf(a, b), PERIOD_LIMITS[0], PERIOD_LIMITS[1])
+	if not piece.is_empty():
+		piece["length"] = clampf(float(piece["length"]), period_min * 60.0, period_max * 60.0)
+	_save_cfg()
+
+
+## Одразу перейти до нової п'єси (кнопка в налаштуваннях)
+func skip() -> void:
+	if not piece.is_empty():
+		piece["length"] = float(piece["age"])
+
+
+## Гучність шини Music — власна (повзунок у налаштуваннях); F9 (усі звуки вимкнено) глушить і музику
 func bus_db() -> float:
 	var sfx: Node = get_node_or_null("/root/Sfx")
-	var on: bool = enabled and (sfx == null or bool(sfx.get("enabled")))
+	var on: bool = enabled and volume > 0.0 and (sfx == null or bool(sfx.get("enabled")))
 	if not on:
 		return OFF_DB
-	var master: float = float(sfx.get("volume")) if sfx != null and sfx.get("volume") != null else 1.0
-	return linear_to_db(maxf(volume * master, 0.001)) + (-6.0 if mods.get("menu", false) else 0.0) \
-		+ (-4.0 if mods.get("tired", false) else 0.0)
+	return linear_to_db(maxf(volume, 0.001)) + (-4.0 if mods.get("menu", false) else 0.0) \
+		+ (-3.0 if mods.get("tired", false) else 0.0)
 
 
 func _apply_volume() -> void:
@@ -145,13 +168,17 @@ func _load_cfg() -> void:
 	var c := ConfigFile.new()
 	if c.load(CFG) == OK:
 		enabled = bool(c.get_value("music", "enabled", true))
-		volume = clampf(float(c.get_value("music", "volume", 0.75)), 0.0, 1.0)
+		volume = clampf(float(c.get_value("music", "volume", 0.8)), 0.0, 1.0)
+		period_min = clampf(float(c.get_value("music", "period_min", 3.0)), PERIOD_LIMITS[0], PERIOD_LIMITS[1])
+		period_max = clampf(float(c.get_value("music", "period_max", 5.0)), period_min, PERIOD_LIMITS[1])
 
 
 func _save_cfg() -> void:
 	var c := ConfigFile.new()
 	c.set_value("music", "enabled", enabled)
 	c.set_value("music", "volume", volume)
+	c.set_value("music", "period_min", period_min)
+	c.set_value("music", "period_max", period_max)
 	c.save(CFG)
 
 
@@ -243,12 +270,13 @@ static func mods_of(c: Dictionary) -> Dictionary:
 
 
 ## План п'єси: лад, темп, тональність, інструменти (id), розлад у центах для прокляття, бонусні шари
-static func plan_for(m: String, c: Dictionary, rng: RandomNumberGenerator, themed: bool = false) -> Dictionary:
+static func plan_for(m: String, c: Dictionary, rng: RandomNumberGenerator, themed: bool = false,
+		len_min: float = PIECE_MIN_S, len_max: float = PIECE_MAX_S) -> Dictionary:
 	var pool: Dictionary = MOODS.get(m, MOODS["wild_day"])
 	var md: Dictionary = mods_of(c)
 	var plan: Dictionary = {"mood": m, "mode": String(pool["mode"]), "key": rng.randi_range(-3, 2),
 		"bpm": float(rng.randi_range(int(pool["bpm"][0]), int(pool["bpm"][1]))), "ids": [], "detune": {}, "bonus": [],
-		"seed": rng.randi(), "length": rng.randf_range(PIECE_MIN_S, PIECE_MAX_S)}
+		"seed": rng.randi(), "length": rng.randf_range(len_min, maxf(len_min, len_max))}
 	if m == "theme" or (m == "city_day" and themed):
 		plan["mode"] = THEME["mode"]
 		plan["ids"] = THEME["ids"].duplicate()
@@ -320,7 +348,7 @@ static func render(plan: Dictionary, rate: int = RATE, holder: Array = []) -> Di
 			holder[0] = s
 		var x: Dictionary = Synth.inst(id)
 		var pan: float = float(PAN[i % PAN.size()]) if i < plan["ids"].size() else 0.0
-		var st: AudioStreamWAV = s.render_stream(id, float(x.get("trim", 1.0)) * 0.9, pan)
+		var st: AudioStreamWAV = s.render_stream(id, float(x.get("trim", 1.0)), pan)
 		if s.abort:
 			return {}
 		out.append({"id": id, "cat": String(x.get("cat", "bonus")), "stream": st})
@@ -345,6 +373,8 @@ func _poll_thread() -> void:
 	_synth = null
 	if res is Dictionary and not res.is_empty():
 		_ready_pieces[String(res["plan"]["mood"])] = res
+	elif not _job.is_empty():
+		push_warning("Music: рендер п'єси «%s» не вдався" % _job.get("mood", ""))
 	_job = {}
 
 
@@ -386,6 +416,8 @@ func start_piece(ready: Dictionary) -> void:
 	piece = {"plan": plan, "layers": layers, "age": 0.0, "length": float(plan["length"]), "loops": 0}
 	mood = String(plan["mood"])
 	_loop_pos = 0.0
+	print("Music: п'єса «%s» %s, %d уд/хв, %.0f с: %s" % [mood, plan["mode"], int(plan["bpm"]), float(plan["length"]),
+		", ".join(plan["ids"] + plan["bonus"])])   # видно в logs/godot.log — так перевіряється, що музика грає
 	history.append(plan)
 	if history.size() > 16:
 		history.pop_front()
@@ -482,10 +514,10 @@ func _next_plan(m: String) -> Dictionary:
 	if m == "city_day":
 		themed = not _themed or _rng.randf() < 0.2
 		_themed = true
-	var plan: Dictionary = plan_for(m, _ctx, _rng, themed)
+	var plan: Dictionary = plan_for(m, _ctx, _rng, themed, period_min * 60.0, period_max * 60.0)
 	# та сама п'єса двічі поспіль не звучить
 	if not history.is_empty() and history[-1].get("ids") == plan["ids"] and m != "theme":
-		plan = plan_for(m, _ctx, _rng, false)
+		plan = plan_for(m, _ctx, _rng, false, period_min * 60.0, period_max * 60.0)
 	return plan
 
 

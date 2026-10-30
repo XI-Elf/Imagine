@@ -11,6 +11,7 @@ extends Node2D
 ## Шейдер карти в map_shaders.gd.
 
 const Board := preload("res://board.gd")
+const SoundSettings := preload("res://audio/sound_settings.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
 const MENU_SCENE := "res://main_menu.tscn"
 const MAP_COLOR_FILE := "res://art/map/map_color.png"
@@ -933,6 +934,13 @@ func _build_ui() -> void:
 		event_text = I18n.t("Мир сохранён") if ok else I18n.t("Не удалось сохранить мир")
 		event_timer = 4.0
 		_toggle_menu())
+	# Звук і музика (audio/sound_settings.gd): відкривається замість рамки меню, «Назад» або Esc повертає
+	_add_menu_button(box, I18n.t("Звук и музыка"), func() -> void:
+		var p: PanelContainer = SoundSettings.new()
+		p.name = "SoundSettings"
+		center.add_child(p)
+		frame.visible = false
+		p.closed.connect(func() -> void: frame.visible = true))
 	_add_menu_button(box, I18n.t("В меню"), _on_exit_pressed)
 
 
@@ -950,6 +958,9 @@ func _add_menu_button(parent: Node, text: String, callback: Callable) -> Button:
 
 # Показує або ховає меню. Час при цьому НЕ зупиняється
 func _toggle_menu() -> void:
+	var ss: Node = pause_panel.find_child("SoundSettings", true, false)
+	if ss != null:
+		ss.close()
 	menu_open = not menu_open
 	pause_panel.visible = menu_open
 

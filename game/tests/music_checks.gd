@@ -293,16 +293,66 @@ func _settings(M: Node) -> void:
 		ok(M.bus_db() <= M.OFF_DB, "F9 (звук выкл.) глушит и музыку")
 		S.enabled = s_on
 		var sv: float = S.volume
-		S.volume = 0.5
+		S.volume = 0.2
 		M.volume = 1.0
-		ok(absf(M.bus_db() - linear_to_db(0.5)) < 0.01, "общая громкость звуков действует и на музыку")
+		ok(absf(M.bus_db()) < 0.01, "громкость музыки своя, не зависит от громкости звуков")
 		S.volume = sv
+	M.volume = 1.0
 	M.mods = {"menu": true}
-	ok(M.bus_db() < linear_to_db(M.volume * (S.volume if S != null else 1.0)) - 5.0, "открыто меню — музыка тише")
+	ok(M.bus_db() < -3.0, "открыто меню — музыка тише")
 	M.mods = {}
+	# Періодичність п'єси
+	var pmin: float = M.period_min
+	var pmax: float = M.period_max
+	M.set_period(7.0, 2.0)
+	ok(is_equal_approx(M.period_min, 2.0) and is_equal_approx(M.period_max, 7.0), "период: от 2 до 7 минут (порядок не важен)")
+	var c2 := ConfigFile.new()
+	ok(c2.load(M.CFG) == OK and is_equal_approx(float(c2.get_value("music", "period_max", 0)), 7.0), "период сохраняется")
+	var p: Dictionary = M._next_plan("wild_day")
+	ok(float(p["length"]) >= 120.0 and float(p["length"]) <= 420.0, "длина пьесы по настройке: %.0f с" % float(p["length"]))
+	M.set_period(30.0, 0.0)
+	ok(M.period_min >= 1.0 and M.period_max <= 20.0, "период в пределах 1–20 минут")
+	M.set_period(pmin, pmax)
+	ok(M.enabled or not was_on, "музыка включена по умолчанию")
+	await _settings_ui(M)
 	M.set_enabled(was_on)
 	M.set_volume(was_v)
 	await frames(1)
+
+
+## Меню «Звук и музыка» в главном меню: переключатель, ползунок, период, «Назад»
+func _settings_ui(M: Node) -> void:
+	var menu: Control = load("res://main_menu.tscn").instantiate()
+	Engine.set_meta("aw_intro_done", true)
+	root.add_child(menu)
+	await frames(2)
+	var btn: Button = null
+	for b in menu.find_children("*", "Button", true, false):
+		if b.text == I18n.t("Звук и музыка"):
+			btn = b
+	ok(btn != null, "в главном меню есть кнопка «Звук и музыка»")
+	if btn != null:
+		btn.pressed.emit()
+		await frames(2)
+		var panel: Node = menu.find_child("SoundSettings", true, false)
+		ok(panel != null and not menu._main_box.visible, "кнопка открывает настройки звука")
+		if panel != null:
+			panel.music_slider.value = 40
+			ok(is_equal_approx(M.volume, 0.4), "ползунок меняет громкость музыки")
+			panel.from_spin.value = 4
+			panel.to_spin.value = 6
+			ok(is_equal_approx(M.period_min, 4.0) and is_equal_approx(M.period_max, 6.0), "поля периода меняют смену пьес")
+			panel.music_check.button_pressed = false
+			ok(not M.enabled, "переключатель выключает музыку")
+			panel.music_check.button_pressed = true
+			ok(M.enabled, "и включает снова")
+			panel.close()
+			await frames(2)
+			ok(menu._main_box.visible, "«Назад» возвращает главное меню")
+	M.set_volume(0.8)
+	M.set_period(3.0, 5.0)
+	menu.queue_free()
+	await frames(2)
 
 
 func _thread(M: Node) -> void:
@@ -338,6 +388,18 @@ func _game(M: Node) -> void:
 		await frames(3)
 	var c: Dictionary = M.context()
 	ok(c["kind"] == "overworld", "контекст: общая карта")
+	var has_btn: bool = game.pause_panel.find_children("*", "Button", true, false).any(func(b): return b.text == I18n.t("Звук и музыка"))
+	ok(has_btn, "в меню Esc есть «Звук и музыка»")
+	if has_btn:
+		game._toggle_menu()
+		for b in game.pause_panel.find_children("*", "Button", true, false):
+			if b.text == I18n.t("Звук и музыка"):
+				b.pressed.emit()
+		await frames(2)
+		ok(game.pause_panel.find_child("SoundSettings", true, false) != null, "Esc → «Звук и музыка» открывает настройки")
+		game._toggle_menu()
+		await frames(2)
+		ok(game.pause_panel.find_child("SoundSettings", true, false) == null and not game.menu_open, "закрытие меню убирает настройки")
 	ok(M.mood_of(c) in ["wild_day", "wild_night", "danger", "cursed", "ruins", "sleep"], "настроение карты: " + M.mood_of(c))
 	var a: Actor = W.hero_actor()
 	if a != null:
