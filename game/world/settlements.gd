@@ -43,7 +43,8 @@ const OUTLINE_CELL_PX: float = 28.0 # з такої клітинки на екр
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталів у ряд на клітинку
 const DOT_PX: float = 24.0          # повний радіус знака міста на екрані (разом із зубцями): більший за точку героя (до 15,5 px)
-const ENTER_MAX_M: float = 48.0     # «Увійти» — коло знака в метрах: DOT_PX / зум; тут стеля (DOT_PX / HERO_MIN_ZOOM), за нею запас для клітинок
+const ENTER_MAX_M: float = 48.0     # «Увійти» — коло знака в метрах: DOT_PX / зум; тут стеля (DOT_PX / HERO_MIN_ZOOM)
+const FOOTPRINT_M: float = 10.0     # слід міста для шляху героя й клітинок (_radius, _rect): не залежить від зуму
 const GATE_OFFSET_M: float = 6.0    # брама й точка виходу — стільки метрів від точки міста
 const CLEAR_M: float = 18.0         # навколо точки декор не садить дерев і кущів
 const MEDAL_MIN_PX: float = 30.0    # радіус медальйона здалеку не менший за цей (місто лишається точкою інтересу)
@@ -154,9 +155,9 @@ func _load() -> void:
 		s["_radius"] = float(s.get("radius", 0.0))
 		s["_gate"] = Vector2(s["gate"][0], s["gate"][1]) if s.has("gate") else rect.get_center() + Vector2(0.0, rect.size.y * 0.5 + 40.0)
 		if s["_radius"] > 0.0:
-			# Точка: слід міста на карті — запасне коло ENTER_MAX_M (клітинки, шлях); справжнє коло входу — enter_radius()
-			s["_radius"] = ENTER_MAX_M
-			rect = Rect2(s["_center"] - Vector2.ONE * ENTER_MAX_M, Vector2.ONE * ENTER_MAX_M * 2.0)
+			# Точка: слід міста на карті — коло FOOTPRINT_M (шлях героя); коло входу залежить від зуму — enter_radius()
+			s["_radius"] = FOOTPRINT_M
+			rect = Rect2(s["_center"] - Vector2.ONE * FOOTPRINT_M, Vector2.ONE * FOOTPRINT_M * 2.0)
 			s["_plan"] = _load_plan(s)
 			var gd: Vector2 = (s["_gate"] - s["_center"]).normalized()
 			s["_gate"] = s["_center"] + (gd if gd != Vector2.ZERO else Vector2.DOWN) * GATE_OFFSET_M
