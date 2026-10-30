@@ -76,6 +76,28 @@ func _pure() -> void:
 	var axe: Dictionary = Trade.new_bag()
 	Trade.add(axe, "axe")
 	ok(Foraging.tool_mult("brushwood", axe, false) > 1.0 and Foraging.tool_mult("brushwood", Trade.new_bag(), true) < 1.0, "топор помогает, ночь без факела мешает")
+	# Запас місця: перший обхід найщедріший, місце скудніє й відростає
+	var sr: Dictionary = {}
+	var p0 := Vector2(50000, 50000)
+	a.res["stamina"] = a.max_of("stamina")
+	ok(Foraging.richness(sr, p0, 0.0) == 1.0, "нетронутое место — полный запас")
+	Foraging.search_round(a, 3, p0, 0.0, sr, bag, rng)
+	var r1: float = Foraging.richness(sr, p0, 0.0)
+	ok(r1 < 1.0 and r1 > 0.5, "обход забирает часть запаса (%.2f)" % r1)
+	ok(Foraging.richness(sr, p0, 36.0 * 3600.0) > r1, "место отрастает со временем")
+	var first: int = 0
+	var last: int = 0
+	for i in 200:
+		var q: Dictionary = {}
+		a.res["stamina"] = a.max_of("stamina")
+		var pp := Vector2(i * 1000.0, 7000.0)
+		for k in 4:
+			var rr: Dictionary = Foraging.search_round(a, 3, pp, 0.0, q, bag, rng)
+			if k == 0:
+				first += rr["found"].size()
+			elif k == 3:
+				last += rr["found"].size()
+	ok(first > last * 2, "первый обход щедрее четвёртого (%d > %d)" % [first, last])
 	# Залишок на місці
 	var stash: Dictionary = {}
 	Foraging.leave_stash(stash, Vector2(10, 10), 0.0, {"roots": 2})
@@ -162,16 +184,30 @@ func _run() -> void:
 	hero["actor"].res["stamina"] = hero["actor"].max_of("stamina")
 	var t_before: float = game.clock.total_seconds
 	var opened: bool = false
+	var chose: bool = false
 	for tries in 10:
 		hero["pos"] += Vector2(500.0, 0.0)
 		hero["actor"].res["stamina"] = hero["actor"].max_of("stamina")
 		cast.search_field()
 		if cast.loot != null and cast.loot.is_open():
-			opened = true
-			break
+			chose = chose or cast.loot.phase == "choose"
+			if cast.loot.phase == "choose":
+				await shot("s00_search_choose.png")
+			cast.loot.start(4)
+			ok(cast.loot.is_searching(), "поиск идёт обходами")
+			cast.loot.step()
+			cast.loot.step()
+			await shot("s00_search_progress.png")
+			cast.loot.run_all()
+			if not cast.loot.items.is_empty():
+				opened = true
+				break
+			cast.loot.finish()
+	ok(chose, "F в поле: окно выбора, сколько искать")
 	ok(game.clock.total_seconds - t_before >= 3600.0, "поиск съел час игры")
-	ok(opened, "окно «Найдено» открылось (биом %d)" % game.biome_at(hero["pos"]))
+	ok(opened, "находки показаны плитками (биом %d)" % game.biome_at(hero["pos"]))
 	if opened:
+		ok(cast.loot.phase == "loot" and cast.loot.rounds_done == 4, "четыре обхода по 15 минут")
 		ok(cast.hold_hero, "пока выбираем, герой стоит")
 		await shot("s01_loot.png")
 		var kg0: float = Trade.weight(bag)

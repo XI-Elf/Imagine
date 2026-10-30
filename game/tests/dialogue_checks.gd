@@ -167,5 +167,46 @@ func _run() -> void:
 	await create_timer(1.6).timeout
 	await shot("d02_dialog_kid.png")
 
+	# Ум у розмові (Huzzah 2026-10-30): дурень говорить інакше, розумний бачить більше
+	var city_hero: Actor = city.hero
+	var keep_int: Variant = city_hero.stats.get("int", null)
+	var keep_profile: Dictionary = city_hero.profile.duplicate()
+	city_hero.profile.erase("subspecies")
+	city.dlg_state.erase("posadnik")
+	city_hero.stats["int"] = 2
+	city.talk(elder)
+	await frames(2)
+	var dumb: Array = city._buttons.map(func(b): return b.text)
+	ok(dumb.any(func(s): return s.contains("Город… чего тут?")) and not dumb.any(func(s): return s.contains("Что у вас в городе")), "Ум 2: реплики косноязычные: %s" % [dumb])
+	ok(dumb.any(func(s): return s.contains("Еда. Дай.")), "Ум 2: есть вариант только для дурня")
+	city_hero.stats["int"] = 9
+	city.talk(elder)
+	await frames(2)
+	var smart: Array = city._buttons.map(func(b): return b.text)
+	ok(smart.any(func(s): return s.contains("Что у вас в городе")) and smart.any(func(s): return s.contains("[Ум] Писарь")), "Ум 9: обычные реплики и умная: %d вариантов" % smart.size())
+	ok(not smart.any(func(s): return s.contains("Еда. Дай.")), "Ум 9: дурацкого варианта нет")
+	ok(smart.size() > dumb.size() - 1, "умному не меньше вариантов")
+	# Усі варіанти на екрані, колесо гортає розмову, а не мапу
+	await create_timer(1.6).timeout
+	await frames(3)
+	vp = city.get_viewport_rect().size
+	ok(city._panel.position.y >= 0.0 and city._panel.position.y + city._panel.size.y <= vp.y + 1.0, "панель разговора целиком на экране (%.0f..%.0f из %.0f)" % [city._panel.position.y, city._panel.position.y + city._panel.size.y, vp.y])
+	var zoom0: Vector2 = city.cam.zoom
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel.pressed = true
+	city._unhandled_input(wheel)
+	ok(city.cam.zoom == zoom0, "колесо в разговоре не трогает карту")
+	await shot("d03_dialog_smart.png")
+	city_hero.stats["int"] = 2
+	city.talk(elder)
+	await create_timer(1.6).timeout
+	await shot("d04_dialog_dumb.png")
+	city_hero.profile = keep_profile
+	if keep_int == null:
+		city_hero.stats.erase("int")
+	else:
+		city_hero.stats["int"] = keep_int
+
 	print("DIALOGUE CHECKS: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)

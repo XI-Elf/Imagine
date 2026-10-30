@@ -521,7 +521,21 @@ func _fill_diary() -> void:
 		_body.add_child(_label("%s (%d/%d)" % [ch["title"], here.size(), total], 17, COL_GOLD))
 		for n in here:
 			_body.add_child(_label(String(n["title"]), 15, COL_GOOD))
-			_body.add_child(_wrap(String(n["text"]), 14, COL_TEXT))
+			_body.add_child(_wrap(_read_note(String(n["text"])), 14, COL_TEXT))
+
+
+## Записка очима героя: з Умом 3 і нижче розбираються лише окремі слова
+func _read_note(text: String) -> String:
+	var a: Actor = _actor()
+	if a == null or not S.dumb(a):
+		return text
+	var out: PackedStringArray = []
+	for w in text.split(" ", false):
+		if w.length() <= 5:
+			out.append(w)
+		elif out.is_empty() or out[-1] != "…":
+			out.append("…")
+	return I18n.t("(Буквы пляшут, разобрать удаётся немногое.) %s") % " ".join(out)
 
 
 # =====================================================================
@@ -536,7 +550,7 @@ func _fill_chronicle() -> void:
 	for e in log:
 		_body.add_child(HSeparator.new())
 		_body.add_child(_label("%s  %s" % [Chronicle.mark(String(e.get("kind", ""))), GameClock.date_text(float(e.get("t", 0.0)))], 13, COL_DIM))
-		_body.add_child(_wrap(String(e.get("text", "")), 15, COL_TEXT))
+		_body.add_child(_wrap(Chronicle.render(e), 15, COL_TEXT))
 
 
 func refresh_bag() -> void:

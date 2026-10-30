@@ -1042,7 +1042,7 @@ func _dlg_options(n: Dictionary, tree: Dictionary) -> Array:
 	var out: Array = []
 	for o in Dialogue.node(tree, String(st.get("node", "start"))).get("options", []):
 		if Dialogue.allowed(o, hero, bag, _dlg_flags_view(st)):
-			out.append([Dialogue.label(o), func(): answer(n, o)])
+			out.append([Dialogue.label(o, hero), func(): answer(n, o)])
 	return out
 
 
@@ -1078,11 +1078,17 @@ func _inspect_speaker() -> void:
 
 
 # Перенос рядків змінює висоту панелі лише після кадру: знову притиснути до низу екрана
+## Якщо панель усе одно вища за екран (довгий текст), список варіантів стискається й гортається колесом
 func _place_bottom() -> void:
 	if not _panel.visible or not _portrait.visible:
 		return
+	var vp: Vector2 = get_viewport_rect().size
+	var sc: ScrollContainer = _panel_box.get_parent()
+	var over: float = _panel.get_combined_minimum_size().y - (vp.y - 32.0)
+	if over > 0.0 and sc.custom_minimum_size.y > 60.0:
+		sc.custom_minimum_size.y = maxf(sc.custom_minimum_size.y - over, 60.0)
 	_panel.reset_size()
-	_panel.position = Vector2(20.0, get_viewport_rect().size.y - _panel.size.y - 16.0)
+	_panel.position = Vector2(20.0, maxf(vp.y - _panel.size.y - 16.0, 16.0))
 
 
 ## Рядок розмови з'являється поступово, як у візуальних новелах
@@ -1313,6 +1319,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event.pressed and route.active():
 				route.cancel()
 				get_viewport().set_input_as_handled()
+		elif event.pressed and _panel.visible and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+			# Поки відкрита розмова чи вікно, колесо гортає варіанти, а не наближає мапу
+			var sc: ScrollContainer = _panel_box.get_parent()
+			sc.scroll_vertical += 40 * (1 if event.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1)
+			get_viewport().set_input_as_handled()
 		elif event.pressed and not _map_view:
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 				cam.zoom = (cam.zoom * 1.12).clamp(Vector2(0.4, 0.4), Vector2(3.0, 3.0))
@@ -1814,6 +1825,7 @@ func _build_ui() -> void:
 	_panel.visible = false
 	_panel.custom_minimum_size = Vector2(440, 0)
 	_ui.add_child(_panel)
+	_panel.resized.connect(func(): _place_bottom.call_deferred())
 	# Пункт 18: у розмові панель — рядок унизу екрана з портретом того, хто говорить
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 14)
@@ -1836,6 +1848,8 @@ func _build_ui() -> void:
 	v.add_child(_tabs)
 	_panel_text = Label.new()
 	_panel_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Друкарка (_typewrite) не міняє висоту: рядки розкладено одразу, інакше панель росте за низ екрана
+	_panel_text.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	_panel_text.custom_minimum_size = Vector2(420, 0)
 	_panel_text.add_theme_color_override("font_color", Color("ddd3b5"))
 	v.add_child(_panel_text)
@@ -1898,7 +1912,7 @@ func _open_panel(kind: String, title: String, text: String, opts: Array, tabs: A
 	sc.custom_minimum_size.x = _panel_text.custom_minimum_size.x
 	# Висота списку за справжньою висотою кнопок: у рамок коміксу (Q24) кнопка вища за колишні 34 px
 	var row: float = (_buttons[0].get_combined_minimum_size().y if not _buttons.is_empty() else 34.0) + float(_panel_box.get_theme_constant("separation"))
-	sc.custom_minimum_size.y = minf(opts.size() * row, vp.y * (0.36 if vn else 0.55))
+	sc.custom_minimum_size.y = minf(opts.size() * row, vp.y * (0.5 if vn else 0.55))
 	_panel.visible = true
 	_panel.reset_size()
 	if vn:
