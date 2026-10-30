@@ -28,7 +28,7 @@ const Sheet := preload("res://characters/sheet.gd")
 
 ## Місто-точка (Huzzah 2026-10-29: «на глобальній карті це має бути точка, а не текстура»; «Увійти» — лише біля
 ## самого міста): радіальне місто на загальній карті — точка DOT_PX пікселів за будь-якого масштабу з підписом,
-## без стіни на карті (стіна — у світі міста). Підхід — ближче ENTER_M до точки: удень брама («Увійти»),
+## без стіни на карті (стіна — у світі міста). Підхід — у колі знака (enter_radius()) довкола точки: удень брама («Увійти»),
 ## коли брама замкнена (години з rules плану міста) — «Спробувати перелізти» (той самий шанс проникнення).
 ## Мініатюра міста лишилася лише картинкою у вікні вибору.
 
@@ -42,8 +42,9 @@ const JUMP_M: float = 200.0         # стрибок героя за кадр (�
 const OUTLINE_CELL_PX: float = 28.0 # з такої клітинки на екрані замість щитка — обрис міста
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталів у ряд на клітинку
-const DOT_PX: float = 18.0          # радіус знака міста на екрані: більший за точку героя (до 15,5 px), Huzzah 2026-10-30
-const ENTER_M: float = 10.0         # вибір «Увійти» — лише так близько від точки міста
+const DOT_PX: float = 24.0          # повний радіус знака міста на екрані (разом із зубцями): більший за точку героя (до 15,5 px)
+const ENTER_MAX_M: float = 48.0     # «Увійти» — коло знака в метрах: DOT_PX / зум; тут стеля (DOT_PX / HERO_MIN_ZOOM), за нею запас для клітинок
+const GATE_OFFSET_M: float = 6.0    # брама й точка виходу — стільки метрів від точки міста
 const CLEAR_M: float = 18.0         # навколо точки декор не садить дерев і кущів
 const MEDAL_MIN_PX: float = 30.0    # радіус медальйона здалеку не менший за цей (місто лишається точкою інтересу)
 const MEDALLION_DIR := "res://art/medallion/"
@@ -153,12 +154,12 @@ func _load() -> void:
 		s["_radius"] = float(s.get("radius", 0.0))
 		s["_gate"] = Vector2(s["gate"][0], s["gate"][1]) if s.has("gate") else rect.get_center() + Vector2(0.0, rect.size.y * 0.5 + 40.0)
 		if s["_radius"] > 0.0:
-			# Точка: слід міста на карті — коло ENTER_M; брама й вихід із міста — біля точки з боку брами (у колі вибору)
-			s["_radius"] = ENTER_M
-			rect = Rect2(s["_center"] - Vector2.ONE * ENTER_M, Vector2.ONE * ENTER_M * 2.0)
+			# Точка: слід міста на карті — запасне коло ENTER_MAX_M (клітинки, шлях); справжнє коло входу — enter_radius()
+			s["_radius"] = ENTER_MAX_M
+			rect = Rect2(s["_center"] - Vector2.ONE * ENTER_MAX_M, Vector2.ONE * ENTER_MAX_M * 2.0)
 			s["_plan"] = _load_plan(s)
 			var gd: Vector2 = (s["_gate"] - s["_center"]).normalized()
-			s["_gate"] = s["_center"] + (gd if gd != Vector2.ZERO else Vector2.DOWN) * (ENTER_M - 4.0)
+			s["_gate"] = s["_center"] + (gd if gd != Vector2.ZERO else Vector2.DOWN) * GATE_OFFSET_M
 		s["_rect"] = rect
 		if not s.has("walled"):
 			s["walled"] = SIZE_ORDER.find(s.get("size", "")) >= 2
@@ -217,6 +218,14 @@ func growth_stage_near(p: Vector2, radius_m: float) -> int:
 	return best
 
 
+## Радіус зони входу, м: рівно знак міста на екрані (DOT_PX пікселів) за поточного зуму; герой входить, коли
+## його центр торкається знака. Без гри — найдальший зум героя (стеля ENTER_MAX_M)
+func enter_radius() -> float:
+	if game == null or float(game.zoom) <= 0.0:
+		return ENTER_MAX_M
+	return clampf(DOT_PX / float(game.zoom), 0.1, ENTER_MAX_M)
+
+
 func radial(s: Dictionary) -> bool:
 	return float(s.get("_radius", 0.0)) > 0.0
 
@@ -231,7 +240,7 @@ func get_settlement(id: String) -> Dictionary:
 ## Поселення, на клітинці якого лежить точка p (порожньо — немає)
 func settlement_at(p: Vector2) -> Dictionary:
 	var s: Dictionary = by_cell.get(Vector2i(floori(p.x / cell_m), floori(p.y / cell_m)), {})
-	if not s.is_empty() and radial(s) and p.distance_to(s["_center"]) > s["_radius"]:
+	if not s.is_empty() and radial(s) and p.distance_to(s["_center"]) > enter_radius():
 		return {}
 	return s
 
@@ -327,7 +336,7 @@ func side_of(s: Dictionary, p: Vector2) -> String:
 # Зона підходу героя: "gate", "wall" або "" (далеко)
 func zone_of(s: Dictionary, p: Vector2) -> String:
 	if radial(s):
-		if p.distance_to(s["_center"]) > ENTER_M:
+		if p.distance_to(s["_center"]) > enter_radius():
 			return ""
 		return "gate" if not s["walled"] or gate_open_now(s) else "wall"
 	if p.distance_to(s["_gate"]) <= GATE_R_M:
@@ -771,7 +780,7 @@ func _draw() -> void:
 			if vp.has_point(c0):
 				_draw_dot(s, c0, hl or s == prompt_for)
 				# Підпис над точкою: герой з'являється під нею, на південь від міста
-				_draw_name(s, c0 - Vector2(0, DOT_PX + 14.0), font, hl, hl)
+				_draw_name(s, c0 - Vector2(0, DOT_PX + 8.5), font, hl, hl)
 		elif cs >= OUTLINE_CELL_PX:
 			if vp.intersects(sr):
 				_draw_outline(s, cs, z)
@@ -949,7 +958,7 @@ func _draw_dot(s: Dictionary, c0: Vector2, hl: bool) -> void:
 	var tint := Color(String(em.get("tint", "#e2b84c")))
 	var field := Color(String(em.get("field", "#26262c")))
 	var dark := Color(0.08, 0.06, 0.05)
-	var r: float = DOT_PX
+	var r: float = DOT_PX - 5.5   # зубці виступають до DOT_PX: знак на екрані = зона входу
 	draw_circle(c0 + Vector2(2.0, 3.0), r + 4.0, Color(0, 0, 0, 0.45))
 	# Зубці стіни: вісім квадратиків по колу
 	for i in 8:
@@ -963,7 +972,7 @@ func _draw_dot(s: Dictionary, c0: Vector2, hl: bool) -> void:
 	draw_circle(c0, r * 0.6, field)
 	draw_circle(c0, r * 0.24, tint)
 	if hl:
-		draw_arc(c0, r + 9.0, 0.0, TAU, 48, Color(1.0, 0.92, 0.6), 2.5, true)
+		draw_arc(c0, DOT_PX - 1.0, 0.0, TAU, 48, Color(1.0, 0.92, 0.6), 2.0, true)   # підсвітка — по краю знака, не ширше за зону
 
 
 ## Знамено з гербом: поперечка, полотнище кольору поля з ластівчиним хвостом, фігура герба
