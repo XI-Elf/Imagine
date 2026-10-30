@@ -6,6 +6,7 @@ const WorldSave := preload("res://world_save.gd")
 const BG_IMAGE := "res://art/menu_bg.jpg"
 const HeroCreateScript := preload("res://characters/hero_create.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
+const SoundSettings := preload("res://audio/sound_settings.gd")
 
 # Кольори інтерфейсу
 const COLOR_BG := Color("2b2823")      # колір фону, якщо картинки немає
@@ -83,6 +84,9 @@ func _ready() -> void:
 	continue_button.disabled = not has_saves
 	var load_button := _add_button(box, I18n.t("Загрузить"), _on_load_menu)
 	load_button.disabled = not has_saves
+
+	# Звук і музика: увімк./вимк., гучність, як часто міняється п'єса (audio/sound_settings.gd)
+	_add_button(box, I18n.t("Звук и музыка"), _on_sound_settings)
 
 	# Мова (питання Q26): російська / українська; зміна перезапускає гру, щоб усі тексти зібралися заново
 	_add_button(box, I18n.t("Язык: %s") % _lang_name(I18n.current()), _on_language)
@@ -222,6 +226,14 @@ func _on_load_menu() -> void:
 		_load_list.add_child(row)
 	_main_box.visible = false
 	_load_panel.visible = true
+
+
+func _on_sound_settings() -> void:
+	var p: PanelContainer = SoundSettings.new()
+	p.name = "SoundSettings"
+	_main_box.get_parent().add_child(p)
+	_main_box.visible = false
+	p.closed.connect(func() -> void: _main_box.visible = true)
 
 
 func _lang_name(code: String) -> String:

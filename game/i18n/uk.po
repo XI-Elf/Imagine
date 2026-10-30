@@ -4,6 +4,50 @@ msgstr ""
 "Language: uk\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
+#: audio/sound_settings.gd
+msgid "Громкость звуков"
+msgstr "Гучність звуків"
+
+#: audio/sound_settings.gd
+msgid "Громкость музыки"
+msgstr "Гучність музики"
+
+#: audio/sound_settings.gd
+msgid "Другая пьеса"
+msgstr "Інша п'єса"
+
+#: audio/sound_settings.gd
+msgid "Звук и музыка"
+msgstr "Звук і музика"
+
+#: audio/sound_settings.gd
+msgid "Звуки"
+msgstr "Звуки"
+
+#: audio/sound_settings.gd
+msgid "Музыка"
+msgstr "Музика"
+
+#: audio/sound_settings.gd
+msgid "Назад"
+msgstr "Назад"
+
+#: audio/sound_settings.gd
+msgid "Новая пьеса каждые"
+msgstr "Нова п'єса кожні"
+
+#: audio/sound_settings.gd
+msgid "Сейчас играет: "
+msgstr "Зараз грає: "
+
+#: audio/sound_settings.gd
+msgid "мин"
+msgstr "хв"
+
+#: audio/sound_settings.gd
+msgid "пьеса готовится…"
+msgstr "п'єса готується…"
+
 #: battle/battle_core.gd
 msgid " (с избытком %d)"
 msgstr " (з надлишком %d)"
@@ -2979,10 +3023,6 @@ msgstr "Нагорода: %d монет."
 #: city/city_world.gd
 msgid "Награда: %d монет. Город вырастет."
 msgstr "Нагорода: %d монет. Місто виросте."
-
-#: city/city_world.gd
-msgid "Назад"
-msgstr "Назад"
 
 #: city/city_world.gd
 msgid "Найдено: %s"
