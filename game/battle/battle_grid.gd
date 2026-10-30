@@ -1,7 +1,7 @@
 extends RefCounted
 ## Сетка боя: клетки по 5 футов. Препятствия (дерево — укрытие ¾, камень — ½, скала — полное),
 ## трудная местность (движение ×2), возвышенности (подъём ×2, высота даёт преимущество стрелку),
-## радиоактивные клетки. Путь — Дейкстра с диагоналями по 5 футов (как в 5e), углы не срезаются.
+## проклятые клетки. Путь — Дейкстра с диагоналями по 5 футов, углы не срезаются.
 
 const Data := preload("res://battle/battle_data.gd")
 
@@ -9,8 +9,8 @@ var size: Vector2i = Vector2i(24, 16)
 var cell_ft: int = 5
 var obstacle: Dictionary = {}      # Vector2i -> "tree" | "rock" | "cliff"
 var difficult: Dictionary = {}     # Vector2i -> true
-var high: Dictionary = {}          # Vector2i -> высота в футах (10)
-var hazard: Dictionary = {}        # Vector2i -> true (радиация)
+var high: Dictionary = {}          # Vector2i -> висота у футах (10)
+var hazard: Dictionary = {}        # Vector2i -> true (прокляття)
 var rng := RandomNumberGenerator.new()
 
 
@@ -20,9 +20,9 @@ func setup(arena_key: String, seed_value: int, cfg: BattleConfig) -> void:
 	rng.seed = seed_value
 	var a: Dictionary = cfg.arena.get(arena_key, cfg.arena.get("wasteland", {}))
 	var keep: Array = _start_zones()
-	# числа в arena — на поле 24×16; на другом поле — по площади
+	# числа в arena — на полі 24×16; на іншому полі — за площею
 	var k: float = float(size.x * size.y) / 384.0
-	# холмы — пятна 2×2..3×3
+	# пагорби — плями 2×2..3×3
 	for i in int(round(a.get("hills", 0) * k)):
 		var c := Vector2i(rng.randi_range(4, size.x - 6), rng.randi_range(1, size.y - 4))
 		var w: int = rng.randi_range(2, 3)
@@ -79,12 +79,12 @@ func elevation(p: Vector2i) -> int:
 	return int(high.get(p, 0))
 
 
-## Расстояние по сетке 5e: max(dx, dy) клеток × 5 футов
+## Расстояние по сетке: max(dx, dy) клеток × 5 футов
 func dist_ft(a: Vector2i, b: Vector2i) -> int:
 	return maxi(absi(a.x - b.x), absi(a.y - b.y)) * cell_ft
 
 
-## Цена шага в клетку b из a: 5 футов, трудная местность и подъём — вдвое
+## Ціна кроку в клітинку b з a: 5 футів, важка місцевість і підйом — удвічі
 func step_cost(a: Vector2i, b: Vector2i) -> int:
 	var c: int = cell_ft
 	if difficult.has(b) or elevation(b) > elevation(a):
@@ -92,9 +92,9 @@ func step_cost(a: Vector2i, b: Vector2i) -> int:
 	return c
 
 
-## Все клетки, куда можно дойти за budget футов. blocked — занятые врагами (не пройти),
-## occupied — занятые кем угодно (пройти можно мимо своих, но не остановиться)
-## Ответ: {cell: {cost, prev}}; остановиться можно только на клетках без occupied
+## Усі клітинки, куди можна дійти за budget футів. blocked — зайняті ворогами (не пройти),
+## occupied — зайняті будь-ким (пройти повз своїх можна, але не зупинитися)
+## Відповідь: {cell: {cost, prev}}; зупинитися можна лише на клітинках без occupied
 func reachable(from: Vector2i, budget: int, blocked: Dictionary, occupied: Dictionary) -> Dictionary:
 	var best: Dictionary = {from: {"cost": 0, "prev": from}}
 	var open: Array = [from]
@@ -112,7 +112,7 @@ func reachable(from: Vector2i, budget: int, blocked: Dictionary, occupied: Dicti
 				var n: Vector2i = cur + Vector2i(dx, dy)
 				if not walkable(n) or blocked.has(n):
 					continue
-				# по диагонали нельзя срезать угол препятствия
+				# по діагоналі не можна зрізати кут перешкоди
 				if dx != 0 and dy != 0 and (not walkable(cur + Vector2i(dx, 0)) or not walkable(cur + Vector2i(0, dy))):
 					continue
 				var nc: int = cc + step_cost(cur, n)
@@ -128,10 +128,10 @@ func reachable(from: Vector2i, budget: int, blocked: Dictionary, occupied: Dicti
 	return best
 
 
-## Самый доступный и простой путь до клетки (просьба Huzzah): среди клеток reach, по порядку важности —
-## 1) меньше футов; 2) меньше опасностей (светящиеся клетки; шаг из-под удара врага — атака по возможности;
-## threat — клетки рядом с врагами, кто может ударить вслед); 3) проще: повороты + TURN_VS_LINE × уход от прямой
-## начало–цель (без зигзагов и без широких крюков в обход препятствий).
+## Найдоступніший і найпростіший шлях до клітинки (прохання Huzzah): серед клітинок reach, за порядком важливості —
+## 1) менше футів; 2) менше небезпек (клітинки, що світяться; крок із-під удару ворога — атака з нагоди;
+## threat — клітинки поруч із ворогами, хто може вдарити вслід); 3) простіше: повороти + TURN_VS_LINE × відхід від прямої
+## початок–ціль (без зигзагів і без широких гаків в обхід перешкод).
 func path_to(reach: Dictionary, to: Vector2i, threat: Dictionary = {}) -> Array:
 	if not reach.has(to):
 		return []
@@ -145,7 +145,7 @@ func path_to(reach: Dictionary, to: Vector2i, threat: Dictionary = {}) -> Array:
 	var a := Vector2(start)
 	var line: Vector2 = Vector2(to) - a
 	var ln: float = maxf(line.length(), 0.001)
-	# состояние — клетка и направление прихода (повороты считаются по смене направления)
+	# стан — клітинка й напрямок приходу (повороти рахуються за зміною напрямку)
 	var best: Dictionary = {}
 	var prev: Dictionary = {}
 	var s0 := Vector3i(start.x, start.y, -1)
@@ -186,7 +186,7 @@ func path_to(reach: Dictionary, to: Vector2i, threat: Dictionary = {}) -> Array:
 				prev[ns] = st
 				open.append(ns)
 	if goal == null:
-		# запасной путь — по дереву reach
+		# запасний шлях — деревом reach
 		var out: Array = [to]
 		var c: Vector2i = to
 		while reach[c]["prev"] != c:
@@ -212,8 +212,8 @@ static func _less(x: Array, y: Array) -> bool:
 	return false
 
 
-## Укрытие цели от атакующего: "none" | "half" | "three_quarters" | "full".
-## Препятствия вплотную к атакующему не считаются (выглядывает из-за них), существа между — половинное
+## Укриття цілі від атакувальника: "none" | "half" | "three_quarters" | "full".
+## Перешкоди впритул до атакувальника не рахуються (визирає з-за них), істоти між — половинне
 func cover(from: Vector2i, to: Vector2i, creatures: Dictionary) -> String:
 	var a := Vector2(from) + Vector2(0.5, 0.5)
 	var b := Vector2(to) + Vector2(0.5, 0.5)
@@ -237,7 +237,7 @@ func cover(from: Vector2i, to: Vector2i, creatures: Dictionary) -> String:
 					rank = maxi(rank, 1)
 		elif creatures.has(c):
 			rank = maxi(rank, 1)
-	# стрелок выше цели не видит её укрытие за камнем (кроме скал и деревьев)
+	# стрілець вище цілі не бачить її укриття за каменем (крім скель і дерев)
 	if elevation(from) > elevation(to) and rank == 1:
 		rank = 0
 	return ["none", "half", "three_quarters", "full"][rank]

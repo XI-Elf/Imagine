@@ -1,7 +1,7 @@
 extends SceneTree
-## Пошаговая боевая сцена в окне (экран по образцу): выбор оружия из сумки, ход мышью и клавишами,
-## шанс над целью, кости, карточки, ИИ, окно итогов, сохранение.
-## godot --path game --rendering-driver opengl3 -s res://tests/battle_game_checks.gd -- [папка_для_снимков]
+## Покрокова бойова сцена у вікні (екран за зразком): вибір зброї із сумки, хід мишею й клавішами,
+## шанс над ціллю, кості, картки, ШІ, вікно підсумків, збереження.
+## godot --path game --rendering-driver opengl3 -s res://tests/battle_game_checks.gd -- [тека_для_знімків]
 
 var fails: int = 0
 var checks: int = 0
@@ -86,7 +86,7 @@ func _run() -> void:
 	var b := make({"terrain": "wasteland", "origin": "overworld", "allies": [hero, npc], "pets": ["dog"], "group": "bandits",
 		"seed": 77, "inventory": inv})
 	await frames(4)
-	# ---- выбор оружия перед боем
+	# ---- вибір зброї перед боєм
 	ok(b.phase == "prep" and b.core.round_n == 0, "перед боем — окно выбора оружия, бой ещё не начат")
 	ok(b.prep_list.size() == 4, "из сумки найдено оружие: %s" % ", ".join(PackedStringArray(b.prep_list.map(func(e): return e["item"]))))
 	ok(b.prep_sel.size() == 3, "по умолчанию выбраны первые три")
@@ -111,7 +111,7 @@ func _run() -> void:
 	await frames(20)
 	await shot("b02_turn_start.png")
 	ok(b.mode == "move", "в начале хода — режим движения (зелёные клетки)")
-	# ---- шаг по клетке
+	# ---- крок на клітинку
 	var reach: Dictionary = b.core.reach_of(c)
 	var goal: Vector2i = c.cell
 	for p in reach:
@@ -119,12 +119,12 @@ func _run() -> void:
 			goal = p
 	hover(b, b.cell_to_screen(Vector2(goal)))
 	await frames(2)
-	ok(b.hover_text().contains("фт"), "реплика при наведении на клетку: " + b.hover_text())
+	ok(b.hover_text().contains("кл."), "реплика при наведении на клетку: " + b.hover_text())
 	await shot("b03_move_hover.png")
 	click(b, b.cell_to_screen(Vector2(goal)))
 	ok(c.cell == goal and c.move_left == c.speed() - 10, "шаг на 10 фт, осталось %d" % c.move_left)
 	await frames(30)
-	# ---- карточка пращи, наведение на врага: шанс и урон над целью
+	# ---- картка пращі, наведення на ворога: шанс і шкода над ціллю
 	var si: int = c.weapons.map(func(w): return w.id).find("sling")
 	click(b, hit_rect(b, "weapon:%d" % si).get_center())
 	ok(c.wi == si and b.mode == "attack" and c.free_used, "клик по карточке — праща в руках, песочные клетки дальности")
@@ -148,10 +148,10 @@ func _run() -> void:
 	await shot("b05_dice.png")
 	key(b, KEY_L)
 	await frames(2)
-	ok(b.log_box.visible and b.log_box.get_parsed_text().contains("против AC"), "L — журнал с формулами")
+	ok(b.log_box.visible and b.log_box.get_parsed_text().contains("против: защита"), "L — журнал с формулами")
 	await shot("b06_log.png")
 	key(b, KEY_L)
-	# ---- способность: выбор цели, Esc
+	# ---- здібність: вибір цілі, Esc
 	key(b, KEY_5)
 	ok(b.mode == "ability:fire_flask", "5 — выбор цели огненной смеси")
 	hover(b, b.cell_to_screen(Vector2(foe.cell)))
@@ -161,7 +161,7 @@ func _run() -> void:
 	key(b, KEY_C)
 	ok(not b.companions_ai, "C — спутники вручную")
 	key(b, KEY_C)
-	# ---- сохранение посреди боя
+	# ---- збереження посеред бою
 	var d: Dictionary = b.to_dict()
 	key(b, KEY_SPACE)
 	ok(b.me() == null, "Пробел — конец хода")
@@ -173,7 +173,7 @@ func _run() -> void:
 	var h2 = b2.core.hero()
 	ok(b2.phase == "battle" and b2.core.round_n == int(d["round"]) and h2.weapons.size() == 3 and h2.wi == si, "загрузка: бой, то же оружие в руках")
 	b2.queue_free()
-	# ---- доигрываем: герой бьёт ближайшего, подходя, потом конец хода
+	# ---- догравання: герой б'є найближчого, підходячи, потім кінець ходу
 	var guard: int = 0
 	while b.core.outcome == "" and guard < 80:
 		guard += 1
@@ -199,7 +199,7 @@ func _run() -> void:
 	var r: Dictionary = finished[0] if not finished.is_empty() else {}
 	ok(r.get("outcome", "") in ["win", "lose", "flee"] and r.has("game_minutes") and r.has("dead") and r.has("loot"), "результат по договору Worlds")
 	b.queue_free()
-	# ---- пустая сумка — кулаки
+	# ---- порожня сумка — кулаки
 	var b3 := make({"terrain": "rad_swamp", "night": true, "allies": [Actor.new("hero", "Выживший")], "group": "hounds", "seed": 5,
 		"inventory": {"money": 0, "items": {}}})
 	await frames(4)
@@ -210,7 +210,7 @@ func _run() -> void:
 	await frames(30)
 	await shot("b10_rad_swamp_night.png")
 	b3.queue_free()
-	# ---- без сумки (проверочный бой) — сразу бой с набором из config
+	# ---- без сумки (перевірний бій) — одразу бій із набором із config
 	var b4 := make({"terrain": "forest", "allies": [Actor.new("hero", "Выживший")], "seed": 9})
 	await frames(4)
 	ok(b4.phase == "battle" and b4.core.round_n >= 1, "без сумки — сразу бой")

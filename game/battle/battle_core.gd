@@ -1,7 +1,7 @@
 extends Node
 ## Ход боя без интерфейса: участники, инициатива, очередь ходов, действия, реакции, ИИ, итог.
 ## Интерфейс (battle_scene.gd) только показывает и передаёт сюда приказы игрока; тесты гоняют ядро напрямую.
-## Раунд = 6 игровых секунд (5e).
+## Раунд = 6 игровых секунд.
 
 signal logged(text: String, kind: String)
 signal turn_started(c)
@@ -16,6 +16,7 @@ const Combatant := preload("res://battle/combatant.gd")
 const Grid := preload("res://battle/battle_grid.gd")
 const Enc := preload("res://battle/encounters.gd")
 const Trade := preload("res://city/trade.gd")
+const Sheet := preload("res://characters/sheet.gd")
 const ROUND_S: float = 6.0
 
 var cfg: BattleConfig
@@ -23,20 +24,22 @@ var roller: DiceRoller
 var grid := Grid.new()
 var req: Dictionary = {}
 var arena_key: String = "wasteland"
-var all: Array = []                # все участники
-var order: Array = []              # очередь инициативы (не меняется в бою)
+var all: Array = []                # усі учасники
+var order: Array = []              # черга ініціативи (не змінюється в бою)
 var turn_i: int = -1
 var round_n: int = 0
 var outcome: String = ""
 var killed: int = 0
+var killed_levels: int = 0           # сумма уровней убитых врагов — опыт после победы
+var xp_gained: int = 0
 var loot: Dictionary = {}
 var log_lines: Array = []
-var fleeing: Dictionary = {}       # участник -> true: дрогнул и уходит
-var auto_ai: bool = true           # ИИ ходит сразу (тесты); интерфейс выключает и ведёт ходы сам
+var fleeing: Dictionary = {}       # учасник -> true: здригнувся й відступає
+var auto_ai: bool = true           # ШІ ходить одразу (тести); інтерфейс вимикає й веде ходи сам
 
 
 # =====================================================================
-# ВХОД
+# ВХІД
 # =====================================================================
 func setup(r: Dictionary) -> void:
 	req = r
@@ -98,7 +101,7 @@ func _spawn() -> void:
 		var c = Combatant.new()
 		c.build_from_creature(cr, a, 1, cfg, roller)
 		all.append(c)
-	# Состояния пака у персонажа становятся эффектами боя (перелом ноги — медленнее и т.д.)
+	# Стани персонажа з пакета стають ефектами бою (перелом ноги — повільніше тощо)
 	for c in all:
 		for cond in c.actor.conditions:
 			var eid: String = String(cfg.pack_effects.get(cond["id"], ""))
@@ -132,19 +135,19 @@ func _free_near(p: Vector2i, taken: Dictionary) -> Vector2i:
 	return p
 
 
-## Бросок инициативы и первый ход. Отдельно от setup, чтобы интерфейс успел подписаться
+## Кидок ініціативи й перший хід. Окремо від setup, щоб інтерфейс устиг підписатися
 func begin() -> void:
-	log_line("Бой: %s. Бросаем инициативу." % _group_title(), "head")
+	log_line(I18n.t("Бой: %s. Бросаем инициативу.") % _group_title(), "head")
 	for c in all:
 		var r: Dictionary = Rules.initiative(roller, c)
 		c.init_tiebreak = 0.0
-		log_line("Инициатива %s: %s" % [c.title, r["text"]], "roll")
+		log_line(I18n.t("Инициатива %s: %s") % [c.title, r["text"]], "roll")
 	order = all.duplicate()
-	# при равенстве — ЛОВ, затем дополнительный бросок, при новом равенстве — сторона игрока
+	# за рівності — СПР, далі додатковий кидок, за нової рівності — сторона гравця
 	for c in order:
 		c.init_tiebreak = float(c.scores.get("dex", 10)) * 100.0 + float(roller.die(20)) + (0.5 if c.team == 0 else 0.0)
 	order.sort_custom(func(a, b): return a.initiative > b.initiative or (a.initiative == b.initiative and a.init_tiebreak > b.init_tiebreak))
-	log_line("Очередь: " + ", ".join(PackedStringArray(order.map(func(c): return "%s %d" % [c.title, c.initiative]))), "head")
+	log_line(I18n.t("Очередь: ") + ", ".join(PackedStringArray(order.map(func(c): return "%s %d" % [c.title, c.initiative]))), "head")
 	round_n = 1
 	round_started.emit(round_n)
 	turn_i = -1
@@ -152,9 +155,9 @@ func begin() -> void:
 
 
 # =====================================================================
-# ОРУЖИЕ ИЗ СУМКИ (до loadout_max видов; выбирает игрок перед боем)
+# ЗБРОЯ ІЗ СУМКИ (до loadout_max видів; обирає гравець перед боєм)
 # =====================================================================
-## [{item, weapon: BattleWeapon, count}] — оружие, которое лежит в req.inventory.items
+## [{item, weapon: BattleWeapon, count}] — зброя, що лежить у req.inventory.items
 func inventory_weapons() -> Array:
 	var out: Array = []
 	var inv: Variant = req.get("inventory", null)
@@ -170,7 +173,7 @@ func inventory_weapons() -> Array:
 	return out
 
 
-## Доспех героя — то, что надето на «Тело» (items.json wear.armor); ничего — без доспеха
+## Обладунок героя — те, що вдягнено на «Тіло» (items.json wear.armor); нічого — без обладунку
 static func worn_armor(inv: Dictionary) -> String:
 	var body: String = String(inv.get("equipped", {}).get("body", ""))
 	if body == "" or int(inv.get("items", {}).get(body, 0)) <= 0:
@@ -178,7 +181,7 @@ static func worn_armor(inv: Dictionary) -> String:
 	return String(Trade.item(body).get("wear", {}).get("armor", "none"))
 
 
-## Что взять по умолчанию: прошлый выбор (inventory.battle_loadout), если всё ещё в сумке, иначе первые из сумки
+## Що взяти за замовчуванням: минулий вибір (inventory.battle_loadout), якщо ще в сумці, інакше перші із сумки
 func default_loadout() -> Array:
 	var have: Array = inventory_weapons()
 	var by_item: Dictionary = {}
@@ -195,7 +198,7 @@ func default_loadout() -> Array:
 	return out if not out.is_empty() else ["fists"]
 
 
-## Выбор игрока: items — id предметов из сумки (до loadout_max). Пусто — кулаки
+## Вибір гравця: items — id предметів із сумки (до loadout_max). Порожньо — кулаки
 func set_loadout(c, items: Array) -> void:
 	var ids: Array = []
 	for it in items.slice(0, cfg.loadout_max):
@@ -205,43 +208,43 @@ func set_loadout(c, items: Array) -> void:
 	var inv: Variant = req.get("inventory", null)
 	if inv is Dictionary:
 		inv["battle_loadout"] = items.slice(0, cfg.loadout_max)
-	log_line("%s берёт в бой: %s." % [c.title, ", ".join(PackedStringArray(c.weapons.map(func(w): return w.title.to_lower())))], "info")
+	log_line(I18n.t("%s берёт в бой: %s.") % [c.title, ", ".join(PackedStringArray(c.weapons.map(func(w): return w.title.to_lower())))], "info")
 
 
-## Взять в руки оружие из своих (до трёх): свободное взаимодействие, раз в ход
+## Узяти до рук зброю зі своїх (до трьох): вільна взаємодія, раз за хід
 func draw_weapon(c, i: int) -> bool:
 	if i == c.wi or i < 0 or i >= c.weapons.size():
 		return i == c.wi
 	if c.free_used:
-		log_line("%s уже доставал оружие в этот ход." % c.title, "info")
+		log_line(I18n.t("%s уже доставал оружие в этот ход.") % c.title, "info")
 		return false
 	c.free_used = true
 	c.wi = i
-	log_line("%s берёт %s." % [c.title, c.weapon().title.to_lower()], "info")
+	log_line(I18n.t("%s берёт %s.") % [c.title, c.weapon().title.to_lower()], "info")
 	return true
 
 
 func _group_title() -> String:
-	var t: Dictionary = {"bandits": "разбойники", "wolves": "волки", "boar": "кабан", "hounds": "проклятые гончие"}
-	return t.get(String(req.get("group", "")), "враги")
+	var t: Dictionary = {"bandits": I18n.t("разбойники"), "wolves": I18n.t("волки"), "boar": I18n.t("кабан"), "hounds": I18n.t("проклятые гончие")}
+	return t.get(String(req.get("group", "")), I18n.t("враги"))
 
 
 # =====================================================================
-# ОЧЕРЕДЬ ХОДОВ
+# ЧЕРГА ХОДІВ
 # =====================================================================
 func current():
 	return order[turn_i] if turn_i >= 0 and turn_i < order.size() else null
 
 
 func next_turn() -> void:
-	# Цикл, а не рекурсия: подряд могут ходить десятки участников под ИИ
+	# Цикл, а не рекурсія: підряд можуть ходити десятки учасників під ШІ
 	while outcome == "":
 		turn_i += 1
 		if turn_i >= order.size():
 			turn_i = 0
 			round_n += 1
 			round_started.emit(round_n)
-			log_line("— Раунд %d —" % round_n, "head")
+			log_line(I18n.t("— Раунд %d —") % round_n, "head")
 		var c = current()
 		if not c.active():
 			continue
@@ -252,12 +255,12 @@ func next_turn() -> void:
 		if c.controlled:
 			return
 		if not auto_ai:
-			return           # интерфейс сам вызовет run_ai_turn() после паузы
+			return           # інтерфейс сам викличе run_ai_turn() після паузи
 		ai_turn(c)
 		_finish_turn(c)
 
 
-## Ход ИИ по вызову интерфейса (когда auto_ai выключен — чтобы ходы врагов было видно)
+## Хід ШІ на виклик інтерфейсу (коли auto_ai вимкнено — щоб ходи ворогів було видно)
 func run_ai_turn() -> void:
 	var c = current()
 	if outcome != "" or c == null or c.controlled:
@@ -274,20 +277,24 @@ func _finish_turn(c) -> void:
 	_check_end()
 
 
-# Начало хода: эффекты, длительности, опасные клетки. false — ход пропущен
+# Початок ходу: ефекти, тривалості, небезпечні клітинки. false — хід пропущено
 func _start_turn(c) -> bool:
 	c.start_turn_reset()
+	# «Быстро на ноги»: встаёт в начале хода, не теряя движения
+	if c.has_effect("prone") and not c.down and c.fx("quick_recovery") > 0.0:
+		c.remove_effect("prone")
+		log_line("%s мигом на ногах." % c.title, "info")
 	# помощь против врага держится до следующего хода помогавшего
 	for o in all:
 		if o.helped_by == c.team and o.get_meta("help_src", null) == c:
 			o.helped_by = -1
-	# длительности считаются в начале хода владельца
+	# тривалості рахуються на початку ходу власника
 	for e in c.effects.duplicate():
 		if int(e["left"]) > 0:
 			e["left"] = int(e["left"]) - 1
 			if int(e["left"]) == 0:
 				c.remove_effect(e["id"])
-				log_line("%s: «%s» прошло." % [c.title, e["res"].title], "info")
+				log_line(I18n.t("%s: «%s» прошло.") % [c.title, e["res"].title], "info")
 	for e in c.effects.duplicate():
 		var r: BattleEffect = e["res"]
 		if r.turn_start_dice != "" and c.active():
@@ -297,12 +304,12 @@ func _start_turn(c) -> bool:
 	if grid.hazard.has(c.cell) and c.active():
 		var d: Dictionary = Rules.damage(roller, c, [{"type": "radiation", "dice": cfg.hazard_dice, "F": 0}], {}, 1)
 		c.actor.add_res("radiation", float(d["total"]))
-		log_line("%s стоит в светящемся пятне. %s" % [c.title, d["text"]], "hit")
+		log_line(I18n.t("%s стоит в светящемся пятне. %s") % [c.title, d["text"]], "hit")
 		_apply_damage(c, d, null, false)
 	if not c.active() or c.down:
 		return false
 	if c.incapacitated():
-		log_line("%s пропускает ход (%s)." % [c.title, _incap_reason(c)], "info")
+		log_line(I18n.t("%s пропускает ход (%s).") % [c.title, _incap_reason(c)], "info")
 		_end_effect_saves(c)
 		return false
 	return true
@@ -312,10 +319,10 @@ func _incap_reason(c) -> String:
 	for e in c.effects:
 		if e["res"].incapacitated:
 			return e["res"].title.to_lower()
-	return "не может действовать"
+	return I18n.t("не может действовать")
 
 
-## Игрок закончил ход
+## Гравець закінчив хід
 func end_turn() -> void:
 	var c = current()
 	if c == null or outcome != "":
@@ -332,11 +339,11 @@ func _end_effect_saves(c) -> void:
 			log_line(s["text"], "roll")
 			if s["ok"]:
 				c.remove_effect(e["id"])
-				log_line("%s: «%s» снято." % [c.title, r.title], "info")
+				log_line(I18n.t("%s: «%s» снято.") % [c.title, r.title], "info")
 
 
 # =====================================================================
-# ПЕРЕМЕЩЕНИЕ
+# ПЕРЕМІЩЕННЯ
 # =====================================================================
 func occupancy(c) -> Dictionary:
 	var blocked: Dictionary = {}
@@ -358,7 +365,7 @@ func reach_of(c, budget: int = -1) -> Dictionary:
 	return grid.reachable(c.cell, maxi(b, 0), oc["blocked"], oc["occupied"])
 
 
-## Клетки, уход из которых даёт врагу атаку по возможности (рядом стоящий враг с реакцией)
+## Клітинки, відхід із яких дає ворогові атаку з нагоди (ворог поруч із реакцією)
 func threat_cells(c) -> Dictionary:
 	var out: Dictionary = {}
 	if c.disengaged:
@@ -372,12 +379,12 @@ func threat_cells(c) -> Dictionary:
 	return out
 
 
-## Путь, которым участник пойдёт: самый доступный и простой (battle_grid.path_to)
+## Шлях, яким піде учасник: найдоступніший і найпростіший (battle_grid.path_to)
 func path_for(c, reach: Dictionary, to: Vector2i) -> Array:
 	return grid.path_to(reach, to, threat_cells(c))
 
 
-## Пройти в клетку. Атаки по возможности и подготовленные атаки срабатывают по дороге
+## Пройти в клітинку. Атаки з нагоди й підготовлені атаки спрацьовують дорогою
 func move_to(c, to: Vector2i) -> bool:
 	if not c.standing() or c.incapacitated() or to == c.cell:
 		return false
@@ -387,7 +394,7 @@ func move_to(c, to: Vector2i) -> bool:
 	if c.has_effect("prone"):
 		c.remove_effect("prone")
 		c.move_left -= c.speed() / 2
-		log_line("%s встаёт (половина движения)." % c.title, "info")
+		log_line(I18n.t("%s встаёт (половина движения).") % c.title, "info")
 	var path: Array = path_for(c, reach, to)
 	var walked: Array = [path[0]]
 	for i in range(1, path.size()):
@@ -402,7 +409,7 @@ func move_to(c, to: Vector2i) -> bool:
 	moved.emit(c, walked)
 	if c.has_effect("hidden") and _seen_by_enemies(c):
 		c.remove_effect("hidden")
-		log_line("%s замечен." % c.title, "info")
+		log_line(I18n.t("%s замечен.") % c.title, "info")
 	return true
 
 
@@ -418,19 +425,19 @@ func _reactions_on_move(c, from: Vector2i, to: Vector2i) -> void:
 		var now_in: bool = grid.dist_ft(to, e.cell) <= reach
 		if was_in and not now_in and not c.disengaged:
 			e.has_reaction = false
-			log_line("Атака по возможности: %s по %s." % [e.title, c.title], "head")
+			log_line(I18n.t("Атака по возможности: %s по %s.") % [e.title, c.title], "head")
 			_weapon_attack(e, c, mi, true)
 		elif not was_in and now_in and e.readied.get("type", "") == "attack":
 			e.has_reaction = false
 			e.readied = {}
-			log_line("Подготовленная атака: %s по %s." % [e.title, c.title], "head")
+			log_line(I18n.t("Подготовленная атака: %s по %s.") % [e.title, c.title], "head")
 			_weapon_attack(e, c, mi, true)
 		if not c.standing():
 			return
 
 
 # =====================================================================
-# ДЕЙСТВИЯ
+# ДІЇ
 # =====================================================================
 func can_attack(c, t, wi: int = -1) -> Dictionary:
 	if wi < 0:
@@ -438,19 +445,20 @@ func can_attack(c, t, wi: int = -1) -> Dictionary:
 	var w: BattleWeapon = c.weapons[wi] if wi < c.weapons.size() and wi >= 0 else c.weapon()
 	var d: int = grid.dist_ft(c.cell, t.cell)
 	var cov: String = grid.cover(c.cell, t.cell, _creature_cells([c, t]))
-	if not c.has_action:
-		return {"ok": false, "why": "действие уже потрачено"}
+	# «Быстрый выстрел», «Скорострел», «Шквал ударов»: ещё одна атака бонусным действием
+	if not c.has_action and not (c.has_bonus and c.bonus_attack_ok(w)):
+		return {"ok": false, "why": I18n.t("действие уже потрачено")}
 	if not t.active() or t.team == c.team:
-		return {"ok": false, "why": "не цель"}
+		return {"ok": false, "why": I18n.t("не цель")}
 	if w.ranged:
 		if w.ammo > 0 and int(c.ammo.get(w.id, 0)) <= 0:
-			return {"ok": false, "why": "нет снарядов"}
+			return {"ok": false, "why": I18n.t("нет снарядов")}
 		if d > maxi(w.long_range_ft, w.range_ft):
-			return {"ok": false, "why": "слишком далеко (%d фт)" % d}
+			return {"ok": false, "why": I18n.t("слишком далеко (%d кл.)") % ceili(d / 5.0)}
 	elif d > w.reach_ft:
-		return {"ok": false, "why": "не достать (%d фт)" % d}
+		return {"ok": false, "why": I18n.t("не достать (%d кл.)") % ceili(d / 5.0)}
 	if cov == "full":
-		return {"ok": false, "why": "цель за полным укрытием"}
+		return {"ok": false, "why": I18n.t("цель за полным укрытием")}
 	return {"ok": true, "dist": d, "cover": cov, "weapon": w}
 
 
@@ -459,7 +467,7 @@ func _ctx(c, t, w: BattleWeapon, cover: String) -> Dictionary:
 		"normal_range": w.range_ft if w.ranged else 1 << 20, "cover": cover}
 
 
-## Шанс попадания и вилка урона — для подсказки при наведении
+## Шанс влучання й вилка шкоди — для підказки при наведенні
 func preview_attack(c, t, wi: int = -1) -> Dictionary:
 	var ca: Dictionary = can_attack(c, t, wi)
 	var w: BattleWeapon = c.weapons[wi if wi >= 0 else c.wi] if not c.weapons.is_empty() else c.weapon()
@@ -474,8 +482,8 @@ func preview_attack(c, t, wi: int = -1) -> Dictionary:
 	var hi: int = 0
 	for comp in Rules.components(c, w):
 		var rg: Vector2i = DiceRoller.range_of(comp["dice"]) if String(comp["dice"]) != "" else Vector2i.ZERO
-		lo += maxi(0, rg.x + int(comp["F"]))
-		hi += maxi(0, rg.y + int(comp["F"]))
+		lo += maxi(int(comp.get("min", 0)), rg.x + int(comp["F"]))
+		hi += maxi(int(comp.get("min", 0)), rg.y + int(comp["F"]))
 	return {"ok": ca["ok"], "why": ca.get("why", ""), "chance": p, "ac": act, "mod": terms["sum"], "adv": ad["adv"], "dis": ad["dis"],
 		"dmg": Vector2i(lo, hi), "cover": cov, "weapon": w}
 
@@ -483,11 +491,15 @@ func preview_attack(c, t, wi: int = -1) -> Dictionary:
 func attack(c, t, wi: int = -1) -> bool:
 	var ca: Dictionary = can_attack(c, t, wi)
 	if not ca["ok"]:
-		log_line("%s не может атаковать: %s." % [c.title, ca["why"]], "info")
+		log_line(I18n.t("%s не может атаковать: %s.") % [c.title, ca["why"]], "info")
 		return false
 	if wi >= 0:
 		c.wi = wi
-	c.has_action = false
+	if c.has_action:
+		c.has_action = false
+	else:
+		c.has_bonus = false
+		log_line("%s атакует ещё раз (бонусное действие)." % c.title, "info")
 	_weapon_attack(c, t, c.wi, false)
 	_check_end()
 	return true
@@ -514,6 +526,17 @@ func _weapon_attack(c, t, wi: int, reaction: bool) -> void:
 		_apply_damage(t, res["damage"], c, res["crit"])
 		if w.on_hit_effect != "" and t.standing():
 			_effect_with_save(c, t, w.on_hit_effect, w.on_hit_save, w.on_hit_dc)
+	elif _jinxed() and c.standing() and roller.rng.randf() < 0.5:
+		# черта «Невезучий»: промах любого рядом с героем — с шансом 50 % падение
+		if c.add_effect("prone"):
+			log_line("%s спотыкается и падает (невезение)." % c.title, "miss")
+
+
+func _jinxed() -> bool:
+	for o in all:
+		if o.team == 0 and o.fx("jinxed") > 0.0:
+			return true
+	return false
 
 
 func _after_attack(c, t) -> void:
@@ -533,21 +556,21 @@ func _effect_with_save(src, t, eid: String, stat: String, dc: int) -> void:
 		log_line("%s: %s." % [t.title, Data.effect(eid).title.to_lower()], "info")
 
 
-## Урон по участнику: HP, 0 HP (проверка травмы для стороны героя), тяжёлые раны, боевой дух врагов
+## Шкода учаснику: HP, 0 HP (перевірка травми для сторони героя), тяжкі рани, бойовий дух ворогів
 func _apply_damage(t, dmg: Dictionary, src, crit: bool) -> void:
 	var total: int = int(dmg["total"])
 	if total <= 0 or not t.active():
 		return
 	var main: String = _main_type(dmg)
 	if t.down:
-		# по лежащему без сознания: новая проверка; плохой результат — смерть
+		# по тому, хто лежить непритомний: нова перевірка; поганий результат — смерть
 		var z: Dictionary = Rules.zero_hp_check(roller, t)
 		log_line(z["text"], "roll")
 		if z["result"] == "dead":
 			_kill(t, src)
 		return
 	var h: Dictionary = Rules.apply_hp(t, total)
-	log_line("%s: HP %d → %d%s." % [t.title, h["HP_OLD"], h["HP_NEW"], " (с избытком %d)" % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
+	log_line("%s: здоровье %d → %d%s." % [t.title, h["HP_OLD"], h["HP_NEW"], I18n.t(" (с избытком %d)") % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
 	if t.hp <= 0:
 		if t.team == 0:
 			var z: Dictionary = Rules.zero_hp_check(roller, t)
@@ -566,18 +589,18 @@ func _apply_damage(t, dmg: Dictionary, src, crit: bool) -> void:
 		else:
 			_kill(t, src)
 		return
-	# тяжёлая рана — у тех, кто живёт после боя (сторона героя)
+	# тяжка рана — у тих, хто живе після бою (сторона героя)
 	if t.team == 0 and (crit or total >= int(ceil(t.max_hp * cfg.heavy_hit_frac))):
 		var ij: Dictionary = Rules.injury_check(roller, t, main)
 		log_line(ij["text"], "roll")
 		if ij["trauma"] != "":
 			_trauma(t, main, ij["zone"], ij["trauma"])
-	# враг может дрогнуть, когда HP упало до четверти
+	# ворог може здригнутися, коли HP впало до чверті
 	if t.team == 1 and not fleeing.has(t) and t.hp <= t.max_hp / 4 and not t.get_meta("morale_done", false):
 		t.set_meta("morale_done", true)
 		if roller.rng.randf() > t.morale:
 			fleeing[t] = true
-			log_line("%s дрогнул и бежит." % t.title, "info")
+			log_line(I18n.t("%s дрогнул и бежит.") % t.title, "info")
 
 
 func _main_type(dmg: Dictionary) -> String:
@@ -599,8 +622,8 @@ func _trauma(t, dtype: String, zone: String, cond: String = "") -> void:
 	var eid: String = String(cfg.pack_effects.get(cond, ""))
 	if eid != "":
 		t.add_effect(eid)
-	log_line("%s получает травму: %s (%s)." % [t.title, String(Actor.R.condition(cond).get("name_ru", cond)).to_lower(),
-		{"head": "голова", "torso": "торс", "arm": "рука", "leg": "нога"}.get(zone, zone)], "hit")
+	log_line(I18n.t("%s получает травму: %s (%s).") % [t.title, String(Actor.R.condition(cond).get("name_ru", cond)).to_lower(),
+		{"head": I18n.t("голова"), "torso": I18n.t("торс"), "arm": I18n.t("рука"), "leg": I18n.t("нога")}.get(zone, zone)], "hit")
 
 
 func _kill(t, src) -> void:
@@ -610,8 +633,22 @@ func _kill(t, src) -> void:
 	t.actor.die("wounds")
 	if t.team == 1:
 		killed += 1
-	log_line("%s погиб%s." % [t.title, "" if src == null else " (%s)" % src.title], "hit")
+		killed_levels += maxi(1, t.level)
+	log_line((I18n.t("%s погиб.") % t.title if src == null else I18n.t("%s погиб (%s).") % [t.title, src.title]), "hit")
+	if src != null and src.team == 0 and _bloody(src):
+		log_line("Кровавый след: от %s мало что осталось." % t.title, "hit")
 	_check_end()
+
+
+func _hero_c():
+	for c in all:
+		if c.is_hero:
+			return c
+	return null
+
+
+func _bloody(src) -> bool:
+	return src.fx("bloody_mess") > 0.0
 
 
 func dash(c) -> bool:
@@ -619,7 +656,7 @@ func dash(c) -> bool:
 		return false
 	c.has_action = false
 	c.move_left += c.speed()
-	log_line("%s: рывок (+%d фт движения)." % [c.title, c.speed()], "info")
+	log_line(I18n.t("%s: рывок (+%d кл. движения).") % [c.title, c.speed() / 5], "info")
 	return true
 
 
@@ -628,7 +665,7 @@ func disengage(c) -> bool:
 		return false
 	c.has_action = false
 	c.disengaged = true
-	log_line("%s отходит без атак по возможности." % c.title, "info")
+	log_line(I18n.t("%s отходит без атак по возможности.") % c.title, "info")
 	return true
 
 
@@ -637,11 +674,11 @@ func dodge(c) -> bool:
 		return false
 	c.has_action = false
 	c.add_effect("dodging", 1)
-	log_line("%s уклоняется до своего следующего хода." % c.title, "info")
+	log_line(I18n.t("%s уклоняется до своего следующего хода.") % c.title, "info")
 	return true
 
 
-## Помощь: союзнику без сознания — привести в чувство с 1 HP; против врага рядом — преимущество следующей атаке союзника
+## Допомога: непритомного союзника — привести до тями з 1 HP; проти ворога поруч — перевага наступній атаці союзника
 func help(c, t) -> bool:
 	if not c.has_action or not c.standing() or grid.dist_ft(c.cell, t.cell) > 5:
 		return false
@@ -650,13 +687,13 @@ func help(c, t) -> bool:
 		t.down = false
 		t.hp = maxi(t.hp, 1)
 		t.remove_effect("unconscious")
-		log_line("%s приводит в чувство %s (1 HP)." % [c.title, t.title], "info")
+		log_line(I18n.t("%s приводит в чувство %s (здоровье 1).") % [c.title, t.title], "info")
 		return true
 	if t.team != c.team and t.standing():
 		c.has_action = false
 		t.helped_by = c.team
 		t.set_meta("help_src", c)
-		log_line("%s отвлекает %s: следующая атака союзника — с преимуществом." % [c.title, t.title], "info")
+		log_line(I18n.t("%s отвлекает %s: следующая атака союзника — с преимуществом.") % [c.title, t.title], "info")
 		return true
 	return false
 
@@ -670,37 +707,42 @@ func _seen_by_enemies(c) -> bool:
 	return false
 
 
-## Спрятаться: только если ни один враг не видит ясно (укрытие ¾ или полное от всех); Скрытность против внимательности
+## Сховатися: лише якщо жоден ворог не бачить чітко (укриття ¾ або повне від усіх); Скритність проти уважності
 func hide(c) -> bool:
 	if not c.has_action or not c.standing():
 		return false
 	if _seen_by_enemies(c):
-		log_line("%s: спрятаться негде — враги видят." % c.title, "info")
+		log_line(I18n.t("%s: спрятаться негде — враги видят.") % c.title, "info")
 		return false
 	c.has_action = false
 	var m: int = c.mod("dex") + (c.prof() if c.stealth_prof else 0)
-	var r: Dictionary = roller.d20(m, false, c.armor != null and c.armor.stealth_disadvantage, "Скрытность " + c.title)
+	var r: Dictionary = roller.d20(m, false, c.armor != null and c.armor.stealth_disadvantage, I18n.t("Скрытность ") + c.title)
 	var pp: int = 0
 	for e in all:
 		if e.team != c.team and e.standing():
 			pp = maxi(pp, Rules.passive_perception(e))
 	var ok: bool = int(r["total"]) >= pp
-	log_line("Скрытность %s: %s против внимательности %d → %s." % [c.title, r["text"], pp, "скрыт" if ok else "замечен"], "roll")
+	log_line(I18n.t("Скрытность %s: %s против внимательности %d → %s.") % [c.title, r["text"], pp, I18n.t("скрыт") if ok else I18n.t("замечен")], "roll")
 	if ok:
 		c.add_effect("hidden")
 	return ok
 
 
-## Использовать предмет: лечебное зелье себе или союзнику рядом
+## Використати предмет: лікувальне зілля собі або союзнику поруч
 func use_object(c, t = null) -> bool:
 	if t == null:
 		t = c
-	if not c.has_action or not c.standing() or c.potions <= 0 or grid.dist_ft(c.cell, t.cell) > 5 or t.dead:
+	# «Быстрые карманы»: зелье — бонусным действием
+	var quick: bool = c.fx("quick_pockets") > 0.0 and c.has_bonus
+	if not (c.has_action or quick) or not c.standing() or c.potions <= 0 or grid.dist_ft(c.cell, t.cell) > 5 or t.dead:
 		return false
-	c.has_action = false
+	if quick:
+		c.has_bonus = false
+	else:
+		c.has_action = false
 	c.potions -= 1
-	var r: Dictionary = roller.roll(cfg.potion_dice, {"label": "Зелье"})
-	_heal(t, int(r["total"]), "зелье: " + r["text"])
+	var r: Dictionary = roller.roll(cfg.potion_dice, {"label": I18n.t("Зелье")})
+	_heal(t, int(r["total"]) + int(c.fx("b_heal")), I18n.t("зелье: ") + r["text"] + (" +%d (целитель)" % int(c.fx("b_heal")) if c.fx("b_heal") > 0.0 else ""))
 	return true
 
 
@@ -710,58 +752,58 @@ func _heal(t, amount: int, how: String) -> void:
 	if t.down and t.hp > 0:
 		t.down = false
 		t.remove_effect("unconscious")
-	log_line("%s восстанавливает %d HP (%s): %d → %d." % [t.title, t.hp - old, how, old, t.hp], "heal")
+	log_line(I18n.t("%s восстанавливает %d здоровья (%s): %d → %d.") % [t.title, t.hp - old, how, old, t.hp], "heal")
 
 
-## Подготовить атаку: реакцией ударить первого врага, вошедшего в досягаемость (до следующего хода)
+## Підготувати атаку: реакцією вдарити першого ворога, що ввійшов у досяжність (до наступного ходу)
 func ready_attack(c) -> bool:
 	if not c.has_action or not c.standing():
 		return false
 	c.has_action = false
 	c.readied = {"type": "attack"}
-	log_line("%s готовит удар." % c.title, "info")
+	log_line(I18n.t("%s готовит удар.") % c.title, "info")
 	return true
 
 
-## Свободное взаимодействие: сменить оружие (раз за ход)
+## Вільна взаємодія: змінити зброю (раз за хід)
 func swap_weapon(c) -> bool:
 	if c.free_used or c.weapons.size() < 2:
 		return false
 	c.free_used = true
 	c.wi = (c.wi + 1) % c.weapons.size()
-	log_line("%s берёт %s." % [c.title, c.weapon().title.to_lower()], "info")
+	log_line(I18n.t("%s берёт %s.") % [c.title, c.weapon().title.to_lower()], "info")
 	return true
 
 
-## Уйти с поля: стоя на краю арены, действием
+## Піти з поля: стоячи на краю арени, дією
 func flee(c) -> bool:
 	if not c.has_action or not c.standing() or not grid.edge(c.cell):
 		return false
 	c.has_action = false
 	c.fled = true
-	log_line("%s покидает бой." % c.title, "info")
+	log_line(I18n.t("%s покидает бой.") % c.title, "info")
 	_check_end()
 	return true
 
 
 # =====================================================================
-# СПОСОБНОСТИ
+# ЗДІБНОСТІ
 # =====================================================================
-## target — участник или клетка (Vector2i) для способностей по площади
+## target — учасник або клітинка (Vector2i) для здібностей по площі
 func can_ability(c, ab: BattleAbility, target) -> Dictionary:
 	if not c.standing() or c.incapacitated():
-		return {"ok": false, "why": "не может действовать"}
+		return {"ok": false, "why": I18n.t("не может действовать")}
 	if not c.can_use(ab):
-		return {"ok": false, "why": "нет %s или кончились применения" % {"action": "действия", "bonus": "бонусного действия", "reaction": "реакции"}.get(ab.cost, "")}
+		return {"ok": false, "why": I18n.t("нет %s или кончились применения") % {"action": I18n.t("действия"), "bonus": I18n.t("бонусного действия"), "reaction": I18n.t("реакции")}.get(ab.cost, "")}
 	var cell: Vector2i = target if target is Vector2i else (target.cell if target != null else c.cell)
 	if ab.target != "self" and grid.dist_ft(c.cell, cell) > maxi(ab.range_ft, 5 if ab.target == "ally" else 0):
-		return {"ok": false, "why": "далеко (%d фт)" % grid.dist_ft(c.cell, cell)}
+		return {"ok": false, "why": I18n.t("далеко (%d кл.)") % ceili(grid.dist_ft(c.cell, cell) / 5.0)}
 	if ab.target == "enemy" and (target == null or target is Vector2i or target.team == c.team or not target.active()):
-		return {"ok": false, "why": "нужна цель-враг"}
+		return {"ok": false, "why": I18n.t("нужна цель-враг")}
 	if ab.target == "ally" and (target == null or target is Vector2i or target.team != c.team or target.dead):
-		return {"ok": false, "why": "нужен союзник"}
+		return {"ok": false, "why": I18n.t("нужен союзник")}
 	if ab.target in ["enemy", "cell"] and grid.cover(c.cell, cell, {}) == "full":
-		return {"ok": false, "why": "не видно"}
+		return {"ok": false, "why": I18n.t("не видно")}
 	return {"ok": true}
 
 
@@ -787,13 +829,13 @@ func use_ability(c, ab: BattleAbility, target = null) -> bool:
 				_ability_save(c, t, ab)
 		"heal":
 			var t = c if ab.target == "self" else target
-			var r: Dictionary = roller.roll(ab.heal_dice, {"label": ab.title, "extra_mod": (c.level if ab.heal_add_level else 0) + (c.mod(ab.stat) if ab.target == "ally" else 0)})
+			var r: Dictionary = roller.roll(ab.heal_dice, {"label": ab.title, "extra_mod": (c.level if ab.heal_add_level else 0) + (c.mod(ab.stat) if ab.target == "ally" else 0) + int(c.fx("b_heal"))})
 			_heal(t, int(r["total"]), r["text"])
 		"self":
 			for t in all:
 				if t.team == c.team and t.standing() and grid.dist_ft(c.cell, t.cell) <= ab.radius_ft:
 					t.add_effect(ab.apply_effect)
-			log_line("Союзники рядом: %s." % Data.effect(ab.apply_effect).title.to_lower(), "info")
+			log_line(I18n.t("Союзники рядом: %s.") % Data.effect(ab.apply_effect).title.to_lower(), "info")
 	acted.emit(c, "ability", {"ability": ab, "target": target})
 	_check_end()
 	return true
@@ -808,7 +850,7 @@ func _area_targets(c, ab: BattleAbility, target) -> Array:
 		if not t.active():
 			continue
 		if ab.target == "self" and (t.team == c.team):
-			continue      # вой, крик — только по врагам вокруг
+			continue      # виття, крик — лише по ворогах довкола
 		if grid.dist_ft(center, t.cell) <= ab.radius_ft:
 			out.append(t)
 	return out
@@ -845,13 +887,13 @@ func _ability_save(c, t, ab: BattleAbility) -> void:
 
 
 # =====================================================================
-# ИИ: враги, питомцы и спутники без приказов
+# ШІ: вороги, улюбленці й супутники без наказів
 # =====================================================================
 func ai_turn(c) -> void:
 	if fleeing.has(c):
 		_ai_flee(c)
 		return
-	# лечение и зелья
+	# лікування й зілля
 	if c.hp <= c.max_hp / 3:
 		for ab in c.abilities:
 			if ab.kind == "heal" and ab.target == "self" and c.can_use(ab):
@@ -864,7 +906,7 @@ func ai_turn(c) -> void:
 				if a.team == c.team and not a.dead and a != c and (a.down or a.hp <= a.max_hp / 3) and grid.dist_ft(c.cell, a.cell) <= 5:
 					use_ability(c, ab, a)
 					break
-	# поднять союзника без сознания рядом
+	# підняти непритомного союзника поруч
 	for a in all:
 		if a.team == c.team and a.down and c.has_action and grid.dist_ft(c.cell, a.cell) <= 5:
 			help(c, a)
@@ -873,7 +915,7 @@ func ai_turn(c) -> void:
 		if c.has_action:
 			dodge(c)
 		return
-	# бонусные приёмы: клич, вой
+	# бонусні прийоми: клич, виття
 	for ab in c.abilities:
 		if ab.cost == "bonus" and ab.kind in ["self", "save"] and c.can_use(ab) and ab.target == "self":
 			var n: int = 0
@@ -882,7 +924,7 @@ func ai_turn(c) -> void:
 					n += 1
 			if n > 0:
 				use_ability(c, ab, c)
-	# бомба по скоплению врагов
+	# бомба по скупченню ворогів
 	for ab in c.abilities:
 		if ab.kind == "save" and ab.target == "cell" and c.can_use(ab) and c.has_action:
 			var cell = _ai_area_cell(c, ab)
@@ -891,7 +933,7 @@ func ai_turn(c) -> void:
 	if not c.has_action:
 		_ai_step_away(c)
 		return
-	# сеть, дротик — по цели
+	# сітка, дротик — по цілі
 	for ab in c.abilities:
 		if ab.kind in ["save", "attack"] and ab.target == "enemy" and c.can_use(ab) and c.has_action and t.standing() \
 				and can_ability(c, ab, t)["ok"] and roller.rng.randf() < 0.5:
@@ -965,7 +1007,7 @@ func _ai_shoot(c, t) -> bool:
 	var w: BattleWeapon = c.weapon()
 	if ca["ok"] and int(ca["dist"]) <= w.range_ft and ca["cover"] != "three_quarters":
 		return attack(c, t)
-	# отойти/подойти на клетку, откуда виден и в обычной дистанции, подальше от врагов
+	# відійти/підійти на клітинку, звідки видно й у звичайній дистанції, далі від ворогів
 	var reach: Dictionary = reach_of(c)
 	var best = null
 	var bs: float = -INF
@@ -1010,7 +1052,7 @@ func _ai_close_in(c, t) -> void:
 		if c.standing() and can_attack(c, t)["ok"]:
 			attack(c, t)
 		return
-	# не дойти за ход: рывок и идти по пути к цели
+	# не дійти за хід: ривок і йти шляхом до цілі
 	if c.has_action:
 		dash(c)
 	var oc: Dictionary = occupancy(c)
@@ -1063,7 +1105,7 @@ func _ai_flee(c) -> void:
 
 
 # =====================================================================
-# КОНЕЦ БОЯ
+# КІНЕЦЬ БОЮ
 # =====================================================================
 func hero():
 	for c in all:
@@ -1100,12 +1142,31 @@ func _finish(o: String) -> void:
 		for c in all:
 			if c.team == 1 and c.dead and c.human:
 				money += int(roller.roll("2d6", {"silent": true})["total"])
-				# Лом с бандитов (вопрос Q04, Huzzah 2026-10-24): 0–2 куска с каждого [ВРЕМЕННО]
-				# (кости d3 у DiceRoller нет — «1d3» не разбиралось, и лом не падал никогда)
+				# Брухт із бандитів (питання Q04, Huzzah 2026-10-24): 0–2 шматки з кожного [Q19: не баланс, залишено]
+				# (кісток d3 у DiceRoller немає — «1d3» не розбиралося, і брухт не випадав ніколи)
 				scrap += roller.rng.randi_range(0, 2)
 			elif c.team == 1 and c.dead and not c.is_pet:
-				# Шкуры со зверей — материал для кожевника (вопрос Q18): 1–2 с каждого [ВРЕМЕННО]
+				# Шкури зі звірів — матеріал для шкіряника (питання Q18): 1–2 з кожного [Q19: не баланс, залишено]
 				hides += roller.rng.randi_range(1, 2)
+		# «Искатель удачи» — вдвое больше денег, «Добытчик» — на вещь больше
+		var hero_c = _hero_c()
+		if hero_c != null:
+			money = int(round(money * (1.0 + hero_c.fx("battle_money"))))
+			if hero_c.fx("battle_loot") > 0.0:
+				if scrap > 0 or money > 0:
+					scrap += int(hero_c.fx("battle_loot"))
+				elif hides > 0:
+					hides += int(hero_c.fx("battle_loot"))
+		# Опыт: за каждого убитого — kill_per_level × уровень, всем живым людям стороны героя
+		xp_gained = int(Sheet.num("xp", "kill_per_level", 40) * killed_levels)
+		if xp_gained > 0:
+			for c in all:
+				if c.team == 0 and not c.is_pet and not c.dead and c.on_sheet:
+					var lv: int = c.actor.level
+					Sheet.gain_xp(c.actor, xp_gained)
+					if c.actor.level > lv:
+						log_line("%s: новый уровень %d!" % [c.title, c.actor.level], "head")
+			log_line("Опыт: +%d." % xp_gained, "info")
 		if money > 0:
 			loot["money"] = money
 		var got: Dictionary = {}
@@ -1122,7 +1183,7 @@ func _finish(o: String) -> void:
 				inv["items"] = {}
 			for id in got:
 				inv["items"][id] = int(inv["items"].get(id, 0)) + int(got[id])
-	log_line({"win": "Победа.", "flee": "Отступили.", "lose": "Поражение."}[o], "head")
+	log_line({"win": I18n.t("Победа."), "flee": I18n.t("Отступили."), "lose": I18n.t("Поражение.")}[o], "head")
 	finished.emit(o)
 
 
@@ -1135,7 +1196,7 @@ func result() -> Dictionary:
 		if c.team == 0 and not c.new_traumas.is_empty():
 			traumas[c.actor.actor_id] = c.new_traumas.duplicate()
 	return {"outcome": outcome, "origin": req.get("origin", "overworld"), "return_pos": req.get("return_pos", Vector2.ZERO),
-		"game_minutes": maxf(round_n, 1) * ROUND_S / 60.0, "rounds": round_n, "dead": dead, "killed": killed, "loot": loot,
+		"game_minutes": maxf(round_n, 1) * ROUND_S / 60.0, "rounds": round_n, "dead": dead, "killed": killed, "loot": loot, "xp": xp_gained,
 		"traumas": traumas}
 
 
@@ -1147,11 +1208,11 @@ func log_line(t: String, kind: String = "info") -> void:
 
 
 # =====================================================================
-# СОХРАНЕНИЕ
+# ЗБЕРЕЖЕННЯ
 # =====================================================================
 func to_dict() -> Dictionary:
 	return {"round": round_n, "turn": turn_i, "order": order.map(func(c): return c.actor.actor_id),
-		"all": all.map(func(c): return c.to_dict()), "killed": killed, "log": log_lines.slice(maxi(0, log_lines.size() - 60)),
+		"all": all.map(func(c): return c.to_dict()), "killed": killed, "killed_levels": killed_levels, "log": log_lines.slice(maxi(0, log_lines.size() - 60)),
 		"fleeing": fleeing.keys().map(func(c): return c.actor.actor_id)}
 
 
@@ -1176,4 +1237,5 @@ func load_dict(d: Dictionary) -> void:
 	round_n = int(d.get("round", 1))
 	turn_i = int(d.get("turn", 0))
 	killed = int(d.get("killed", 0))
+	killed_levels = int(d.get("killed_levels", killed))
 	log_lines = d.get("log", []).duplicate()

@@ -1,0 +1,40 @@
+{
+  "_note": "Табір героя в полі (K) за мотивами виживання (Huzzah 2026-10-29, механіки 1, 2, 4, 6, 8): вогнище, готування, розбирання здобичі, знос і лагодження, сон в укритті. Числа [ВРЕМЕННО]. wood — чим палити; fire_h — скільки годин горить одна оберемка; light — шанс розпалити кременем (+ light_per_level за рівень Виживання), з факелом — напевно. recipes: in — що потрібно, out — що виходить, min — хвилини гри, near_water — лише біля води; burn — шанс зіпсувати (мінус burn_per_level за рівень Виживання), тоді виходить charred_food. butcher — що дає туша (за шаблоном звіра), без ножа м'яса вдвічі менше й без шкури. wear — знос: km — за кілометр для слотів одягу, battle_* — за бій; repair_kit — скільки повертає набір; repair_fee — частка ціни за 100 % зносу.",
+  "wood": ["brushwood", "driftwood"],
+  "fire_h": 2.0,
+  "fire_reach_m": 15.0,
+  "light": 0.55,
+  "light_per_level": 0.04,
+  "light_min": 10,
+  "burn": 0.25,
+  "burn_per_level": 0.03,
+  "recipes": {
+    "roast_meat":     {"name": "Пожарить мясо",          "in": {"raw_meat": 1},                        "out": {"roasted_meat": 1},      "min": 20},
+    "dry_meat":       {"name": "Завялить мясо в дыму",   "in": {"raw_meat": 2},                        "out": {"dried_meat": 2},        "min": 180, "burn": 0.0},
+    "bake_mushrooms": {"name": "Испечь грибы",           "in": {"mushrooms": 2},                       "out": {"roasted_mushrooms": 1}, "min": 15},
+    "stew_roots":     {"name": "Сварить похлёбку из корней", "in": {"roots": 2, "water_flask": 1},     "out": {"field_stew": 1},        "min": 40},
+    "stew_mushrooms": {"name": "Сварить грибную похлёбку", "in": {"mushrooms": 2, "water_flask": 1},   "out": {"field_stew": 1},        "min": 40},
+    "stew_meat":      {"name": "Сварить мясную похлёбку", "in": {"raw_meat": 1, "roots": 1, "water_flask": 1}, "out": {"field_stew": 2}, "min": 50},
+    "decoction":      {"name": "Заварить травяной отвар", "in": {"wild_herbs": 2, "water_flask": 1},   "out": {"herbal_decoction": 1},  "min": 30, "burn": 0.0},
+    "boil_water":     {"name": "Набрать и вскипятить воду", "in": {},                                  "out": {"water_flask": 1},       "min": 20, "near_water": true, "burn": 0.0, "max_out": 3}
+  },
+  "butcher": {
+    "wolf":      {"min": 20, "out": {"raw_meat": 2, "hide": 1, "bone": 1}},
+    "boar":      {"min": 30, "out": {"raw_meat": 4, "hide": 1, "fat": 1, "bone": 1}},
+    "dog":       {"min": 15, "out": {"raw_meat": 1, "hide": 1}},
+    "rad_hound": {"min": 20, "out": {"tainted_meat": 2, "bone": 1}}
+  },
+  "knives": ["knife", "shortsword", "axe"],
+  "wear": {
+    "km": {"feet": 0.35, "legs": 0.15, "body": 0.12, "hands": 0.1, "back": 0.08, "head": 0.05},
+    "battle_weapon": 4.0,
+    "battle_armor": 5.0,
+    "repair_kit": 40.0,
+    "repair_fee": 0.5,
+    "masters": {
+      "smith":  ["knife", "axe", "spear", "mace", "shortsword", "chain_mail", "plate_armor"],
+      "tanner": ["leather_jacket", "boots", "gloves", "hide_vest", "leather_cap", "fur_cloak"],
+      "weaver": ["linen_shirt", "trousers", "travel_cloak", "felt_cap", "straw_hat"]
+    }
+  }
+}

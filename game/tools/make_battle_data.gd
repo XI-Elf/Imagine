@@ -1,12 +1,12 @@
 extends SceneTree
-## Один раз создаёт ресурсы боя (.tres) в res://data/battle/. Дальше источник — сами .tres
-## (их удобно править в инспекторе Godot); этот скрипт перезапишет их, если запустить снова.
+## Один раз створює ресурси бою (.tres) у res://data/battle/. Далі джерело — самі .tres
+## (їх зручно правити в інспекторі Godot); цей скрипт перезапише їх, якщо запустити знову.
 ## godot --headless --path game -s res://tools/make_battle_data.gd
 
 const OUT := "res://data/battle/"
 
 const WEAPONS: Array = [
-	{"id": "fists", "icon": "fist", "title": "Кулаки", "damage": [{"type": "bludgeoning", "dice": "", "bonus": 1}], "proficiency": "natural"},
+	{"id": "fists", "icon": "fist", "title": "Кулаки", "damage": [{"type": "bludgeoning", "dice": "1d2", "bonus": 0}], "proficiency": "natural"},
 	{"id": "dagger", "icon": "knife", "title": "Нож", "damage": [{"type": "piercing", "dice": "1d4", "bonus": 0}], "stat": "finesse", "light": true, "range_ft": 20, "long_range_ft": 60},
 	{"id": "club", "icon": "club", "title": "Дубина", "damage": [{"type": "bludgeoning", "dice": "1d4", "bonus": 0}], "light": true},
 	{"id": "handaxe", "icon": "axe", "title": "Топорик", "damage": [{"type": "slashing", "dice": "1d4", "bonus": 0}, {"type": "bludgeoning", "dice": "", "bonus": 1}], "light": true},
@@ -53,17 +53,19 @@ const EFFECTS: Array = [
 ]
 
 const ABILITIES: Array = [
-	{"id": "second_wind", "title": "Второе дыхание", "description": "Бонусное действие: восстановить 1d10 + уровень HP. Раз за бой.", "cost": "bonus", "kind": "heal", "target": "self", "heal_dice": "1d10", "heal_add_level": true, "uses_per_battle": 1, "range_ft": 0},
-	{"id": "fire_flask", "title": "Огненная смесь", "description": "Бросок склянки: все в радиусе 5 футов — спасбросок Ловкости, 2d6 огня (половина при успехе), провал — горит.", "kind": "save", "target": "cell", "stat": "int", "range_ft": 30, "radius_ft": 5, "save_stat": "dex", "damage": [{"type": "fire", "dice": "2d6", "bonus": 0}], "apply_effect": "burning", "uses_per_battle": 2},
-	{"id": "poison_dart", "title": "Ядовитый дротик", "description": "Дальняя атака Ловкостью: 1d4 колющего + 1d6 яда; спасбросок Выносливости или отравлен.", "kind": "attack", "target": "enemy", "stat": "dex", "range_ft": 40, "damage": [{"type": "piercing", "dice": "1d4", "bonus": 0}, {"type": "poison", "dice": "1d6", "bonus": 0}], "save_stat": "con", "apply_effect": "poisoned", "uses_per_battle": 3},
-	{"id": "healing_salve", "title": "Лечебная мазь", "description": "Действие: союзник рядом восстанавливает 1d8 + Мудрость HP.", "kind": "heal", "target": "ally", "stat": "wis", "range_ft": 5, "heal_dice": "1d8", "uses_per_battle": 3},
-	{"id": "war_cry", "title": "Боевой клич", "description": "Бонусное действие: союзники в 15 футах воодушевлены (атаки с преимуществом 2 раунда). Раз за бой.", "cost": "bonus", "kind": "self", "target": "self", "radius_ft": 15, "apply_effect": "rallied", "uses_per_battle": 1, "range_ft": 0},
+	{"id": "second_wind", "title": "Второе дыхание", "description": "Бонусное действие: восстановить 1d10 + уровень к здоровью. Раз за бой.", "cost": "bonus", "kind": "heal", "target": "self", "heal_dice": "1d10", "heal_add_level": true, "uses_per_battle": 1, "range_ft": 0},
+	{"id": "fire_flask", "title": "Огненная смесь", "description": "Бросок склянки: все в радиусе 1 клетки — спасбросок Ловкости, 2d6 огня (половина при успехе), провал — горит.", "kind": "save", "target": "cell", "stat": "int", "range_ft": 30, "radius_ft": 5, "save_stat": "dex", "damage": [{"type": "fire", "dice": "2d6", "bonus": 0}], "apply_effect": "burning", "uses_per_battle": 2},
+	{"id": "poison_dart", "title": "Ядовитый дротик", "description": "Дальняя атака Ловкостью: 1d4 колющего + 1d6 яда; спасбросок Стойкости или отравлен.", "kind": "attack", "target": "enemy", "stat": "dex", "range_ft": 40, "damage": [{"type": "piercing", "dice": "1d4", "bonus": 0}, {"type": "poison", "dice": "1d6", "bonus": 0}], "save_stat": "con", "apply_effect": "poisoned", "uses_per_battle": 3},
+	{"id": "healing_salve", "title": "Лечебная мазь", "description": "Действие: союзник рядом восстанавливает 1d8 + Чутьё к здоровью.", "kind": "heal", "target": "ally", "stat": "wis", "range_ft": 5, "heal_dice": "1d8", "uses_per_battle": 3},
+	{"id": "war_cry", "title": "Боевой клич", "description": "Бонусное действие: союзники в 3 клетках воодушевлены (атаки с преимуществом 2 раунда). Раз за бой.", "cost": "bonus", "kind": "self", "target": "self", "radius_ft": 15, "apply_effect": "rallied", "uses_per_battle": 1, "range_ft": 0},
 	{"id": "net", "title": "Сеть", "description": "Бросок сети: спасбросок Силы или опутан.", "kind": "save", "target": "enemy", "stat": "dex", "range_ft": 15, "save_stat": "str", "apply_effect": "restrained", "uses_per_battle": 1, "half_on_save": false},
-	{"id": "howl", "title": "Вой", "description": "Бонусное действие: враги в 30 футах — спасбросок Мудрости или напуганы. Раз за бой.", "cost": "bonus", "kind": "save", "target": "self", "stat": "con", "radius_ft": 30, "save_stat": "wis", "apply_effect": "frightened", "uses_per_battle": 1, "range_ft": 0, "half_on_save": false},
+	{"id": "howl", "title": "Вой", "description": "Бонусное действие: враги в 6 клетках — спасбросок чутья или напуганы. Раз за бой.", "cost": "bonus", "kind": "save", "target": "self", "stat": "con", "radius_ft": 30, "save_stat": "wis", "apply_effect": "frightened", "uses_per_battle": 1, "range_ft": 0, "half_on_save": false},
 ]
 
 const CREATURES: Array = [
 	{"id": "bandit", "title": "Разбойник", "scores": {"str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10, "lck": 10}, "hp_dice": "2d8", "armor": "leather", "weapons": ["shortsword", "dagger"], "abilities": ["net"], "ai": "melee", "morale": 0.5},
+	# Q19: перший бій біля «Острога» (Q30) — обірванець із палицею: розбійник у шкурах із палицею: з ножем перемагають ~95 зі 100, кулаками ~кожен другий (tests/balance_checks.gd)
+	{"id": "bandit_ragged", "title": "Оборванец", "scores": {"str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10, "lck": 10}, "hp_dice": "2d8", "armor": "hides", "weapons": ["club"], "ai": "melee", "morale": 0.5},
 	{"id": "bandit_archer", "title": "Разбойник-лучник", "scores": {"str": 10, "dex": 14, "con": 12, "int": 10, "wis": 11, "cha": 10, "lck": 10}, "hp_dice": "2d8", "armor": "hides", "weapons": ["shortbow", "dagger"], "ai": "ranged", "morale": 0.4, "perception_prof": true},
 	{"id": "bandit_chief", "title": "Атаман", "level": 2, "scores": {"str": 15, "dex": 12, "con": 14, "int": 11, "wis": 11, "cha": 14, "lck": 10}, "hp_dice": "4d8", "armor": "chain", "weapons": ["battleaxe", "dagger"], "abilities": ["war_cry"], "ai": "melee", "morale": 0.8, "save_profs": ["str", "con"]},
 	{"id": "wolf", "title": "Волк", "human": false, "scores": {"str": 12, "dex": 15, "con": 12, "int": 3, "wis": 12, "cha": 6, "lck": 10}, "hp_dice": "2d8", "natural_ac": 11, "weapons": ["wolf_bite"], "speed_ft": 40, "ai": "beast", "morale": 0.4, "perception_prof": true, "stealth_prof": true},

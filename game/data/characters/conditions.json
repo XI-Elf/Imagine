@@ -65,7 +65,7 @@
     },
     "radiation_sickness": {
       "name_ru": "Проклятая хворь",
-      "name_en": "Radiation Sickness",
+      "name_en": "Curse Sickness",
       "effects": {"health_decay": 0.03, "exhaustion": 0.05, "emaciation": 0.06},
       "treatment": "Снизить воздействие проклятья + специальные зелья",
       "cause": "Сильное воздействие проклятья"
@@ -139,8 +139,8 @@
       "duration_hours": 8
     },
     "anti_radiation": {
-      "name_ru": "Антирад",
-      "name_en": "Anti-Radiation",
+      "name_ru": "Очищение",
+      "name_en": "Cleansing",
       "effects": {"radiation_decay": 5.0},
       "duration_hours": 6
     },
@@ -149,6 +149,30 @@
       "name_en": "Painkiller",
       "effects": {"ignore_pain": true, "energy_restore": 10},
       "duration_hours": 3
+    },
+    "by_fire": {
+      "name_ru": "У костра",
+      "name_en": "By the Fire",
+      "effects": {"cold_resist_c": 10, "sleep_energy": 0.15, "conceal": -0.15},
+      "duration_hours": 1.0
+    },
+    "shelter_tent": {
+      "name_ru": "В палатке",
+      "name_en": "In a Tent",
+      "effects": {"cold_resist_c": 5, "sleep_energy": 0.2, "conceal": 0.08},
+      "duration_hours": 1.0
+    },
+    "shelter_bedroll": {
+      "name_ru": "На спальнике",
+      "name_en": "On a Bedroll",
+      "effects": {"cold_resist_c": 3, "sleep_energy": 0.05},
+      "duration_hours": 1.0
+    },
+    "sleep_open": {
+      "name_ru": "Сон на голой земле",
+      "name_en": "Sleeping Rough",
+      "effects": {"cold_resist_c": -2, "sleep_energy": -0.3},
+      "duration_hours": 1.0
     },
     "rested": {
       "name_ru": "Отдохнувший",
