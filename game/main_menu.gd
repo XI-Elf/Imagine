@@ -6,6 +6,7 @@ const WorldSave := preload("res://world_save.gd")
 const BG_IMAGE := "res://art/menu_bg.jpg"
 const HeroCreateScript := preload("res://characters/hero_create.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
+const SoundSettings := preload("res://audio/sound_settings.gd")
 
 # Кольори інтерфейсу
 const COLOR_BG := Color("2b2823")      # колір фону, якщо картинки немає
@@ -21,8 +22,8 @@ var _creator: CanvasLayer
 
 
 func _ready() -> void:
-	# Заставка (синематик) показывается один раз при запуске игры, перед меню. Если сцены заставки нет
-	# или она не открылась, меню строится как обычно
+	# Заставка (синематик) показується один раз під час запуску гри, перед меню. Якщо сцени заставки немає
+	# або вона не відкрилася, меню будується як завжди
 	if not Engine.has_meta("aw_intro_done") and ResourceLoader.exists("res://intro.tscn"):
 		Engine.set_meta("aw_intro_done", true)
 		get_tree().change_scene_to_file.call_deferred("res://intro.tscn")
@@ -75,16 +76,22 @@ func _ready() -> void:
 	box.add_child(spacer)
 
 	# Кнопки меню
-	_add_button(box, "Новая игра", _on_new_game)
+	_add_button(box, I18n.t("Новая игра"), _on_new_game)
 
-	# «Продолжить» — последнее сохранение, «Загрузить» — выбор из списка
+	# «Продовжити» — останнє збереження, «Завантажити» — вибір зі списку
 	var has_saves: bool = WorldSave.exists()
-	var continue_button := _add_button(box, "Продолжить", _on_continue)
+	var continue_button := _add_button(box, I18n.t("Продолжить"), _on_continue)
 	continue_button.disabled = not has_saves
-	var load_button := _add_button(box, "Загрузить", _on_load_menu)
+	var load_button := _add_button(box, I18n.t("Загрузить"), _on_load_menu)
 	load_button.disabled = not has_saves
 
-	_add_button(box, "Выход", _on_quit)
+	# Звук і музика: увімк./вимк., гучність, як часто міняється п'єса (audio/sound_settings.gd)
+	_add_button(box, I18n.t("Звук и музыка"), _on_sound_settings)
+
+	# Мова (питання Q26): російська / українська; зміна перезапускає гру, щоб усі тексти зібралися заново
+	_add_button(box, I18n.t("Язык: %s") % _lang_name(I18n.current()), _on_language)
+
+	_add_button(box, I18n.t("Выход"), _on_quit)
 
 	# Мітка для повідомлень
 	message_label = Label.new()
@@ -107,8 +114,8 @@ func _add_button(parent: Node, text: String, callback: Callable) -> Button:
 	return button
 
 
-# «Новая игра»: сначала экран создания героя (characters/hero_create.gd), потом мир.
-# Выбор передаётся в игру через Engine meta "aw_new_hero" — герой появится у ворот города (characters/cast.gd)
+# «Нова гра»: спершу екран створення героя (characters/hero_create.gd), потім світ.
+# Вибір передається в гру через Engine meta "aw_new_hero" — герой з'явиться біля брами міста (characters/cast.gd)
 func _on_new_game() -> void:
 	if _creator != null:
 		return
@@ -127,7 +134,7 @@ func _on_hero_created(params: Dictionary) -> void:
 	_open_game()
 
 
-# «Продолжить»: игра загрузит сохранённый мир
+# «Продовжити»: гра завантажить збережений світ
 func _on_continue() -> void:
 	_load_slot(WorldSave.latest_slot())
 
@@ -135,26 +142,26 @@ func _on_continue() -> void:
 func _load_slot(slot: String) -> void:
 	if slot == "":
 		return
-	# Нечитаемое сохранение (старая версия, повреждено) игра молча заменила бы новым пустым миром
+	# Нечитабельне збереження (стара версія, пошкоджене) гра мовчки замінила б новим порожнім світом
 	if WorldSave.read(slot).is_empty():
 		_close_load_menu()
-		message_label.text = "Сохранение не читается (повреждено или от другой версии игры)"
+		message_label.text = I18n.t("Сохранение не читается (повреждено или от другой версии игры)")
 		return
 	Engine.set_meta("aw_load", slot)
 	_open_game()
 
 
-# Переход в мир; если сцена не открылась — сообщение под кнопками, а не тишина
+# Перехід у світ; якщо сцена не відкрилася — повідомлення під кнопками, а не тиша
 func _open_game() -> void:
 	var err: Error = ERR_FILE_NOT_FOUND
 	if ResourceLoader.exists(GAME_SCENE):
 		err = get_tree().change_scene_to_file(GAME_SCENE)
 	if err != OK:
 		Engine.set_meta("aw_load", "")
-		message_label.text = "Не открывается сцена мира %s (%s)" % [GAME_SCENE, error_string(err)]
+		message_label.text = I18n.t("Не открывается сцена мира %s (%s)") % [GAME_SCENE, error_string(err)]
 
 
-# Список сохранений: вид, дата, персонаж, игровая дата; «Загрузить» и «Удалить»
+# Список збережень: вигляд, дата, персонаж, ігрова дата; «Завантажити» і «Видалити»
 func _build_load_panel(parent: Control) -> void:
 	_load_panel = PanelContainer.new()
 	_load_panel.add_theme_stylebox_override("panel", ComicUI.panel(30.0))
@@ -165,7 +172,7 @@ func _build_load_panel(parent: Control) -> void:
 	v.add_theme_constant_override("separation", 10)
 	_load_panel.add_child(v)
 	var t := Label.new()
-	t.text = "Загрузить"
+	t.text = I18n.t("Загрузить")
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	t.add_theme_font_size_override("font_size", 30)
 	t.add_theme_color_override("font_color", COLOR_TITLE)
@@ -177,7 +184,7 @@ func _build_load_panel(parent: Control) -> void:
 	_load_list = VBoxContainer.new()
 	_load_list.add_theme_constant_override("separation", 6)
 	sc.add_child(_load_list)
-	var back := _add_button(v, "Назад", _close_load_menu)
+	var back := _add_button(v, I18n.t("Назад"), _close_load_menu)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
@@ -203,17 +210,17 @@ func _on_load_menu() -> void:
 		var l := Label.new()
 		var who: String = String(h.get("char_name", ""))
 		l.text = "%s  %s\n%s%s" % [h["title"], String(h.get("saved_at", "")).replace("T", " "),
-			("Персонаж: " + who + "   ") if who != "" else "",
+			(I18n.t("Персонаж: ") + who + "   ") if who != "" else "",
 			String(h.get("game_date", "")) + ("   " + String(h["place"]) if h.has("place") else "")]
 		l.custom_minimum_size = Vector2(420, 0)
 		l.add_theme_color_override("font_color", COLOR_TITLE)
 		row.add_child(l)
 		var b := Button.new()
-		b.text = "Загрузить"
+		b.text = I18n.t("Загрузить")
 		b.pressed.connect(_load_slot.bind(String(h["slot"])))
 		row.add_child(b)
 		var d := Button.new()
-		d.text = "Удалить"
+		d.text = I18n.t("Удалить")
 		d.pressed.connect(_delete_slot.bind(String(h["slot"])))
 		row.add_child(d)
 		_load_list.add_child(row)
@@ -221,6 +228,28 @@ func _on_load_menu() -> void:
 	_load_panel.visible = true
 
 
-# Натиснули "Выход"
+func _on_sound_settings() -> void:
+	var p: PanelContainer = SoundSettings.new()
+	p.name = "SoundSettings"
+	_main_box.get_parent().add_child(p)
+	_main_box.visible = false
+	p.closed.connect(func() -> void: _main_box.visible = true)
+
+
+func _lang_name(code: String) -> String:
+	for l in I18n.LANGS:
+		if l[0] == code:
+			return l[1]
+	return code
+
+
+func _on_language() -> void:
+	var codes: Array = I18n.LANGS.map(func(l): return l[0])
+	var next: String = codes[(codes.find(I18n.current()) + 1) % codes.size()]
+	if I18n.choose(next):
+		I18n.restart(get_tree())
+
+
+# Натиснули "Вихід"
 func _on_quit() -> void:
 	get_tree().quit()

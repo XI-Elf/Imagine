@@ -16,10 +16,12 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
+LangBoot="*res://i18n/i18n.gd"
 ComicSkin="*res://ui/comic_skin.gd"
 Worlds="*res://worlds/worlds.gd"
 Tutorial="*res://tutorial/tutorial.gd"
 Sfx="*res://audio/sfx.gd"
+Music="*res://audio/music.gd"
 
 [display]
 
@@ -34,3 +36,8 @@ window/stretch/aspect="expand"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://i18n/uk.po")
+locale/fallback="ru"

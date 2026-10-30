@@ -1,6 +1,6 @@
 extends SceneTree
-## По снимку на локацию: общая карта, миниатюра города, каждый биом, места Чёрнославля, бой.
-## godot --path game --rendering-driver opengl3 -s res://qa/shots_locations.gd  (папка — AMBER_QA_OUT)
+## По знімку на локацію: загальна карта, мініатюра міста, кожен біом, місця Эшвика, бій.
+## godot --path game --rendering-driver opengl3 -s res://qa/shots_locations.gd  (тека — AMBER_QA_OUT)
 const Actor := preload("res://characters/actor.gd")
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://location_shots/"
 
@@ -28,7 +28,7 @@ func quiet_tutorial() -> void:
 				c.visible = false
 
 
-# Точка, где биом target и вокруг на radius метров тот же (не край)
+# Точка, де біом target і довкола на radius метрів той самий (не край)
 func find_biome(world: Node, target: int, hot: bool, radius: float) -> Vector2:
 	var img: Image = world.biome_img
 	for y in range(80, img.get_height() - 80, 17):

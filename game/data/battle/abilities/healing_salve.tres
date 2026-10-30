@@ -6,7 +6,7 @@
 script = ExtResource("1_7njf5")
 id = "healing_salve"
 title = "Лечебная мазь"
-description = "Действие: союзник рядом восстанавливает 1d8 + Мудрость HP."
+description = "Действие: союзник рядом восстанавливает 1d8 + Чутьё к здоровью."
 kind = "heal"
 target = "ally"
 stat = "wis"

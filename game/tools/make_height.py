@@ -1,8 +1,8 @@
-# Высоты для объёма гор (Huzzah 2026-10-24: «должен чувствоваться объём от того, что я поднимаюсь на гору»).
-# Своей карты высот у мира нет, поэтому высота выводится из биома гор (6): предгорья плавно поднимаются к краю гор,
-# внутри — массив с гребнями (шум). Результат: art/map/map_height.png (L8, того же размера, что map_biomes.png),
-# 0 — низина, 255 — game.gd HEIGHT_MAX_M (900 м). Шейдер карты строит по нему светотень, cast.gd — высоту героя.
-# Запуск: python3 tools/make_height.py  (из папки game)
+# Висоти для об'єму гір (Huzzah 2026-10-24: «має відчуватися об'єм від того, що я піднімаюся на гору»).
+# Своєї карти висот у світу немає, тому висота виводиться з біома гір (6): передгір'я плавно піднімаються до краю гір,
+# усередині — масив із гребенями (шум). Результат: art/map/map_height.png (L8, того самого розміру, що map_biomes.png),
+# 0 — низина, 255 — game.gd HEIGHT_MAX_M (900 м). Шейдер карти будує за ним світлотінь, cast.gd — висоту героя.
+# Запуск: python3 tools/make_height.py  (з теки game)
 import numpy as np
 from PIL import Image, ImageFilter
 
@@ -31,7 +31,7 @@ for cell, w, seed in ((48, 0.5, 1), (20, 0.3, 2), (8, 0.2, 3)):
 	ridge += w * (1.0 - np.abs(2.0 * n - 1.0))
 h = base * (0.45 + 0.8 * ridge)
 h = np.clip(h / max(h.max(), 1e-6), 0.0, 1.0)
-# Вода — на нуле
+# Вода — на нулі
 w = np.array(Image.open('art/map/map_water.png').resize((W, H), Image.BILINEAR)).astype(np.float32) / 255.0
 h *= np.clip(1.0 - w * 2.0, 0.0, 1.0)
 Image.fromarray((h * 255).astype(np.uint8), 'L').save('art/map/map_height.png', optimize=True)

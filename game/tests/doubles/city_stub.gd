@@ -1,17 +1,17 @@
 extends Node2D
-## Заглушка мира города: тот же контракт, что у city/city_world.tscn (ветка «Мир города»), чтобы
-## переходы проверялись без неё. Площадь с воротами внизу; WASD — идти, к воротам или Enter — выйти.
+## Заглушка світу міста: той самий контракт, що в city/city_world.tscn (гілка «Світ міста»), щоб
+## переходи перевірялися без неї. Площа з брамою внизу; WASD — іти, до брами або Enter — вийти.
 
 signal exit_requested(city_id: String, gate_id: String)
 
 const SIZE := Vector2(900, 560)
-const SPEED: float = 220.0     # пикселей экрана в секунду
+const SPEED: float = 220.0     # пікселів екрана за секунду
 
 var city_id: String = ""
 var city_name: String = ""
 var hero: Actor = null
 var ctx: Dictionary = {}
-var pos := Vector2(450, 120)   # герой на площади, пиксели от угла площади
+var pos := Vector2(450, 120)   # герой на площі, пікселі від кута площі
 var visits: int = 0
 var _label: Label
 var _left: bool = false

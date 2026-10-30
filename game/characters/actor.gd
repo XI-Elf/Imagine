@@ -1,7 +1,7 @@
 class_name Actor
 extends RefCounted
-## Общий персонаж для игрока и НПС: характеристики 09, ресурсы пака Day R (здоровье, голод, жажда,
-## энергия, радиация, запас сил), травмы, болезни, полезные эффекты, навыки, движение по местности.
+## Общий персонаж для игрока и НПС: характеристики и навыки (characters/sheet.gd), ресурсы пака (здоровье, голод, жажда,
+## энергия, проклятье, запас сил), травмы, болезни, полезные эффекты, навыки, движение по местности.
 ## Правила одни для всех: игрок и НПС различаются только тем, кто решает, куда идти (actor_body.gd).
 ## Нужды идут в игровом времени (tick), запас сил и шаги — в реальном (travel_speed, exert):
 ## так персонаж проходит одинаковое расстояние при любой скорости часов (масштаб ×8, решение автора).
@@ -11,40 +11,52 @@ signal health_changed(value: float)
 signal condition_added(id: String)
 signal condition_removed(id: String)
 signal skill_leveled_up(skill: String, level: int)
+signal leveled_up(level: int)
 signal died(cause: String)
 signal km_passed(total_km: int)
 
 const R := preload("res://characters/actor_rules.gd")
-const STATS: Array = ["str", "agi", "int", "end", "per", "wis", "cha"]
+const S := preload("res://characters/sheet.gd")
+# Семь характеристик: Сила, Чутьё, Стойкость, Обаяние, Ум, Ловкость, Удача
+const STATS: Array = ["str", "per", "end", "cha", "int", "agi", "luck"]
 const RESOURCES: Array = ["health", "hunger", "thirst", "energy", "radiation", "stamina"]
-# Длинный шаг времени режется на куски, чтобы пороги не перескакивались
+# Довгий крок часу ріжеться на шматки, щоб пороги не перескакувалися
 const SUBSTEP_S: float = 600.0
 const OPEN_WOUNDS: Array = ["bullet_wound", "laceration"]
-const DEATH_CAUSES: Dictionary = {
-	"thirst": "жажда", "hunger": "голод", "radiation": "воздействие проклятья", "drowning": "утонул",
-	"wounds": "раны", "disease": "болезнь", "other": "неизвестно",
+static var DEATH_CAUSES: Dictionary = {
+	"thirst": I18n.t("жажда"), "hunger": I18n.t("голод"), "radiation": I18n.t("воздействие проклятья"), "drowning": I18n.t("утонул"),
+	"wounds": I18n.t("раны"), "disease": I18n.t("болезнь"), "other": I18n.t("неизвестно"),
 }
 
 var actor_id: String = ""
 var display_name: String = ""
 var is_npc: bool = false
-var stats: Dictionary = {}          # stat -> int, включая luck
+var stats: Dictionary = {}          # характеристики: база (выбор при создании), 1–10; черты и дары — в sheet.gd
 var res: Dictionary = {}            # ресурс -> значение
 var conditions: Array = []          # {id, age_h, left_h (0 — пока не вылечат), stage}
 var buffs: Array = []               # {id, left_h}
-var skills: Dictionary = {}         # skill -> {xp, level}
+var skills: Dictionary = {}         # навык -> {pts (куплено очками, %), bonus (уроки, прошлое, %), spent}
+var tags: Array = []                # отмеченные навыки (3)
+var quirks: Array = []              # особенности, не больше двух
+var perks: Dictionary = {}          # дар -> ранг
+var level: int = 1
+var xp: float = 0.0
+var skill_points: int = 0           # нераспределённые очки навыков
+var perk_picks: int = 0             # сколько даров можно выбрать
+var mutate_left: int = 0            # дар «Перерождение»: смен черт
+var tag_left: int = 0               # дар «Ещё один талант»: отметить навык
 var alive: bool = true
 var death_cause: String = ""
 var sleeping: bool = false
 var sleep_h: float = 0.0
-var wet_h: float = 0.0              # сколько игровых часов ещё сохнуть
-var moving: bool = false            # шёл ли последние секунды (трата энергии в tick)
+var wet_h: float = 0.0              # скільки ігрових годин ще сохнути
+var moving: bool = false            # чи йшов останні секунди (витрата енергії в tick)
 var carried_kg: float = 0.0
-var pack_kg: float = 0.0            # сколько кг везут лошадь и повозка (characters/transport.gd), не сохраняется
-var mount: String = ""              # "" пешком, "horse", "cart" (movement.json пака)
+var pack_kg: float = 0.0            # скільки кг везуть кінь і віз (characters/transport.gd), не зберігається
+var mount: String = ""              # "" пішки, "horse", "cart" (movement.json пакета)
 var distance_m: float = 0.0
-var traits: Array = []              # черты характера (creation.json): постоянные эффекты, как у состояний
-var profile: Dictionary = {}        # кто это: пол, возраст, происхождение, профессия, мировоззрение, биография (hero_profile.gd)
+var traits: Array = []              # риси характеру (creation.json): постійні ефекти, як у станів
+var profile: Dictionary = {}        # хто це: стать, вік, походження, професія, світогляд, біографія (hero_profile.gd)
 var last_env: Dictionary = {}
 var rng := RandomNumberGenerator.new()
 
@@ -54,42 +66,36 @@ func _init(id: String = "", name: String = "", npc: bool = false, seed_value: in
 	display_name = name
 	is_npc = npc
 	rng.seed = seed_value if seed_value != 0 else hash(id + name)
-	var sr: Dictionary = R.section("stats")
 	for s in STATS:
-		stats[s] = int(sr.get("base", 4))
-	stats["luck"] = int(sr.get("luck_base", 0))
+		stats[s] = int(S.data().get("base", 5))
 	var ch: Dictionary = R.characteristics()
 	for r in RESOURCES:
 		res[r] = float(ch.get(r, {}).get("base_max", 100.0))
 	res["radiation"] = 0.0
 	res["hunger"] = 80.0
 	res["thirst"] = 80.0
-	for k in R.skills():
-		skills[k] = {"xp": 0.0, "level": 0}
+	skills = S.empty_skills()
 
 
 # =====================================================================
 # ХАРАКТЕРИСТИКИ
 # =====================================================================
-# Удачи у НПС нет (правило 09)
+# Действующая характеристика 1–10 (с чертами и дарами). Удача теперь у всех
 func stat(s: String) -> float:
-	if s == "luck":
-		return 0.0 if is_npc else float(stats.get("luck", 0))
-	var sr: Dictionary = R.section("stats")
-	return clampf(float(stats.get(s, 4)), float(sr.get("min", 4)), float(sr.get("max", 100)))
+	return float(S.stat_value(self, s))
 
 
 func set_stat(s: String, v: int) -> void:
-	stats[s] = v
+	stats[s] = clampi(v, int(S.data().get("min", 1)), int(S.data().get("max", 10)))
 
 
-# Сколько очков сверх базовых 4
+# Сколько очков сверх средних 5
 func _over(s: String) -> float:
-	return stat(s) - float(R.section("stats").get("base", 4))
+	return stat(s) - float(S.data().get("base", 5))
 
 
 # =====================================================================
-# РЕСУРСЫ И ЭФФЕКТЫ
+# РЕСУРСИ Й ЕФЕКТИ
 # =====================================================================
 func max_of(r: String) -> float:
 	var m: float = float(R.characteristics().get(r, {}).get("base_max", 100.0))
@@ -115,7 +121,7 @@ func _effects_of(entry: Dictionary, is_buff: bool) -> Dictionary:
 	return R.condition(entry["id"]).get("effects", {})
 
 
-# Сумма эффекта по всем состояниям и полезным эффектам. Лучевая болезнь сильнее на поздних стадиях
+# Сума ефекту за всіма станами й корисними ефектами. Променева хвороба сильніша на пізніх стадіях
 func _sum(key: String) -> float:
 	var total: float = 0.0
 	var mults: Array = R.section("radiation").get("stage_effect_mult", [1.0])
@@ -134,6 +140,13 @@ func _sum(key: String) -> float:
 		var e: Dictionary = R.trait_def(t).get("effects", {})
 		if e.has(key):
 			total += float(e[key])
+	for e in S.effect_dicts(self):
+		if e.has(key) and not (e[key] is bool):
+			total += float(e[key])
+	# підвид людей: ефекти з creation.json (старі збереження без підвиду дають 0)
+	var se: Dictionary = R.creation().get("subspecies", {}).get(String(profile.get("subspecies", "")), {}).get("effects", {})
+	if se.has(key):
+		total += float(se[key])
 	return total
 
 
@@ -144,7 +157,7 @@ func _flag(key: String) -> bool:
 	return false
 
 
-# Множитель из долей: speed -0.4 и move_speed +0.1 дают ×0,6 × ×1,1
+# Множник із часток: speed -0.4 і move_speed +0.1 дають ×0,6 × ×1,1
 func mult(key: String) -> float:
 	var m: float = 1.0
 	for c in conditions:
@@ -159,6 +172,10 @@ func mult(key: String) -> float:
 		var e: Dictionary = R.trait_def(t).get("effects", {})
 		if e.has(key):
 			m *= 1.0 + float(e[key])
+	# особенности и дары: общие ключи пака (loot, sneak, move_speed, fall_chance, sleep_energy…)
+	for e in S.effect_dicts(self):
+		if e.has(key):
+			m *= 1.0 + float(e[key])
 	return maxf(m, 0.05)
 
 
@@ -167,7 +184,7 @@ func is_bleeding() -> bool:
 
 
 # =====================================================================
-# СОСТОЯНИЯ: травмы, болезни, полезные эффекты
+# СТАНИ: травми, хвороби, корисні ефекти
 # =====================================================================
 func has_condition(id: String) -> bool:
 	return _cond_index(id) >= 0
@@ -196,13 +213,13 @@ func remove_condition(id: String) -> void:
 		condition_removed.emit(id)
 
 
-# Шанс заболеть с учётом Выносливости и Удачи; p — вероятность за раз
+# Шанс заболеть с учётом Стойкости и Удачи; p — вероятность за раз
 func try_catch(id: String, p: float) -> bool:
 	if has_condition(id):
 		return false
-	var sr: Dictionary = R.section("stats")
-	p *= clampf(1.0 - float(sr.get("disease_resist_per_end", 0.0)) * _over("end"), 0.1, 2.0)
-	p *= clampf(1.0 - float(sr.get("luck_chance_per_pt", 0.0)) * stat("luck"), 0.5, 1.5)
+	# защита от яда 5×СТО % — половина её режет шанс хвори; Удача сверх 5 тоже
+	p *= clampf(1.0 - float(S.poison_resist(self)) / 200.0, 0.1, 2.0)
+	p *= clampf(1.0 - float(R.section("stats").get("luck_chance_per_pt", 0.0)) * _over("luck"), 0.5, 1.5)
 	p *= mult("disease_chance")
 	if rng.randf() < p:
 		return add_condition(id)
@@ -216,7 +233,7 @@ func has_buff(id: String) -> bool:
 	return false
 
 
-# Полезный эффект: мгновенная часть (сытость, энергия) сразу, остальное на срок. Повтор продлевает срок
+# Корисний ефект: миттєва частина (ситість, енергія) одразу, решта на строк. Повтор подовжує строк
 func add_buff(id: String) -> bool:
 	var d: Dictionary = R.buffs().get(id, {})
 	if d.is_empty() or not alive:
@@ -224,18 +241,20 @@ func add_buff(id: String) -> bool:
 	var e: Dictionary = d.get("effects", {})
 	add_res("hunger", float(e.get("hunger_restore", 0.0)))
 	add_res("energy", float(e.get("energy_restore", 0.0)))
+	# черты «Тяга к снадобьям» / «Стойкость к снадобьям», дар «Дитя трав»
+	var hours: float = float(d.get("duration_hours", 1.0)) * maxf(1.0 + S.eff(self, "buff_time"), 0.1)
 	for b in buffs:
 		if b["id"] == id:
-			b["left_h"] = float(d.get("duration_hours", 1.0))
+			b["left_h"] = hours
 			return true
-	buffs.append({"id": id, "left_h": float(d.get("duration_hours", 1.0))})
+	buffs.append({"id": id, "left_h": hours})
 	return true
 
 
 # =====================================================================
-# ИГРОВОЕ ВРЕМЯ: нужды, здоровье, радиация, болезни
+# ІГРОВИЙ ЧАС: потреби, здоров'я, прокляття, хвороби
 # =====================================================================
-## env: {biome: int, water: float, temp_c: float, rain: float 0..1, night: bool} — см. world_env.gd
+## env: {biome: int, water: float, temp_c: float, rain: float 0..1, night: bool} — див. world_env.gd
 func tick(dt_s: float, env: Dictionary) -> void:
 	if not alive or dt_s <= 0.0:
 		return
@@ -261,7 +280,7 @@ func _step(h: float, env: Dictionary) -> void:
 	var hot: bool = feels >= R.num("climate", "heat_c", 35.0) + _sum("heat_resist_c")
 	var cold: bool = feels <= R.num("climate", "cold_c", 0.0) - _sum("cold_resist_c")
 
-	# Голод и жажда
+	# Голод і спрага
 	var hunger_rate: float = float(ch["hunger"].get("decay_per_hour", 1.2)) + 100.0 * (_sum("hunger") + _sum("emaciation"))
 	var thirst_rate: float = float(ch["thirst"].get("decay_per_hour", 1.5)) + 100.0 * _sum("thirst")
 	if hot:
@@ -269,7 +288,7 @@ func _step(h: float, env: Dictionary) -> void:
 	add_res("hunger", -hunger_rate * h)
 	add_res("thirst", -thirst_rate * h)
 
-	# Энергия: сон восстанавливает, ходьба по тяжёлой местности и холод тратят больше
+	# Енергія: сон відновлює, ходьба важкою місцевістю й холод витрачають більше
 	var pain: float = 0.0 if _flag("ignore_pain") else _sum("pain")
 	var extra: float = 100.0 * (_sum("exhaustion") + _sum("energy_decay") + 0.5 * pain)
 	if sleeping:
@@ -285,7 +304,7 @@ func _step(h: float, env: Dictionary) -> void:
 			rate *= R.num("climate", "cold_energy_mult", 1.5)
 		add_res("energy", -(rate + extra) * h)
 
-	# Здоровье
+	# Здоров'я
 	var dmg: float = 100.0 * (_sum("health_decay") + _sum("bleeding") + _sum("poison"))
 	if res["hunger"] <= 0.0:
 		dmg += R.num("needs", "hunger_zero_health_h", 2.0)
@@ -294,10 +313,11 @@ func _step(h: float, env: Dictionary) -> void:
 		add_res("energy", -R.num("needs", "thirst_zero_energy_h", 2.0) * h)
 	var regen: float = _sum("health_regen")
 	if res["hunger"] > 0.0 and res["thirst"] > 0.0 and not is_bleeding():
-		regen += float(ch["health"].get("regen_per_hour", 0.5))
+		# Заживление (СТО/3, мин. 1): 1 — как было, каждая единица сверху +50 %
+		regen += float(ch["health"].get("regen_per_hour", 0.5)) * (0.5 + 0.5 * float(S.healing_rate(self)))
 	add_res("health", (regen - dmg) * h)
 
-	# Радиация: копится в заражённых биомах, сама уходит только в чистых
+	# Прокляття: накопичується в проклятих біомах, саме минає лише в чистих
 	var rch: Dictionary = ch["radiation"]
 	var gain: float = float(ter.get("radiation_h", 0.0)) * (1.0 - radiation_resist())
 	if gain > 0.0:
@@ -307,13 +327,13 @@ func _step(h: float, env: Dictionary) -> void:
 	add_res("radiation", -_sum("radiation_decay") * h)
 	_update_radiation_sickness()
 
-	# Мокрый: болото, вода, ливень; потом сохнет
+	# Мокрий: болото, вода, злива; потім сохне
 	if bool(ter.get("wet", false)) or bool(ter.get("swim", false)) or float(env.get("rain", 0.0)) > 0.5:
 		wet_h = R.num("needs", "wet_dry_h", 2.0)
 	else:
 		wet_h = maxf(wet_h - h, 0.0)
 
-	# Сроки состояний и эффектов
+	# Строки станів і ефектів
 	for c in conditions.duplicate():
 		c["age_h"] = float(c["age_h"]) + h
 		if float(c["left_h"]) > 0.0:
@@ -325,7 +345,7 @@ func _step(h: float, env: Dictionary) -> void:
 		if float(b["left_h"]) <= 0.0:
 			buffs.erase(b)
 
-	# Причины болезней
+	# Причини хвороб
 	var cz: Dictionary = R.section("causes")
 	if hot and (res["health"] < 50.0 or res["thirst"] < 20.0):
 		try_catch("desert_fever", float(cz.get("desert_fever_h", 0.0)) * h)
@@ -337,7 +357,7 @@ func _step(h: float, env: Dictionary) -> void:
 			break
 	var catch: Dictionary = ter.get("catch", {})
 	for id in catch:
-		try_catch(id, float(catch[id]) * h * (1.0 - 0.05 * skill_level("survival")))
+		try_catch(id, float(catch[id]) * h * maxf(1.0 - 0.05 * skill_level("survival"), 0.1))
 
 	if res["health"] <= 0.0:
 		die(_guess_cause())
@@ -394,15 +414,15 @@ func set_sleep(on: bool) -> void:
 
 
 # =====================================================================
-# ЕДА И ВОДА
+# ЇЖА Й ВОДА
 # =====================================================================
-## water: "clean" (кипячёная, колодец), "raw" (река, озеро), "dirty" (лужа, болото)
+## water: "clean" (кип'ячена, криниця), "raw" (річка, озеро), "dirty" (калюжа, болото)
 func drink(amount: float, water: String = "clean") -> void:
 	add_res("thirst", amount)
 	_roll_causes(water + "_water")
 
 
-## kind: "cooked", "warm" (сытная горячая еда: эффект warm_meal), "raw_meat", "spoiled"
+## kind: "cooked", "warm" (ситна гаряча їжа: ефект warm_meal), "raw_meat", "spoiled"
 func eat(amount: float, kind: String = "cooked") -> void:
 	add_res("hunger", amount)
 	if kind == "warm":
@@ -417,59 +437,59 @@ func _roll_causes(key: String) -> void:
 
 
 # =====================================================================
-# НАВЫКИ
+# НАВИЧКИ
 # =====================================================================
+## Уровень 0–10 для старых правил (навык % / 10); ключ — новый или старый навык пака
 func skill_level(k: String) -> int:
-	return int(skills.get(k, {}).get("level", 0))
+	return S.level_equiv(self, k)
 
 
+## Навык в процентах
+func skill(k: String) -> int:
+	return S.skill_value(self, k)
+
+
+## Опыт за дело (путь, лечение, ремесло): растёт не навык, а опыт героя — уровни и очки навыков
 func add_xp(k: String, amount: float) -> void:
-	if not skills.has(k):
+	if amount <= 0.0:
 		return
-	amount *= (1.0 + float(R.section("stats").get("xp_per_int", 0.0)) * _over("int")) * mult("xp")
-	var s: Dictionary = skills[k]
-	s["xp"] = float(s["xp"]) + maxf(amount, 0.0)
-	var table: Array = R.xp_table(k)
-	var max_level: int = int(R.skills().get(k, {}).get("max_level", 10))
-	while int(s["level"]) < mini(max_level, table.size()) and float(s["xp"]) >= float(table[int(s["level"])]):
-		s["level"] = int(s["level"]) + 1
-		skill_leveled_up.emit(k, int(s["level"]))
+	var before: int = level
+	S.gain_xp(self, amount * S.num("xp", "use_mult", 3.0) * mult("xp"))
+	if level != before:
+		skill_leveled_up.emit(S.canon(k), level)
 
 
-# Начальный уровень навыка (создание героя): опыт ставится на порог уровня
-func set_skill_level(k: String, level: int) -> void:
-	if not skills.has(k):
-		return
-	var table: Array = R.xp_table(k)
-	level = clampi(level, 0, mini(int(R.skills().get(k, {}).get("max_level", 10)), table.size()))
-	skills[k] = {"xp": float(table[level - 1]) if level > 0 else 0.0, "level": level}
+## Начальный уровень навыка (мастера-НПС): значение ≈ уровень × 10 + 5
+func set_skill_level(k: String, lv: int) -> void:
+	S.set_level_equiv(self, k, lv)
 
 
 # =====================================================================
-# ЛЕЧЕНИЕ: лечит любой персонаж любого, в том числе себя и знахарь-НПС игрока
+# ЛІКУВАННЯ: лікує будь-який персонаж будь-кого, зокрема себе й лікар-НПС гравця
 # =====================================================================
 func treat_chance(id: String, healer: Actor) -> float:
 	var t: Dictionary = R.section("treatments").get(id, {})
 	var m: Dictionary = R.section("medicine")
 	var c: float = float(m.get("base_chance", 0.45))
-	c += float(m.get("per_level", 0.08)) * float(healer.skill_level("medicine") - int(t.get("skill", 1)))
-	c += float(m.get("per_wis", 0.0)) * healer._over("wis")
-	c += float(R.section("stats").get("luck_chance_per_pt", 0.0)) * healer.stat("luck")
+	# Знахарство %: каждые 10 % — уровень старого правила (дробно)
+	c += float(m.get("per_level", 0.08)) * (float(healer.skill("doctor")) / 10.0 - float(t.get("skill", 1)))
+	c += float(R.section("stats").get("luck_chance_per_pt", 0.0)) * healer._over("luck")
+	c += S.eff(healer, "treat")
 	return clampf(c, float(m.get("min_chance", 0.05)), float(m.get("max_chance", 0.97)))
 
 
-## items — что есть у лечащего (ключи вроде "bandage"). Ответ: {ok, reason, chance, used}
-## used — какие предметы потрачены (их убирает вызывающий: инвентаря пока нет)
+## items — що є в того, хто лікує (ключі на кшталт "bandage"). Відповідь: {ok, reason, chance, used}
+## used — які предмети витрачено (їх прибирає той, хто викликає: інвентарю поки немає)
 func treat(id: String, healer: Actor, items: Array = []) -> Dictionary:
 	if not has_condition(id):
-		return {"ok": false, "reason": "нечего лечить", "chance": 0.0, "used": []}
+		return {"ok": false, "reason": I18n.t("нечего лечить"), "chance": 0.0, "used": []}
 	if healer == null or not healer.alive or healer.sleeping:
-		return {"ok": false, "reason": "некому лечить", "chance": 0.0, "used": []}
+		return {"ok": false, "reason": I18n.t("некому лечить"), "chance": 0.0, "used": []}
 	var t: Dictionary = R.section("treatments").get(id, {})
 	var need: Array = t.get("items", [])
 	var missing: Array = need.filter(func(x): return not items.has(x))
 	if not missing.is_empty():
-		return {"ok": false, "reason": "нужно: " + ", ".join(PackedStringArray(missing)), "chance": 0.0, "used": []}
+		return {"ok": false, "reason": I18n.t("нужно: ") + ", ".join(PackedStringArray(missing)), "chance": 0.0, "used": []}
 	var chance: float = treat_chance(id, healer)
 	var m: Dictionary = R.section("medicine")
 	var ok: bool = healer.rng.randf() < chance
@@ -481,47 +501,52 @@ func treat(id: String, healer: Actor, items: Array = []) -> Dictionary:
 		healer.add_xp("medicine", float(m.get("xp_success", 12.0)) * (1.0 + 0.25 * float(t.get("skill", 1))))
 	else:
 		healer.add_xp("medicine", float(m.get("xp_fail", 3.0)))
-	return {"ok": ok, "reason": "" if ok else "не вышло", "chance": chance, "used": need.duplicate()}
+	return {"ok": ok, "reason": "" if ok else I18n.t("не вышло"), "chance": chance, "used": need.duplicate()}
 
 
 # =====================================================================
-# ПРОИЗВОДНЫЕ
+# ПОХІДНІ
 # =====================================================================
+## Груз: 25 + 25×СИЛ фунтов (в кг), меньше при усталости
 func carry_capacity() -> float:
-	var sr: Dictionary = R.section("stats")
-	var kg: float = float(sr.get("carry_base_kg", 15.0)) + float(sr.get("carry_per_str_kg", 1.0)) * stat("str")
+	var kg: float = S.carry_kg(self)
 	return kg * (0.5 + 0.5 * res["stamina"] / max_of("stamina")) * mult("power") + pack_kg
 
 
+## Защита от проклятья (радиации): 2×СТО % + дары
 func radiation_resist() -> float:
-	return clampf(float(R.section("stats").get("radiation_resist_per_end", 0.0)) * _over("end"), 0.0, 0.9)
+	return clampf(float(S.rad_resist(self)) / 100.0, 0.0, 0.9)
 
 
+## Производные: старые ключи пака + новые параметры (sheet.gd: hp, ap, ac, carry_kg, melee, poison, rad,
+## sequence, healing, crit, skill_points, party)
 func derived() -> Dictionary:
 	var sr: Dictionary = R.section("stats")
-	return {
+	var out: Dictionary = S.derived(self)
+	out.merge({
 		"attack_power": (1.0 + float(sr.get("attack_per_str", 0.0)) * _over("str")) * mult("power"),
 		"defense": 0.0,
 		"search_efficiency": (1.0 + float(sr.get("search_per_per", 0.0)) * _over("per")) * mult("loot") * (1.0 + 0.05 * skill_level("survival")),
 		"move_speed": body_speed_mult(),
 		"carry_weight": carry_capacity(),
 		"radiation_resist": radiation_resist(),
-	}
+	}, true)
+	return out
 
 
 # =====================================================================
-# ДВИЖЕНИЕ (реальное время)
+# РУХ (реальний час)
 # =====================================================================
 func can_move() -> bool:
 	return alive and not sleeping
 
 
-# Множитель скорости от тела, без местности
+# Множник швидкості від тіла, без місцевості
 func body_speed_mult() -> float:
 	var mv: Dictionary = R.section("movement")
 	var f: float = mult("speed") * mult("move_speed")
 	f *= 1.0 + float(R.section("stats").get("speed_per_agi", 0.0)) * _over("agi")
-	# Бонусы навыков и сна (getSpeedBonus, getSleepBonus пака): Выживание пешком, Верховая езда на транспорте
+	# Бонуси навичок і сну (getSpeedBonus, getSleepBonus пакета): Виживання пішки, Верхова їзда на транспорті
 	if mount == "":
 		f *= 1.0 + float(mv.get("survival_speed_per_level", 0.0)) * skill_level("survival")
 	else:
@@ -532,7 +557,7 @@ func body_speed_mult() -> float:
 		f *= float(mv.get("critical_health_mult", 0.75))
 	if res["energy"] <= 0.0:
 		f *= float(mv.get("no_energy_mult", 0.5))
-	# Перегруз по паку: speed *= (100 − перегруз %) / 100; при двойном весе стоит
+	# Перевантаження за пакетом: speed *= (100 − перевантаження %) / 100; за подвійної ваги стоїть
 	f *= clampf((100.0 - overload_percent()) / 100.0, 0.0, 1.0)
 	return f / float(mv.get("hard_coefficient", 1.0))
 
@@ -552,7 +577,7 @@ func can_run() -> bool:
 	return mount == "" and res["stamina"] > 0.0 and res["energy"] > 0.0 and not has_condition("broken_leg")
 
 
-## Метров доски в реальную секунду. Ноль — сюда не пройти (за краем мира) или идти не может
+## Метрів дошки за реальну секунду. Нуль — сюди не пройти (за краєм світу) або йти не може
 func travel_speed(env: Dictionary, run: bool = false) -> float:
 	if not can_move():
 		return 0.0
@@ -561,9 +586,9 @@ func travel_speed(env: Dictionary, run: bool = false) -> float:
 	return calculate_speed(env, run) / 3.6 * float(mv.get("travel_scale", 8.0)) * GameClock.GAME_SPEED
 
 
-## Скорость по земле, км/ч (формула checkSpeed пака):
-## база (пешком 3, лошадь 8, повозка 5) × местность × (1 + effect.speed) × (1 − погода) × (1 + ночь)
-## / сложность × перегруз × навыки и сон. Плавание — своя скорость из rules.json
+## Швидкість по землі, км/год (формула checkSpeed пакета):
+## база (пішки 3, кінь 8, віз 5) × місцевість × (1 + effect.speed) × (1 − погода) × (1 + ніч)
+## / складність × перевантаження × навички й сон. Плавання — своя швидкість із rules.json
 func calculate_speed(env: Dictionary, run: bool = false) -> float:
 	if not can_move():
 		return 0.0
@@ -581,11 +606,12 @@ func calculate_speed(env: Dictionary, run: bool = false) -> float:
 	kmh *= body_speed_mult()
 	kmh *= 1.0 - weather_penalty(env)
 	if bool(env.get("night", false)):
-		kmh *= 1.0 + minf(float(mv.get("night_bonus", 0.0)) + float(mv.get("night_bonus_per_survival", 0.0)) * skill_level("survival"), 0.0)
+		if not S.has(self, "night_vision"):
+			kmh *= 1.0 + minf(float(mv.get("night_bonus", 0.0)) + float(mv.get("night_bonus_per_survival", 0.0)) * skill_level("survival"), 0.0)
 	return maxf(kmh, 0.0)
 
 
-# Штраф погоды 0..1: env.weather ("rain", "snow", "storm") или дождь rain > 0,5
+# Штраф погоди 0..1: env.weather ("rain", "snow", "storm") або дощ rain > 0,5
 func weather_penalty(env: Dictionary) -> float:
 	var wp: Dictionary = R.section("movement").get("weather_penalty", {})
 	var w: String = str(env.get("weather", ""))
@@ -594,8 +620,8 @@ func weather_penalty(env: Dictionary) -> float:
 	return clampf(float(wp.get(w, 0.0)), 0.0, 1.0)
 
 
-## Запас сил за реальные секунды. mode: "rest", "walk", "run". В воде всегда плывёт:
-## без сил тонет. Возвращает, тонет ли сейчас
+## Запас сил за реальні секунди. mode: "rest", "walk", "run". У воді завжди пливе:
+## без сил тоне. Повертає, чи тоне зараз
 func exert(real_dt: float, env: Dictionary, mode: String) -> bool:
 	if not alive:
 		return false
@@ -623,7 +649,7 @@ func exert(real_dt: float, env: Dictionary, mode: String) -> bool:
 	return false
 
 
-## Пройденный путь: падения в горах, опыт Выживания вне воды
+## Пройдений шлях: падіння в горах, досвід Виживання поза водою
 func note_travel(meters: float, env: Dictionary) -> void:
 	if meters <= 0.0 or not alive:
 		return
@@ -631,7 +657,7 @@ func note_travel(meters: float, env: Dictionary) -> void:
 	distance_m += meters
 	var ter: Dictionary = R.terrain(int(env.get("biome", 4)))
 	var km: float = meters / 1000.0
-	# Событие каждого километра (onekmpassed пака): шанс травмы, ночью выше; каждые 100 км — «невезение»
+	# Подія кожного кілометра (onekmpassed пакета): шанс травми, уночі вищий; кожні 100 км — «невезіння»
 	var mv: Dictionary = R.section("movement")
 	for k in range(km_before + 1, int(distance_m / 1000.0) + 1):
 		var p: float = float(mv.get("km_trauma_chance", 0.0))
@@ -639,7 +665,7 @@ func note_travel(meters: float, env: Dictionary) -> void:
 			p *= float(mv.get("night_trauma_mult", 1.0))
 		if k % 100 == 0:
 			p += float(mv.get("badluck_100km_chance", 0.0))
-		p *= clampf(1.0 - 0.05 * skill_level("survival") - float(R.section("stats").get("luck_chance_per_pt", 0.0)) * stat("luck"), 0.1, 1.5)
+		p *= clampf(1.0 - 0.05 * skill_level("survival") - float(R.section("stats").get("luck_chance_per_pt", 0.0)) * _over("luck"), 0.1, 1.5)
 		p *= mult("fall_chance")
 		if not bool(ter.get("swim", false)) and rng.randf() < p:
 			_fall()
@@ -670,7 +696,7 @@ func _fall() -> void:
 
 
 # =====================================================================
-# СОХРАНЕНИЕ
+# ЗБЕРЕЖЕННЯ
 # =====================================================================
 func to_dict() -> Dictionary:
 	return {
@@ -679,19 +705,34 @@ func to_dict() -> Dictionary:
 		"skills": skills.duplicate(true), "alive": alive, "death_cause": death_cause,
 		"sleeping": sleeping, "sleep_h": sleep_h, "wet_h": wet_h, "carried_kg": carried_kg, "mount": mount,
 		"distance_m": distance_m, "rng_state": rng.state, "traits": traits.duplicate(), "profile": profile.duplicate(true),
+		"sheet": 1, "tags": tags.duplicate(), "quirks": quirks.duplicate(), "perks": perks.duplicate(),
+		"level": level, "xp": xp, "skill_points": skill_points, "perk_picks": perk_picks, "mutate_left": mutate_left, "tag_left": tag_left,
 	}
 
 
 static func from_dict(d: Dictionary) -> Actor:
 	var a := Actor.new(str(d.get("id", "")), str(d.get("name", "")), bool(d.get("npc", false)))
-	for s in d.get("stats", {}):
-		a.stats[s] = int(d["stats"][s])
+	if S.is_legacy(d):
+		S.migrate(a, d)   # сохранение до новой системы: 7 характеристик 09 и навыки пака уровнями
+	else:
+		for s in d.get("stats", {}):
+			a.stats[s] = int(d["stats"][s])
+		for k in d.get("skills", {}):
+			var e: Dictionary = d["skills"][k]
+			a.skills[String(k)] = {"pts": int(e.get("pts", 0)), "bonus": int(e.get("bonus", 0)), "spent": int(e.get("spent", 0))}
+		a.tags = d.get("tags", []).duplicate()
+		a.quirks = d.get("quirks", []).duplicate()
+		a.perks = d.get("perks", {}).duplicate()
+		a.level = int(d.get("level", 1))
+		a.xp = float(d.get("xp", 0.0))
+		a.skill_points = int(d.get("skill_points", 0))
+		a.perk_picks = int(d.get("perk_picks", 0))
+		a.mutate_left = int(d.get("mutate_left", 0))
+		a.tag_left = int(d.get("tag_left", 0))
 	for r in d.get("res", {}):
 		a.res[r] = float(d["res"][r])
 	a.conditions = d.get("conditions", []).duplicate(true)
 	a.buffs = d.get("buffs", []).duplicate(true)
-	for k in d.get("skills", {}):
-		a.skills[k] = {"xp": float(d["skills"][k].get("xp", 0.0)), "level": int(d["skills"][k].get("level", 0))}
 	a.alive = bool(d.get("alive", true))
 	a.death_cause = str(d.get("death_cause", ""))
 	a.sleeping = bool(d.get("sleeping", false))
