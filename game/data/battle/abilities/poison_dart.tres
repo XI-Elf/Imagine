@@ -6,7 +6,7 @@
 script = ExtResource("1_px8km")
 id = "poison_dart"
 title = "Ядовитый дротик"
-description = "Дальняя атака Ловкостью: 1d4 колющего + 1d6 яда; спасбросок Выносливости или отравлен."
+description = "Дальняя атака Ловкостью: 1d4 колющего + 1d6 яда; спасбросок Стойкости или отравлен."
 stat = "dex"
 range_ft = 40
 save_stat = "con"

@@ -1,0 +1,27 @@
+{
+  "_note": "Пошук у полі (F, пункт 16 Huzzah 2026-10-29): що можна знайти в кожному біомі. Для речі: [шанс за спробу, від, до]; шанс множиться на search_efficiency героя. Місце (клітина cell_m) після пошуку порожнє regrow_h годин; не взяте лежить там stash_h годин. tools — множники шансу, коли інструмент у сумці; уночі без факела шанс × night_mult. Усі числа [ВРЕМЕННО].",
+  "minutes": 60,
+  "stamina": 10,
+  "cell_m": 400,
+  "regrow_h": 72,
+  "stash_h": 72,
+  "night_mult": 0.6,
+  "tools": {
+    "axe": {"brushwood": 1.6, "driftwood": 1.6},
+    "knife": {"wild_herbs": 1.3, "roots": 1.3, "mushrooms": 1.2, "reed": 1.3, "hide": 1.5},
+    "rope": {"brushwood": 1.2, "reed": 1.2}
+  },
+  "toadstool_below_per": 5,
+  "toadstool_chance": 0.35,
+  "biomes": {
+    "2": {"shellfish": [0.35, 1, 3], "driftwood": [0.45, 1, 2], "reed": [0.25, 1, 2], "scrap": [0.08, 1, 1]},
+    "3": {"berries": [0.4, 1, 3], "mushrooms": [0.35, 1, 3], "brushwood": [0.55, 1, 3], "wild_herbs": [0.25, 1, 2], "hide": [0.04, 1, 1]},
+    "4": {"roots": [0.3, 1, 2], "wild_herbs": [0.2, 1, 1], "brushwood": [0.2, 1, 1], "flint": [0.25, 1, 2], "scrap": [0.12, 1, 2], "old_coin": [0.03, 1, 1]},
+    "5": {"berries": [0.35, 1, 3], "reed": [0.45, 1, 3], "wild_herbs": [0.3, 1, 2], "mushrooms": [0.15, 1, 2]},
+    "6": {"flint": [0.45, 1, 3], "roots": [0.15, 1, 1], "wild_herbs": [0.15, 1, 1], "amber": [0.03, 1, 1]},
+    "7": {"mushrooms": [0.35, 1, 2], "brushwood": [0.4, 1, 2], "scrap": [0.25, 1, 2], "old_coin": [0.06, 1, 1]},
+    "8": {"scrap": [0.4, 1, 3], "flint": [0.2, 1, 1], "old_coin": [0.08, 1, 2], "amber": [0.04, 1, 1]},
+    "9": {"reed": [0.3, 1, 2], "scrap": [0.2, 1, 2], "wild_herbs": [0.15, 1, 1]}
+  },
+  "cursed_food_spoils": 0.5
+}

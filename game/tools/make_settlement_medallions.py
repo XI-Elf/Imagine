@@ -1,6 +1,6 @@
-# Медальоны поселений для общей карты (Huzzah 2026-10-23, референс Day R): круглая картинка поселения в рамке,
+# Медальоны поселений для общей карты (Huzzah 2026-10-23, референс ): круглая картинка поселения в рамке,
 # сверху знамя с гербом (знамя рисует world/settlements.gd кодом). Картинка — по уровню развития:
-#   0 стоянка (палатка у костра), 1 острог, 2 слобода, 3 посад, 4 город, 5 большой город.
+#   0 стоянка (палатка у костра), 1 форт, 2 деревня, 3 бург, 4 город, 5 большой город.
 # Собирается из спрайтов art/storybook (комикс-набор) и простых фигур, тонируется в сепию, как на референсе.
 # Генератора изображений нет: это коллаж из готовых спрайтов, не рисунок художника.
 # Запуск: python3 make_settlement_medallions.py <папка art/storybook> <папка вывода>
@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps, ImageChops
 ART, OUT = sys.argv[1], sys.argv[2]
 os.makedirs(OUT, exist_ok=True)
 N = 640                    # сторона картинки
-R = 300                    # радиус круга картинки (рамка — до края)
+R = 300                    # радіус кола картинки (рамка — до краю)
 C = N // 2
 INK = (52, 36, 24, 255)
 _cache = {}
@@ -41,7 +41,7 @@ def background(img, ground_y):
 			k = (y - ground_y) / (N - ground_y)
 			col = (round(170 - 40 * k), round(140 - 38 * k), round(98 - 30 * k), 255)
 		d.line([(0, y), (N, y)], fill=col)
-	# Дальние холмы
+	# Далекі пагорби
 	pts = [(0, ground_y)]
 	for x in range(0, N + 1, 20):
 		pts.append((x, ground_y - 22 - 18 * math.sin(x / 70.0) - 10 * math.sin(x / 23.0)))
@@ -78,7 +78,7 @@ def campfire(img, cx, foot, s):
 	d.polygon([(cx - s * 0.42, foot - 2), (cx - s * 0.2, foot - s * 0.9), (cx, foot - s * 0.5), (cx + s * 0.12, foot - s * 1.25),
 		(cx + s * 0.3, foot - s * 0.6), (cx + s * 0.44, foot - 2)], fill=(232, 150, 52, 255), outline=INK)
 	d.polygon([(cx - s * 0.2, foot - 2), (cx - s * 0.05, foot - s * 0.55), (cx + s * 0.1, foot - s * 0.75), (cx + s * 0.22, foot - 2)], fill=(250, 214, 110, 255))
-	# Дым
+	# Дим
 	for k in range(4):
 		r = s * (0.16 + k * 0.07)
 		x, y = cx + s * 0.1 + k * s * 0.18, foot - s * 1.35 - k * s * 0.42
@@ -98,7 +98,7 @@ def palisade(img, y, gate_w=70, h=78):
 		x += w
 	d.line([(0, y - h * 0.62), (C - gate_w / 2, y - h * 0.62)], fill=(84, 58, 36, 255), width=5)
 	d.line([(C + gate_w / 2, y - h * 0.62), (N, y - h * 0.62)], fill=(84, 58, 36, 255), width=5)
-	# Ворота: две створки из досок
+	# Брама: дві стулки з дощок
 	gx0, gx1 = C - gate_w / 2, C + gate_w / 2
 	d.rectangle([gx0, y - h * 0.95, gx1, y], fill=(98, 66, 40, 255), outline=INK, width=2)
 	d.line([(C, y - h * 0.95), (C, y)], fill=INK, width=2)
@@ -128,7 +128,7 @@ def stone_wall(img, y, h=96, towers=(110, 530), gate_w=86):
 	d = ImageDraw.Draw(img)
 	for tx in towers:
 		d.rectangle([tx - 8, y - h - 48, tx + 8, y - h - 22], fill=(40, 30, 22, 255))
-	# Ворота аркой
+	# Брама аркою
 	gx0, gx1 = C - gate_w / 2, C + gate_w / 2
 	d.rectangle([gx0, y - h * 0.68, gx1, N], fill=(58, 40, 26, 255), outline=INK, width=3)
 	d.pieslice([gx0, y - h * 0.68 - gate_w / 2, gx1, y - h * 0.68 + gate_w / 2], 180, 360, fill=(58, 40, 26, 255), outline=INK, width=3)
@@ -138,12 +138,12 @@ def stone_wall(img, y, h=96, towers=(110, 530), gate_w=86):
 
 
 def finish(img):
-	# Сепия, как на референсе: цвет приглушён, остаётся теплый коричневый
+	# Сепія, як на референсі: колір приглушений, лишається теплий коричневий
 	rgb = img.convert('RGB')
 	g = ImageOps.grayscale(rgb)
 	sep = ImageOps.colorize(g, (40, 26, 16), (246, 230, 196), mid=(160, 120, 78))
 	mix = Image.blend(sep, rgb, 0.28)
-	# Виньетка
+	# Віньєтка
 	vig = Image.new('L', (N, N), 0)
 	vd = ImageDraw.Draw(vig)
 	for k in range(40):
@@ -156,7 +156,7 @@ def finish(img):
 	ImageDraw.Draw(inner).ellipse([C - R, C - R, C + R, C + R], fill=255)
 	out = Image.new('RGBA', (N, N), (0, 0, 0, 0))
 	out.paste(mix, (0, 0), inner)
-	# Рамка: светлое кольцо с тёмной обводкой
+	# Рамка: світле кільце з темною обвідкою
 	d = ImageDraw.Draw(out)
 	d.ellipse([C - R - 14, C - R - 14, C + R + 14, C + R + 14], outline=(40, 28, 18, 255), width=4)
 	d.ellipse([C - R - 11, C - R - 11, C + R + 11, C + R + 11], outline=(228, 214, 190, 255), width=10)
@@ -176,7 +176,7 @@ def level(n):
 		campfire(img, 410, 505, 90)
 		put(img, 'traveler', 500, 525, 130)
 		return finish(img)
-	# Задний ряд
+	# Задній ряд
 	if n >= 5:
 		put(img, 'temple', 200, 300, 230)
 	if n >= 4:
@@ -185,7 +185,7 @@ def level(n):
 		put(img, 'healer', 120 if n >= 5 else 160, 345, 150)
 		put(img, 'house', 540, 340, 140, flip=True)
 	put(img, 'tree_oak', 560 if n < 3 else 80, 330, 200)
-	# Средний ряд
+	# Середній ряд
 	if n >= 2:
 		put(img, 'smithy', 170, 420, 170)
 		put(img, 'stall', 470, 420, 120)
@@ -194,12 +194,12 @@ def level(n):
 		put(img, 'house', 490, 470, 150)
 		put(img, 'house', 110, 470, 140, flip=True)
 	if n == 1:
-		put(img, 'house', 500, 470, 120, flip=True)    # лачуга героя
+		put(img, 'house', 500, 470, 120, flip=True)    # халупа героя
 		put(img, 'tree_light', 140, 450, 170)
 	if n == 2:
 		put(img, 'house', 510, 480, 130, flip=True)
 		put(img, 'well', 90, 480, 90)
-	# Стена
+	# Стіна
 	if n >= 4:
 		stone_wall(img, 610, h=78, towers=(120, 520))
 	else:

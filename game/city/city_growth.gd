@@ -1,9 +1,9 @@
 extends RefCounted
-## Рост города (Huzzah 2026-10-23): начальный город почти пуст — лачуга героя и по дому на шесть НПС;
-## город внутри стены растёт, когда герой сдаёт задания этих НПС. Данные — раздел "growth" описания города
-## (tools/make_city_growth.py): этапы (что появляется, сколько очков нужно) и цепочки заданий.
-## Состояние роста — {done: [id сданных], taken: {id: {на старте: km, wins}}} — хранит город (city_world.gd, to_dict).
-## view(def, этап) — описание города на этом этапе: его строит city_map.gd и рисует миниатюра на общей карте.
+## Ріст міста (Huzzah 2026-10-23): початкове місто майже порожнє — халупа героя й по дому на шість НПС;
+## місто всередині стіни росте, коли герой здає завдання цих НПС. Дані — розділ "growth" опису міста
+## (tools/make_city_growth.py): етапи (що з'являється, скільки очок потрібно) і ланцюжки завдань.
+## Стан росту — {done: [id зданих], taken: {id: {на старті: km, wins}}} — зберігає місто (city_world.gd, to_dict).
+## view(def, етап) — опис міста на цьому етапі: його будує city_map.gd і малює мініатюра на загальній карті.
 
 const KINDS: Array = ["walk", "win", "bring", "pay"]
 const Endless := preload("res://city/endless_quests.gd")
@@ -17,7 +17,7 @@ static func new_state() -> Dictionary:
 	return {"done": [], "taken": {}}
 
 
-## Очки роста — сданные поручения цепочек; бесконечные (после последнего этапа) не в счёт
+## Очки росту — здані доручення ланцюжків; нескінченні (після останнього етапу) не рахуються
 static func points(g: Dictionary) -> int:
 	var k: int = 0
 	for id in g.get("done", []):
@@ -26,12 +26,12 @@ static func points(g: Dictionary) -> int:
 	return k
 
 
-## Сколько бесконечных поручений сдано всего (для доски и меню города)
+## Скільки нескінченних доручень здано всього (для дошки й меню міста)
 static func endless_done(g: Dictionary) -> int:
 	return g.get("done", []).size() - points(g)
 
 
-## Номер этапа: последний, чьи очки набраны
+## Номер етапу: останній, чиї очки набрано
 static func stage(def: Dictionary, g: Dictionary) -> int:
 	if not has_growth(def):
 		return 0
@@ -49,14 +49,14 @@ static func stage_name(def: Dictionary, st: int) -> String:
 	return String(stages[st]["name"]) if st >= 0 and st < stages.size() else ""
 
 
-## Очков до следующего этапа (-1 — город вырос до конца)
+## Очок до наступного етапу (-1 — місто виросло до кінця)
 static func next_points(def: Dictionary, st: int) -> int:
 	var stages: Array = def.get("growth", {}).get("stages", [])
 	return int(stages[st + 1]["points"]) if st + 1 < stages.size() else -1
 
 
-## Описание города на этапе st: без домов, жителей, мест и лотков поздних этапов;
-## имена домов, поля жителей и стена — по этапам 0..st
+## Опис міста на етапі st: без будинків, мешканців, місць і яток пізніх етапів;
+## назви будинків, поля мешканців і стіна — за етапами 0..st
 static func view(def: Dictionary, st: int) -> Dictionary:
 	if not has_growth(def):
 		return def
@@ -107,7 +107,7 @@ static func view(def: Dictionary, st: int) -> Dictionary:
 		if npc_set.has(n["id"]):
 			n = n.duplicate()
 			n.merge(npc_set[n["id"]], true)
-			# null в npc_set — убрать поле (например, место работы на площади после переезда)
+			# null у npc_set — прибрати поле (наприклад, місце роботи на площі після переїзду)
 			for k in n.keys():
 				if n[k] == null:
 					n.erase(k)
@@ -123,14 +123,14 @@ static func view(def: Dictionary, st: int) -> Dictionary:
 
 
 # =====================================================================
-# ЗАДАНИЯ
+# ЗАВДАННЯ
 # =====================================================================
 static func chain(def: Dictionary, npc_id: String) -> Array:
 	return def.get("growth", {}).get("quests", {}).get(npc_id, [])
 
 
-## Задание основной цепочки, которым НПС сейчас занят с героем: первое несданное, если этап его уже открыл;
-## цепочка пройдена и город вырос до конца — бесконечное поручение (endless_quests.gd, вопрос Q14)
+## Завдання основного ланцюжка, яким НПС зараз зайнятий із героєм: перше нездане, якщо етап його вже відкрив;
+## ланцюжок пройдено й місто виросло до кінця — нескінченне доручення (endless_quests.gd, питання Q14)
 static func current(def: Dictionary, g: Dictionary, npc_id: String) -> Dictionary:
 	var st: int = stage(def, g)
 	for q in chain(def, npc_id):
@@ -140,8 +140,8 @@ static func current(def: Dictionary, g: Dictionary, npc_id: String) -> Dictionar
 	return Endless.next_for(def, g, npc_id) if Endless.open_for(def, st, npc_id) else {}
 
 
-## Все поручения НПС, которые можно взять или сдать сейчас: текущее основной цепочки и открытые запасные
-## (spare — вопрос Q03: запасные берутся в любом порядке, чтобы одно непосильное поручение не держало рост)
+## Усі доручення НПС, які можна взяти або здати зараз: поточне основного ланцюжка й відкриті запасні
+## (spare — питання Q03: запасні беруться в будь-якому порядку, щоб одне непосильне доручення не тримало ріст)
 static func available(def: Dictionary, g: Dictionary, npc_id: String) -> Array:
 	var out: Array = []
 	var q: Dictionary = current(def, g, npc_id)
@@ -151,13 +151,13 @@ static func available(def: Dictionary, g: Dictionary, npc_id: String) -> Array:
 	for s in chain(def, npc_id):
 		if s.get("spare", false) and not g["done"].has(s["id"]) and int(s.get("stage", 0)) <= st:
 			out.append(s)
-	# Город вырос: бесконечное поручение рядом с недоделанными из цепочки
+	# Місто виросло: нескінченне доручення поруч із недоробленими з ланцюжка
 	if Endless.open_for(def, st, npc_id) and not Endless.is_endless(q):
 		out.append(Endless.next_for(def, g, npc_id))
 	return out
 
 
-## Есть ли у НПС следующие задания, которые откроются позже (для реплики «город должен подрасти»)
+## Чи є в НПС наступні завдання, що відкриються пізніше (для репліки «місто має підрости»)
 static func waiting(def: Dictionary, g: Dictionary, npc_id: String) -> bool:
 	if Endless.open_for(def, stage(def, g), npc_id):
 		return true
@@ -171,12 +171,12 @@ static func taken(g: Dictionary, q: Dictionary) -> bool:
 	return g["taken"].has(q["id"])
 
 
-## Взять задание: запомнить, сколько пройдено и выиграно на старте (km, wins — счётчики героя)
+## Узяти завдання: запам'ятати, скільки пройдено й виграно на старті (km, wins — лічильники героя)
 static func take(g: Dictionary, q: Dictionary, km: float, wins: int) -> void:
 	g["taken"][q["id"]] = {"km": km, "wins": wins}
 
 
-## Прогресс: [есть, нужно]. bag — сумка героя (Trade), km и wins — текущие счётчики
+## Поступ: [є, треба]. bag — сумка героя (Trade), km і wins — поточні лічильники
 static func progress(g: Dictionary, q: Dictionary, bag: Dictionary, km: float, wins: int) -> Array:
 	var t: Dictionary = g["taken"].get(q["id"], {"km": km, "wins": wins})
 	match String(q["kind"]):
@@ -188,7 +188,7 @@ static func progress(g: Dictionary, q: Dictionary, bag: Dictionary, km: float, w
 			return [int(bag.get("items", {}).get(String(q["item"]), 0)), int(q["n"])]
 		"pay":
 			return [int(bag.get("money", 0)), int(q["money"])]
-	# Вид не из KINDS: такое поручение никогда не сдать — опечатка в данных (tools/make_city_growth.py)
+	# Вид не з KINDS: таке доручення ніколи не здати — описка в даних (tools/make_city_growth.py)
 	push_warning("city_growth: поручение %s неизвестного вида «%s» (бывают %s)" % [q.get("id", "?"), q.get("kind", ""), KINDS])
 	return [0, 1]
 
@@ -198,7 +198,7 @@ static func ready(g: Dictionary, q: Dictionary, bag: Dictionary, km: float, wins
 	return taken(g, q) and float(p[0]) >= float(p[1])
 
 
-## Сдать: забрать вещи или деньги, выдать награду, записать очко роста. Возвращает этап после сдачи
+## Здати: забрати речі чи гроші, видати нагороду, записати очко росту. Повертає етап після здачі
 static func complete(def: Dictionary, g: Dictionary, q: Dictionary, bag: Dictionary) -> int:
 	match String(q["kind"]):
 		"bring":

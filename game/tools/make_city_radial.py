@@ -1,10 +1,10 @@
-# Радиальный город (решение Huzzah 2026-10-23: город и все поселения — как в средневековье, радиальные):
-# круглая каменная стена, площадь в центре, улицы лучами от площади (главная — к воротам),
-# кольцевые улицы и дорога вдоль стены изнутри, кварталы между ними.
-# Здания, жители, места и правила берутся из прежнего описания города (имена, реплики, товары);
-# заново считаются только координаты. Сетка и проходимость — те же, что строит city/city_map.gd
-# (план "radial": клетки дальше wall_r + 1 от центра — за стеной, кольцо шириной 2 клетки — стена).
-# Запуск: python3 make_city_radial.py <прежний s001.json> <выходной s001.json> [seed]
+# Радіальне місто (рішення Huzzah 2026-10-23: місто й усі поселення — як у середньовіччі, радіальні):
+# кругла кам'яна стіна, площа в центрі, вулиці променями від площі (головна — до брами),
+# кільцеві вулиці й дорога вздовж стіни зсередини, квартали між ними.
+# Будівлі, мешканці, місця й правила беруться з колишнього опису міста (назви, репліки, товари);
+# заново рахуються лише координати. Сітка й прохідність — ті самі, що будує city/city_map.gd
+# (план "radial": клітинки далі за wall_r + 1 від центру — за стіною, кільце завширшки 2 клітинки — стіна).
+# Запуск: python3 make_city_radial.py <колишній s001.json> <вихідний s001.json> [seed]
 import json, math, random, sys
 from collections import deque
 
@@ -13,22 +13,22 @@ SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 1488
 src = json.load(open(src_path, encoding='utf-8'))
 rng = random.Random(SEED)
 
-# Huzzah 2026-10-24: город в 10 раз меньше по площади (было 244 м в поперечнике при клетке 2 м, стало ~78 м
-# при клетке 1 м): дома под размер спрайтов, улицы по 2 м, кварталы плотные
+# Huzzah 2026-10-24: місто в 10 разів менше за площею (було 244 м у поперечнику за клітинки 2 м, стало ~78 м
+# за клітинки 1 м): будинки під розмір спрайтів, вулиці по 2 м, квартали щільні
 CELL_M = 1.0
-N = 84                     # клеток по стороне
-C = N / 2.0                # центр города
-R = 39                     # радиус стены, клеток
-SQ_R = 7                   # площадь
-RING1, RING2 = 18, 28      # кольцевые улицы
-POM = R - 2                # граница застройки: в маленьком городе дороги вдоль стены нет, дворы — до стены
-SPOKES = [90, 45, 135, 0, 180, -45, -135, -90]   # лучи, градусы (90 — юг, к воротам)
+N = 84                     # клітинок по стороні
+C = N / 2.0                # центр міста
+R = 39                     # радіус стіни, клітинок
+SQ_R = 7                   # площа
+RING1, RING2 = 18, 28      # кільцеві вулиці
+POM = R - 2                # межа забудови: у маленькому місті дороги вздовж стіни немає, двори — до стіни
+SPOKES = [90, 45, 135, 0, 180, -45, -135, -90]   # промені, градуси (90 — південь, до брами)
 BANDS = {'A': (SQ_R + 2, RING1 - 2), 'B': (RING1 + 2, RING2 - 2), 'C': (RING2 + 2, POM - 1), 'all': (SQ_R + 3, POM - 1)}
 
 GRASS, ROAD, SQUARE, PALISADE, WALL, FLOOR, DOOR, WELL, GATE, FIELD, TREE, STALL, RUBBLE, OUTSIDE = range(14)
 WALKABLE = {GRASS, ROAD, SQUARE, FIELD, DOOR, FLOOR, RUBBLE}
 grid = [[GRASS] * N for _ in range(N)]
-reserved = set()           # клетки перед дверями и у ворот: сюда ничего не ставим
+reserved = set()           # клітинки перед дверима й біля брами: сюди нічого не ставимо
 
 
 def put(x, y, t):
@@ -44,7 +44,7 @@ def dist(x, y):
 	return math.hypot(x + 0.5 - C, y + 0.5 - C)
 
 
-def gd_round(v):           # Vector2.round() в Godot: половина — от нуля
+def gd_round(v):           # Vector2.round() у Godot: половина — від нуля
 	return int(math.floor(v + 0.5)) if v >= 0 else -int(math.floor(-v + 0.5))
 
 
@@ -57,7 +57,7 @@ roads = []
 
 
 def road(a, b, w):
-	# Как city_map._road: кисть w×w от точки вправо-вниз; сдвигаем, чтобы улица шла по оси
+	# Як city_map._road: пензель w×w від точки праворуч-униз; зсуваємо, щоб вулиця йшла по осі
 	o = w // 2
 	a = [gd_round(a[0] - 0.5) - o, gd_round(a[1] - 0.5) - o]
 	b = [gd_round(b[0] - 0.5) - o, gd_round(b[1] - 0.5) - o]
@@ -79,16 +79,16 @@ def ring(r, w, segs=72):
 		road(p, q, w)
 
 
-# ---- Улицы ----
+# ---- Вулиці ----
 ring(RING1, 2)
 ring(RING2, 2)
 for a in SPOKES:
 	main = a == 90
-	# Главные улицы (по сторонам света) — от площади; диагональные переулки — от первого кольца
+	# Головні вулиці (за сторонами світу) — від площі; діагональні провулки — від першого кільця
 	r0 = SQ_R - 1 if a % 90 == 0 else RING1
 	road(polar(r0, a), polar(R + 1.5 if main else R - 1, a), 4 if main else 2)
 
-# ---- Площадь ----
+# ---- Площа ----
 square = {'id': 'market', 'name': 'Торговая площадь', 'circle': [C, C, SQ_R],
 	'rect': [int(C - SQ_R), int(C - SQ_R), 2 * SQ_R, 2 * SQ_R]}
 for y in range(N):
@@ -96,7 +96,7 @@ for y in range(N):
 		if dist(x, y) <= SQ_R:
 			put(x, y, SQUARE)
 
-# ---- Стена и земля за ней ----
+# ---- Стіна й земля за нею ----
 for y in range(N):
 	for x in range(N):
 		d = dist(x, y)
@@ -105,7 +105,7 @@ for y in range(N):
 		elif d >= R - 1.0:
 			put(x, y, PALISADE)
 
-# Ворота: стена на столбцах главной улицы
+# Брама: стіна на стовпчиках головної вулиці
 gate_cols = range(int(C) - 2, int(C) + 2)
 gate_cells = [[x, y] for x in gate_cols for y in range(int(C), N) if at(x, y) == PALISADE]
 for x, y in gate_cells:
@@ -117,7 +117,7 @@ for y in range(gate_y - 4, gate_y):
 	for x in range(int(C) - 5, int(C) + 5):
 		reserved.add((x, y))
 
-# Башни: по кругу через 30° и по бокам ворот (клетки на стене)
+# Вежі: по колу через 30° і з боків брами (клітинки на стіні)
 towers = []
 for k in range(12):
 	a = 30.0 * k + 15.0
@@ -126,7 +126,7 @@ for k in range(12):
 towers += [[int(C) - 3, gate_y], [int(C) + 2, gate_y]]
 
 
-# ---- Здания ----
+# ---- Будівлі ----
 def rect_free(r, pad=1):
 	x0, y0, w, h = r
 	for y in range(y0 - pad, y0 + h + pad):
@@ -137,25 +137,25 @@ def rect_free(r, pad=1):
 				if t != GRASS or (x, y) in reserved or dist(x, y) > R - 2.5:
 					return False
 			elif t not in (GRASS, ROAD, SQUARE, FIELD) and not (t == WALL and y0 <= y < y0 + h):
-				# Бок о бок (стена к стене, как в тесной средневековой улице) — можно; спереди и сзади — проход
+				# Пліч-о-пліч (стіна до стіни, як на тісній середньовічній вулиці) — можна; спереду й ззаду — прохід
 				return False
 	return True
 
 
-# Где дверь на спрайте здания (доля ширины): спрайты Storybook нарисованы фасадом к зрителю, поэтому
-# дверь всегда в южной (нижней) стене, там, где она на картинке (Huzzah 2026-10-24: дом не совпадал с текстурой)
+# Де двері на спрайті будівлі (частка ширини): спрайти Storybook намальовано фасадом до глядача, тому
+# двері завжди в південній (нижній) стіні, там, де вони на картинці (Huzzah 2026-10-24: будинок не збігався з текстурою)
 DOOR_AT = {'house': 0.43, 'inn': 0.66, 'hall': 0.5, 'temple': 0.45, 'smithy': 0.5, 'healer': 0.35}
 
 
 def door_of(r, kind='house'):
-	# Дверь — клетка южной стены под дверью спрайта; перед ней две свободные клетки
+	# Двері — клітинка південної стіни під дверима спрайта; перед ними дві вільні клітинки
 	x0, y0, w, h = r
 	x = min(max(x0 + int(w * DOOR_AT.get(kind, DOOR_AT['house'])), x0 + 1), x0 + w - 2)
 	y = y0 + h - 1
 	for k in range(1, 3):
 		if at(x, y + k) not in (GRASS, ROAD, SQUARE) or (x, y + k) in reserved:
 			return None
-	# До улицы — по траве между дворами (проверка достижимости дверей — ниже)
+	# До вулиці — по траві між дворами (перевірка досяжності дверей — нижче)
 	return (x, y, 0, 1)
 
 
@@ -200,32 +200,32 @@ def place(bid, w, h, band, ang, spread=180.0, ruins=False):
 	for a in angs:
 		for rr in rads:
 			cx, cy = polar(rr, a)
-			# Не поворачиваем: спрайт всегда фасадом на юг
+			# Не повертаємо: спрайт завжди фасадом на південь
 			for (ww, hh) in ((w, h),):
 				r = [int(round(cx - ww / 2)), int(round(cy - hh / 2)), ww, hh]
 				if rect_free(r) and build(bid, r, ruins):
 					return placed[bid]
-	if spread < 360.0:              # в маленьком городе место ищем по всему кольцу
+	if spread < 360.0:              # у маленькому місті місце шукаємо по всьому кільцю
 		return place(bid, w, h, band, ang, 360.0, ruins)
 	dump()
 	raise SystemExit('нет места для %s' % bid)
 
 
 KIND = {b['id']: b.get('kind', 'house') for b in src['buildings']}
-# Размеры — метры (клетка 1 м) под пропорции спрайтов: ширина × глубина, крыша рисуется выше прямоугольника
-# Площадь: детинец к северу, храм к востоку, лавки вокруг
+# Розміри — метри (клітинка 1 м) під пропорції спрайтів: ширина × глибина, дах малюється вище прямокутника
+# Площа: палата на північ, храм на схід, крамниці довкола
 place("hall", 10, 7, 'A', -90, 60)
 place('temple', 9, 6, 'A', -30, 50)
 place('inn', 9, 6, 'A', 125, 50)
 place('shop', 8, 5, 'A', 180, 50)
 place('healer', 7, 5, 'A', -150, 50)
 place('tailor', 7, 5, 'A', 30, 50)
-place('barracks', 9, 5, 'C', 72, 40)         # у ворот
-place('smithy', 8, 5, 'C', 10, 50)           # у стены: огонь подальше от площади
+place('barracks', 9, 5, 'C', 72, 40)         # біля брами
+place('smithy', 8, 5, 'C', 10, 50)           # біля стіни: вогонь подалі від площі
 place('ruins_n', 7, 6, 'C', -55, 50, ruins=True)
 place('ruins_e', 7, 6, 'C', -10, 50, ruins=True)
 
-# Огороды и второй колодец — во внешнем кольце
+# Городи й друга криниця — у зовнішньому кільці
 fields = []
 
 
@@ -273,24 +273,24 @@ for c in wells[0]:
 	put(c[0], c[1], WELL)
 w2 = place_well(135)
 
-# Дома с жителями из сюжета — рядом с их делом
-place('house_1', 7, 5, 'C', 165, 60)          # Годрик — у огорода
+# Будинки з мешканцями із сюжету — поруч із їхньою справою
+place('house_1', 7, 5, 'C', 165, 60)          # Годрик — біля городу
 place('house_2', 7, 5, 'B', -170, 60)
-place('house_3', 7, 5, 'C', 128, 50)          # вдова — у колодца
+place('house_3', 7, 5, 'C', 128, 50)          # вдова — біля криниці
 place('house_4', 7, 5, 'B', 160, 60)
 place('house_5', 7, 5, 'B', -110, 60)
-place('house_6', 7, 5, 'C', 100, 50)          # у южной стены
-place('house_7', 7, 5, 'C', 50, 60)           # старьёвщик
+place('house_6', 7, 5, 'C', 100, 50)          # біля південної стіни
+place('house_7', 7, 5, 'C', 50, 60)           # лахмітник
 
-# Кварталы: дома ремесленников по кольцам, от площади наружу
-# В маленьком городе 26 домов ремесленников вместо 34: лишние (27–34) ни за кем не числились
+# Квартали: будинки ремісників по кільцях, від площі назовні
+# У маленькому місті 26 будинків ремісників замість 34: зайві (27–34) ні за ким не числилися
 QUARTER_MAX = 26
 quarter = [b['id'] for b in src['buildings'] if b['id'].startswith('quarter_house_')][:QUARTER_MAX]
 order = []
 for band in ('B', 'C', 'A'):
 	for k in range(36):
 		order.append((band, 10.0 * k + rng.uniform(-3, 3)))
-for k in range(120):                      # второй проход — добрать в любые просветы, дома поменьше
+for k in range(120):                      # другий прохід — добрати в будь-які просвіти, будинки менші
 	order.append(('all', 3.0 * k + 1.5))
 qi = 0
 for band, a in order:
@@ -305,7 +305,7 @@ for band, a in order:
 dump()
 assert qi == len(quarter), 'кварталы: поставлено %d из %d' % (qi, len(quarter))
 
-# Лотки на площади
+# Ятки на площі
 stalls = []
 for a in (200, 250, 300, 340):
 	x, y = polar(SQ_R - 2.5, a)
@@ -317,7 +317,7 @@ for a in (200, 250, 300, 340):
 	stalls.append(cells)
 
 
-# ---- Проходы: всё, что нужно, достижимо от ворот ----
+# ---- Проходи: усе потрібне досяжне від брами ----
 def reach_from(sx, sy):
 	seen = {(sx, sy)}
 	q = deque([(sx, sy)])
@@ -347,7 +347,7 @@ def free_grass_near(x, y, rmax=12, need=1):
 	raise SystemExit('нет свободной травы у %s' % ((x, y),))
 
 
-# Лазы: тихие места у стены изнутри по сторонам света
+# Лази: тихі місця біля стіни зсередини за сторонами світу
 breaches = []
 for side, a in (('north', -80), ('west', 190), ('east', 10), ('south', 125)):
 	x, y = polar(R - 2.5, a)
@@ -358,7 +358,7 @@ for side, a in (('north', -80), ('west', 190), ('east', 10), ('south', 125)):
 			reserved.add((c[0] + ex, c[1] + ey))
 
 
-# Деревья — на траве, не у дверей и проходов
+# Дерева — на траві, не біля дверей і проходів
 def tree_ok(x, y):
 	if at(x, y) != GRASS or (x, y) in reserved or dist(x, y) > R - 2:
 		return False
@@ -375,7 +375,7 @@ while len(trees) < 24 and tries < 100000:
 		trees.append([x, y])
 		put(x, y, TREE)
 
-# Кусты в садах у домов (art_gardens Storybook): трава, не на пути
+# Кущі в садах біля будинків (art_gardens Storybook): трава, не на шляху
 gardens = []
 for bid in sorted(placed):
 	if len(gardens) >= 30:
@@ -386,7 +386,7 @@ for bid in sorted(placed):
 			gardens.append([x, y])
 			break
 
-# После деревьев проходы не должны пропасть
+# Після дерев проходи не мають зникнути
 reach = reach_from(int(spawn[0]), int(spawn[1]))
 for bid, b in placed.items():
 	x, y = b['door']
@@ -410,7 +410,7 @@ def front_of(bid, k=2):
 
 def sq_cell(a, r):
 	x, y = polar(r, a)
-	# Ближайшая свободная клетка площади (лотки и колодец заняты)
+	# Найближча вільна клітинка площі (ятки й криниця зайняті)
 	for rr in range(4):
 		for dy in range(-rr, rr + 1):
 			for dx in range(-rr, rr + 1):
@@ -420,7 +420,7 @@ def sq_cell(a, r):
 	raise SystemExit('площадь занята у %s' % ((a, r),))
 
 
-# ---- Здания: прежние имена и типы, новые места ----
+# ---- Будівлі: колишні назви й типи, нові місця ----
 buildings = []
 for b in src['buildings']:
 	if b['id'] not in placed:
@@ -428,7 +428,7 @@ for b in src['buildings']:
 	p = placed[b['id']]
 	buildings.append({'id': b['id'], 'name': b['name'], 'kind': b['kind'], 'rect': p['rect'], 'door': p['door']})
 
-# ---- Жители: прежние, новые рабочие места ----
+# ---- Мешканці: колишні, нові робочі місця ----
 work = {
 	'trader': sq_cell(225, 3), 'junkman': front_of('house_7', 3), 'guard_1': guard_post, 'guard_2': sq_cell(60, 4),
 	'guard_3': front_of('hall', 3), 'farmer': [f1[0] + 2, f1[1] + 2], 'potter': sq_cell(330, 4),
@@ -437,23 +437,23 @@ work = {
 npcs = []
 k = 0
 for n in src['npcs']:
-	if n['id'] == 'tanner':     # кожевник — из make_city_growth.py
+	if n['id'] == 'tanner':     # шкіряник — з make_city_growth.py
 		continue
 	n = dict(n)
 	if n['id'] in work:
 		n['work_cell'] = work[n['id']]
 	elif n['id'].startswith('art_resident_'):
-		# По площади, но не у лотка торговки (200°): с ней говорят, рядом никого
+		# По площі, але не біля ятки торговки (200°): з нею говорять, поруч нікого
 		n['work_cell'] = sq_cell(-100.0 + 22.0 * k, 6 if k % 2 else 4)
 		k += 1
 	for c in [n.get('work_cell')]:
 		assert c is None or tuple(c) in reach, n['id']
-	# Ключи в прежнем порядке, реплики последними
+	# Ключі в колишньому порядку, репліки останніми
 	lines = n.pop('lines')
 	n['lines'] = lines
 	npcs.append(n)
 
-# ---- Места ----
+# ---- Місця ----
 cellar, cache = center_of('ruins_n'), center_of('ruins_e')
 smith = placed['smithy']['rect']
 pos = {
@@ -464,7 +464,7 @@ pos = {
 }
 places = []
 for p in src['places']:
-	if p['id'] not in pos:     # лежанка героя и прочее — из make_city_growth.py
+	if p['id'] not in pos:     # лежанка героя й інше — з make_city_growth.py
 		continue
 	p = dict(p)
 	p['cell'] = pos[p['id']]
@@ -476,7 +476,7 @@ gate.update({'cells': gate_cells, 'spawn': spawn, 'guard_post': guard_post})
 d = {}
 for key in src:
 	d[key] = src[key]
-d['_note'] = ('Чёрнославль — единственный город мира (id s001 из data/world/settlements.json). Радиальный план (Huzzah 2026-10-23): '
+d['_note'] = ('Эшвик — единственный город мира (id s001 из data/world/settlements.json). Радиальный план (Huzzah 2026-10-23): '
 	'круглая стена радиусом wall_r клеток вокруг center, площадь в центре, улицы лучами и кольцами. Клетки по cell_m метров, '
 	'x вправо, y вниз. Сделан скриптом tools/make_city_radial.py (seed %d); числа [ВРЕМЕННО].' % SEED)
 d['size'] = [N, N]

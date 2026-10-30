@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Экран города, как в Day R (видео Huzzah 2026-10-23): вход через ворота открывает не пешую карту,
+## Экран города, как в  (видео Huzzah 2026-10-23): вход через ворота открывает не пешую карту,
 ## а меню города. Сверху шапка: картинка поселения (тот же медальон, что на общей карте), имя, этап роста,
 ## статус героя, часы и ворота. Ниже — карточки услуг: по одной на каждого жителя с делом (глава, травница,
 ## кожевник, кузнец, торговка…), «Поговорить» — с остальными, «Поручения», «Ночлег», «Колодец»,
@@ -10,16 +10,16 @@ extends CanvasLayer
 const Growth := preload("res://city/city_growth.gd")
 const MEDALLION_DIR := "res://art/medallion/"
 const MEDALLIONS: Array = ["m0_camp", "m1_ostrog", "m2_sloboda", "m3_posad", "m4_gorod", "m5_bolshoy_gorod"]
-## Портрет на карточке жителя: фигурка из комикс-набора (art/storybook), как на улице
+## Портрет на картці мешканця: фігурка з комікс-набору (art/storybook), як на вулиці
 const ROLE_ICON: Dictionary = {
 	"healer": "woman", "trader": "woman", "guard": "guard",
 }
-const ROLE_TITLE: Dictionary = {
-	"elder": "Глава", "healer": "Знахарка", "tanner": "Кожевник", "smith": "Кузнец", "trader": "Торговля",
-	"innkeeper": "Трактир", "guard": "Стража",
+static var ROLE_TITLE: Dictionary = {
+	"elder": I18n.t("Глава"), "healer": I18n.t("Травница"), "tanner": I18n.t("Кожевник"), "smith": I18n.t("Кузнец"), "trader": I18n.t("Торговля"),
+	"innkeeper": I18n.t("Таверна"), "guard": I18n.t("Стража"),
 }
 const ComicUI := preload("res://ui/comic_ui.gd")
-## Рамки комикса и тёмная палитра (Q24 A, Q08 D): светлый текст на угле вместо чернил на бумаге
+## Рамки коміксу й темна палітра (Q24 A, Q08 D): світлий текст на вугіллі замість чорнила на папері
 const INK := ComicUI.TEXT
 
 var city: Node                     # city/city_world.gd
@@ -30,13 +30,13 @@ var _sub: Label
 var _info: Label
 var _grid: GridContainer
 var _cards: Array = []             # {btn, icon, title, who, note, kind, n}
-var _npc_key: String = ""          # какие жители сейчас в карточках (перестроить, если город вырос)
+var _npc_key: String = ""          # які мешканці зараз у картках (перебудувати, якщо місто виросло)
 var _tick: float = 0.0
 
 
 func setup(c: Node) -> void:
 	city = c
-	layer = 19                     # под окнами разговора и торговли города (20), над картой
+	layer = 19                     # під вікнами розмови й торгівлі міста (20), над картою
 	visible = false
 	_build()
 
@@ -60,9 +60,9 @@ func _process(delta: float) -> void:
 
 
 # =====================================================================
-# СОДЕРЖИМОЕ
+# ВМІСТ
 # =====================================================================
-## Жители с карточкой: у кого есть дело (роль не «житель», торговля, услуги или поручения)
+## Мешканці з карткою: у кого є справа (роль не «мешканець», торгівля, послуги або доручення)
 func service_npcs() -> Array:
 	var out: Array = []
 	for n in city.npcs:
@@ -79,7 +79,7 @@ func other_npcs() -> Array:
 	return city.npcs.filter(func(n): return not s.has(n))
 
 
-## Карточки по порядку: kind — "npc", "talk", "quests", "sleep", "water", "walk", "leave"
+## Картки за порядком: kind — "npc", "talk", "quests", "sleep", "water", "walk", "leave"
 func card_list() -> Array:
 	var out: Array = [{"kind": "quests"}]
 	for n in service_npcs():
@@ -127,21 +127,21 @@ func refresh(force: bool) -> void:
 
 
 func header_sub() -> String:
-	var t: String = "Вольный город"
+	var t: String = I18n.t("Вольный город")
 	if Growth.has_growth(city.full_def):
-		t = "%s, этап «%s»" % [t, Growth.stage_name(city.full_def, city.stage)]
+		t = I18n.t("%s, этап «%s»") % [t, Growth.stage_name(city.full_def, city.stage)]
 	return t
 
 
 func header_info() -> String:
 	var lines: Array = []
-	lines.append("Статус: %s" % ("Чужак (пробрался через стену)" if city.is_intruder() else "Гость"))
+	lines.append(I18n.t("Статус: %s") % (I18n.t("Чужак (пробрался через стену)") if city.is_intruder() else I18n.t("Гость")))
 	if Growth.has_growth(city.full_def):
 		var need: int = Growth.next_points(city.full_def, city.stage)
 		var have: int = Growth.points(city.growth)
-		lines.append("Поручений сдано: %d%s" % [have, " из %d до этапа «%s»" % [need, Growth.stage_name(city.full_def, city.stage + 1)] if need > 0 else ", город вырос полностью"])
+		lines.append(I18n.t("Поручений сдано: %d%s") % [have, I18n.t(" из %d до этапа «%s»") % [need, Growth.stage_name(city.full_def, city.stage + 1)] if need > 0 else I18n.t(", город вырос полностью")])
 	var hour: float = city.clock.hour_of_day()
-	lines.append("%02d:%02d   %s" % [int(hour), int(fmod(hour, 1.0) * 60.0), "ворота открыты" if city.gates_open() else "ворота заперты до %d:00" % int(city.rules.get("gates_open_h", 6.0))])
+	lines.append("%02d:%02d   %s" % [int(hour), int(fmod(hour, 1.0) * 60.0), I18n.t("ворота открыты") if city.gates_open() else I18n.t("ворота заперты до %d:00") % int(city.rules.get("gates_open_h", 6.0))])
 	return "\n".join(PackedStringArray(lines))
 
 
@@ -215,49 +215,49 @@ func _fill_card(c: Dictionary) -> void:
 			var n: Dictionary = c["n"]
 			var nd: Dictionary = n["def"]
 			var role: String = String(nd.get("role", "citizen"))
-			t = ROLE_TITLE.get(role, "Житель")
+			t = ROLE_TITLE.get(role, I18n.t("Житель"))
 			who = n["actor"].display_name
 			if who.begins_with(t + " "):
-				who = who.substr(t.length() + 1)     # «Кожевник Эдрик» под «Кожевник» — просто «Эдрик»
+				who = who.substr(t.length() + 1)     # «Кожевник Эдрик» під «Кожевник» — просто «Эдрик»
 			var hr: Array = nd.get("hours", [8, 20])
 			if n["actor"].sleeping:
-				note = "Спит"
+				note = I18n.t("Спит")
 				off = true
 			elif city._on_duty(nd, city.clock.hour_of_day()):
-				note = "Работает до %d:00" % int(hr[1]) if int(hr[1]) < 24 else "Работает"
+				note = I18n.t("Работает до %d:00") % int(hr[1]) if int(hr[1]) < 24 else I18n.t("Работает")
 			else:
-				note = "Не работает, с %d:00" % int(hr[0])
-			# Все поручения, что можно взять или сдать сейчас: основное и запасные (Growth.available)
+				note = I18n.t("Не работает, с %d:00") % int(hr[0])
+			# Усі доручення, які можна взяти або здати зараз: основне й запасні (Growth.available)
 			var qs: Array = Growth.available(city.full_def, city.growth, String(nd["id"]))
 			if qs.any(func(q): return Growth.taken(city.growth, q) and Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won())):
-				note += "\nПоручение готово!"
+				note += I18n.t("\nПоручение готово!")
 			elif qs.any(func(q): return not Growth.taken(city.growth, q)):
-				note += "\nЕсть работа: %d" % qs.filter(func(q): return not Growth.taken(city.growth, q)).size()
+				note += I18n.t("\nЕсть работа: %d") % qs.filter(func(q): return not Growth.taken(city.growth, q)).size()
 			elif not qs.is_empty():
-				note += "\nПоручение взято"
+				note += I18n.t("\nПоручение взято")
 		"talk":
-			t = "Поговорить"
-			note = "Жители: %d" % other_npcs().size()
+			t = I18n.t("Поговорить")
+			note = I18n.t("Жители: %d") % other_npcs().size()
 		"quests":
-			t = "Поручения"
+			t = I18n.t("Поручения")
 			var open_q: int = 0
 			for n in city.npcs:
 				open_q += Growth.available(city.full_def, city.growth, String(n["def"]["id"])).size()
-			note = "Открыто: %d" % open_q if Growth.has_growth(city.full_def) else "Доска объявлений"
+			note = I18n.t("Открыто: %d") % open_q if Growth.has_growth(city.full_def) else I18n.t("Доска объявлений")
 		"sleep":
-			t = "Ночлег"
-			note = "Проснуться (энергия %d)" % int(city.hero.res["energy"]) if city.hero.sleeping else "Лежанка в лачуге"
+			t = I18n.t("Ночлег")
+			note = I18n.t("Проснуться (энергия %d)") % int(city.hero.res["energy"]) if city.hero.sleeping else I18n.t("Лежанка в лачуге")
 		"water":
-			t = "Колодец"
-			note = "Напиться (вода %d)" % int(city.hero.res["thirst"])
+			t = I18n.t("Колодец")
+			note = I18n.t("Напиться (вода %d)") % int(city.hero.res["thirst"])
 		"walk":
-			t = "Пройтись"
-			who = "по городу"
-			note = "Улицы, дома, тайники"
+			t = I18n.t("Пройтись")
+			who = I18n.t("по городу")
+			note = I18n.t("Улицы, дома, тайники")
 		"leave":
-			t = "Покинуть"
-			who = "город"
-			note = "Через ворота" if city.gates_open() else "Ворота заперты"
+			t = I18n.t("Покинуть")
+			who = I18n.t("город")
+			note = I18n.t("Через ворота") if city.gates_open() else I18n.t("Ворота заперты")
 	c["title"].text = t
 	c["who"].text = who
 	c["note"].text = note
@@ -272,13 +272,13 @@ func press(c: Dictionary) -> void:
 			city.menu_people(other_npcs())
 		"quests":
 			if _place("board").is_empty():
-				city._open_note("Поручения", "Поручений нет.")
+				city._open_note(I18n.t("Поручения"), I18n.t("Поручений нет."))
 			else:
 				city.use_place(_place("board"))
 		"sleep":
 			if city.hero.sleeping:
 				city.hero.set_sleep(false)
-				city._say("Вы проснулись")
+				city._say(I18n.t("Вы проснулись"))
 			else:
 				city.use_place(_place("bed"))
 		"water":
@@ -291,7 +291,7 @@ func press(c: Dictionary) -> void:
 
 
 # =====================================================================
-# ВИД
+# ВИГЛЯД
 # =====================================================================
 func _build() -> void:
 	_root = Control.new()
@@ -309,12 +309,12 @@ func _build() -> void:
 	sheet.offset_left = 24
 	sheet.offset_top = 16
 	sheet.offset_right = -24
-	sheet.offset_bottom = -48       # снизу полоса состояния героя (city_world._status)
+	sheet.offset_bottom = -48       # знизу смуга стану героя (city_world._status)
 	_root.add_child(sheet)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
 	sheet.add_child(v)
-	# Шапка: слева имя и сведения, справа картинка поселения
+	# Шапка: ліворуч назва й відомості, праворуч картинка поселення
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 18)
 	v.add_child(head)

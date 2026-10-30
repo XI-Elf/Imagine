@@ -1,11 +1,11 @@
 {
-  "_note": "Крафт в мастерских (вопрос Q18, Huzzah 2026-10-24: заказ у мастера + своими руками с навыком). workshops — роль НПС -> навык пака (data/characters/skills.json). recipe: master — роль мастерской, out — предмет из items.json, in — материалы {id: n}, level — нужный уровень навыка (и у мастера для заказа, и у героя для своих рук), fee — плата мастеру за заказ, work — сколько выносливости уходит своими руками, xp — опыт навыка за удачу. self: шанс своими руками = base + per_level × (навык − level), не выше max; при неудаче пропадает доля fail_loss каждого материала (с округлением вверх) и даётся fail_xp опыта. lesson: урок у мастера — xp опыта за fee + fee_per_level × текущий уровень, не выше уровня мастера. Все числа [ВРЕМЕННО].",
+  "_note": "Крафт в мастерских (вопрос Q18, Huzzah 2026-10-24: заказ у мастера + своими руками с навыком). workshops — роль НПС -> навык (data/characters/sheet.json; обе мастерские — Ремесло). recipe: master — роль мастерской, out — предмет из items.json, in — материалы {id: n}, level — нужный уровень навыка (уровень = навык % / 10) (и у мастера для заказа, и у героя для своих рук), fee — плата мастеру за заказ, work — сколько выносливости уходит своими руками, xp — опыт навыка за удачу. self: шанс своими руками = base + per_level × (навык − level), не выше max; при неудаче пропадает доля fail_loss каждого материала (с округлением вверх) и даётся fail_xp опыта. lesson: урок у мастера — +pct % к навыку (и немного опыта героя) за fee + fee_per_level × текущий уровень, не выше навыка мастера. Все числа [ВРЕМЕННО].",
   "workshops": {
-    "tanner": {"skill": "sewing", "name": "Дубильня"},
-    "smith":  {"skill": "blacksmith", "name": "Кузня"}
+    "tanner": {"skill": "repair", "name": "Дубильня"},
+    "smith":  {"skill": "repair", "name": "Кузня"}
   },
   "self": {"base": 0.7, "per_level": 0.1, "max": 0.95, "fail_loss": 0.5, "fail_xp": 0.5},
-  "lesson": {"xp": 40, "fee": 10, "fee_per_level": 5},
+  "lesson": {"pct": 10, "xp": 40, "fee": 10, "fee_per_level": 5},
   "recipes": {
     "hide_vest":      {"master": "tanner", "out": "hide_vest",      "in": {"hide": 2},             "level": 0, "fee": 4,  "work": 15, "xp": 20},
     "gloves":         {"master": "tanner", "out": "gloves",         "in": {"hide": 1},             "level": 0, "fee": 2,  "work": 10, "xp": 10},
