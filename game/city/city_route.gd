@@ -1,18 +1,18 @@
 extends RefCounted
-## Ход героя мышью в мире города (city_world.gd): ЛКМ по месту — герой идёт туда по сетке города
-## (city_map.gd, AStarGrid2D: в обход стен, домов, деревьев и лотков, в дома через двери).
-## ЛКМ по жителю — подойти и заговорить (житель ходит — путь догоняет его);
-## по колодцу, тайнику, доске — подойти и сделать то же, что E; по воротам — выйти, если открыты.
-## Держать ЛКМ — вести за курсором, ПКМ — стоп, WASD перебивает путь.
+## Хід героя мишею у світі міста (city_world.gd): ЛКМ по місцю — герой іде туди сіткою міста
+## (city_map.gd, AStarGrid2D: в обхід стін, будинків, дерев і яток, у будинки через двері).
+## ЛКМ по мешканцю — підійти й заговорити (мешканець ходить — шлях наздоганяє його);
+## по криниці, схованці, дошці — підійти й зробити те саме, що E; по брамі — вийти, якщо відчинена.
+## Тримати ЛКМ — вести за курсором, ПКМ — стоп, WASD перебиває шлях.
 
 const T = preload("res://city/city_map.gd").T
 
 const PICK_NPC_M: float = 1.2
 const PICK_PLACE_M: float = 1.6
-const REACH_M: float = 0.45          # точка пути считается пройденной
-const CHASE_S: float = 0.5           # пересчёт пути к идущему жителю
+const REACH_M: float = 0.45          # точка шляху вважається пройденою
+const CHASE_S: float = 0.5           # перерахунок шляху до мешканця, що йде
 const STUCK_S: float = 0.8
-const FREE_SEARCH: int = 4           # клик в стену/дерево — ближайшая свободная клетка в этом радиусе
+const FREE_SEARCH: int = 4           # клік у стіну/дерево — найближча вільна клітинка в цьому радіусі
 
 var city: Node2D
 var points: PackedVector2Array = PackedVector2Array()
@@ -43,7 +43,7 @@ func cancel() -> void:
 	_stuck_n = 0
 
 
-## Клик в точку p (метры города). true — путь задан
+## Клік у точку p (метри міста). true — шлях задано
 func click(p: Vector2) -> bool:
 	cancel()
 	var m = city.map
@@ -60,12 +60,12 @@ func click(p: Vector2) -> bool:
 		if _route_to(city._place_pos(pl)):
 			return true
 		cancel()
-		city._say("Не подойти: %s" % pl.get("name", ""))
+		city._say(I18n.t("Не подойти: %s") % pl.get("name", ""))
 		return false
 	var g: String = m.gate_at(p)
 	if g != "":
 		if m.closed_gates.has(g):
-			city._say("%s заперты" % city._gate_def(g).get("name", "Ворота"))
+			city._say(I18n.t("%s заперты") % city._gate_def(g).get("name", I18n.t("Ворота")))
 			return false
 		goal_gate = g
 		var gc: Vector2 = m.center_of(m.cell_of(p))
@@ -78,7 +78,7 @@ func click(p: Vector2) -> bool:
 	if _route_to(p):
 		return true
 	cancel()
-	city._say("Туда не пройти")
+	city._say(I18n.t("Туда не пройти"))
 	return false
 
 
@@ -104,7 +104,7 @@ func _place_at(p: Vector2) -> Dictionary:
 	return best
 
 
-# Путь до ближайшей свободной клетки у p (сама p, если свободна)
+# Шлях до найближчої вільної клітинки біля p (сама p, якщо вільна)
 func _route_to(p: Vector2) -> bool:
 	var m = city.map
 	var goal: Vector2i = _free_near(m.cell_of(p))
@@ -113,7 +113,7 @@ func _route_to(p: Vector2) -> bool:
 	var path: PackedVector2Array = m.astar.get_point_path(m.cell_of(city.hero_pos).clamp(Vector2i.ZERO, Vector2i(m.w - 1, m.h - 1)), goal, true)
 	if path.is_empty():
 		return false
-	# Последняя точка — сам клик, если он на свободной клетке (не центр клетки)
+	# Остання точка — сам клік, якщо він на вільній клітинці (не центр клітинки)
 	if m.cell_of(p) == goal and m.is_free(p, city.BODY_R):
 		path[path.size() - 1] = p
 	if path.size() > 1:
@@ -139,7 +139,7 @@ func _free_near(c: Vector2i) -> Vector2i:
 	return best
 
 
-## Направление на этот кадр; по приходу — разговор, осмотр или выход
+## Напрямок на цей кадр; після приходу — розмова, огляд або вихід
 func steer(delta: float) -> Vector2:
 	if not active():
 		return Vector2.ZERO
@@ -168,21 +168,21 @@ func steer(delta: float) -> Vector2:
 	if points.size() == 1 and pos.distance_to(points[0]) < 0.15:
 		_arrive()
 		return Vector2.ZERO
-	# Последний шаг город сам обрезает до точки (city_world._drive_hero), здесь только направление
+	# Останній крок місто саме обрізає до точки (city_world._drive_hero), тут лише напрямок
 	return (points[0] - pos).normalized()
 
 
-## Последняя точка пути (INF — путь не на последнем отрезке)
+## Остання точка шляху (INF — шлях не на останньому відрізку)
 func final_point() -> Vector2:
 	return points[0] if active() and points.size() == 1 else Vector2.INF
 
 
-## Дошли до последней точки: поставить героя в неё и завершить путь
+## Дійшли до останньої точки: поставити героя в неї й завершити шлях
 func finish() -> void:
 	_arrive()
 
 
-# Конец пути: житель или место рядом — заговорить / использовать (до колодца в клетке не дойти вплотную)
+# Кінець шляху: мешканець або місце поруч — заговорити / використати (до криниці в клітинці не дійти впритул)
 func _arrive() -> void:
 	var n: Dictionary = goal_npc
 	var pl: Dictionary = goal_place

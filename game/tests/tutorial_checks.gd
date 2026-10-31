@@ -1,6 +1,6 @@
 extends SceneTree
-## Обучение (tutorial/tutorial.gd): справка F1, подсказки по ходу игры, пропуск, город и бой через Worlds.
-## godot --path game --rendering-driver opengl3 -s res://tests/tutorial_checks.gd -- [папка_для_снимков]
+## Навчання (tutorial/tutorial.gd): довідка F1, підказки по ходу гри, пропуск, місто й бій через Worlds.
+## godot --path game --rendering-driver opengl3 -s res://tests/tutorial_checks.gd -- [тека_для_знімків]
 
 var fails: int = 0
 var checks: int = 0
@@ -34,7 +34,7 @@ func shot(name_: String) -> void:
 		root.get_viewport().get_texture().get_image().save_png(shots.path_join(name_))
 
 
-## Ждать, пока покажется подсказка id (не дольше sec реальных секунд)
+## Чекати, доки покажеться підказка id (не довше sec реальних секунд)
 func wait_hint(T: Node, id: String, sec: float = 6.0) -> bool:
 	var end: int = Time.get_ticks_msec() + int(sec * 1000.0)
 	while Time.get_ticks_msec() < end:
@@ -56,7 +56,7 @@ func _run() -> void:
 	T.restart()
 	ok(T.enabled and T.seen.is_empty(), "обучение сброшено и включено")
 
-	# Справка в меню (игры нет): открывается и закрывается
+	# Довідка в меню (гри немає): відкривається й закривається
 	await key(KEY_F1)
 	ok(T.is_help_open() and paused, "F1 без игры — справка, пауза")
 	await key(KEY_ESCAPE)
@@ -72,7 +72,7 @@ func _run() -> void:
 	ok(await wait_hint(T, "welcome"), "первая подсказка — приветствие (G — герой)")
 	await shot("t01_welcome.png")
 
-	# F1 поверх игры: пауза, вкладка по месту, клавиши не уходят в игру
+	# F1 поверх гри: пауза, вкладка за місцем, клавіші не йдуть у гру
 	await key(KEY_F1)
 	ok(T.is_help_open() and paused and T._tabs.current_tab == 0, "F1 на карте — справка, вкладка «Карта»")
 	await shot("t02_help_map.png")
@@ -81,19 +81,21 @@ func _run() -> void:
 	ok(game.cast.hero.is_empty() == not had_hero, "пока открыта справка, G не доходит до игры")
 	T._tabs.current_tab = 4
 	await shot("t03_help_mechanics.png")
+	ok(T._tabs.get_tab_count() == 5 and not "CHRONICLE" in T, "в справке нет вкладки с историей мира: она открывается в игре")
+	ok(not String(T.MECHANICS[0][1]).contains("техномаг") and String(T.MECHANICS[0][1]).contains("Дневник"), "«Мир Тёмной эпохи» отсылает к дневнику, без техномагии")
 	await key(KEY_F1)
 	ok(not T.is_help_open() and not paused, "F1 ещё раз — закрыть")
 
-	# G — герой: приветствие уходит, дальше «Герой»
+	# G — герой: привітання зникає, далі «Герой»
 	await key(KEY_G)
-	# С веткой «Создание персонажа» G открывает экран создания — создаём героя случайно
+	# З гілкою «Створення персонажа» G відкриває екран створення — створюємо героя випадково
 	var cr: Variant = game.cast.get("_creator")
 	if cr != null:
 		cr.randomize_all()
 		cr._on_create()
 		await frames(3)
 	ok(not game.cast.hero.is_empty() and game.cast.controls_hero, "G создаёт героя")
-	# Новый герой у ворот сразу видит выбор «Войти» (world/settlements.gd) — пока проходим мимо
+	# Новий герой біля брами одразу бачить вибір «Увійти» (world/settlements.gd) — поки проходимо повз
 	if game.get("settlements") != null and not game.settlements.prompt_for.is_empty():
 		game.settlements.choose_continue()
 	await create_timer(T.MIN_SHOW_S + 0.3).timeout
@@ -108,7 +110,7 @@ func _run() -> void:
 	ok(T.seen.has("status"), "окно героя открыто — подсказка закрылась")
 	await key(KEY_I)
 
-	# Нужды: жажда
+	# Потреби: спрага
 	var a: Actor = game.cast.hero["actor"]
 	a.res["thirst"] = 30.0
 	ok(await wait_hint(T, "thirst", T.GAP_S + 2.0), "мало воды — подсказка про E у реки")
@@ -116,15 +118,15 @@ func _run() -> void:
 	await create_timer(T.MIN_SHOW_S + 0.3).timeout
 	ok(T.seen.has("thirst"), "напился — подсказка закрылась")
 
-	# Справка по месту: герой под управлением — вкладка «Герой»
+	# Довідка за місцем: герой під керуванням — вкладка «Герой»
 	await key(KEY_F1)
 	ok(T._tabs.current_tab == 1, "с героем справка открывается на «Герой»")
 	await shot("t05_help_hero.png")
 	await key(KEY_F1)
 
-	# Бой: подсказка боя поверх сцены боя, справка на вкладке «Бой»
+	# Бій: підказка бою поверх сцени бою, довідка на вкладці «Бій»
 	T._gap_t = 0.0
-	W.start_battle({})   # отладочной K больше нет (Q07): бой как от случайного нападения
+	W.start_battle({})   # налагоджувальної K більше немає (Q07): бій як від випадкового нападу
 	await process_frame
 	while W.busy:
 		await process_frame
@@ -141,12 +143,12 @@ func _run() -> void:
 	while W.busy or W.is_battle():
 		await process_frame
 
-	# Город: подсказка города
+	# Місто: підказка міста
 	T._gap_t = 0.0
 	if T._card.visible:
 		T.dismiss()
 	T._gap_t = 0.0
-	ok(await W.enter_city("s001", {"return_pos": game.cast.hero["pos"]}), "вход в Чёрнославль")
+	ok(await W.enter_city("s001", {"return_pos": game.cast.hero["pos"]}), "вход в Эшвик")
 	while W.busy:
 		await process_frame
 	ok(T.context() == "city", "контекст — город")
@@ -156,8 +158,12 @@ func _run() -> void:
 	await W.leave()
 	while W.busy or W.is_away():
 		await process_frame
+	# Новий герой тепер з'являється за 150 м від міста, тож біля брами він уперше лише після виходу — проходимо повз
+	if game.get("settlements") != null and not game.settlements.prompt_for.is_empty():
+		game.settlements.choose_continue()
+	T.seen["gate"] = true
 
-	# Пропуск: подсказок больше нет, справка работает; состояние сохраняется в user://
+	# Пропуск: підказок більше немає, довідка працює; стан зберігається в user://
 	T.skip_all()
 	a.res["hunger"] = 20.0
 	await create_timer(T.GAP_S + 1.5).timeout

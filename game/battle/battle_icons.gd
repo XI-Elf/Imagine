@@ -1,6 +1,6 @@
 extends RefCounted
-## Рисунки боя без картинок: портреты в кружках, оружие, действия, типы урона.
-## Всё рисуется векторно на любом CanvasItem — подменить на текстуры можно здесь же.
+## Малюнки бою без картинок: портрети в кружечках, зброя, дії, типи шкоди.
+## Усе малюється векторно на будь-якому CanvasItem — підмінити на текстури можна тут-таки.
 
 const INK := Color(0.13, 0.11, 0.09)
 const PARCH := Color(0.86, 0.8, 0.66)
@@ -25,7 +25,7 @@ static func _line(ci: CanvasItem, a: Array, b: Array, o: Vector2, s: float, col:
 
 
 # =====================================================================
-# ПОРТРЕТЫ (в кружке радиуса r; координаты фигур — в долях r от центра)
+# ПОРТРЕТИ (у кружечку радіуса r; координати фігур — у частках r від центру)
 # =====================================================================
 static func portrait(ci: CanvasItem, kind: String, c: Vector2, r: float, dim: bool = false) -> void:
 	ci.draw_circle(c, r, PARCH.darkened(0.35) if dim else PARCH)
@@ -41,14 +41,14 @@ static func portrait(ci: CanvasItem, kind: String, c: Vector2, r: float, dim: bo
 
 
 static func _human(ci: CanvasItem, kind: String, c: Vector2, r: float, ink: Color) -> void:
-	# плечи
+	# плечі
 	_poly(ci, [[-0.78, 0.95], [-0.62, 0.52], [-0.25, 0.36], [0.25, 0.36], [0.62, 0.52], [0.78, 0.95]], c, r, ink)
 	# голова
 	ci.draw_circle(c + Vector2(0, -0.12) * r, r * 0.34, ink)
 	var face: Color = PARCH.darkened(0.15)
 	match kind:
 		"hero":
-			# длинные волосы, лицо, борода
+			# довге волосся, обличчя, борода
 			_poly(ci, [[-0.4, 0.3], [-0.42, -0.2], [-0.32, -0.5], [0, -0.62], [0.32, -0.5], [0.42, -0.2], [0.4, 0.3], [0.26, 0.1], [0.27, -0.3], [-0.27, -0.3], [-0.26, 0.1]], c, r, ink)
 			_poly(ci, [[-0.26, -0.34], [0.0, -0.4], [0.26, -0.34], [0.27, 0.0], [0.16, 0.2], [-0.16, 0.2], [-0.27, 0.0]], c, r, face)
 			_poly(ci, [[-0.27, -0.04], [-0.1, 0.02], [0.1, 0.02], [0.27, -0.04], [0.2, 0.22], [0, 0.34], [-0.2, 0.22]], c, r, ink)
@@ -59,7 +59,7 @@ static func _human(ci: CanvasItem, kind: String, c: Vector2, r: float, ink: Colo
 			ci.draw_circle(c + Vector2(0.11, -0.15) * r, r * 0.04, ink)
 			_line(ci, [0.0, -0.14], [0.03, -0.04], c, r, face.darkened(0.35), 0.04)
 		"bandit", "archer", "bandit_archer":
-			# капюшон
+			# каптур
 			_poly(ci, [[-0.46, 0.3], [-0.42, -0.25], [0, -0.66], [0.42, -0.25], [0.46, 0.3], [0.24, 0.12], [-0.24, 0.12]], c, r, ink)
 			_poly(ci, [[-0.2, -0.22], [0.2, -0.22], [0.18, 0.06], [0, 0.14], [-0.18, 0.06]], c, r, face)
 			_poly(ci, [[-0.2, -0.06], [0.2, -0.06], [0.18, 0.06], [0, 0.14], [-0.18, 0.06]], c, r, Color(0.35, 0.12, 0.1))
@@ -68,14 +68,14 @@ static func _human(ci: CanvasItem, kind: String, c: Vector2, r: float, ink: Colo
 			if kind != "bandit":
 				_line(ci, [0.55, -0.6], [0.75, 0.2], c, r, WOOD_DARK, 0.06)
 		"chief", "bandit_chief":
-			# шлем с наносником
+			# шолом із наносником
 			_poly(ci, [[-0.4, -0.12], [-0.36, -0.42], [0, -0.6], [0.36, -0.42], [0.4, -0.12]], c, r, STEEL_DARK)
 			_line(ci, [0, -0.2], [0, 0.0], c, r, STEEL_DARK, 0.07)
 			_poly(ci, [[-0.2, -0.12], [-0.04, -0.12], [-0.04, 0.12], [-0.18, 0.06]], c, r, face)
 			_poly(ci, [[0.04, -0.12], [0.2, -0.12], [0.18, 0.06], [0.04, 0.12]], c, r, face)
 			_poly(ci, [[-0.2, 0.04], [0.2, 0.04], [0.12, 0.26], [-0.12, 0.26]], c, r, ink)
 		_:
-			# НПС: короткие волосы, лицо
+			# НПС: коротке волосся, обличчя
 			_poly(ci, [[-0.36, -0.12], [-0.34, -0.42], [0, -0.56], [0.34, -0.42], [0.36, -0.12], [0.26, -0.28], [-0.26, -0.28]], c, r, ink)
 			_poly(ci, [[-0.22, -0.28], [0.22, -0.28], [0.22, 0.0], [0.1, 0.16], [-0.1, 0.16], [-0.22, 0.0]], c, r, face)
 			ci.draw_circle(c + Vector2(-0.09, -0.12) * r, r * 0.035, ink)
@@ -83,7 +83,7 @@ static func _human(ci: CanvasItem, kind: String, c: Vector2, r: float, ink: Colo
 
 
 static func _beast(ci: CanvasItem, kind: String, c: Vector2, r: float, ink: Color) -> void:
-	# морда в три четверти: лоб, уши, вытянутый нос вправо-вниз
+	# морда в три чверті: лоб, вуха, витягнутий ніс праворуч-униз
 	var ears: Array = [[-0.42, -0.2], [-0.36, -0.68], [-0.12, -0.36], [0.06, -0.72], [0.18, -0.3]] if kind != "dog" else [[-0.44, -0.1], [-0.5, -0.5], [-0.2, -0.4], [0.1, -0.5], [0.2, -0.3]]
 	_poly(ci, ears, c, r, ink)
 	_poly(ci, [[-0.5, 0.0], [-0.42, -0.32], [0.0, -0.42], [0.3, -0.3], [0.62, 0.02], [0.72, 0.14], [0.6, 0.3], [0.2, 0.34], [-0.1, 0.62], [-0.46, 0.5]], c, r, ink)
@@ -92,7 +92,7 @@ static func _beast(ci: CanvasItem, kind: String, c: Vector2, r: float, ink: Colo
 	var eye: Color = Color(0.7, 1.0, 0.2) if kind == "hound" else PARCH
 	ci.draw_circle(c + Vector2(0.06, -0.14) * r, r * 0.07, eye)
 	ci.draw_circle(c + Vector2(0.72, 0.13) * r, r * 0.06, PARCH.darkened(0.6))
-	# оскал
+	# вищир
 	_poly(ci, [[0.24, 0.26], [0.3, 0.38], [0.36, 0.26], [0.42, 0.37], [0.48, 0.25]], c, r, PARCH)
 	if kind == "hound":
 		for p in [[-0.3, 0.3], [-0.1, 0.1], [0.2, -0.1]]:
@@ -103,7 +103,7 @@ static func _boar(ci: CanvasItem, c: Vector2, r: float, ink: Color) -> void:
 	_poly(ci, [[-0.6, 0.5], [-0.66, -0.1], [-0.4, -0.45], [-0.3, -0.7], [-0.12, -0.45], [0.2, -0.42], [0.5, -0.1], [0.72, 0.1], [0.72, 0.36], [0.4, 0.42], [0.1, 0.62], [-0.3, 0.7]], c, r, ink)
 	ci.draw_circle(c + Vector2(0.62, 0.22) * r, r * 0.12, PARCH.darkened(0.55))
 	ci.draw_circle(c + Vector2(0.12, -0.15) * r, r * 0.06, Color(0.9, 0.3, 0.2))
-	# клыки
+	# ікла
 	_poly(ci, [[0.38, 0.38], [0.5, 0.1], [0.46, 0.4]], c, r, PARCH)
 	_poly(ci, [[0.2, 0.44], [0.3, 0.16], [0.28, 0.46]], c, r, PARCH)
 	# щетина
@@ -112,7 +112,7 @@ static func _boar(ci: CanvasItem, c: Vector2, r: float, ink: Color) -> void:
 
 
 # =====================================================================
-# ОРУЖИЕ (в квадрате rect)
+# ЗБРОЯ (у квадраті rect)
 # =====================================================================
 static func weapon(ci: CanvasItem, kind: String, rect: Rect2, dim: bool = false) -> void:
 	var o: Vector2 = rect.get_center()
@@ -185,14 +185,14 @@ static func weapon(ci: CanvasItem, kind: String, rect: Rect2, dim: bool = false)
 
 
 # =====================================================================
-# ДЕЙСТВИЯ И СПОСОБНОСТИ (в квадрате rect)
+# ДІЇ Й ЗДІБНОСТІ (у квадраті rect)
 # =====================================================================
 static func action(ci: CanvasItem, kind: String, rect: Rect2, col: Color) -> void:
 	var o: Vector2 = rect.get_center()
 	var s: float = minf(rect.size.x, rect.size.y) * 0.5
 	match kind:
 		"move":
-			# бегущий человек и стрелка
+			# людина, що біжить, і стрілка
 			ci.draw_circle(o + Vector2(-0.3, -0.62) * s, s * 0.14, col)
 			_line(ci, [-0.32, -0.45], [-0.42, 0.05], o, s, col, 0.14)
 			_line(ci, [-0.42, 0.05], [-0.15, 0.35], o, s, col, 0.12)
@@ -264,7 +264,7 @@ static func action(ci: CanvasItem, kind: String, rect: Rect2, col: Color) -> voi
 			ci.draw_circle(o, s * 0.4, col)
 
 
-## Кружок типа урона (как красная капля огня на карточке образца)
+## Кружечок типу шкоди (як червона крапля вогню на картці зразка)
 static func damage_type(ci: CanvasItem, dtype: String, c: Vector2, r: float) -> void:
 	var col: Color = TYPE_COLORS.get(dtype, Color(0.7, 0.7, 0.7))
 	ci.draw_circle(c, r + 1.5, Color(0.05, 0.05, 0.05))
@@ -273,7 +273,7 @@ static func damage_type(ci: CanvasItem, dtype: String, c: Vector2, r: float) -> 
 		"fire":
 			_poly(ci, [[0.0, -0.75], [0.5, 0.1], [0.35, 0.55], [0.0, 0.7], [-0.35, 0.55], [-0.5, 0.1]], c, r, col)
 		"radiation":
-			# проклятье (Huzzah 2026-10-23: вместо знака радиации)
+			# прокляття (Huzzah 2026-10-23: замість знака радіації)
 			preload("res://characters/inventory_view.gd").curse_icon(ci, c, r)
 		"slashing":
 			_line(ci, [-0.5, 0.5], [0.5, -0.5], c, r, Color(0.3, 0.3, 0.35), 0.22)
@@ -283,7 +283,7 @@ static func damage_type(ci: CanvasItem, dtype: String, c: Vector2, r: float) -> 
 			ci.draw_circle(c, r * 0.45, col.darkened(0.3))
 
 
-## Часики-«очко действия»: полный — есть, пустой — потрачено
+## Годинничок-«очко дії»: повний — є, порожній — витрачено
 static func pip(ci: CanvasItem, c: Vector2, r: float, full: bool, letter: String, font: Font) -> void:
 	ci.draw_circle(c, r, Color(0.94, 0.62, 0.15) if full else Color(0.12, 0.13, 0.1))
 	ci.draw_arc(c, r, 0.0, TAU, 20, Color(0.94, 0.62, 0.15), 1.5, true)

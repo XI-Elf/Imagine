@@ -28,8 +28,8 @@ static func sprite(node: Node2D, key: String, foot: Vector2, height: float, tint
 	node.draw_texture_rect(texture, Rect2(Vector2(-size.x * 0.5, -size.y), size), false, tint)
 	node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-## Живая фигурка: шаг — подскок, покачивание и наклон; стоя — дыхание.
-## t — секунды, phase — сдвиг, чтобы фигуры не шагали в ногу; flip — смотрит влево.
+## Жива фігурка: крок — підскок, погойдування й нахил; стоячи — дихання.
+## t — секунди, phase — зсув, щоб фігури не крокували в ногу; flip — дивиться ліворуч.
 static func figure(node: Node2D, key: String, foot: Vector2, height: float, tint: Color, t: float, moving: bool, flip: bool = false, phase: float = 0.0) -> void:
 	var texture: Texture2D = tex(key)
 	var size: Vector2 = Vector2(texture.get_size()) * (height / float(texture.get_height()))
@@ -48,7 +48,7 @@ static func figure(node: Node2D, key: String, foot: Vector2, height: float, tint
 		sy = 1.0 + b * 0.018
 		sx = 1.0 - b * 0.010
 		tilt = sin(t * 0.9 + phase) * 0.012
-	# Тень сжимается, когда фигурка в подскоке
+	# Тінь стискається, коли фігурка в підскоку
 	var shadow_k: float = 1.0 - lift / maxf(height, 1.0) * 1.5
 	node.draw_set_transform(foot + Vector2(0, 1.5), 0.0, Vector2(1, 0.28))
 	node.draw_circle(Vector2.ZERO, size.x * 0.31 * shadow_k, Color(0.12, 0.10, 0.07, 0.20 * tint.a))

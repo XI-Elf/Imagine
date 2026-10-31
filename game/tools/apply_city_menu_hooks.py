@@ -1,5 +1,5 @@
-# Хуки экрана города (city/city_menu.gd) в city/city_world.gd. Повторно накладываются на новую версию файла.
-# Запуск: python3 apply_city_menu_hooks.py <game/city/city_world.gd> — дописывает хуки в новую версию файла
+# Гачки екрана міста (city/city_menu.gd) у city/city_world.gd. Повторно накладаються на нову версію файлу.
+# Запуск: python3 apply_city_menu_hooks.py <game/city/city_world.gd> — дописує гачки в нову версію файлу
 import sys
 p = sys.argv[1]
 s = open(p).read()
@@ -11,14 +11,14 @@ def rep(a, b):
 rep('''const Growth := preload("res://city/city_growth.gd")
 ''', '''const Growth := preload("res://city/city_growth.gd")
 const CityMenu := preload("res://city/city_menu.gd")
-## Экран города (city_menu.gd, видео Huzzah 2026-10-23): вход через ворота открывает меню услуг,
-## пешая карта — по кнопке «Пройтись по городу», Esc на улице — назад в меню
-## (меню — при входе с общей карты; отдельный запуск сцены без "settlement" в ctx — сразу на улице)
+## Екран міста (city_menu.gd, відео Huzzah 2026-10-23): вхід через браму відкриває меню послуг,
+## піша карта — за кнопкою «Пройтися містом», Esc на вулиці — назад у меню
+## (меню — під час входу з загальної карти; окремий запуск сцени без "settlement" у ctx — одразу на вулиці)
 var menu: CanvasLayer
-var walking: bool = true               # false — открыт экран города
-var _gate_in: String = ""              # ворота, через которые вошёл (ими же уходит из меню)
+var walking: bool = true               # false — відкритий екран міста
+var _gate_in: String = ""              # брама, через яку ввійшов (нею ж іде з меню)
 ''')
-# Узлы: меню
+# Вузли: меню
 rep('''	window = HeroWindowScript.new()
 	window.setup(func() -> Actor: return hero, func() -> Dictionary: return bag)
 	add_child(window)
@@ -29,7 +29,7 @@ rep('''	window = HeroWindowScript.new()
 	menu.setup(self)
 	add_child(menu)
 ''')
-# Вход: ворота -> меню; пролез или пойман -> на улице
+# Вхід: брама -> меню; проліз або спійманий -> на вулиці
 rep('''	_hero_bld = map.building_at(hero_pos)
 	_reveal()
 	_fit_camera_limits()
@@ -53,20 +53,20 @@ rep('''	if window != null and window.visible:
 		return true
 	return _panel.visible and _panel_kind != "note"
 ''')
-# В меню житель доступен в свои часы, искать его на улице не нужно
+# У меню мешканець доступний у свої години, шукати його на вулиці не треба
 rep('''func _npc_on_duty_here(n: Dictionary) -> bool:
 ''', '''func _npc_on_duty_here(n: Dictionary) -> bool:
 	if not walking:
 		return _on_duty(n["def"], clock.hour_of_day()) and not n["actor"].sleeping
 ''')
-# Esc: на улице — в меню
+# Esc: на вулиці — у меню
 rep('''			if not _panel.visible and not _map_view:
-				return   # меню паузы игры (Worlds)
+				return   # меню паузи гри (Worlds)
 ''', '''			if not _panel.visible and not _map_view:
 				if walking and not is_intruder():
 					open_menu()
 					get_viewport().set_input_as_handled()
-				return   # в меню города — меню паузы игры (Worlds)
+				return   # у меню міста — меню паузи гри (Worlds)
 ''')
 rep('''		KEY_E:
 			if _panel.visible:
@@ -85,11 +85,11 @@ rep('''		KEY_M:
 			if walking:
 				toggle_map()
 ''')
-# Окно разговора поверх меню — по центру
+# Вікно розмови поверх меню — по центру
 rep('''	_panel.position = Vector2(vp.x - _panel.size.x - 20.0, 60.0)
 ''', '''	_panel.position = Vector2(vp.x - _panel.size.x - 20.0, 60.0) if walking else (vp - _panel.size) * 0.5
 ''')
-# HUD: в меню своё, сверху и подсказки не нужны
+# HUD: у меню своє, згори й підказки не потрібні
 rep('''	_event.text = event_text if event_timer > 0.0 else ""
 ''', '''	_top.visible = walking
 	_hint.visible = walking
@@ -100,11 +100,11 @@ rep('''	_event.text = event_text if event_timer > 0.0 else ""
 rep('''		"intruder_until": intruder_until, "left": leaving, "growth": growth.duplicate(true),
 ''', '''		"intruder_until": intruder_until, "left": leaving, "growth": growth.duplicate(true), "walking": walking,
 ''')
-# Функции меню
+# Функції меню
 rep('''# =====================================================================
-# СОХРАНЕНИЕ
+# ЗБЕРЕЖЕННЯ
 ''', '''# =====================================================================
-# ЭКРАН ГОРОДА (city_menu.gd)
+# ЕКРАН МІСТА (city_menu.gd)
 # =====================================================================
 func open_menu() -> void:
 	walking = false
@@ -116,7 +116,7 @@ func open_menu() -> void:
 	menu.open()
 
 
-## «Пройтись по городу»: прежняя пешая карта, герой у ворот (или где был)
+## «Пройтися містом»: колишня піша карта, герой біля брами (або де був)
 func walk_city() -> void:
 	walking = true
 	_close_panel()
@@ -126,7 +126,7 @@ func walk_city() -> void:
 	_say("%s: вы идёте по улицам. Esc — назад к экрану города" % display_name)
 
 
-## «Поговорить»: жители без своего дела
+## «Поговорити»: мешканці без своєї справи
 func menu_people(list: Array) -> void:
 	var opts: Array = []
 	for n in list:
@@ -136,7 +136,7 @@ func menu_people(list: Array) -> void:
 	_open_panel("talk", "Поговорить", "" if not list.is_empty() else "Больше никого нет.", opts)
 
 
-## «Покинуть город»: через те же ворота; ночью заперто — привратник выпустит за плату
+## «Покинути місто»: через ту саму браму; уночі замкнено — брамник випустить за плату
 func menu_leave() -> void:
 	var g: String = _gate_in if _gate_in != "" else String(def.get("gates", [{}])[0].get("id", ""))
 	if not map.closed_gates.has(g):
@@ -151,7 +151,7 @@ func menu_leave() -> void:
 
 
 # =====================================================================
-# СОХРАНЕНИЕ
+# ЗБЕРЕЖЕННЯ
 ''')
 open(p, 'w').write(s)
 print("ok")

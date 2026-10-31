@@ -1,6 +1,6 @@
 extends SceneTree
-## Снимки растущего Чёрнославля (city/city_growth.gd): общий дом и лачуга в начале, план города на каждом этапе.
-## godot --path game --rendering-driver opengl3 -s res://qa/shots_growth.gd  (папка — AMBER_QA_OUT)
+## Знімки Эшвика, що росте (city/city_growth.gd): спільний дім і халупа на початку, план міста на кожному етапі.
+## godot --path game --rendering-driver opengl3 -s res://qa/shots_growth.gd  (тека — AMBER_QA_OUT)
 const Growth := preload("res://city/city_growth.gd")
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://growth_shots/"
 
@@ -17,7 +17,7 @@ func capture(name: String) -> void:
 	print("CAPTURE ", name)
 
 
-# Сданы первые поручения в порядке этапов, пока город не дойдёт до этапа st
+# Здано перші доручення в порядку етапів, доки місто не дійде до етапу st
 func state_for(def: Dictionary, st: int) -> Dictionary:
 	var g: Dictionary = Growth.new_state()
 	for k in 30:

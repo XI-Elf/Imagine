@@ -1,22 +1,22 @@
 extends CanvasLayer
-## Боевая сцена: отдельный мир боя на сетке 5 футов, пошагово по инициативе (D&D 5e, как в BG3).
+## Боевая сцена: отдельный мир боя на сетке 5 футов, пошагово по инициативе.
 ## Экран — по образцу Huzzah (battle/spec/battle_screen_reference.mp4): слева карточка героя, «Движение»
 ## и до трёх карточек оружия; справа карточки врагов и «Конец хода»; внизу реплика с портретом;
 ## над целью — шанс попадания и урон; табличка «Ход игрока / врага»; окно итогов.
 ## Перед боем игрок выбирает до трёх видов оружия из сумки (req.inventory).
 ##
-## Вход и выход — через переключатель миров (Worlds.start_battle): setup(req) до add_child,
-## по окончании — сигнал battle_finished(result); сама сцена себя не выгружает.
-## Вся логика — в battle_core.gd; здесь только показ и приказы игрока.
+## Вхід і вихід — через перемикач світів (Worlds.start_battle): setup(req) до add_child,
+## після закінчення — сигнал battle_finished(result); сама сцена себе не вивантажує.
+## Уся логіка — у battle_core.gd; тут лише показ і накази гравця.
 ##
-## req: {origin, return_pos, terrain/biome, hot, night, allies: Array[Actor], enemies: Array[Actor] (пусто —
-##       соберутся по местности), pets: [id шаблона], group, seed, inventory {money, items}}
+## req: {origin, return_pos, terrain/biome, hot, night, allies: Array[Actor], enemies: Array[Actor] (порожньо —
+##       зберуться за місцевістю), pets: [id шаблону], group, seed, inventory {money, items}}
 ## result: {outcome: win|lose|flee, origin, return_pos, game_minutes, rounds, dead, killed, loot, traumas}
 ##
-## Управление: ЛКМ по клетке — идти; по врагу (на поле или по карточке) — атаковать текущим оружием
-## (если далеко — подойти и ударить); 1–3 — оружие, M — движение, 4–7 — способности, D рывок, G отход,
-## V уклонение, H помощь, K спрятаться, U зелье, R подготовить, X уйти с поля (с края), C — спутники ИИ/вручную,
-## L — журнал, Enter/Пробел — конец хода, Esc/ПКМ — отмена.
+## Керування: ЛКМ по клітинці — іти; по ворогу (на полі або по картці) — атакувати поточною зброєю
+## (якщо далеко — підійти й ударити); 1–3 — зброя, M — рух, 4–7 — здібності, D ривок, G відхід,
+## V ухилення, H допомога, K сховатися, U зілля, R підготувати, X піти з поля (з краю), C — супутники ШІ/вручну,
+## L — журнал, Enter/Пробіл — кінець ходу, Esc/ПКМ — скасування.
 
 signal battle_finished(result: Dictionary)
 
@@ -53,20 +53,20 @@ class Layer extends Node2D:
 
 var core: Node
 var req: Dictionary = {}
-var phase: String = "battle"           # prep — выбор оружия, battle, end
+var phase: String = "battle"           # prep — вибір зброї, battle, end
 var mode: String = "move"              # move, attack, ability:<id>, help, use
 var hover_cell: Vector2i = Vector2i(-1, -1)
 var mouse: Vector2 = Vector2.ZERO
 var hover_hit: String = ""
-var hits: Array = []                   # [{rect, id}] — кнопки интерфейса, перестраиваются при рисовании
-var vis: Dictionary = {}               # участник -> позиция на экране в клетках (для плавного шага)
+var hits: Array = []                   # [{rect, id}] — кнопки інтерфейсу, перебудовуються під час малювання
+var vis: Dictionary = {}               # учасник -> позиція на екрані в клітинках (для плавного кроку)
 var paths: Dictionary = {}
 var floaters: Array = []
 var dice_show: Dictionary = {}
 var ai_wait: float = -1.0
 var companions_ai: bool = true
 var ground_tex: Texture2D
-var prep_sel: Array = []               # id предметов из сумки, по порядку выбора
+var prep_sel: Array = []               # id предметів із сумки, за порядком вибору
 var prep_list: Array = []              # core.inventory_weapons()
 var speech: String = ""
 var speech_who = null
@@ -83,7 +83,7 @@ var log_box: RichTextLabel
 
 
 # =====================================================================
-# ВХОД
+# ВХІД
 # =====================================================================
 func setup(r: Dictionary) -> void:
 	req = r
@@ -114,8 +114,8 @@ static func _tex_name(i: int) -> String:
 
 
 func _ready() -> void:
-	if core == null:          # без setup — проверочный бой
-		setup({"terrain": "forest", "allies": [Actor.new("hero", "Герой")]})
+	if core == null:          # без setup — перевірний бій
+		setup({"terrain": "forest", "allies": [Actor.new("hero", I18n.t("Герой"))]})
 	call_deferred("_begin")
 
 
@@ -159,13 +159,13 @@ func prep_confirm() -> void:
 
 
 # =====================================================================
-# СОБЫТИЯ ЯДРА
+# ПОДІЇ ЯДРА
 # =====================================================================
 func _on_turn(c) -> void:
 	mode = "move"
 	var side: int = 0 if c.controlled else (1 if c.team == 1 else 2)
 	if side != last_side:
-		banner = {"text": ["Ход\nигрока", "Ход\nврага", "Ход\nсоюзника"][side], "t": 0.0}
+		banner = {"text": [I18n.t("Ход\nигрока"), I18n.t("Ход\nврага"), I18n.t("Ход\nсоюзника")][side], "t": 0.0}
 		last_side = side
 	if not c.controlled:
 		ai_wait = AI_DELAY_S
@@ -190,19 +190,19 @@ func _on_acted(c, what: String, data: Dictionary) -> void:
 		var how: String = (" (%s)" % w.title.to_lower()) if w != null else ""
 		if res["hit"]:
 			var dmg: int = int(res["damage"].get("total", 0))
-			_float(t, "−%d" % dmg + (" крит" if res["crit"] else ""), Color(0.85, 0.08, 0.06))
-			_say("%s бьёт %s%s: %s, %d урона. У %s осталось %d HP." % [c.title, t.title, how, "критическое попадание" if res["crit"] else "попадание",
+			_float(t, "−%d" % dmg + (I18n.t(" сильный удар") if res["crit"] else ""), Color(0.85, 0.08, 0.06))
+			_say(I18n.t("%s бьёт %s%s: %s, %d урона. У %s осталось %d здоровья.") % [c.title, t.title, how, I18n.t("сильный удар") if res["crit"] else I18n.t("попадание"),
 				dmg, t.title, maxi(t.hp, 0)], c)
 		else:
-			_float(t, "мимо", Color(0.3, 0.3, 0.3))
-			_say("%s бьёт %s%s: промах." % [c.title, t.title, how], c)
+			_float(t, I18n.t("мимо"), Color(0.3, 0.3, 0.3))
+			_say(I18n.t("%s бьёт %s%s: промах.") % [c.title, t.title, how], c)
 
 
 func _on_log(text: String, kind: String) -> void:
 	var col: String = {"head": "e8dcb0", "roll": "b9c4d6", "hit": "f0a070", "miss": "a0a0a0", "heal": "9fe39a"}.get(kind, "c8c0a8")
 	log_box.append_text("[color=#%s]%s[/color]\n" % [col, text.replace("[", "[lb]")])
-	# на экран — только короткие итоги без формул (журнал целиком — по L)
-	if kind in ["head", "info"] and not text.begins_with("—") and not text.begins_with("Очередь") and not text.contains("(d20)") and not text.contains("→"):
+	# на екран — лише короткі підсумки без формул (журнал цілком — за L)
+	if kind in ["head", "info"] and not text.begins_with("—") and not text.begins_with(I18n.t("Очередь")) and not text.contains("(d20)") and not text.contains("→"):
 		_say(text, core.current())
 
 
@@ -273,7 +273,7 @@ func _process(delta: float) -> void:
 
 
 # =====================================================================
-# ВВОД
+# ВВЕДЕННЯ
 # =====================================================================
 func me():
 	if phase != "battle":
@@ -293,7 +293,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				var u = core.all[int(hover_hit.substr(4))]
 				hover_cell = u.cell
 		return
+	# Поки відкрите меню паузи, бій не чіпає ні клавіш, ні кліків: Esc іде в меню й закриває його
+	if _menu_open():
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
+		# Esc, якому в бою нічого скасовувати, відкриває меню паузи (його ловить Worlds)
+		if event.physical_keycode == KEY_ESCAPE and _esc_to_menu():
+			return
 		get_viewport().set_input_as_handled()
 		_key(event.physical_keycode)
 	elif event is InputEventMouseButton and event.pressed:
@@ -314,6 +320,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		var cell: Vector2i = screen_to_cell(mouse)
 		if core.grid.in_bounds(cell):
 			click_cell(cell)
+
+
+func _menu_open() -> bool:
+	var w: Node = get_node_or_null("/root/Worlds")
+	return w != null and w.game != null and is_instance_valid(w.game) and bool(w.game.menu_open)
+
+
+## Esc у бою: спершу скасовує вибір дії чи журнал; коли скасовувати нічого — до меню паузи
+func _esc_to_menu() -> bool:
+	if phase == "prep" or phase == "end" or core.outcome != "":
+		return phase == "prep"
+	return mode == "move" and not show_log
 
 
 func _key(k: int) -> void:
@@ -371,7 +389,7 @@ func _key(k: int) -> void:
 			press("weapon:%d" % ((c.wi + 1) % maxi(1, c.weapons.size())))
 
 
-## Нажатие кнопки интерфейса по её id (мышь, клавиши и тесты идут сюда)
+## Натискання кнопки інтерфейсу за її id (миша, клавіші й тести йдуть сюди)
 func press(id: String) -> void:
 	if id.begins_with("prep:"):
 		prep_toggle(id.substr(5))
@@ -444,7 +462,7 @@ func toggle_companions() -> void:
 	for c in core.all:
 		if c.team == 0 and not c.is_hero:
 			c.controlled = not companions_ai
-	core.log_line("Спутники и питомцы: %s." % ("ходят сами" if companions_ai else "под управлением игрока"), "info")
+	core.log_line(I18n.t("Спутники и питомцы: %s.") % (I18n.t("ходят сами") if companions_ai else I18n.t("под управлением игрока")), "info")
 	var cur = core.current()
 	if cur != null and cur.team == 0 and not cur.is_hero and companions_ai and ai_wait < 0.0 and phase == "battle":
 		ai_wait = AI_DELAY_S
@@ -457,7 +475,7 @@ func unit_at(cell: Vector2i):
 	return null
 
 
-## Клик по клетке в ход игрока: идти, атаковать (подойти и ударить), цель способности, помощь, зелье
+## Клік по клітинці в хід гравця: іти, атакувати (підійти й ударити), ціль здібності, допомога, зілля
 func click_cell(cell: Vector2i) -> void:
 	var c = me()
 	if c == null:
@@ -487,11 +505,11 @@ func attack_or_approach(c, t) -> bool:
 	if core.can_attack(c, t)["ok"]:
 		return core.attack(c, t)
 	if not c.has_action or c.weapon().ranged:
-		core.attack(c, t)       # напишет в лог, почему нет
+		core.attack(c, t)       # напише в лог, чому ні
 		return false
 	var best = _approach_cell(c, t)
 	if best == null:
-		core.log_line("%s: до %s не дойти за этот ход." % [c.title, t.title], "info")
+		core.log_line(I18n.t("%s: до %s не дойти за этот ход.") % [c.title, t.title], "info")
 		return false
 	core.move_to(c, best)
 	if c.standing() and core.can_attack(c, t)["ok"]:
@@ -513,7 +531,7 @@ func _approach_cell(c, t):
 
 
 # =====================================================================
-# СОХРАНЕНИЕ (Worlds пишет req, состояние боя — здесь)
+# ЗБЕРЕЖЕННЯ (Worlds пише req, стан бою — тут)
 # =====================================================================
 func to_dict() -> Dictionary:
 	var d: Dictionary = core.to_dict()
@@ -542,13 +560,13 @@ func load_dict(d: Dictionary) -> void:
 
 
 # =====================================================================
-# ГЕОМЕТРИЯ
+# ГЕОМЕТРІЯ
 # =====================================================================
 func vp() -> Vector2:
 	return hud.get_viewport_rect().size if hud != null and hud.is_inside_tree() else Vector2(1366, 800)
 
 
-## Место под поле: между колонками, под очередью и над репликой
+## Місце під поле: між колонками, під чергою й над реплікою
 func grid_rect() -> Rect2:
 	var v: Vector2 = vp()
 	var x0: float = PAD + COL_W + 14.0
@@ -617,7 +635,7 @@ func _draw_field(v: Node2D) -> void:
 		v.draw_line(o + Vector2(x * s, 0), o + Vector2(x * s, g.size.y * s), Color(0.22, 0.18, 0.12, 0.17), 1.0)
 	for y in g.size.y + 1:
 		v.draw_line(o + Vector2(0, y * s), o + Vector2(g.size.x * s, y * s), Color(0.22, 0.18, 0.12, 0.17), 1.0)
-	# подсветка: зелёные клетки — куда дойти; песочные — куда достаёт оружие
+	# підсвітка: зелені клітинки — куди дійти; піщані — куди дістає зброя
 	var c = me()
 	var reach: Dictionary = {}
 	if c != null:
@@ -634,7 +652,7 @@ func _draw_field(v: Node2D) -> void:
 					var p: Vector2i = c.cell + Vector2i(dx, dy)
 					if p != c.cell and g.in_bounds(p) and g.walkable(p):
 						_cell_hl(v, p, C_RANGE)
-	# Storybook: препятствия — вертикальные спрайты, сортировка по глубине; след клетки остаётся виден
+	# Storybook: перешкоди — вертикальні спрайти, сортування за глибиною; слід клітинки лишається видимим
 	var paint: Array = []
 	for p in g.obstacle:
 		var cc: Vector2 = cell_to_screen(Vector2(p))
@@ -728,7 +746,7 @@ func _effect_color(id: String) -> Color:
 		"unconscious": Color(0.3, 0.3, 0.3), "rallied": Color(1.0, 0.85, 0.3)}.get(id, Color(0.85, 0.85, 0.85))
 
 
-## Чёрная табличка с текстом (как «100%» и «20–35» над целью в образце)
+## Чорна табличка з текстом (як «100%» і «20–35» над ціллю в зразку)
 func _tag(ci: CanvasItem, center_bottom: Vector2, text: String, bg: Color, fg: Color, size: int = 14) -> float:
 	var font: Font = ThemeDB.fallback_font
 	var ts: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size)
@@ -763,11 +781,11 @@ func _draw_hover_field(v: Node2D, c, reach: Dictionary) -> void:
 		var path: Array = core.path_for(c, reach, hover_cell)
 		for i in range(1, path.size()):
 			v.draw_line(cell_to_screen(Vector2(path[i - 1])), cell_to_screen(Vector2(path[i])), Color(0.85, 1.0, 0.6, 0.95), 3.0)
-		_tag(v, cell_to_screen(Vector2(hover_cell)) + Vector2(0, -s * 0.5 - 2.0), "%d фт" % int(reach[hover_cell]["cost"]), Color(0.05, 0.05, 0.04, 0.9), C_TEXT, 13)
+		_tag(v, cell_to_screen(Vector2(hover_cell)) + Vector2(0, -s * 0.5 - 2.0), I18n.t("%d кл.") % int(reach[hover_cell]["cost"] / 5), Color(0.05, 0.05, 0.04, 0.9), C_TEXT, 13)
 	v.draw_rect(Rect2(origin() + Vector2(hover_cell) * s, Vector2(s, s)), Color(1, 1, 1, 0.55), false, 1.5)
 
 
-## Описание того, что под курсором, — в реплику внизу
+## Опис того, що під курсором, — у репліку внизу
 func hover_text() -> String:
 	if phase != "battle":
 		return ""
@@ -780,39 +798,39 @@ func hover_text() -> String:
 	if mode.begins_with("ability:"):
 		var ab: BattleAbility = Data.ability(mode.substr(8))
 		var ok: Dictionary = core.can_ability(c, ab, hover_cell if ab.target == "cell" else u)
-		var t: String = "%s: %s." % [ab.title, "можно" if ok["ok"] else ok["why"]]
+		var t: String = "%s: %s." % [ab.title, I18n.t("можно") if ok["ok"] else ok["why"]]
 		if ab.kind == "save":
-			t += " Спасбросок %s против DC %d." % [Rules.Combatant.STAT_NAMES.get(ab.save_stat, ab.save_stat), Rules.save_dc(c, ab.stat)]
+			t += I18n.t(" Спасбросок %s против сложности %d.") % [Rules.Combatant.STAT_NAMES.get(ab.save_stat, ab.save_stat), Rules.save_dc(c, ab.stat)]
 			if u != null and u.team != c.team:
 				var m: int = u.mod(ab.save_stat) + (u.prof() if u.save_profs.has(ab.save_stat) else 0)
-				t += " %s провалит с шансом %d%%." % [u.title, int(round((1.0 - DiceRoller.chance(m, Rules.save_dc(c, ab.stat), false, false, false)) * 100.0))]
+				t += I18n.t(" %s провалит с шансом %d%%.") % [u.title, int(round((1.0 - DiceRoller.chance(m, Rules.save_dc(c, ab.stat), false, false, false)) * 100.0))]
 		return t
 	if u != null and u.team != c.team and u.active():
 		var pv: Dictionary = core.preview_attack(c, u)
-		var t: String = "%s: HP %d/%d, %s. %s: попадание %d%% (бросок +%d), урон %d–%d." % [u.title, u.hp, u.max_hp,
+		var t: String = I18n.t("%s: здоровье %d/%d, %s. %s: попадание %d%% (бросок +%d), урон %d–%d.") % [u.title, u.hp, u.max_hp,
 			pv["ac"]["text"], pv["weapon"].title, int(round(pv["chance"] * 100.0)), int(pv["mod"]), pv["dmg"].x, pv["dmg"].y]
 		if pv["cover"] != "none":
-			t += " Укрытие %s." % {"half": "½", "three_quarters": "¾", "full": "полное"}.get(pv["cover"], "")
+			t += I18n.t(" Укрытие %s.") % {"half": "½", "three_quarters": "¾", "full": I18n.t("полное")}.get(pv["cover"], "")
 		if not pv["adv"].is_empty():
-			t += " Преимущество: " + ", ".join(PackedStringArray(pv["adv"])) + "."
+			t += I18n.t(" Преимущество: ") + ", ".join(PackedStringArray(pv["adv"])) + "."
 		if not pv["dis"].is_empty():
-			t += " Помеха: " + ", ".join(PackedStringArray(pv["dis"])) + "."
+			t += I18n.t(" Помеха: ") + ", ".join(PackedStringArray(pv["dis"])) + "."
 		if not pv["ok"]:
-			t += " (%s%s)" % [pv["why"], " — подойдёт и ударит" if not c.weapon().ranged and _approach_cell(c, u) != null and c.has_action else ""]
+			t += " (%s%s)" % [pv["why"], I18n.t(" — подойдёт и ударит") if not c.weapon().ranged and _approach_cell(c, u) != null and c.has_action else ""]
 		return t
 	if u != null:
-		var t: String = "%s: HP %d/%d, %s." % [u.title, u.hp, u.max_hp, Rules.ac(u)["text"]]
+		var t: String = "%s: здоровье %d/%d, %s." % [u.title, u.hp, u.max_hp, Rules.ac(u)["text"]]
 		for e in u.effects:
 			t += " " + e["res"].title + "."
 		return t
 	if mode == "move":
 		var reach: Dictionary = core.reach_of(c)
 		if reach.has(hover_cell) and not reach[hover_cell].get("pass_only", false):
-			var t: String = "Идти: %d фт из %d." % [int(reach[hover_cell]["cost"]), c.move_left]
+			var t: String = I18n.t("Идти: %d кл. из %d.") % [int(reach[hover_cell]["cost"] / 5), c.move_left / 5]
 			if _provokes(c, core.path_for(c, reach, hover_cell)):
-				t += " Враг рядом ударит вслед (атака по возможности)."
+				t += I18n.t(" Враг рядом ударит вслед (атака по возможности).")
 			if core.grid.difficult.has(hover_cell):
-				t += " Трудная местность."
+				t += I18n.t(" Трудная местность.")
 			return t
 	return ""
 
@@ -834,12 +852,13 @@ func _float(t, text: String, col: Color) -> void:
 
 
 # =====================================================================
-# ИНТЕРФЕЙС
+# ІНТЕРФЕЙС
 # =====================================================================
 func _build() -> void:
 	view = Layer.new()
 	view.fn = _draw_field
 	add_child(view)
+	add_child(preload("res://ui/world_grade.gd").rect())   # темна палітра світу (Q31 B): поле — так, панелі — ні
 	hud = Layer.new()
 	hud.fn = _draw_hud
 	add_child(hud)
@@ -847,7 +866,7 @@ func _build() -> void:
 	log_box.bbcode_enabled = true
 	log_box.scroll_following = true
 	log_box.add_theme_font_size_override("normal_font_size", 13)
-	log_box.add_theme_stylebox_override("normal", ComicUI.panel(22.0))   # рамка комикса (Q24)
+	log_box.add_theme_stylebox_override("normal", ComicUI.panel(22.0))   # рамка коміксу (Q24)
 	log_box.visible = false
 	add_child(log_box)
 
@@ -856,14 +875,14 @@ func _hit(r: Rect2, id: String) -> void:
 	hits.append({"rect": r, "id": id})
 
 
-## Плашка интерфейса боя: тонкая стальная рамка комикса (ui/comic_ui.gd, Q24) чуть шире прямоугольника,
-## чтобы рамка не налезала на текст; наведение (fill = C_PANEL_HI) — светлее, своя заливка — внутри рамки,
-## выбор — цветная кромка hl
+## Плашка інтерфейсу бою: тонка сталева рамка коміксу (ui/comic_ui.gd, Q24) трохи ширша за прямокутник,
+## щоб рамка не налазила на текст; наведення (fill = C_PANEL_HI) — світліше, своя заливка — усередині рамки,
+## вибір — кольорова крайка hl
 func _panel(ci: CanvasItem, r: Rect2, hl: Color = Color(0, 0, 0, 0), fill: Color = C_PANEL) -> void:
 	ci.draw_rect(Rect2(r.position + Vector2(3, 4), r.size), Color(0, 0, 0, 0.45))
 	if r.size.x >= 24.0 and r.size.y >= 20.0:
 		ComicUI.draw_box(ci, "button", r.grow(5.0), Color(1.3, 1.3, 1.35) if fill == C_PANEL_HI else Color.WHITE)
-		if fill != C_PANEL and fill != C_PANEL_HI:   # цветная кнопка («В бой», «Конец хода») — заливка внутри рамки
+		if fill != C_PANEL and fill != C_PANEL_HI:   # кольорова кнопка («У бій», «Кінець ходу») — заливка всередині рамки
 			ci.draw_rect(r.grow(-3.0), fill)
 	else:
 		ci.draw_rect(r, fill)
@@ -907,7 +926,7 @@ func _draw_hud(ci: Node2D) -> void:
 	if who == null:
 		who = cur
 	_draw_queue(ci)
-	# ---- левая колонка: герой, движение, оружие, действия, спутники
+	# ---- ліва колонка: герой, рух, зброя, дії, супутники
 	var x: float = PAD
 	var y: float = PAD
 	if who != null:
@@ -919,8 +938,8 @@ func _draw_hud(ci: Node2D) -> void:
 		ci.draw_rect(ib, Color(0.82, 0.8, 0.72))
 		ci.draw_rect(ib, Color(0, 0, 0, 0.8), false, 1.0)
 		Icons.action(ci, "move", ib.grow(-3.0), Color(0.12, 0.1, 0.08))
-		_text(ci, Vector2(x + 66, y + 23), "Движение", 16)
-		_text(ci, Vector2(x + 66, y + 42), "%d / %d фт" % [who.move_left if c != null else who.speed(), who.speed()], 13, C_DIM)
+		_text(ci, Vector2(x + 66, y + 23), I18n.t("Движение"), 16)
+		_text(ci, Vector2(x + 66, y + 42), I18n.t("%d / %d кл.") % [(who.move_left if c != null else who.speed()) / 5, who.speed() / 5], 13, C_DIM)
 		_text(ci, Vector2(x + COL_W - 26, y + 44), "M", 11, C_DIM)
 		_hit(mr, "move")
 		y += 58.0
@@ -931,23 +950,23 @@ func _draw_hud(ci: Node2D) -> void:
 				_hit(wr, "weapon:%d" % i)
 			else:
 				_panel(ci, wr, Color(0, 0, 0, 0), Color(0.08, 0.09, 0.065))
-				_text(ci, Vector2(x, y + 46), "пусто", 13, Color(C_DIM, 0.5), COL_W, HORIZONTAL_ALIGNMENT_CENTER)
+				_text(ci, Vector2(x, y + 46), I18n.t("пусто"), 13, Color(C_DIM, 0.5), COL_W, HORIZONTAL_ALIGNMENT_CENTER)
 			y += 86.0
 		y = _actions(ci, Vector2(x, y), who, c)
 		y = _allies(ci, Vector2(x, y + 6.0), who)
 	var tb := Rect2(x, v.y - 36.0, COL_W, 28)
 	_panel(ci, tb, Color(0, 0, 0, 0), C_PANEL_HI if hover_hit == "companions" else C_PANEL)
-	_text(ci, tb.position + Vector2(0, 19), "C  Спутники: " + ("сами" if companions_ai else "вручную"), 13, C_TEXT, COL_W, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(ci, tb.position + Vector2(0, 19), I18n.t("C  Спутники: ") + (I18n.t("сами") if companions_ai else I18n.t("вручную")), 13, C_TEXT, COL_W, HORIZONTAL_ALIGNMENT_CENTER)
 	_hit(tb, "companions")
-	# ---- правая колонка: враги и «Конец хода»
+	# ---- права колонка: вороги й «Кінець ходу»
 	_foe_column(ci, v)
 	var er := Rect2(v.x - PAD - COL_W, v.y - 56.0, COL_W, 48)
 	var can_end: bool = c != null
 	_panel(ci, er, C_ORANGE if can_end and hover_hit == "end" else Color(0, 0, 0, 0), Color(0.36, 0.42, 0.22) if can_end else Color(0.14, 0.15, 0.11))
 	ci.draw_rect(er.grow(-6.0), Color(0.86, 0.84, 0.62, 0.15 if can_end else 0.05))
-	_text(ci, er.position + Vector2(0, 31), "Конец хода", 18, C_TEXT if can_end else C_DIM, COL_W, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(ci, er.position + Vector2(0, 31), I18n.t("Конец хода"), 18, C_TEXT if can_end else C_DIM, COL_W, HORIZONTAL_ALIGNMENT_CENTER)
 	_hit(er, "end")
-	# ---- реплика внизу
+	# ---- репліка внизу
 	_speech(ci, v)
 	_dice(ci)
 	_banner(ci)
@@ -972,9 +991,9 @@ func _draw_queue(ci: CanvasItem) -> void:
 		x += rad * 2.0 + 10.0
 		if x > r.end.x - 120.0:
 			break
-	var night: String = ", ночь" if req.get("night", false) else ""
+	var night: String = I18n.t(", ночь") if req.get("night", false) else ""
 	_text(ci, Vector2(r.end.x - 260, 22), "%s%s" % [ARENA_NAMES.get(core.arena_key, core.arena_key), night], 13, C_DIM, 260, HORIZONTAL_ALIGNMENT_RIGHT)
-	_text(ci, Vector2(r.end.x - 260, 42), "Раунд %d" % maxi(core.round_n, 1), 16, C_TEXT, 260, HORIZONTAL_ALIGNMENT_RIGHT)
+	_text(ci, Vector2(r.end.x - 260, 42), I18n.t("Раунд %d") % maxi(core.round_n, 1), 16, C_TEXT, 260, HORIZONTAL_ALIGNMENT_RIGHT)
 
 
 func _hero_card(ci: CanvasItem, r: Rect2, u, mine: bool) -> void:
@@ -987,13 +1006,13 @@ func _hero_card(ci: CanvasItem, r: Rect2, u, mine: bool) -> void:
 	_cross(ci, r.position + Vector2(96, 49), 12.0, C_HP)
 	_text(ci, r.position + Vector2(110, 57), "%d / %d" % [u.hp, u.max_hp], 20, C_HP)
 	_shield(ci, r.position + Vector2(96, 75), 12.0, Color(0.62, 0.64, 0.66))
-	_text(ci, r.position + Vector2(110, 82), "КБ %d" % int(Rules.ac(u)["total"]), 15, Color(0.8, 0.8, 0.78))
+	_text(ci, r.position + Vector2(110, 82), I18n.t("Защита %d") % int(Rules.ac(u)["total"]), 15, Color(0.8, 0.8, 0.78))
 	var font: Font = ThemeDB.fallback_font
 	var px: float = r.position.x + 96.0
 	var on: bool = mine
-	Icons.pip(ci, Vector2(px, r.position.y + 101), 10.0, on and u.has_action, "Д", font)
-	Icons.pip(ci, Vector2(px + 26, r.position.y + 101), 10.0, on and u.has_bonus, "Б", font)
-	Icons.pip(ci, Vector2(px + 52, r.position.y + 101), 10.0, on and u.has_reaction, "Р", font)
+	Icons.pip(ci, Vector2(px, r.position.y + 101), 10.0, on and u.has_action, I18n.t("Д"), font)
+	Icons.pip(ci, Vector2(px + 26, r.position.y + 101), 10.0, on and u.has_bonus, I18n.t("Б"), font)
+	Icons.pip(ci, Vector2(px + 52, r.position.y + 101), 10.0, on and u.has_reaction, I18n.t("Р"), font)
 	var ix: float = r.position.x + 12.0
 	for e in u.effects:
 		ci.draw_rect(Rect2(ix, r.position.y + 100, 9, 9), _effect_color(e["id"]))
@@ -1016,29 +1035,29 @@ func _weapon_card(ci: CanvasItem, r: Rect2, u, i: int, mine: bool) -> void:
 		Icons.damage_type(ci, main_type, ib.end - Vector2(8, 8), 7.0)
 	var font: Font = ThemeDB.fallback_font
 	var tx: float = r.position.x + 90.0
-	Icons.pip(ci, Vector2(tx + 8, r.position.y + 17), 8.0, not mine or u.has_action, "Д", font)
+	Icons.pip(ci, Vector2(tx + 8, r.position.y + 17), 8.0, not mine or u.has_action, I18n.t("Д"), font)
 	_text(ci, Vector2(tx + 22, r.position.y + 22), w.title, 13, C_TEXT, r.size.x - 116.0)
 	_crosshair(ci, Vector2(tx + 8, r.position.y + 42), 10.0, C_TEXT)
 	var lo: int = 0
 	var hi: int = 0
 	for comp in Rules.components(u, w):
 		var rg: Vector2i = DiceRoller.range_of(comp["dice"]) if String(comp["dice"]) != "" else Vector2i.ZERO
-		lo += maxi(0, rg.x + int(comp["F"]))
-		hi += maxi(0, rg.y + int(comp["F"]))
+		lo += maxi(int(comp.get("min", 0)), rg.x + int(comp["F"]))
+		hi += maxi(int(comp.get("min", 0)), rg.y + int(comp["F"]))
 	_text(ci, Vector2(tx + 22, r.position.y + 48), "%d–%d" % [lo, hi], 17)
 	var line3: String
 	if w.ammo > 0:
 		line3 = "▮ %d / %d" % [int(u.ammo.get(w.id, 0)), w.ammo]
 	elif w.ranged:
-		line3 = "%d/%d фт" % [w.range_ft, w.long_range_ft]
+		line3 = I18n.t("%d/%d кл.") % [w.range_ft / 5, w.long_range_ft / 5]
 	else:
-		line3 = "вплотную" if w.reach_ft <= 5 else "%d фт" % w.reach_ft
+		line3 = I18n.t("вплотную") if w.reach_ft <= 5 else I18n.t("%d кл.") % (w.reach_ft / 5)
 	_text(ci, Vector2(tx + 22, r.position.y + 69), line3, 12, C_DIM)
 	_text(ci, Vector2(r.end.x - 18, r.end.y - 8), str(i + 1), 11, C_DIM)
 
 
-const ACTIONS: Array = [["dash", "Рывок", "D"], ["disengage", "Отход", "G"], ["dodge", "Уклонение", "V"], ["help", "Помощь", "H"],
-	["hide", "Спрятаться", "K"], ["potion", "Зелье", "U"], ["ready", "Подготовить", "R"], ["flee", "Уйти с поля", "X"]]
+static var ACTIONS: Array = [["dash", I18n.t("Рывок"), "D"], ["disengage", I18n.t("Отход"), "G"], ["dodge", I18n.t("Уклонение"), "V"], ["help", I18n.t("Помощь"), "H"],
+	["hide", I18n.t("Спрятаться"), "K"], ["potion", I18n.t("Зелье"), "U"], ["ready", I18n.t("Подготовить"), "R"], ["flee", I18n.t("Уйти с поля"), "X"]]
 
 
 func _actions(ci: CanvasItem, p: Vector2, u, mine) -> float:
@@ -1078,7 +1097,7 @@ func _allies(ci: CanvasItem, p: Vector2, who) -> float:
 		var pc: Vector2 = r.position + Vector2(20, 19)
 		ci.draw_circle(pc, 15.0, Color(0.05, 0.05, 0.05))
 		Icons.portrait(ci, portrait_kind(u), pc, 13.0, u.down or u.dead)
-		_text(ci, r.position + Vector2(42, 16), u.title + (" †" if u.dead else (" (без сознания)" if u.down else "")), 13, C_DIM if u.dead else C_TEXT)
+		_text(ci, r.position + Vector2(42, 16), u.title + (" †" if u.dead else (I18n.t(" (без сознания)") if u.down else "")), 13, C_DIM if u.dead else C_TEXT)
 		var hp: float = clampf(float(u.hp) / float(u.max_hp), 0.0, 1.0)
 		ci.draw_rect(Rect2(r.position + Vector2(42, 24), Vector2(140, 6)), Color(0, 0, 0, 0.7))
 		ci.draw_rect(Rect2(r.position + Vector2(42, 24), Vector2(140 * hp, 6)), C_HP if hp >= 0.3 else Color(0.85, 0.2, 0.15))
@@ -1113,20 +1132,20 @@ func _foe_column(ci: CanvasItem, v: Vector2) -> void:
 		Icons.portrait(ci, portrait_kind(u), pc, pr, gone or u.down)
 		var tx: float = r.position.x + 30.0 + pr * 2.0
 		if gone:
-			_text(ci, Vector2(tx, r.position.y + 50), "погиб" if u.dead else "бежал", 15, C_DIM)
+			_text(ci, Vector2(tx, r.position.y + 50), I18n.t("погиб") if u.dead else I18n.t("бежал"), 15, C_DIM)
 		else:
 			_cross(ci, Vector2(tx + 8, r.position.y + 37), 10.0, C_HP)
 			_text(ci, Vector2(tx + 20, r.position.y + 44), "%d / %d" % [u.hp, u.max_hp], 17, C_HP)
 			if h >= 70.0:
 				_shield(ci, Vector2(tx + 8, r.position.y + 58), 10.0, Color(0.62, 0.64, 0.66))
-				_text(ci, Vector2(tx + 20, r.position.y + 64), "КБ %d" % int(Rules.ac(u)["total"]), 13, Color(0.8, 0.8, 0.78))
+				_text(ci, Vector2(tx + 20, r.position.y + 64), I18n.t("Защита %d") % int(Rules.ac(u)["total"]), 13, Color(0.8, 0.8, 0.78))
 			var w: BattleWeapon = u.weapon()
 			var lo: int = 0
 			var hi: int = 0
 			for comp in Rules.components(u, w):
 				var rg: Vector2i = DiceRoller.range_of(comp["dice"]) if String(comp["dice"]) != "" else Vector2i.ZERO
-				lo += maxi(0, rg.x + int(comp["F"]))
-				hi += maxi(0, rg.y + int(comp["F"]))
+				lo += maxi(int(comp.get("min", 0)), rg.x + int(comp["F"]))
+				hi += maxi(int(comp.get("min", 0)), rg.y + int(comp["F"]))
 			var wy: float = r.position.y + (82.0 if h >= 90.0 else h - 10.0)
 			Icons.weapon(ci, w.icon, Rect2(Vector2(tx + 92, wy - 16), Vector2(20, 20)))
 			_text(ci, Vector2(tx + 116, wy), "%d–%d" % [lo, hi], 14)
@@ -1156,7 +1175,7 @@ func _speech(ci: CanvasItem, v: Vector2) -> void:
 		t = speech
 		col = Color(0.85, 0.82, 0.72)
 	if t == "" and me() != null:
-		t = "Клик по клетке — идти, по врагу — ударить текущим оружием. 1–3 — оружие, Enter — конец хода."
+		t = I18n.t("Клик по клетке — идти, по врагу — ударить текущим оружием. 1–3 — оружие, Enter — конец хода.")
 	var lb := Rect2(r.position + Vector2(74, 8), Vector2(r.size.x - 74 - 58, r.size.y - 12))
 	var font: Font = ThemeDB.fallback_font
 	ci.draw_multiline_string(font, lb.position + Vector2(0, 16), t, HORIZONTAL_ALIGNMENT_LEFT, lb.size.x, 14, 3, col)
@@ -1228,10 +1247,10 @@ func _draw_end(ci: CanvasItem) -> void:
 		ci.draw_line(cc + Vector2(10, -10), cc + Vector2(-10, 10), Color(0.6, 0.95, 0.5), 2.5)
 	var hb := Rect2(r.position.x + 60, r.position.y + 14, r.size.x - 120, 40)
 	ci.draw_rect(hb, green.darkened(0.3))
-	_text(ci, hb.position + Vector2(0, 29), {"win": "Победа", "flee": "Отступление", "lose": "Поражение"}.get(o, ""), 22, C_TEXT, hb.size.x, HORIZONTAL_ALIGNMENT_CENTER)
-	_text(ci, Vector2(r.position.x + 60, r.position.y + 84), "Результаты боя:", 16, C_TEXT, r.size.x - 120, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(ci, hb.position + Vector2(0, 29), {"win": I18n.t("Победа"), "flee": I18n.t("Отступление"), "lose": I18n.t("Поражение")}.get(o, ""), 22, C_TEXT, hb.size.x, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(ci, Vector2(r.position.x + 60, r.position.y + 84), I18n.t("Результаты боя:"), 16, C_TEXT, r.size.x - 120, HORIZONTAL_ALIGNMENT_CENTER)
 	ci.draw_line(Vector2(r.position.x + 70, r.position.y + 94), Vector2(r.end.x - 70, r.position.y + 94), Color(0.5, 0.5, 0.42), 1.5)
-	# плитки: убитые по видам, добыча, время
+	# плитки: убиті за видами, здобич, час
 	var tiles: Array = []
 	var kinds: Dictionary = {}
 	for u in core.all:
@@ -1261,14 +1280,14 @@ func _draw_end(ci: CanvasItem) -> void:
 			"time":
 				Icons.action(ci, "ready", tr.grow(-14.0), Color(0.2, 0.15, 0.1))
 			"scrap":
-				# Металлолом: гнутая пластина с заклёпками
+				# Металобрухт: гнута пластина із заклепками
 				var c: Vector2 = tr.get_center()
 				ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-18, -6), c + Vector2(8, -16), c + Vector2(18, 4), c + Vector2(-4, 16)]), Color(0.45, 0.42, 0.38))
 				ci.draw_polyline(PackedVector2Array([c + Vector2(-18, -6), c + Vector2(8, -16), c + Vector2(18, 4), c + Vector2(-4, 16), c + Vector2(-18, -6)]), Color(0.15, 0.12, 0.1), 2.0)
 				for k in 3:
 					ci.draw_circle(c + Vector2(-8 + k * 8, -4 + k * 4), 2.2, Color(0.7, 0.45, 0.25))
 			"pelt":
-				# Шкура: растянутая кожа с лапами
+				# Шкура: розтягнута шкіра з лапами
 				var c: Vector2 = tr.get_center()
 				var pelt := PackedVector2Array([c + Vector2(-10, -18), c + Vector2(-20, -14), c + Vector2(-14, -4), c + Vector2(-20, 10), c + Vector2(-10, 8),
 					c + Vector2(-6, 18), c + Vector2(6, 18), c + Vector2(10, 8), c + Vector2(20, 10), c + Vector2(14, -4), c + Vector2(20, -14), c + Vector2(10, -18)])
@@ -1278,21 +1297,21 @@ func _draw_end(ci: CanvasItem) -> void:
 		_text(ci, tr.end - Vector2(24, 4), str(t["n"]), 13, Color.WHITE, 22, HORIZONTAL_ALIGNMENT_RIGHT)
 		tx += 72.0
 	var lines: Array = []
-	lines.append("Раундов: %d (%.1f мин игрового времени). Убито врагов: %d." % [core.round_n, core.result()["game_minutes"], core.killed])
+	lines.append(I18n.t("Раундов: %d (%.1f мин игрового времени). Убито врагов: %d.") % [core.round_n, core.result()["game_minutes"], core.killed])
 	for u in core.all:
 		if u.team != 0 or u.is_pet and not u.dead:
 			continue
 		if u.dead:
-			lines.append("%s погиб." % u.title)
+			lines.append(I18n.t("%s погиб.") % u.title)
 		elif not u.new_traumas.is_empty():
-			lines.append("%s: травмы — %s." % [u.title, ", ".join(PackedStringArray(u.new_traumas.map(func(x): return _cond_name(x).to_lower())))])
+			lines.append(I18n.t("%s: травмы — %s.") % [u.title, ", ".join(PackedStringArray(u.new_traumas.map(func(x): return _cond_name(x).to_lower())))])
 		elif u.down:
-			lines.append("%s без сознания." % u.title)
+			lines.append(I18n.t("%s без сознания.") % u.title)
 	var font: Font = ThemeDB.fallback_font
 	ci.draw_multiline_string(font, Vector2(r.position.x + 70, r.position.y + 200), "\n".join(PackedStringArray(lines)), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 140, 14, 6, C_TEXT)
 	var br := Rect2(r.get_center().x - 80, r.end.y - 62, 160, 44)
 	_panel(ci, br, C_ORANGE if hover_hit == "finish" else Color(0.85, 0.82, 0.6), Color(0.62, 0.66, 0.36))
-	_text(ci, br.position + Vector2(0, 29), "Завершить", 17, Color(0.1, 0.08, 0.04), br.size.x, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(ci, br.position + Vector2(0, 29), I18n.t("Завершить"), 17, Color(0.1, 0.08, 0.04), br.size.x, HORIZONTAL_ALIGNMENT_CENTER)
 	_hit(br, "finish")
 
 
@@ -1302,17 +1321,17 @@ func _draw_prep(ci: CanvasItem) -> void:
 	_panel(ci, r, Color(0, 0, 0, 0), Color(0.09, 0.1, 0.075))
 	var hb := Rect2(r.position.x + 40, r.position.y + 14, r.size.x - 80, 40)
 	ci.draw_rect(hb, Color(0.2, 0.3, 0.14))
-	_text(ci, hb.position + Vector2(0, 29), "Подготовка к бою", 22, C_TEXT, hb.size.x, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(ci, hb.position + Vector2(0, 29), I18n.t("Подготовка к бою"), 22, C_TEXT, hb.size.x, HORIZONTAL_ALIGNMENT_CENTER)
 	var foes: Array = core.all.filter(func(u): return u.team == 1)
 	var friends: Array = core.all.filter(func(u): return u.team == 0 and not u.is_hero)
-	_text(ci, r.position + Vector2(40, 84), "Противник: %s — %s." % [core._group_title(), ", ".join(PackedStringArray(foes.map(func(u): return u.title)))], 14, C_TEXT, r.size.x - 80)
+	_text(ci, r.position + Vector2(40, 84), I18n.t("Противник: %s — %s.") % [core._group_title(), ", ".join(PackedStringArray(foes.map(func(u): return u.title)))], 14, C_TEXT, r.size.x - 80)
 	if not friends.is_empty():
-		_text(ci, r.position + Vector2(40, 106), "С вами: " + ", ".join(PackedStringArray(friends.map(func(u): return u.title))) + ".", 14, C_DIM, r.size.x - 80)
-	_text(ci, r.position + Vector2(40, 140), "Возьмите в бой до %d видов оружия из сумки (1–9 — выбрать, Enter — в бой):" % core.cfg.loadout_max, 15, C_TEXT, r.size.x - 80)
+		_text(ci, r.position + Vector2(40, 106), I18n.t("С вами: ") + ", ".join(PackedStringArray(friends.map(func(u): return u.title))) + ".", 14, C_DIM, r.size.x - 80)
+	_text(ci, r.position + Vector2(40, 140), I18n.t("Возьмите в бой до %d видов оружия из сумки (1–9 — выбрать, Enter — в бой):") % core.cfg.loadout_max, 15, C_TEXT, r.size.x - 80)
 	var gx: float = r.position.x + 40.0
 	var gy: float = r.position.y + 158.0
 	if prep_list.is_empty():
-		_text(ci, Vector2(gx, gy + 60), "В сумке нет оружия — герой дерётся кулаками.", 17, C_ORANGE, r.size.x - 80, HORIZONTAL_ALIGNMENT_CENTER)
+		_text(ci, Vector2(gx, gy + 60), I18n.t("В сумке нет оружия — герой дерётся кулаками."), 17, C_ORANGE, r.size.x - 80, HORIZONTAL_ALIGNMENT_CENTER)
 	var cw: float = (r.size.x - 80.0 - 2 * 10.0) / 3.0
 	var font: Font = ThemeDB.fallback_font
 	for i in prep_list.size():
@@ -1331,7 +1350,7 @@ func _draw_prep(ci: CanvasItem) -> void:
 		var dmg: String = " + ".join(PackedStringArray(w.damage.map(func(d): return (String(d.get("dice", "")) if String(d.get("dice", "")) != "" else str(int(d.get("bonus", 0)))) + " " + Rules.DAMAGE_NAMES.get(String(d.get("type", "")), ""))))
 		_text(ci, cr.position + Vector2(84, 24), "%s%s" % [w.title, " ×%d" % e["count"] if int(e["count"]) > 1 else ""], 15, C_TEXT if not full else C_DIM, cw - 92)
 		ci.draw_multiline_string(font, cr.position + Vector2(84, 43), dmg, HORIZONTAL_ALIGNMENT_LEFT, cw - 92, 12, 2, C_DIM)
-		_text(ci, cr.position + Vector2(84, 76), "дальнобойное %d/%d фт" % [w.range_ft, w.long_range_ft] if w.ranged else "ближний бой", 11, Color(0.75, 0.7, 0.5), cw - 92)
+		_text(ci, cr.position + Vector2(84, 76), I18n.t("дальнобойное %d/%d кл.") % [w.range_ft / 5, w.long_range_ft / 5] if w.ranged else I18n.t("ближний бой"), 11, Color(0.75, 0.7, 0.5), cw - 92)
 		if si >= 0:
 			ci.draw_circle(cr.position + Vector2(cr.size.x - 16, 16), 11.0, C_ORANGE)
 			_text(ci, cr.position + Vector2(cr.size.x - 27, 21), str(si + 1), 13, Color(0.1, 0.07, 0.03), 22, HORIZONTAL_ALIGNMENT_CENTER)
@@ -1339,10 +1358,10 @@ func _draw_prep(ci: CanvasItem) -> void:
 		_hit(cr, "prep:" + e["item"])
 	var br := Rect2(r.get_center().x - 90, r.end.y - 62, 180, 46)
 	_panel(ci, br, C_ORANGE if hover_hit == "prep_go" else Color(0.85, 0.82, 0.6), Color(0.62, 0.66, 0.36))
-	_text(ci, br.position + Vector2(0, 30), "В бой", 18, Color(0.1, 0.08, 0.04), br.size.x, HORIZONTAL_ALIGNMENT_CENTER)
+	_text(ci, br.position + Vector2(0, 30), I18n.t("В бой"), 18, Color(0.1, 0.08, 0.04), br.size.x, HORIZONTAL_ALIGNMENT_CENTER)
 	_hit(br, "prep_go")
-	var chosen: String = ", ".join(PackedStringArray(prep_sel.map(func(it): return _item_title(it)))) if not prep_sel.is_empty() else "кулаки"
-	_text(ci, Vector2(r.position.x + 40, r.end.y - 76), "В руках будет: " + chosen, 13, C_DIM, r.size.x - 80, HORIZONTAL_ALIGNMENT_CENTER)
+	var chosen: String = ", ".join(PackedStringArray(prep_sel.map(func(it): return _item_title(it)))) if not prep_sel.is_empty() else I18n.t("кулаки")
+	_text(ci, Vector2(r.position.x + 40, r.end.y - 76), I18n.t("В руках будет: ") + chosen, 13, C_DIM, r.size.x - 80, HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _item_title(it: String) -> String:
@@ -1354,38 +1373,38 @@ func _item_title(it: String) -> String:
 
 func _button_text(id: String, c) -> String:
 	if id == "move":
-		return "Движение (M): зелёные клетки — куда дойти. Осталось %d фт." % c.move_left if c != null else "Движение"
+		return I18n.t("Движение (M): зелёные клетки — куда дойти. Осталось %d кл.") % (c.move_left / 5) if c != null else I18n.t("Движение")
 	if id.begins_with("weapon:"):
 		var u = c if c != null else core.hero()
 		var i: int = int(id.substr(7))
 		if u == null or i >= u.weapons.size():
 			return ""
 		var w: BattleWeapon = u.weapons[i]
-		var t: String = "%s (%d): атака действием, бросок +%d. " % [w.title, i + 1, int(Rules.attack_terms(u, w)["sum"])]
-		t += "Взять в руки — свободное взаимодействие, раз в ход." if i != u.wi else "Сейчас в руках; клик по врагу — удар."
+		var t: String = I18n.t("%s (%d): атака действием, бросок +%d. ") % [w.title, i + 1, int(Rules.attack_terms(u, w)["sum"])]
+		t += I18n.t("Взять в руки — свободное взаимодействие, раз в ход.") if i != u.wi else I18n.t("Сейчас в руках; клик по врагу — удар.")
 		return t
 	if id.begins_with("ab:"):
 		var ab: BattleAbility = Data.ability(id.substr(3))
-		return "%s: %s, %s." % [ab.title, {"action": "действие", "bonus": "бонусное действие", "reaction": "реакция"}.get(ab.cost, ab.cost),
-			("осталось %d" % (ab.uses_per_battle - int(c.uses.get(ab.id, 0))) if c != null and ab.uses_per_battle > 0 else "без ограничений")]
+		return "%s: %s, %s." % [ab.title, {"action": I18n.t("действие"), "bonus": I18n.t("бонусное действие"), "reaction": I18n.t("реакция")}.get(ab.cost, ab.cost),
+			(I18n.t("осталось %d") % (ab.uses_per_battle - int(c.uses.get(ab.id, 0))) if c != null and ab.uses_per_battle > 0 else I18n.t("без ограничений"))]
 	for a in ACTIONS:
 		if id == "act:" + a[0]:
-			return "%s (%s). %s" % [a[1], a[2], {"dash": "Действие: ещё столько же движения.", "disengage": "Действие: уйти без атак по возможности.",
-				"dodge": "Действие: по вам атаки с помехой до вашего хода.", "help": "Действие: поднять союзника без сознания или дать преимущество против врага рядом.",
-				"hide": "Действие: скрытность против внимательности врагов; нужно укрытие ¾.", "potion": "Действие: целебное зелье себе или соседу.",
-				"ready": "Действие: ударить первого врага, вошедшего в досягаемость.", "flee": "Действие: уйти с поля, стоя на краю."}.get(a[0], "")]
+			return "%s (%s). %s" % [a[1], a[2], {"dash": I18n.t("Действие: ещё столько же движения."), "disengage": I18n.t("Действие: уйти без атак по возможности."),
+				"dodge": I18n.t("Действие: по вам атаки с помехой до вашего хода."), "help": I18n.t("Действие: поднять союзника без сознания или дать преимущество против врага рядом."),
+				"hide": I18n.t("Действие: скрытность против внимательности врагов; нужно укрытие ¾."), "potion": I18n.t("Действие: целебное зелье себе или соседу."),
+				"ready": I18n.t("Действие: ударить первого врага, вошедшего в досягаемость."), "flee": I18n.t("Действие: уйти с поля, стоя на краю.")}.get(a[0], "")]
 	if id == "end":
-		return "Конец хода (Enter)."
+		return I18n.t("Конец хода (Enter).")
 	if id == "companions":
-		return "Спутники и питомцы ходят сами или под вашим управлением (C)."
+		return I18n.t("Спутники и питомцы ходят сами или под вашим управлением (C).")
 	if id == "log":
-		return "Журнал боя (L): все броски и формулы."
+		return I18n.t("Журнал боя (L): все броски и формулы.")
 	return ""
 
 
-const ARENA_NAMES: Dictionary = {"coast": "побережье", "forest": "лес", "wasteland": "пустошь", "swamp": "болото",
-	"mountains": "горы", "hot": "раскалённые горы", "rad_forest": "проклятый лес", "rad_wasteland": "проклятая пустошь",
-	"rad_swamp": "проклятое болото"}
+static var ARENA_NAMES: Dictionary = {"coast": I18n.t("побережье"), "forest": I18n.t("лес"), "wasteland": I18n.t("пустошь"), "swamp": I18n.t("болото"),
+	"mountains": I18n.t("горы"), "hot": I18n.t("раскалённые горы"), "rad_forest": I18n.t("проклятый лес"), "rad_wasteland": I18n.t("проклятая пустошь"),
+	"rad_swamp": I18n.t("проклятое болото")}
 
 
 func _cond_name(id: String) -> String:
