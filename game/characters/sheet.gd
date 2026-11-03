@@ -393,23 +393,23 @@ static func level_up(a: Actor) -> void:
 static func perk_blocker(a: Actor, id: String) -> String:
 	var p: Dictionary = perk_def(id)
 	if p.is_empty():
-		return "нет такого дара"
+		return I18n.t("нет такого дара")
 	if int(a.perks.get(id, 0)) >= int(p.get("ranks", 1)):
-		return "взят полностью"
+		return I18n.t("взят полностью")
 	if a.level < int(p.get("level", 1)):
-		return "нужен уровень %d" % int(p.get("level", 1))
+		return I18n.t("нужен уровень %d") % int(p.get("level", 1))
 	var r: Dictionary = p.get("req", {})
 	for s in r:
 		if stat_value(a, s) < int(r[s]):
-			return "нужно: %s %d" % [stat_short(s), int(r[s])]
+			return I18n.t("нужно: %s %d") % [stat_short(s), int(r[s])]
 	var mx: Dictionary = p.get("max_stat", {})
 	for s in mx:
 		if stat_value(a, s) > int(mx[s]):
-			return "%s должна быть не выше %d" % [stat_short(s), int(mx[s])]
+			return I18n.t("%s должна быть не выше %d") % [stat_short(s), int(mx[s])]
 	var sk: Dictionary = p.get("req_skill", {})
 	for k in sk:
 		if skill_value(a, k) < int(sk[k]):
-			return "нужно: %s %d %%" % [skill_name(k), int(sk[k])]
+			return I18n.t("нужно: %s %d %%") % [skill_name(k), int(sk[k])]
 	return ""
 
 
@@ -420,7 +420,7 @@ static func available_perks(a: Actor) -> Array:
 ## Взять дар за одно из накопленных право выбора. "" — взят
 static func take_perk(a: Actor, id: String) -> String:
 	if a.perk_picks <= 0:
-		return "дар пока не положен"
+		return I18n.t("дар пока не положен")
 	var why: String = perk_blocker(a, id)
 	if why != "":
 		return why
@@ -442,9 +442,9 @@ static func take_perk(a: Actor, id: String) -> String:
 static func add_tag(a: Actor, k: String) -> String:
 	k = canon(k)
 	if a.tag_left <= 0:
-		return "отметка не положена"
+		return I18n.t("отметка не положена")
 	if not skills().has(k) or a.tags.has(k):
-		return "этот навык уже отмечен" if a.tags.has(k) else "нет такого навыка"
+		return I18n.t("этот навык уже отмечен") if a.tags.has(k) else I18n.t("нет такого навыка")
 	a.tags.append(k)
 	a.tag_left -= 1
 	return ""
@@ -452,15 +452,15 @@ static func add_tag(a: Actor, k: String) -> String:
 
 static func perk_text(id: String) -> String:
 	var p: Dictionary = perk_def(id)
-	var req: Array = ["ур. %d" % int(p.get("level", 1))]
+	var req: Array = [I18n.t("ур. %d") % int(p.get("level", 1))]
 	for s in p.get("req", {}):
 		req.append("%s %d" % [stat_short(s), int(p["req"][s])])
 	for s in p.get("max_stat", {}):
 		req.append("%s ≤ %d" % [stat_short(s), int(p["max_stat"][s])])
 	for k in p.get("req_skill", {}):
 		req.append("%s %d %%" % [skill_name(k), int(p["req_skill"][k])])
-	var rk: String = " (рангов: %d)" % int(p.get("ranks", 1)) if int(p.get("ranks", 1)) > 1 else ""
-	return "%s%s — %s Требует: %s." % [p.get("title", id), rk, p.get("text", ""), ", ".join(PackedStringArray(req))]
+	var rk: String = I18n.t(" (рангов: %d)") % int(p.get("ranks", 1)) if int(p.get("ranks", 1)) > 1 else ""
+	return I18n.t("%s%s — %s Требует: %s.") % [p.get("title", id), rk, p.get("text", ""), ", ".join(PackedStringArray(req))]
 
 
 # =====================================================================
@@ -468,13 +468,13 @@ static func perk_text(id: String) -> String:
 # =====================================================================
 static func traits_valid(list: Array) -> String:
 	if list.size() > int(data().get("traits_max", 2)):
-		return "не больше %d особенностей" % int(data().get("traits_max", 2))
+		return I18n.t("не больше %d особенностей") % int(data().get("traits_max", 2))
 	var seen: Dictionary = {}
 	for t in list:
 		if not traits().has(t):
-			return "нет такой особенности"
+			return I18n.t("нет такой особенности")
 		if seen.has(t):
-			return "особенность повторяется"
+			return I18n.t("особенность повторяется")
 		seen[t] = true
 	return ""
 
@@ -487,7 +487,7 @@ static func trait_text(id: String) -> String:
 ## «Перерождение»: убрать черту или взять новую (один раз за дар)
 static func mutate(a: Actor, remove_id: String, add_id: String) -> String:
 	if a.mutate_left <= 0:
-		return "мутации нет"
+		return I18n.t("мутации нет")
 	var test: Array = a.quirks.duplicate()
 	if remove_id != "":
 		test.erase(remove_id)
@@ -514,13 +514,13 @@ static func alloc_left(alloc: Dictionary) -> int:
 static func alloc_valid(alloc: Dictionary) -> String:
 	for s in alloc:
 		if not stats_list().has(s):
-			return "нет такой характеристики"
+			return I18n.t("нет такой характеристики")
 		var v: int = int(data().get("base", 5)) + int(alloc[s])
 		if v < int(data().get("min", 1)) or v > int(data().get("max", 10)):
-			return "%s вне 1–10" % stat_name(s)
+			return I18n.t("%s вне 1–10") % stat_name(s)
 	var left: int = alloc_left(alloc)
 	if left != 0:
-		return "распределите очки (%d)" % left if left > 0 else "лишние очки (%d)" % -left
+		return I18n.t("распределите очки (%d)") % left if left > 0 else I18n.t("лишние очки (%d)") % -left
 	return ""
 
 
@@ -529,10 +529,10 @@ static func tags_valid(list: Array, extra: int = 0) -> String:
 	var seen: Dictionary = {}
 	for k in list:
 		if not skills().has(k) or seen.has(k):
-			return "неверный навык"
+			return I18n.t("неверный навык")
 		seen[k] = true
 	if list.size() != need:
-		return "отметьте навыков: %d (сейчас %d)" % [need, list.size()]
+		return I18n.t("отметьте навыков: %d (сейчас %d)") % [need, list.size()]
 	return ""
 
 

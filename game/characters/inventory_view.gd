@@ -259,7 +259,7 @@ func _layout() -> void:
 			b.tooltip_text = I18n.t("До %d видов оружия; окно «Подготовка к бою» предложит этот выбор") % loadout_max
 			row.add_child(b)
 		if s == "parchment" or s == "charcoal_stick":
-			row.add_child(_btn(I18n.t("Карта  [M]"), win.open_parchment, 14))
+			row.add_child(_btn(I18n.t("Карта"), win.open_parchment, 14))
 		elif not Trade.bound(s):
 			row.add_child(_btn(I18n.t("Выбросить"), win.drop_item.bind(s), 14))
 	queue_redraw()

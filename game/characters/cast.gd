@@ -57,7 +57,7 @@ var controls_hero: bool = false
 var hold_hero: bool = false     # герой стоїть, поки гравець обирає біля поселення (world/settlements.gd)
 var hero_away: bool = false     # герой у місті або в бою (worlds/worlds.gd): тут лише його потреби за годинником
 var sheet_visible: bool = false   # відкрито вікно героя або створення героя: герой стоїть
-var window: CanvasLayer             # вікно героя (characters/hero_window.gd): I — характеристики, Tab — інвентар
+var window: CanvasLayer             # вікно героя (characters/hero_window.gd): I — єдине меню героя
 var _creator: CanvasLayer           # екран створення героя (characters/hero_create.gd), поки відкритий
 var _last_clock: float = -1.0
 var _forage_cd: float = 0.0
@@ -174,7 +174,9 @@ func _add(actor: Actor, pos: Vector2, is_hero: bool) -> Dictionary:
 		actor.condition_added.connect(func(id: String) -> void:
 			var c: Dictionary = R.condition(id)
 			if not c.is_empty():
-				_chronicle("body", I18n.t("Слёг с бедой: %s.") % String(c.get("name_ru", id)).to_lower()))
+				_chronicle("body", I18n.t("Слёг с бедой: %s.") % String(c.get("name_ru", id)).to_lower())
+				# Подробности — в разделе «Травмы» единого меню (п.10 правок)
+				_event(I18n.t("%s — подробнее: I → 8 (Травмы)") % String(c.get("name_ru", id))))
 	return b
 
 
@@ -454,11 +456,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				open_creator()
 			# Режима свободной камеры больше нет (правки Huzzah 2026-11-03, п.11): у живого героя G ничего не делает
 		KEY_I:
+			# Единое меню героя (п.8): характеристики, инвентарь, задания, карта, травмы, дневник
 			if not hero.is_empty():
-				window.toggle("stats")
-		KEY_TAB:
-			if not hero.is_empty():
-				window.toggle("bag")
+				window.toggle_menu()
 		KEY_K:
 			if _hero_alive():
 				camp.open()
@@ -930,7 +930,7 @@ func sheet_text(a: Actor) -> String:
 	for k in sk:
 		t += "\n  %s %d %%%s" % [sk[k].get("name_ru", k), a.skill(k), " ◆" if a.tags.has(k) else ""]
 	t += I18n.t("\n\nПройдено %.1f км") % (a.distance_m / 1000.0)
-	t += I18n.t("\n\nЛКМ идти, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I персонаж, Tab сумка")
+	t += I18n.t("\n\nЛКМ идти, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I меню героя")
 	return t
 
 

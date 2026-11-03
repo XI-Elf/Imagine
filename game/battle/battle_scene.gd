@@ -819,7 +819,7 @@ func hover_text() -> String:
 			t += " (%s%s)" % [pv["why"], I18n.t(" — подойдёт и ударит") if not c.weapon().ranged and _approach_cell(c, u) != null and c.has_action else ""]
 		return t
 	if u != null:
-		var t: String = "%s: здоровье %d/%d, %s." % [u.title, u.hp, u.max_hp, Rules.ac(u)["text"]]
+		var t: String = I18n.t("%s: здоровье %d/%d, %s.") % [u.title, u.hp, u.max_hp, Rules.ac(u)["text"]]
 		for e in u.effects:
 			t += " " + e["res"].title + "."
 		return t

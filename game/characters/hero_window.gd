@@ -1,11 +1,14 @@
 extends CanvasLayer
-## Окно героя — одно на всю игру вместо прежнего листа (I) и сумки города (Tab). Вкладки:
+## Меню персонажа — одно на всю игру, открывается клавишей I (Huzzah 2026-11-03, п.8: журнал заданий, карта и инвентарь
+## больше не имеют своих клавиш Tab, J, M, а переключаются здесь же). Разделы:
 ## 1 Характеристики (кто он, уровень и опыт, характеристики, производные, шкалы, состояния),
 ## 2 Навыки (18 навыков в %, отмеченные, трата очков навыков), 3 Дары (особенности, взятые дары,
 ## выбор нового дара), 4 Черты (черты характера, мировоззрение, биография),
-## 5 Инвентарь (общая сумка Worlds.inventory: деньги, вещи, вес; использовать, выбросить, взять в бой), 6 Дневник (записки кодекса по разделам).
+## 5 Инвентарь (общая сумка Worlds.inventory: деньги, вещи, вес; использовать, выбросить, взять в бой),
+## 6 Задания (журнал героя, characters/quest_journal.gd), 7 Карта (карта мира, заполняется сама по мере исследования,
+## world/parchment.gd), 8 Травмы (состояние полученных травм и болезней), 9 Дневник (записки кодекса по разделам), 0 Хроника.
 ## Хозяин (cast.gd на карте, city_world.gd в городе) зовёт setup(герой, сумка) и open(вкладка).
-## Пока окно открыто, клавиши забирает оно: 1–7 вкладки, I / Tab — закрыть или перейти, Esc — закрыть.
+## Пока окно открыто, клавиши забирает оно: 1–9 и 0 вкладки, I или Esc — закрыть.
 
 signal closed
 
@@ -19,8 +22,11 @@ const BATTLE_CONFIG := "res://data/battle/config.tres"
 
 const Codex := preload("res://world/codex.gd")
 const Chronicle := preload("res://characters/chronicle.gd")
-const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "diary", "chronicle"]
-static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
+const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "quests", "map", "injuries", "diary", "chronicle"]
+static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"),
+	"quests": I18n.t("Задания"), "map": I18n.t("Карта"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
+const TAB_KEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
+const EMBED_H: float = 500.0       # высота вкладок «Задания» и «Карта»
 const COL_TEXT := Color("d8cfb0")
 const COL_DIM := Color("9a9078")
 const COL_GOLD := Color("c9a24b")
@@ -48,6 +54,7 @@ var inv_drop_armed: bool = false   # «Кинути все» натиснуто 
 var _drop_t: float = 0.0
 var _undo: Dictionary = {}       # навык -> сколько раз поднят, пока окно открыто (можно вернуть)
 var perk_sel: String = ""        # дар, выбранный во вкладке «Дары»
+var _embedded: Array = []        # что сейчас прикреплено к вкладке: журнал и/или карта (вернуть на место перед перестройкой)
 
 
 func setup(get_actor: Callable, get_bag: Callable) -> void:
@@ -81,10 +88,11 @@ func _ready() -> void:
 	v.add_child(tabs)
 	for i in TABS.size():
 		var b := Button.new()
-		b.text = "%d  %s" % [i + 1, TAB_TITLES[TABS[i]]]
+		b.text = "%d %s" % [(i + 1) % 10, TAB_TITLES[TABS[i]]]
 		b.toggle_mode = true
 		b.focus_mode = Control.FOCUS_NONE
 		_style_tab(b)
+		b.add_theme_font_size_override("font_size", 14)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.pressed.connect(show_tab.bind(TABS[i]))
 		_tab_btns[TABS[i]] = b
@@ -99,7 +107,7 @@ func _ready() -> void:
 	_body.add_theme_constant_override("separation", 4)
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.add_child(_body)
-	_note = _label("1–7 вкладки · I характеристики · Tab инвентарь · Esc закрыть", 13, COL_DIM)
+	_note = _label(I18n.t("1–9, 0 — разделы · I или Esc — закрыть"), 13, COL_DIM)
 	v.add_child(_note)
 
 
@@ -121,12 +129,21 @@ func open(which: String = "") -> void:
 
 func close() -> void:
 	_undo = {}
+	_unmount_embedded()
 	if visible:
 		visible = false
 		closed.emit()
 
 
-## I / Tab у господаря: відкрити на вкладці; якщо вже відкрито на ній — закрити
+## I у господаря (п.8): відкрити меню на останньому розділі або закрити, якщо воно вже відкрите
+func toggle_menu() -> void:
+	if visible:
+		close()
+	else:
+		open()
+
+
+## Відкрити на розділі; якщо вже відкрито на ньому — закрити (для виклику з коду й тестів)
 func toggle(which: String) -> void:
 	if visible and tab == which:
 		close()
@@ -195,11 +212,14 @@ func refresh() -> void:
 	if sig == _sig:
 		return
 	_sig = sig
+	_unmount_embedded()
 	for c in _body.get_children():
 		c.queue_free()
 	if a == null:
 		_title.text = I18n.t("Героя нет")
 		_body.add_child(_label(I18n.t("Создайте героя: G на карте."), 16, COL_DIM))
+		if tab == "map":
+			_fill_map()
 		return
 	_title.text = "%s — %s" % [a.display_name, TAB_TITLES[tab]]
 	match tab:
@@ -213,10 +233,135 @@ func refresh() -> void:
 			_fill_traits(a)
 		"bag":
 			_fill_bag(a)
+		"quests":
+			_fill_quests()
+		"map":
+			_fill_map()
+		"injuries":
+			_fill_injuries(a)
 		"diary":
 			_fill_diary()
 		"chronicle":
 			_fill_chronicle()
+
+
+# =====================================================================
+# ЗАДАНИЯ И КАРТА: прикрепляются к вкладке (журнал и карта живут в своих узлах)
+# =====================================================================
+func _worlds() -> Node:
+	return get_node_or_null("/root/Worlds")
+
+
+func _map_owner() -> Node:
+	var w: Node = _worlds()
+	var g: Variant = w.get("game") if w != null else null
+	if g != null and g.get("cast") != null and g.cast.get("parchment") != null:
+		return g.cast.parchment
+	var p: Node = get_parent()
+	return p.get("parchment") if p != null and p.get("parchment") != null else null
+
+
+func _embed_host() -> Control:
+	var h := Control.new()
+	h.custom_minimum_size = Vector2(0.0, EMBED_H)
+	h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.clip_contents = true
+	_body.add_child(h)
+	return h
+
+
+func _fill_quests() -> void:
+	var w: Node = _worlds()
+	var j: Variant = w.get("journal") if w != null else null
+	if j == null:
+		_body.add_child(_label(I18n.t("Журнала нет."), 15, COL_DIM))
+		return
+	j.mount(_embed_host())
+	_embedded.append(j)
+	_title.text = "%s — %s" % [String(_actor().display_name) if _actor() != null else "", TAB_TITLES["quests"]]
+
+
+func _fill_map() -> void:
+	var pm: Node = _map_owner()
+	if pm == null:
+		_body.add_child(_label(I18n.t("Карты нет."), 15, COL_DIM))
+		return
+	pm.mount(_embed_host())
+	_embedded.append(pm)
+
+
+## Вернуть журнал и карту на место: окно закрывается или вкладка перестраивается
+func _unmount_embedded() -> void:
+	for e in _embedded:
+		if is_instance_valid(e):
+			e.unmount()
+	_embedded.clear()
+
+
+# =====================================================================
+# ТРАВМЫ (п.10 правок): состояние полученных травм и болезней
+# =====================================================================
+static var PART_NAMES: Dictionary = {"arm": I18n.t("рука"), "leg": I18n.t("нога"), "head": I18n.t("голова")}
+static var INJURY_EFFECTS: Dictionary = {
+	"speed": I18n.t("скорость"), "power": I18n.t("сила удара"), "loot": I18n.t("поиск"), "poison": I18n.t("отравление"), "thirst": I18n.t("жажда"),
+	"hunger": I18n.t("голод"), "health_decay": I18n.t("потеря здоровья"), "exhaustion": I18n.t("усталость"), "emaciation": I18n.t("истощение"),
+	"bleeding": I18n.t("кровотечение"), "energy_decay": I18n.t("расход энергии"), "pain": I18n.t("боль")}
+
+
+## Строки состояния травм героя: [{id, name, kind, part, age_h, left_h, stage, progress, effects: [..], treatment, cause}]
+static func injury_rows(a: Actor) -> Array:
+	var out: Array = []
+	for c in a.conditions:
+		var d: Dictionary = R.condition(String(c["id"]))
+		var eff: Array = []
+		for k in d.get("effects", {}):
+			var v: float = float(d["effects"][k])
+			var nm: String = String(INJURY_EFFECTS.get(k, ""))
+			if nm != "":
+				eff.append("%s %+d %%" % [nm, int(round(v * 100.0))] if absf(v) <= 1.0 else "%s %+.1f" % [nm, v])
+		var left: float = float(c.get("left_h", 0.0))
+		var age: float = float(c.get("age_h", 0.0))
+		out.append({"id": String(c["id"]), "name": String(d.get("name_ru", c["id"])), "kind": "trauma" if R.is_trauma(String(c["id"])) else "disease",
+			"part": String(PART_NAMES.get(String(d.get("body_part", "")), "")), "age_h": age, "left_h": left, "stage": int(c.get("stage", 1)),
+			"progress": clampf(age / (age + left), 0.0, 1.0) if left > 0.0 else 0.0, "effects": eff,
+			"treatment": String(d.get("treatment", "")), "cause": String(d.get("cause", ""))})
+	return out
+
+
+func _fill_injuries(a: Actor) -> void:
+	var rows: Array = injury_rows(a)
+	if rows.is_empty():
+		_body.add_child(_label(I18n.t("Травм и болезней нет. Всё цело."), 17, COL_GOOD))
+		_body.add_child(_wrap(I18n.t("Когда герой получит травму, она появится здесь: что повреждено, как долго идёт и чем лечится."), 14, COL_DIM))
+	else:
+		_body.add_child(_label(I18n.t("Травмы и болезни: %d") % rows.size(), 17, COL_GOLD))
+	for r in rows:
+		_body.add_child(HSeparator.new())
+		var head: String = String(r["name"])
+		if int(r["stage"]) > 1 and String(r["id"]) == "radiation_sickness":
+			head += I18n.t(" (стадия %d)") % int(r["stage"])
+		_body.add_child(_label("%s · %s%s" % [head, I18n.t("травма") if r["kind"] == "trauma" else I18n.t("болезнь"),
+			((" · " + String(r["part"])) if r["part"] != "" else "")], 17, COL_BAD))
+		var left_txt: String = (I18n.t("до выздоровления около %d ч") % int(ceil(float(r["left_h"])))) if float(r["left_h"]) > 0.0 else I18n.t("сама не пройдёт: нужно лечение")
+		_body.add_child(_label(I18n.t("Идёт %d ч · %s") % [int(float(r["age_h"])), left_txt], 14, COL_TEXT))
+		if float(r["left_h"]) > 0.0:
+			var bar := ProgressBar.new()
+			bar.max_value = 1.0
+			bar.value = float(r["progress"])
+			bar.show_percentage = false
+			bar.custom_minimum_size = Vector2(320.0, 14.0)
+			_body.add_child(bar)
+		if not r["effects"].is_empty():
+			_body.add_child(_wrap(I18n.t("Что мешает: ") + ", ".join(PackedStringArray(r["effects"])), 14, COL_TEXT))
+		if r["treatment"] != "":
+			_body.add_child(_wrap(I18n.t("Лечение: ") + String(r["treatment"]) + I18n.t(". Лекарь рядом — T."), 14, COL_GOOD))
+		if r["cause"] != "":
+			_body.add_child(_wrap(I18n.t("Причина: ") + String(r["cause"]), 13, COL_DIM))
+	if not a.buffs.is_empty():
+		_body.add_child(HSeparator.new())
+		_body.add_child(_label(I18n.t("Действуют"), 16, COL_GOLD))
+		for bf in a.buffs:
+			_body.add_child(_label(I18n.t("%s — ещё %.0f ч") % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])], 14, COL_GOOD))
 
 
 # =====================================================================
@@ -232,10 +377,10 @@ func _fill_stats(a: Actor) -> void:
 		_body.add_child(_label("%s, %d %s · %s%s · %s · %s" % [g, int(pf.get("age", 0)), P.years(int(pf.get("age", 0))), sb + " · " if sb != "" else "", o, pr,
 			P.alignment_name(pf.get("alignment", {}))], 15, COL_TEXT))
 	else:
-		_body.add_child(_label("Герой создан до окна персонажа: происхождения и черт нет.", 14, COL_DIM))
-	_body.add_child(_label("Уровень %d · опыт %d / %d · очков навыков: %d · даров к выбору: %d" % [
+		_body.add_child(_label(I18n.t("Герой создан до окна персонажа: происхождения и черт нет."), 14, COL_DIM))
+	_body.add_child(_label(I18n.t("Уровень %d · опыт %d / %d · очков навыков: %d · даров к выбору: %d") % [
 		a.level, int(a.xp), S.xp_to_next(a), a.skill_points, a.perk_picks], 16, COL_GOLD if a.skill_points > 0 or a.perk_picks > 0 else COL_TEXT))
-	_body.add_child(_label("Характеристики", 17, COL_GOLD))
+	_body.add_child(_label(I18n.t("Характеристики"), 17, COL_GOLD))
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 18)
@@ -246,9 +391,9 @@ func _fill_stats(a: Actor) -> void:
 		grid.add_child(_label(str(v), 18, COL_GOLD))
 		grid.add_child(_label(S.stat_level_name(v), 14, COL_TEXT))
 		var base: int = int(a.stats.get(s, 5))
-		grid.add_child(_label(("база %d, черты и дары %+d" % [base, v - base]) if v != base else String(S.sect("stat_desc").get(s, "")).split(".")[0], 13, COL_DIM))
+		grid.add_child(_label((I18n.t("база %d, черты и дары %+d") % [base, v - base]) if v != base else String(S.sect("stat_desc").get(s, "")).split(".")[0], 13, COL_DIM))
 	var fd: Dictionary = S.derived(a)
-	_body.add_child(_wrap("Здоровье в бою %d (+%d за уровень) · Очки действия %d · Защита %d · Груз %d кг · Урон в рукопашной %d · Защита от яда %d %% · от проклятья %d %% · Порядок хода %d · Заживление %d · Шанс крита %d %% · Очков навыков за уровень %d · Спутников до %d" % [
+	_body.add_child(_wrap(I18n.t("Здоровье в бою %d (+%d за уровень) · Очки действия %d · Защита %d · Груз %d кг · Урон в рукопашной %d · Защита от яда %d %% · от проклятья %d %% · Порядок хода %d · Заживление %d · Шанс крита %d %% · Очков навыков за уровень %d · Спутников до %d") % [
 		fd["hp"], fd["hp_level"], fd["ap"], fd["ac"], int(fd["carry_kg"]), fd["melee"], fd["poison"], fd["rad"], fd["sequence"], fd["healing"], fd["crit"], fd["skill_points"], fd["party"]], 14, COL_TEXT))
 	_body.add_child(HSeparator.new())
 	_body.add_child(_label(I18n.t("Состояние"), 17, COL_GOLD))
@@ -283,7 +428,7 @@ func _fill_stats(a: Actor) -> void:
 # НАВИЧКИ
 # =====================================================================
 func _fill_skills(a: Actor) -> void:
-	_body.add_child(_label("Очков навыков: %d · отмеченные (◆) растут на 2 %% за очко · цена растёт после 100, 125, 150, 175, 200 %%" % a.skill_points, 15, COL_GOLD if a.skill_points > 0 else COL_DIM))
+	_body.add_child(_label(I18n.t("Очков навыков: %d · отмеченные (◆) растут на 2 %% за очко · цена растёт после 100, 125, 150, 175, 200 %%") % a.skill_points, 15, COL_GOLD if a.skill_points > 0 else COL_DIM))
 	var groups: Dictionary = S.sect("groups")
 	for g in groups:
 		_body.add_child(_label(String(groups[g]), 16, COL_GOLD))
@@ -308,13 +453,13 @@ func _fill_skills(a: Actor) -> void:
 			plus.disabled = not S.can_raise(a, k)
 			row.add_child(plus)
 			var c: int = S.skill_cost(a, k)
-			row.add_child(_label(("цена %d" % c) if c > 0 else "предел", 13, COL_DIM))
+			row.add_child(_label((I18n.t("цена %d") % c) if c > 0 else I18n.t("предел"), 13, COL_DIM))
 			if a.tag_left > 0 and not tag:
-				row.add_child(_small("Отметить", tag_skill.bind(k)))
+				row.add_child(_small(I18n.t("Отметить"), tag_skill.bind(k)))
 			var fs: Array = S.skills()[k].get("stats", [])
-			row.add_child(_label("  от %s" % ", ".join(PackedStringArray(fs.map(func(x): return S.stat_short(x)))), 13, COL_DIM))
+			row.add_child(_label(I18n.t("  от %s") % ", ".join(PackedStringArray(fs.map(func(x): return S.stat_short(x)))), 13, COL_DIM))
 			_body.add_child(row)
-	_body.add_child(_wrap("Навыки растут очками навыков: %d + 2 × Интеллект за каждый уровень. Опыт дают бои, поручения, путь, лечение и ремесло. «−» возвращает очки, пока окно открыто." % int(S.d("skill_points_base", 5)), 13, COL_DIM))
+	_body.add_child(_wrap(I18n.t("Навыки растут очками навыков: %d + 2 × Интеллект за каждый уровень. Опыт дают бои, поручения, путь, лечение и ремесло. «−» возвращает очки, пока окно открыто.") % int(S.d("skill_points_base", 5)), 13, COL_DIM))
 
 
 func tag_skill(k: String) -> void:
@@ -345,37 +490,37 @@ func lower_skill(k: String) -> void:
 # ДАРЫ И ОСОБЕННОСТИ
 # =====================================================================
 func _fill_perks(a: Actor) -> void:
-	_body.add_child(_label("Особенности", 17, COL_GOLD))
+	_body.add_child(_label(I18n.t("Особенности"), 17, COL_GOLD))
 	if a.quirks.is_empty():
-		_body.add_child(_label("Нет.", 14, COL_DIM))
+		_body.add_child(_label(I18n.t("Нет."), 14, COL_DIM))
 	for t in a.quirks:
 		var row := HBoxContainer.new()
 		row.add_child(_wrap(S.trait_text(t), 14, COL_TEXT))
 		if a.mutate_left > 0:
-			row.add_child(_small("Убрать (Перерождение)", mutate_trait.bind(t, "")))
+			row.add_child(_small(I18n.t("Убрать (Перерождение)"), mutate_trait.bind(t, "")))
 		_body.add_child(row)
 	if a.mutate_left > 0 and a.quirks.size() < int(S.data().get("traits_max", 2)):
 		var mg := HFlowContainer.new()
 		for t in S.traits():
 			if not a.quirks.has(t):
 				mg.add_child(_small("+ " + String(S.traits()[t]["title"]), mutate_trait.bind("", t)))
-		_body.add_child(_label("Перерождение: можно взять черту", 14, COL_GOLD))
+		_body.add_child(_label(I18n.t("Перерождение: можно взять черту"), 14, COL_GOLD))
 		_body.add_child(mg)
 	_body.add_child(HSeparator.new())
-	_body.add_child(_label("Дары", 17, COL_GOLD))
+	_body.add_child(_label(I18n.t("Дары"), 17, COL_GOLD))
 	if a.perks.is_empty():
-		_body.add_child(_label("Пока нет. Дар — раз в %d уровня." % S.perk_rate(a), 14, COL_DIM))
+		_body.add_child(_label(I18n.t("Пока нет. Дар — раз в %d уровня.") % S.perk_rate(a), 14, COL_DIM))
 	for id in a.perks:
 		var rk: int = int(a.perks[id])
 		_body.add_child(_wrap("%s%s — %s" % [S.perk_def(id).get("title", id), " ×%d" % rk if rk > 1 else "", S.perk_def(id).get("text", "")], 14, COL_GOOD))
 	_body.add_child(HSeparator.new())
 	if a.perk_picks <= 0:
-		_body.add_child(_label("Новый дар — на уровне %d." % _next_perk_level(a), 15, COL_DIM))
+		_body.add_child(_label(I18n.t("Новый дар — на уровне %d.") % _next_perk_level(a), 15, COL_DIM))
 		return
-	_body.add_child(_label("Выберите дар (можно: %d)" % a.perk_picks, 17, COL_GOLD))
+	_body.add_child(_label(I18n.t("Выберите дар (можно: %d)") % a.perk_picks, 17, COL_GOLD))
 	var av: Array = S.available_perks(a)
 	if av.is_empty():
-		_body.add_child(_label("Подходящих даров нет: поднимите уровень, характеристики или навыки.", 14, COL_DIM))
+		_body.add_child(_label(I18n.t("Подходящих даров нет: поднимите уровень, характеристики или навыки."), 14, COL_DIM))
 		return
 	if not av.has(perk_sel):
 		perk_sel = av[0]
@@ -389,7 +534,7 @@ func _fill_perks(a: Actor) -> void:
 		flow.add_child(b)
 	_body.add_child(flow)
 	_body.add_child(_wrap(S.perk_text(perk_sel), 15, COL_TEXT))
-	var take := _small("Взять дар «%s»" % S.perk_def(perk_sel).get("title", perk_sel), pick_perk.bind(perk_sel))
+	var take := _small(I18n.t("Взять дар «%s»") % S.perk_def(perk_sel).get("title", perk_sel), pick_perk.bind(perk_sel))
 	take.add_theme_font_size_override("font_size", 16)
 	_body.add_child(take)
 
@@ -404,7 +549,7 @@ func pick_perk(id: String) -> void:
 	if a == null:
 		return
 	var why: String = S.take_perk(a, id)
-	_say("Дар взят: %s" % S.perk_def(id).get("title", id) if why == "" else "Нельзя: " + why)
+	_say(I18n.t("Дар взят: %s") % S.perk_def(id).get("title", id) if why == "" else I18n.t("Нельзя: ") + why)
 	perk_sel = ""
 	_sig = ""
 	refresh()
@@ -415,7 +560,7 @@ func mutate_trait(remove_id: String, add_id: String) -> void:
 	if a == null:
 		return
 	var why: String = S.mutate(a, remove_id, add_id)
-	_say("Перерождение: готово" if why == "" else "Нельзя: " + why)
+	_say(I18n.t("Перерождение: готово") if why == "" else I18n.t("Нельзя: ") + why)
 	_sig = ""
 	refresh()
 
@@ -488,7 +633,7 @@ func _fill_bag(a: Actor) -> void:
 	inv_page = clampi(inv_page, 0, view.pages() - 1)
 	_body.add_child(view)
 	if _say_t <= 0.0:
-		_note.text = "Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–7 вкладки · Esc закрыть"
+		_note.text = I18n.t("Клик — выбрать · двойной клик — съесть/выпить · колесо — страницы · 1–9, 0 разделы · Esc закрыть")
 
 
 func _codex() -> Dictionary:
@@ -646,10 +791,7 @@ func use_item(id: String) -> void:
 
 ## Кнопка «Карта» біля пергаменту в інвентарі: закрити вікно й розгорнути аркуш (world/parchment.gd)
 func open_parchment() -> void:
-	var c: Node = get_parent()
-	if c != null and c.get("parchment") != null:
-		close()
-		c.parchment.open()
+	show_tab("map")
 
 
 func drop_item(id: String) -> void:
@@ -699,17 +841,18 @@ func _say(t: String) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
-	match event.physical_keycode:
-		KEY_ESCAPE:
-			close()
-		KEY_I:
-			toggle("stats")
-		KEY_TAB:
-			toggle("bag")
-		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7:
-			show_tab(TABS[event.physical_keycode - KEY_1])
-		_:
-			return
+	var k: Key = event.physical_keycode
+	# Набор текста в журнале: клавиши разделов не перехватываем, кроме Esc
+	var w: Node = _worlds()
+	var typing: bool = w != null and w.get("journal") != null and w.journal.is_editing()
+	if typing and k != KEY_ESCAPE:
+		return
+	if k == KEY_ESCAPE or k == KEY_I:
+		close()
+	elif TAB_KEYS.has(k):
+		show_tab(TABS[TAB_KEYS.find(k)])
+	else:
+		return
 	get_viewport().set_input_as_handled()
 
 

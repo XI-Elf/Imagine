@@ -126,7 +126,9 @@ func start_point() -> Vector2:
 		dir = Vector2.DOWN
 	for k in 24:
 		var q: Vector2 = c + dir.rotated(TAU * float(k) / 24.0 * (1.0 if k % 2 == 0 else -1.0) * 0.5) * START_M
-		if _free_land(q):
+		# Не settlement_at: радиус знака зависит от зума, а точка старта — от самой зоны города (п.12 правок)
+		var b: int = game.biome_at(q)
+		if b != 0 and b != 1 and q.distance_to(c) > zone_radius(list[0]):
 			return q
 	return g
 

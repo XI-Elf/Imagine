@@ -60,7 +60,7 @@ var left_carts: Array = []         # Q32: вози загиблих героїв
 var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
 var _km_actor: Actor = null
 var sleep_fx: CanvasLayer = null
-var journal: CanvasLayer          # журнал завдань на J (characters/quest_journal.gd), пише гравець
+var journal: CanvasLayer          # журнал завдань — розділ меню героя (characters/quest_journal.gd), пише гравець
 var _journal_typing: bool = false
 var idle_attacks: bool = true      # пункт 17: напади, поки герой стоїть або спить у полі (тести вимикають)
 var _idle_s: float = 0.0           # ігрові секунди, які герой простояв на місці з останньої перевірки
@@ -117,7 +117,7 @@ func is_battle() -> bool:
 
 # Чи відкрите меню паузи гри (Esc): поки відкрите, світ не рухає героя
 func menu_open() -> bool:
-	return game != null and (bool(game.menu_open) or (journal != null and journal.visible))
+	return game != null and (bool(game.menu_open) or (journal != null and journal.is_editing()))
 
 
 func _journal_place() -> String:
@@ -218,8 +218,8 @@ func _process(delta: float) -> void:
 			h.km_passed.connect(_on_hero_km.bind(h))
 	_track_idle()
 	# Поки відкритий журнал, клавіші — у поле запису: карта й герой стоять
-	if journal != null and journal.visible != _journal_typing:
-		_journal_typing = journal.visible
+	if journal != null and journal.is_editing() != _journal_typing:
+		_journal_typing = journal.is_editing()
 		game.typing = _journal_typing
 	# Карта, поки її не видно, не рахує автозбереження — рахуємо тут (у бою не зберігаємо)
 	if is_away() and not is_battle():
@@ -303,12 +303,6 @@ func _on_enter_requested(s: Dictionary) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if game == null or not game.ready_done or busy:
-		return
-	# J — журнал завдань (і на карті, і в місті); не в бою й не поки набирають текст
-	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_J \
-			and journal != null and not journal.visible and hero_actor() != null and not is_battle() and not game.typing and not game.menu_open:
-		journal.open()
-		get_viewport().set_input_as_handled()
 		return
 	# У місті й у бою Esc, який світ не забрав собі, відкриває меню паузи гри
 	if is_away():

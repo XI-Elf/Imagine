@@ -162,20 +162,58 @@ func render(e: Dictionary) -> String:
 # =====================================================================
 # ВІКНО
 # =====================================================================
+## Правки Huzzah 2026-11-03 (п.8): отдельной клавиши J больше нет — журнал живёт во вкладке «Задания» единого
+## меню героя (characters/hero_window.gd). Окно прикрепляется к хозяину вкладки: mount(host) / unmount().
+var mounted: bool = false
+
+
 func open() -> void:
-	visible = true
 	_refresh()
 	_edit.text = ""
-	_edit.grab_focus()
 
 
 func close() -> void:
-	visible = false
 	_edit.release_focus()
 
 
 func is_open() -> bool:
-	return visible
+	return mounted
+
+
+## В поле записи идёт набор: клавиши меню (цифры вкладок) не должны его перехватывать
+func is_editing() -> bool:
+	return mounted and _edit != null and _edit.has_focus()
+
+
+## Прикрепить окно журнала к узлу host (вкладка меню героя)
+func mount(host: Control) -> void:
+	if mounted or _panel == null:
+		return
+	remove_child(_panel)
+	host.add_child(_panel)
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_panel.offset_left = 0
+	_panel.offset_right = 0
+	_panel.offset_top = 0
+	_panel.offset_bottom = 0
+	_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	mounted = true
+	_refresh()
+
+
+## Вернуть окно на место (вкладка закрыта или перестраивается)
+func unmount() -> void:
+	if not mounted:
+		return
+	_edit.release_focus()
+	_panel.get_parent().remove_child(_panel)
+	add_child(_panel)
+	_panel.offset_left = 120
+	_panel.offset_right = -120
+	_panel.offset_top = 50
+	_panel.offset_bottom = -50
+	mounted = false
 
 
 func _build() -> void:
@@ -196,7 +234,7 @@ func _build() -> void:
 	box.add_theme_constant_override("separation", 8)
 	_panel.add_child(box)
 	var title := Label.new()
-	title.text = I18n.t("Журнал заданий  ·  J — закрыть")
+	title.text = I18n.t("Журнал заданий")
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color(0.2, 0.12, 0.06))
 	box.add_child(title)
@@ -223,10 +261,6 @@ func _build() -> void:
 	save.text = I18n.t("Записать")
 	save.pressed.connect(func(): if add(_edit.text): _edit.text = "")
 	row.add_child(save)
-	var cl := Button.new()
-	cl.text = I18n.t("Закрыть")
-	cl.pressed.connect(close)
-	row.add_child(cl)
 
 
 func _refresh() -> void:
@@ -313,14 +347,6 @@ func _draw_icon(c: Control, kind: String, p: Vector2) -> void:
 			c.draw_line(p + Vector2(-13, 0), p + Vector2(12, 0), k, 3.0)
 			c.draw_line(p + Vector2(12, 0), p + Vector2(4, -7), k, 3.0)
 			c.draw_line(p + Vector2(12, 0), p + Vector2(4, 7), k, 3.0)
-
-
-func _input(event: InputEvent) -> void:
-	if not visible or not (event is InputEventKey) or not event.pressed or event.echo:
-		return
-	if event.is_action_pressed("ui_cancel") or (event.physical_keycode == KEY_J and not _edit.has_focus()):
-		close()
-		get_viewport().set_input_as_handled()
 
 
 # =====================================================================

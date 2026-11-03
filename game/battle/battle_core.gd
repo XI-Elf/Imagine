@@ -283,7 +283,7 @@ func _start_turn(c) -> bool:
 	# «Быстро на ноги»: встаёт в начале хода, не теряя движения
 	if c.has_effect("prone") and not c.down and c.fx("quick_recovery") > 0.0:
 		c.remove_effect("prone")
-		log_line("%s мигом на ногах." % c.title, "info")
+		log_line(I18n.t("%s мигом на ногах.") % c.title, "info")
 	# помощь против врага держится до следующего хода помогавшего
 	for o in all:
 		if o.helped_by == c.team and o.get_meta("help_src", null) == c:
@@ -499,7 +499,7 @@ func attack(c, t, wi: int = -1) -> bool:
 		c.has_action = false
 	else:
 		c.has_bonus = false
-		log_line("%s атакует ещё раз (бонусное действие)." % c.title, "info")
+		log_line(I18n.t("%s атакует ещё раз (бонусное действие).") % c.title, "info")
 	_weapon_attack(c, t, c.wi, false)
 	_check_end()
 	return true
@@ -529,7 +529,7 @@ func _weapon_attack(c, t, wi: int, reaction: bool) -> void:
 	elif _jinxed() and c.standing() and roller.rng.randf() < 0.5:
 		# черта «Невезучий»: промах любого рядом с героем — с шансом 50 % падение
 		if c.add_effect("prone"):
-			log_line("%s спотыкается и падает (невезение)." % c.title, "miss")
+			log_line(I18n.t("%s спотыкается и падает (невезение).") % c.title, "miss")
 
 
 func _jinxed() -> bool:
@@ -570,7 +570,7 @@ func _apply_damage(t, dmg: Dictionary, src, crit: bool) -> void:
 			_kill(t, src)
 		return
 	var h: Dictionary = Rules.apply_hp(t, total)
-	log_line("%s: здоровье %d → %d%s." % [t.title, h["HP_OLD"], h["HP_NEW"], I18n.t(" (с избытком %d)") % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
+	log_line(I18n.t("%s: здоровье %d → %d%s.") % [t.title, h["HP_OLD"], h["HP_NEW"], I18n.t(" (с избытком %d)") % h["OVERKILL"] if h["OVERKILL"] > 0 else ""], "info")
 	if t.hp <= 0:
 		if t.team == 0:
 			var z: Dictionary = Rules.zero_hp_check(roller, t)
@@ -636,7 +636,7 @@ func _kill(t, src) -> void:
 		killed_levels += maxi(1, t.level)
 	log_line((I18n.t("%s погиб.") % t.title if src == null else I18n.t("%s погиб (%s).") % [t.title, src.title]), "hit")
 	if src != null and src.team == 0 and _bloody(src):
-		log_line("Кровавый след: от %s мало что осталось." % t.title, "hit")
+		log_line(I18n.t("Кровавый след: от %s мало что осталось.") % t.title, "hit")
 	_check_end()
 
 
@@ -742,7 +742,7 @@ func use_object(c, t = null) -> bool:
 		c.has_action = false
 	c.potions -= 1
 	var r: Dictionary = roller.roll(cfg.potion_dice, {"label": I18n.t("Зелье")})
-	_heal(t, int(r["total"]) + int(c.fx("b_heal")), I18n.t("зелье: ") + r["text"] + (" +%d (целитель)" % int(c.fx("b_heal")) if c.fx("b_heal") > 0.0 else ""))
+	_heal(t, int(r["total"]) + int(c.fx("b_heal")), I18n.t("зелье: ") + r["text"] + (I18n.t(" +%d (целитель)") % int(c.fx("b_heal")) if c.fx("b_heal") > 0.0 else ""))
 	return true
 
 
@@ -1165,8 +1165,8 @@ func _finish(o: String) -> void:
 					var lv: int = c.actor.level
 					Sheet.gain_xp(c.actor, xp_gained)
 					if c.actor.level > lv:
-						log_line("%s: новый уровень %d!" % [c.title, c.actor.level], "head")
-			log_line("Опыт: +%d." % xp_gained, "info")
+						log_line(I18n.t("%s: новый уровень %d!") % [c.title, c.actor.level], "head")
+			log_line(I18n.t("Опыт: +%d.") % xp_gained, "info")
 		if money > 0:
 			loot["money"] = money
 		var got: Dictionary = {}

@@ -305,7 +305,7 @@ func _build_right() -> Control:
 	_derived_label = _wrap_label(13, COL_TEXT)
 	v.add_child(_derived_label)
 	v.add_child(HSeparator.new())
-	v.add_child(_label("Особенности (до %d)" % int(S.data().get("traits_max", 2)), 17, COL_GOLD))
+	v.add_child(_label(I18n.t("Особенности (до %d)") % int(S.data().get("traits_max", 2)), 17, COL_GOLD))
 	var fg := GridContainer.new()
 	fg.columns = 2
 	fg.add_theme_constant_override("h_separation", 4)
@@ -541,10 +541,10 @@ func _refresh() -> void:
 		row["plus"].disabled = left <= 0 or int(e["base"]) >= int(S.data().get("max", 10))
 	var pa: Actor = P.preview_actor(p)
 	var dv: Dictionary = S.derived(pa)
-	_derived_label.text = "Здоровье в бою %d · ОД %d · Защита %d · Груз %d кг · Урон в рукопашной %d · Яд %d %% · Проклятье %d %% · Порядок хода %d · Заживление %d · Крит %d %% · Очков навыков за уровень %d · Спутников до %d" % [
+	_derived_label.text = I18n.t("Здоровье в бою %d · ОД %d · Защита %d · Груз %d кг · Урон в рукопашной %d · Яд %d %% · Проклятье %d %% · Порядок хода %d · Заживление %d · Крит %d %% · Очков навыков за уровень %d · Спутников до %d") % [
 		dv["hp"], dv["ap"], dv["ac"], int(dv["carry_kg"]), dv["melee"], dv["poison"], dv["rad"], dv["sequence"], dv["healing"], dv["crit"], dv["skill_points"], dv["party"]]
 	var vals: Dictionary = P.skill_values(p)
-	_tags_label.text = "Отмеченные навыки: %d из %d" % [tags.size(), int(S.data().get("tags", 3))]
+	_tags_label.text = I18n.t("Отмеченные навыки: %d из %d") % [tags.size(), int(S.data().get("tags", 3))]
 	for k in _tag_btns:
 		var b: Button = _tag_btns[k]
 		b.set_pressed_no_signal(tags.has(k))
@@ -603,7 +603,7 @@ func _describe(d: Dictionary) -> String:
 	for k in d.get("skills", {}):
 		parts.append("%s +%d %%" % [S.skill_name(k), int(d["skills"][k]) * P.legacy_pct()])
 	if d.has("tags"):
-		parts.append("отмечает: " + ", ".join(PackedStringArray(d["tags"].map(func(x): return S.skill_name(x)))))
+		parts.append(I18n.t("отмечает: ") + ", ".join(PackedStringArray(d["tags"].map(func(x): return S.skill_name(x)))))
 	for k in d.get("effects", {}):
 		parts.append(P.effect_text(k, float(d["effects"][k])))
 	return "%s %s" % [String(d.get("text", "")), "; ".join(parts)]

@@ -373,8 +373,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_M:
 			if event.shift_pressed:
 				_open_goto()
-			elif cast != null and not cast.hero.is_empty() and cast.parchment != null:
-				cast.parchment.open()
+			elif cast != null and not cast.hero.is_empty():
+				pass   # карта героя — раздел единого меню (I → «Карта»), отдельной клавиши нет (п.8)
 			else:
 				toggle_global_map()
 		# Швидкість погоди

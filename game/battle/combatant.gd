@@ -108,7 +108,7 @@ func build_from_creature(c: BattleCreature, a: Actor, t: int, cfg: BattleConfig,
 	# Лист и Actor согласованы: характеристика = боевая характеристика / 2 (для сохранения через Actor.to_dict)
 	for k in FROM_AMBER:
 		a.stats[FROM_AMBER[k]] = clampi(int(round(int(scores[k]) / float(Sheet.sect("battle").get("score_mult", 2)))), 1, 10)
-	var r: Dictionary = roller.roll(c.hp_dice, {"extra_mod": mod("con") * level, "label": "Здоровье " + c.title, "silent": true})
+	var r: Dictionary = roller.roll(c.hp_dice, {"extra_mod": mod("con") * level, "label": I18n.t("Здоровье ") + c.title, "silent": true})
 	max_hp = maxi(1, int(r["total"]))
 	armor = Data.armor(c.armor) if c.armor != "" else null
 	for w in c.weapons:

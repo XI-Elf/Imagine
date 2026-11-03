@@ -10,7 +10,7 @@ extends Node2D
 ## тут лише крок і запас сил (actor.exert). Без ctx["game"] (сцену запущено окремо) місто
 ## саме заводить годинник і саме рахує героя (actor.tick).
 ##
-## Клавіші: WASD — іти, Shift — бігти, E — говорити / оглянути / обшукати, I — вікно героя, Tab — сумка (вкладка вікна героя),
+## Клавіші: WASD — іти, Shift — бігти, E — говорити / оглянути / обшукати, I — меню героя (характеристики, сумка, завдання, карта, травми),
 ## M — план міста, коліщатко — масштаб, 1–9 — вибір у розмові, Esc — закрити вікно.
 ## Ріст міста (city_growth.gd): def — місто на нинішньому етапі, full_def — увесь опис із пулом майбутніх будинків і мешканців;
 ## завдання шести НПС у розмові, здане завдання — очко росту, новий етап перебудовує місто одразу.
@@ -209,7 +209,7 @@ func _setup_nodes() -> void:
 	if cam.is_inside_tree():
 		cam.make_current()
 	_build_ui()
-	# Вікно героя (characters/hero_window.gd) — те саме, що на карті: I — характеристики, Tab — інвентар
+	# Вікно героя (characters/hero_window.gd) — те саме, що на карті: I — єдине меню героя
 	window = HeroWindowScript.new()
 	window.setup(func() -> Actor: return hero, func() -> Dictionary: return bag)
 	add_child(window)
@@ -1348,14 +1348,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				_close_panel()
 			elif walking:
 				interact()
-		KEY_TAB:
-			if _panel.visible:
-				_close_panel()
-			window.toggle("bag")
 		KEY_I:
 			if _panel.visible:
 				_close_panel()
-			window.toggle("stats")
+			window.toggle_menu()
 		KEY_M:
 			if walking:
 				toggle_map()
@@ -1970,7 +1966,7 @@ func _update_hud(env: Dictionary) -> void:
 			hint = I18n.t("E — говорить: %s") % n["actor"].display_name
 		elif not p.is_empty():
 			hint = "E — %s: %s" % [{"water": I18n.t("пить"), "container": I18n.t("обыскать"), "bed": I18n.t("лечь спать")}.get(p.get("kind", ""), I18n.t("осмотреть")), p["name"]]
-	_hint.text = hint if hint != "" else I18n.t("ЛКМ или стрелки идти · ПКМ стоп · E говорить · I персонаж · Tab сумка · M план")
+	_hint.text = hint if hint != "" else I18n.t("ЛКМ или стрелки идти · ПКМ стоп · E говорить · I меню героя · M план")
 	_hint.position = Vector2(14.0, vp.y - 60.0)
 	_top.visible = walking
 	_hint.visible = walking
