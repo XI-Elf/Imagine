@@ -9,8 +9,10 @@ extends Node
 ## Екран сам стежить за героєм cast (живе дочірнім у characters/cast.gd), тому однаково спрацьовує
 ## після смерті на карті, у місті, після бою й під час завантаження збереження із загиблим героєм.
 ## Якщо герой загинув у місті, спершу виходимо на карту до брами (Worlds.leave); бій закінчується сам.
-## «Продовжити» — новий герой біля брами міста (cast.create_hero). «Почати заново» — екран створення героя
-## і новий світ, як «Нова гра» в головному меню (Engine meta aw_new_hero, characters/cast.gd).
+## Правки Huzzah 2026-11-03 (п.14–15): екран показує лише некролог — коротку літопис-запис про загиблого (історія, причина
+## смерті, яким лишився в пам'яті світу; без переліку речей і опису світу) й одну кнопку «Продолжить». Нового героя й
+## його характеристик до цього не видно. Після кнопки — сцена перерождения (characters/rebirth_scene.gd), потім
+## новий герой біля брами міста (cast.create_hero). Кнопки «Начать заново» більше немає (start_over лишено для тестів).
 
 const P := preload("res://characters/hero_profile.gd")
 const R := preload("res://characters/actor_rules.gd")
@@ -26,15 +28,17 @@ var cast: Node2D
 var active: bool = false          # екран відкритий: cast не приймає клавіш
 var params: Dictionary = {}       # випадковий новий персонаж (HeroProfile params)
 var dead_name: String = ""
+var _dead_male: bool = true
 var _rng := RandomNumberGenerator.new()
 var _layer: CanvasLayer
 var _creator: CanvasLayer
 var _title: Label
 var _cause: Label
 var _bio: Label
-var _stats: Label
-var _traits: Label
 var _continue_btn: Button
+var obituary_text: String = ""    # некролог загиблого (п.14)
+var _cinema_layer: CanvasLayer
+var _cinema: Control              # сцена перерождения; null, поки не показана
 
 
 func setup(c: Node2D) -> void:
@@ -62,42 +66,75 @@ func _process(_delta: float) -> void:
 					w.leave()
 				return
 		open(a)
-	_layer.visible = _creator == null and not cast.game.menu_open
+	_layer.visible = _creator == null and _cinema == null and not cast.game.menu_open
 
 
 ## Відкрити екран для загиблого героя a й кинути кості нового персонажа
 func open(a: Actor) -> void:
 	active = true
 	dead_name = a.display_name
+	_dead_male = not _female(a)
 	params = P.random_params(_rng)
 	_title.text = (I18n.t("%s погибла") if _female(a) else I18n.t("%s погиб")) % dead_name
-	_cause.text = I18n.t("Причина: %s. Вещи и деньги пропали. Мир остаётся прежним: время, города, сданные поручения, обысканные руины.") % \
-		Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
 	var w: Node = get_node_or_null("/root/Worlds")
-	var bag: Variant = w.get("inventory") if w != null else null
-	if bag is Dictionary and int(bag.get("items", {}).get("horse", 0)) > 0:
-		_cause.text += I18n.t("\nЛошадь погибла вместе с героем.")
-	if bag is Dictionary and int(bag.get("items", {}).get("cart", 0)) > 0:
-		_cause.text += I18n.t(" Повозка с вещами осталась на месте гибели и пропадёт через %d дня.") % int(CART_DAYS)
-	_bio.text = P.biography(params)
-	var parts: Dictionary = P.stat_parts(params)
-	var st: PackedStringArray = []
-	for s in P.stats_list():
-		st.append("%s %d" % [P.stat_name(s), int(parts[s]["total"])])
-	st.append(I18n.t("Удача %d") % int(parts["luck"]["total"]))
-	_stats.text = "   ".join(st)
-	var tr: PackedStringArray = []
-	for t in params.get("traits", []):
-		tr.append(String(R.trait_def(t).get("title", t)))
-	_traits.text = I18n.t("Черты: ") + (", ".join(tr) if not tr.is_empty() else I18n.t("нет"))
-	var male: bool = String(params.get("gender", "female")) == "male"
-	_continue_btn.text = I18n.t("Продолжить за %s (Enter)") % (I18n.t("него") if male else I18n.t("неё"))
+	obituary_text = obituary(a, w, cast.game.clock.total_seconds if cast.game != null and cast.game.get("clock") != null else 0.0)
+	_cause.text = I18n.t("Причина: %s.") % String(Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)).to_lower()
+	_bio.text = obituary_text
+	_continue_btn.text = I18n.t("Продолжить (Enter)")
 	_layer.visible = true
+
+
+## Некролог (п.14 правок): короткая автоматическая летопись — кем был, сколько прожил и прошёл, как умер и каким остался
+## в памяти мира. Перечня вещей и описания мира здесь нет. Тон — «серость»: коротко, без пафоса.
+static func obituary(a: Actor, w: Node, _now_s: float = 0.0) -> String:
+	var male: bool = String(a.profile.get("gender", "male")) != "female"
+	var out: PackedStringArray = []
+	var bio: String = ""
+	if not a.profile.is_empty():
+		var pp: Dictionary = a.profile.duplicate()
+		pp["name"] = a.display_name
+		bio = P.biography(pp)
+	if bio != "":
+		out.append(bio)
+	var km: float = a.distance_m / 1000.0
+	var wins: int = int(w.get("battles_won")) if w != null and w.get("battles_won") != null else 0
+	var life: String = (I18n.t("Прошёл %.0f км, выиграл %d боёв, дорос до %d уровня.") if male else I18n.t("Прошла %.0f км, выиграла %d боёв, доросла до %d уровня.")) % [km, wins, a.level]
+	out.append(life)
+	out.append((I18n.t("Погиб: %s.") if male else I18n.t("Погибла: %s.")) % String(Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)).to_lower())
+	out.append(memory_line(wins, km, a.level, male))
+	return "\n\n".join(out)
+
+
+## Каким остался в памяти мира: по делам (бои, путь, уровень). Три ступени, без пафоса
+static func memory_line(wins: int, km: float, level: int, male: bool) -> String:
+	if wins >= 8 or level >= 6:
+		return I18n.t("О нём ещё долго рассказывали у костров, и каждый добавлял по шраму.") if male else I18n.t("О ней ещё долго рассказывали у костров, и каждый добавлял по шраму.")
+	if wins >= 2 or km >= 30.0:
+		return I18n.t("В трактирах помнят, как он ходил по здешним дорогам. Имя путают, шрам помнят.") if male else I18n.t("В трактирах помнят, как она ходила по здешним дорогам. Имя путают, шрам помнят.")
+	return I18n.t("Мир его почти не заметил: прошёл, как дождь по пустоши, и не оставил следов.") if male else I18n.t("Мир её почти не заметил: прошла, как дождь по пустоши, и не оставила следов.")
 
 
 # Рід за профілем загиблого (у героя без профілю — чоловічий). Цілими словами: в українській «загинув / загинула»
 func _female(a: Actor) -> bool:
 	return String(a.profile.get("gender", "male")) == "female"
+
+
+## Кнопка «Продолжить» (п.15): сперва сцена перерождения, потом новый герой. Нового героя до неё не видно
+func play_rebirth() -> void:
+	if not active or _cinema != null:
+		return
+	_layer.visible = false
+	_cinema = preload("res://characters/rebirth_scene.gd").new()
+	_cinema.setup(preload("res://characters/rebirth_scene.gd").default_pages(dead_name, _dead_male))
+	_cinema.finished.connect(_on_rebirth_done)
+	_cinema_layer.add_child(_cinema)
+
+
+func _on_rebirth_done() -> void:
+	if _cinema != null:
+		_cinema.queue_free()
+		_cinema = null
+	continue_as_new()
 
 
 ## Продовжити за нового персонажа: він з'являється біля брами міста, світ не змінюється
@@ -206,6 +243,9 @@ func start_over() -> void:
 
 func _close() -> void:
 	active = false
+	if _cinema != null:
+		_cinema.queue_free()
+		_cinema = null
 	params = {}
 	_layer.visible = false
 
@@ -214,8 +254,8 @@ func _input(event: InputEvent) -> void:
 	if not active or not _layer.visible or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	var k: Key = (event as InputEventKey).keycode
-	if k == KEY_ENTER or k == KEY_KP_ENTER:
-		continue_as_new()
+	if (k == KEY_ENTER or k == KEY_KP_ENTER) and _cinema == null:
+		play_rebirth()
 		get_viewport().set_input_as_handled()
 
 
@@ -227,6 +267,9 @@ func _build() -> void:
 	_layer.layer = 70   # над картою й містом, під екраном створення героя (80)
 	_layer.visible = false
 	add_child(_layer)
+	_cinema_layer = CanvasLayer.new()
+	_cinema_layer.layer = 75   # сцена перерождения закрывает всё, кроме экрана создания героя
+	add_child(_cinema_layer)
 	var root := Control.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -251,22 +294,17 @@ func _build() -> void:
 	box.add_child(_cause)
 	box.add_child(HSeparator.new())
 	var head := _label(19, COL_GOLD)
-	head.text = I18n.t("Новый путник")
+	head.text = I18n.t("Некролог")
 	box.add_child(head)
 	_bio = _label(17, COL_TEXT)
 	box.add_child(_bio)
-	_stats = _label(15, COL_TEXT)
-	box.add_child(_stats)
-	_traits = _label(15, COL_DIM)
-	box.add_child(_traits)
 	var btns := HBoxContainer.new()
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	btns.add_theme_constant_override("separation", 14)
 	box.add_child(btns)
-	_continue_btn = _button(I18n.t("Продолжить (Enter)"), continue_as_new)
+	_continue_btn = _button(I18n.t("Продолжить (Enter)"), play_rebirth)
 	_continue_btn.add_theme_color_override("font_color", COL_GOLD)
 	btns.add_child(_continue_btn)
-	btns.add_child(_button(I18n.t("Начать заново"), start_over))
 
 
 func _label(size: int, color: Color, centered: bool = false) -> Label:

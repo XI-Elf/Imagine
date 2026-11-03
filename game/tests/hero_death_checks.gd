@@ -127,7 +127,9 @@ func _run() -> void:
 	ok(cast.death._title.text.begins_with(a.display_name) and cast.death._cause.text.contains("жажда"), "имя и причина: %s / %s" % [cast.death._title.text, cast.death._cause.text])
 	var p: Dictionary = cast.death.params
 	ok(String(p.get("name", "")) != "" and P.alloc_valid(p["alloc"]) and P.traits_valid(p["traits"]) == "", "новый персонаж случайный и по правилам: %s" % p.get("name", ""))
-	ok(cast.death._bio.text == P.biography(p) and cast.death._stats.text.contains("Удача"), "биография и характеристики на экране")
+	ok(cast.death._bio.text == cast.death.obituary_text and cast.death.obituary_text.contains("км") and cast.death.obituary_text.contains("Погиб"), "некролог на экране: история, путь, причина")
+	ok(not cast.death.obituary_text.contains(String(p.get("name", "?"))) and not cast.death._bio.text.contains("Сила"), "нового героя и его характеристик на экране нет")
+	ok(not cast.death.obituary_text.to_lower().contains("вещ") and not cast.death.obituary_text.contains("Мир остаётся"), "в некрологе нет перечня вещей и описания мира")
 	await shot("d01_death_screen.png")
 	var st: Dictionary = W.city_states.get("s001", {})
 	ok(Array(st.get("growth", {}).get("done", [])).has("test_done"), "город запомнил сданное поручение")
@@ -146,6 +148,9 @@ func _run() -> void:
 	# ---- Продовжити (Enter): новий герой біля брами, світ колишній, усього колишнього героя — немає
 	var new_name: String = String(p["name"])
 	key(KEY_ENTER)
+	await frames(3)
+	ok(cast.death._cinema != null and cast.death.active and cast.hero["actor"] == a, "Enter — сначала сцена перерождения, нового героя ещё нет")
+	cast.death._cinema.skip()
 	await frames(3)
 	var b: Actor = cast.hero["actor"]
 	ok(not cast.death.active and b != a and b.alive and b.display_name == new_name, "Enter — играем за %s" % b.display_name)
