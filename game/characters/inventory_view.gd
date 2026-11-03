@@ -509,7 +509,8 @@ func _draw_doll() -> void:
 	draw_circle(Vector2.ZERO, 48.0, Color(0.05, 0.1, 0.2, 0.3))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var female: bool = actor != null and String(actor.profile.get("gender", "")) in ["female", "f", "woman"]
-	_doll.draw(self, fig, female, looks())
+	var build: float = Doll.build_of(int(actor.stat("end")), int(actor.stat("str"))) if actor != null else 0.0
+	_doll.draw(self, fig, female, looks(), build)
 
 
 ## Силует героя за текстурою його фішки: темна заливка зі світлою обвідкою

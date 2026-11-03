@@ -19,29 +19,47 @@ static var SLOTS: Array = [["head", I18n.t("Голова")], ["body", I18n.t("Т
 var _ci: CanvasItem
 var _o: Vector2
 var _s: float
+var _kx: float = 1.0          # горизонтальный множитель текущей части тела (телосложение)
+const KX_FAT: float = 0.7     # на сколько тело шире при телосложении 10 (build = +1): ×1,7 — гипербола
+const KX_THIN: float = 0.4    # и уже при 1 (build ≈ −0,8): ×0,68
 
 
-## looks: slot -> {"look": String, "color": Color}
-func draw(ci: CanvasItem, rect: Rect2, female: bool, looks: Dictionary) -> void:
+## Телосложение −1…+1 из Телосложения и Силы (п.5/6/18 правок): Телосложение решает, Сила добавляет
+static func build_of(endurance: int, strength: int) -> float:
+	return clampf((float(endurance - 5) * 0.7 + float(strength - 5) * 0.3) / 5.0, -1.0, 1.0)
+
+
+## Множитель ширины тела для build: широкое тело гиперболизируется сильнее, чем худое
+static func width_of(build: float) -> float:
+	return 1.0 + (KX_FAT * build if build > 0.0 else KX_THIN * build)
+
+
+## looks: slot -> {"look": String, "color": Color}; build — телосложение −1…+1 (build_of): тело, руки и ноги
+## становятся шире или уже, голова почти не меняется
+func draw(ci: CanvasItem, rect: Rect2, female: bool, looks: Dictionary, build: float = 0.0) -> void:
 	_ci = ci
 	_s = minf(rect.size.y / 200.0, rect.size.x / 100.0)
 	_o = Vector2(rect.get_center().x - 50.0 * _s, rect.end.y - 200.0 * _s)
 	var cloak: Dictionary = looks.get("back", {})
+	_kx = width_of(build)
 	if not cloak.is_empty():
 		_cloak_back(cloak["color"])
 	_legs(looks.get("legs", {}), looks.get("feet", {}))
 	_torso(looks.get("body", {}))
 	_arms(looks.get("body", {}), looks.get("hands", {}))
+	_kx = 1.0 + 0.12 * build
 	_head(female, looks.get("head", {}))
+	_kx = width_of(build)
 	if not cloak.is_empty():
 		_cloak_front(cloak["color"])
+	_kx = 1.0
 
 
 # ---------------------------------------------------------------------
 func _p(a: Array) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	for q in a:
-		out.append(_o + Vector2(q[0], q[1]) * _s)
+		out.append(_o + Vector2(50.0 + (float(q[0]) - 50.0) * _kx, q[1]) * _s)
 	return out
 
 
@@ -69,7 +87,7 @@ func _both(a: Array, col: Color, shade: bool = false) -> void:
 
 
 func _line(a: Array, b: Array, w: float = 0.8, col: Color = INK) -> void:
-	_ci.draw_line(_o + Vector2(a[0], a[1]) * _s, _o + Vector2(b[0], b[1]) * _s, col, maxf(1.0, w * _s))
+	_ci.draw_line(_o + Vector2(50.0 + (float(a[0]) - 50.0) * _kx, a[1]) * _s, _o + Vector2(50.0 + (float(b[0]) - 50.0) * _kx, b[1]) * _s, col, maxf(1.0, w * _s))
 
 
 func _ellipse(c: Array, rx: float, ry: float, col: Color, outline: bool = true) -> void:

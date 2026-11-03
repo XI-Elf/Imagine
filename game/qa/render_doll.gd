@@ -19,7 +19,7 @@ class Canvas extends Control:
 				for id in SETS[i]:
 					var w: Dictionary = Trade.item(id)["wear"]
 					looks[w["slot"]] = {"look": w["look"], "color": Color(w["color"])}
-				d.draw(self, Rect2(20 + (g * SETS.size() + i) * 165, 20, 150, 300), g == 1, looks)
+				d.draw(self, Rect2(20 + (g * SETS.size() + i) * 165, 20, 150, 300), g == 1, looks, [-0.8, 0.0, 0.5, 1.0][i])
 
 
 func _initialize() -> void:

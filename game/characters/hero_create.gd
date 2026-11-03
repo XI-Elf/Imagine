@@ -49,6 +49,25 @@ var _bio_title: Label
 var _bio_note: Label
 var _rng := RandomNumberGenerator.new()
 var _auto_name: String = ""
+var doll_view: DollView
+var _build_label: Label
+
+
+## Кукла героя в блоке истории (п.5 правок): внешний вид меняется вместе с распределением характеристик —
+## высокое Телосложение (и Сила) утолщают тело, низкое делает его худым (characters/paper_doll.gd)
+class DollView extends Control:
+	const Doll := preload("res://characters/paper_doll.gd")
+	var female: bool = true
+	var build: float = 0.0
+	var _doll := Doll.new()
+
+	func set_look(is_female: bool, b: float) -> void:
+		female = is_female
+		build = b
+		queue_redraw()
+
+	func _draw() -> void:
+		_doll.draw(self, Rect2(Vector2.ZERO, size).grow(-6.0), female, {}, build)
 
 
 func _ready() -> void:
@@ -124,12 +143,18 @@ func _build_story() -> Control:
 	_bio = RichTextLabel.new()
 	_bio.scroll_active = true
 	_bio.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_bio.custom_minimum_size = Vector2(380.0, 300.0)
+	_bio.custom_minimum_size = Vector2(380.0, 90.0)
 	_bio.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_bio.add_theme_font_size_override("normal_font_size", 16)
 	_bio.add_theme_constant_override("line_separation", 4)
 	_bio.add_theme_color_override("default_color", Color("e6dcc0"))
 	v.add_child(_bio)
+	doll_view = DollView.new()
+	doll_view.custom_minimum_size = Vector2(240.0, 330.0)
+	doll_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(doll_view)
+	_build_label = _label("", 13, COL_GOLD, true)
+	v.add_child(_build_label)
 	v.add_child(HSeparator.new())
 	_bio_note = _label("", 13, COL_DIM, true)
 	_bio_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -551,6 +576,10 @@ func _refresh() -> void:
 	if _bio.text != story:
 		_bio.text = story
 		_bio.scroll_to_line(0)
+	var Dl := preload("res://characters/paper_doll.gd")
+	var bld: float = Dl.build_of(int(parts["end"]["total"]), int(parts["str"]["total"]))
+	doll_view.set_look(gender == "female", bld)
+	_build_label.text = I18n.t("Телосложение: %s") % (I18n.t("крупное, тяжёлое") if bld > 0.45 else (I18n.t("плотное") if bld > 0.12 else (I18n.t("обычное") if bld > -0.12 else (I18n.t("сухое") if bld > -0.45 else I18n.t("хилое")))))
 	_bio_title.text = I18n.t("История: %s") % (p["name"] if p["name"] != "" else I18n.t("без имени"))
 	_bio_note.text = I18n.t("%s · %s · мировоззрение: %s") % [P.C()["origins"][origin()]["title"], P.C()["professions"][profession()]["title"], al]
 	var pr: Array = problems()
