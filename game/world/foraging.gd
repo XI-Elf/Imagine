@@ -1,8 +1,10 @@
 extends RefCounted
 ## Пошук у полі (F, пункт 16 Huzzah 2026-10-29; переробка 2026-10-30 за ідеєю «пошуку на час» із виживалок, свої числа):
 ## гравець вибирає, скільки шукати (15 хв – 2 год), пошук іде обходами по round_min хвилин, кожен обхід коштує сил
-## і показує знахідки у вікні (world/loot_window.gd) одразу. Місце має запас (richness): кожен обхід вибирає його,
-## тож перший обхід найщедріший, а обшарене місце відростає regrow_h годин. Що можна знайти — за біомом
+## і показує знахідки у вікні (world/loot_window.gd) одразу. Правки Huzzah 2026-11-03 (п.17): скінченного запасу ресурсів
+## біому немає — ні вичерпання, ні «обшарено до нитки». Знахідка — лише ймовірність: у кожному обході кожна річ біому
+## з'являється зі своїм шансом (таблиця data/world/forage.json), тож доступність ресурсу задає шанс знайти, а не лишок.
+## Що можна знайти — за біомом
 ## (data/world/forage.json), шанс множиться на search_efficiency (Восприятие, Виживання, дари), інструменти й факел уночі.
 ## Не взяте лишається на місці stash_h годин. Сумнівні гриби трапляються героям із низьким Чуттям.
 ## Числа [ВРЕМЕННО]. Пошук шумить: після нього Worlds кидає перевірку нападу (battle/encounters.gd).
@@ -36,9 +38,9 @@ static func cell_key(p: Vector2) -> String:
 	return "%d:%d" % [int(floor(p.x / c)), int(floor(p.y / c))]
 
 
-## Скільки секунд гри місце ще порожнє (0 — можна шукати)
-static func depleted_left(searched: Dictionary, p: Vector2, now: float) -> float:
-	return maxf(float(searched.get(cell_key(p), -1.0)) - now, 0.0)
+## Скільки секунд гри місце ще порожнє: завжди 0 — місця не виснажуються (п.17 правок)
+static func depleted_left(_searched: Dictionary, _p: Vector2, _now: float) -> float:
+	return 0.0
 
 
 ## Що в біомі можна знайти: {id: [шанс, від, до]}
@@ -58,40 +60,20 @@ static func tool_mult(id: String, bag: Dictionary, night: bool) -> float:
 	return m
 
 
-## Скільки в місці ще лишилося: 1 — нетронуте, 0 — обшарене до нитки. searched[клітина] = коли місце відросте повністю;
-## кожен обхід забирає round_drain, а відростає місце рівно за regrow_h (старі збереження з тим самим числом читаються так само)
-static func richness(searched: Dictionary, p: Vector2, now: float) -> float:
-	var full_at: float = float(searched.get(cell_key(p), -1.0))
-	if full_at <= now:
-		return 1.0
-	return clampf(1.0 - (full_at - now) / (num("regrow_h", 72.0) * 3600.0), 0.0, 1.0)
-
-
-static func _drain(searched: Dictionary, p: Vector2, now: float, amount: float) -> void:
-	var r: float = maxf(richness(searched, p, now) - amount, 0.0)
-	searched[cell_key(p)] = now + (1.0 - r) * num("regrow_h", 72.0) * 3600.0
+## Скільки в місці лишилося: завжди 1 — запасу, що вичерпується, немає (п.17 правок); аргументи лишено для старих викликів
+static func richness(_searched: Dictionary, _p: Vector2, _now: float) -> float:
+	return 1.0
 
 
 ## Слово про місце для вікна пошуку
-static func richness_word(r: float) -> String:
-	if r >= 0.95:
-		return I18n.t("нетронутое место")
-	if r >= 0.6:
-		return I18n.t("здесь уже кто-то шарил")
-	if r >= num("min_richness", 0.15):
-		return I18n.t("почти всё собрано")
-	return I18n.t("обшарено до нитки")
+static func richness_word(_r: float) -> String:
+	return I18n.t("добыча по шансу")
 
 
 ## Чи можна шукати тут зараз: "" — так, інакше причина
 static func check(a: Actor, biome: int, p: Vector2, now: float, searched: Dictionary) -> String:
 	if table(biome).is_empty():
 		return I18n.t("Здесь искать нечего")
-	var r: float = richness(searched, p, now)
-	if r < num("min_richness", 0.15):
-		var regrow_s: float = num("regrow_h", 72.0) * 3600.0
-		var wait_s: float = (float(searched[cell_key(p)]) - now) - (1.0 - num("min_richness", 0.15) * 2.0) * regrow_s
-		return I18n.t("Здесь уже всё обшарено: загляните через %d ч") % maxi(int(ceil(wait_s / 3600.0)), 1)
 	if a.res["stamina"] < num("round_stamina", 2.5):
 		return I18n.t("Нет сил шарить по кустам: отдохните")
 	return ""
@@ -121,8 +103,7 @@ static func search_round(a: Actor, biome: int, p: Vector2, now: float, searched:
 		if got == "mushrooms" and a.stat("per") < num("toadstool_below_per", 5.0) and rng.randf() < num("toadstool_chance", 0.35):
 			got = "toadstool"
 		found[got] = int(found.get(got, 0)) + n
-	_drain(searched, p, now, num("round_drain", 0.25))
-	out["richness"] = richness(searched, p, now)
+	out["richness"] = 1.0
 	a.add_xp("survival", 0.25 + 0.15 * found.size())
 	out["text"] = found_text(found) if not found.is_empty() else I18n.t("пусто")
 	return out

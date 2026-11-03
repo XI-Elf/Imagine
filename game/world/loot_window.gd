@@ -56,7 +56,8 @@ func _ready() -> void:
 	_title = _lbl(box, 20, ComicUI.GOLD)
 	_place = _lbl(box, 14, ComicUI.DIM)
 	_rich_lbl = _lbl(box, 12, ComicUI.DIM)
-	_rich_lbl.text = I18n.t("Запас места: каждый обход его вычерпывает, отрастает за трое суток")
+	_rich_lbl.text = ""
+	_rich_lbl.visible = false
 	_rich = ProgressBar.new()
 	_rich.custom_minimum_size = Vector2(0, 22)
 	_rich.show_percentage = false
@@ -142,8 +143,8 @@ func begin_search(title: String, place: String, richness: float, fn: Callable, t
 	_title.text = title
 	_place.text = place
 	_place.visible = true
-	_rich.visible = true
-	_rich_lbl.visible = true
+	_rich.visible = false   # запас места не показываем: ресурсы без лимита (п.17 правок)
+	_rich_lbl.visible = false
 	_rich.value = richness
 	_note.text = ""
 	_log.text = I18n.t("Здесь оставлено с прошлого раза.") if not items.is_empty() else I18n.t("Сколько искать? Чем дольше, тем больше найдёте, но место скудеет с каждым обходом.")

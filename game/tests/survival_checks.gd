@@ -60,7 +60,7 @@ func _pure() -> void:
 	ok(bool(r["ok"]) and float(r["minutes"]) == 60.0, "поиск в лесу: час игры")
 	ok(Trade.weight(bag) == 0.0, "находки не падают в сумку сами (окно «Найдено»)")
 	var r2: Dictionary = Foraging.search(a, 3, Vector2(1100, 1050), 10.0, searched, bag, rng)
-	ok(not bool(r2["ok"]) and Foraging.depleted_left(searched, Vector2(1000, 1000), 10.0) > 0.0, "обшаренное место пустое")
+	ok(bool(r2["ok"]) and Foraging.depleted_left(searched, Vector2(1000, 1000), 10.0) == 0.0, "п.17: обшаренное место не пустеет, запаса нет")
 	ok(not bool(Foraging.search(a, 1, Vector2(9000, 9000), 0.0, {}, bag, rng)["ok"]), "в воде искать нечего")
 	# Сотня пошуків у лісі: є їжа й хмиз
 	var total: Dictionary = {}
@@ -76,15 +76,9 @@ func _pure() -> void:
 	var axe: Dictionary = Trade.new_bag()
 	Trade.add(axe, "axe")
 	ok(Foraging.tool_mult("brushwood", axe, false) > 1.0 and Foraging.tool_mult("brushwood", Trade.new_bag(), true) < 1.0, "топор помогает, ночь без факела мешает")
-	# Запас місця: перший обхід найщедріший, місце скудніє й відростає
+	# П.17 (правки 2026-11-03): запаса места нет — сколько ни ищи, шанс находки не падает
 	var sr: Dictionary = {}
 	var p0 := Vector2(50000, 50000)
-	a.res["stamina"] = a.max_of("stamina")
-	ok(Foraging.richness(sr, p0, 0.0) == 1.0, "нетронутое место — полный запас")
-	Foraging.search_round(a, 3, p0, 0.0, sr, bag, rng)
-	var r1: float = Foraging.richness(sr, p0, 0.0)
-	ok(r1 < 1.0 and r1 > 0.5, "обход забирает часть запаса (%.2f)" % r1)
-	ok(Foraging.richness(sr, p0, 36.0 * 3600.0) > r1, "место отрастает со временем")
 	var first: int = 0
 	var last: int = 0
 	for i in 200:
@@ -92,12 +86,13 @@ func _pure() -> void:
 		a.res["stamina"] = a.max_of("stamina")
 		var pp := Vector2(i * 1000.0, 7000.0)
 		for k in 4:
+			a.res["stamina"] = a.max_of("stamina")
 			var rr: Dictionary = Foraging.search_round(a, 3, pp, 0.0, q, bag, rng)
 			if k == 0:
 				first += rr["found"].size()
 			elif k == 3:
 				last += rr["found"].size()
-	ok(first > last * 2, "первый обход щедрее четвёртого (%d > %d)" % [first, last])
+	ok(Foraging.richness(sr, p0, 0.0) == 1.0 and last * 10 > first * 7, "запас места не убывает: первый и четвёртый обходы одинаковы (%d / %d)" % [first, last])
 	# Залишок на місці
 	var stash: Dictionary = {}
 	Foraging.leave_stash(stash, Vector2(10, 10), 0.0, {"roots": 2})
@@ -263,7 +258,7 @@ func _run() -> void:
 	pm.clear()
 	cast.load_dict(back)
 	ok(cast.parchment.strokes.size() == 3 and cast.parchment.fragments.size() == 1, "пергамент пережил сохранение")
-	ok(not cast.field_searched.is_empty(), "обшаренные места сохраняются")
+	ok(cast.field_searched.is_empty(), "п.17: места поиска не помечаются обшаренными")
 
 	print("SURVIVAL CHECKS: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)
