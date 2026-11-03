@@ -113,6 +113,23 @@ static func trait_text(t: String) -> String:
 	return s + "."
 
 
+## Модификаторы подвида (п.2 правок): {"good": [...], "bad": [...]} — характеристики и особые эффекты строками
+static func subspecies_lines(d: Dictionary) -> Dictionary:
+	var good: Array = []
+	var bad: Array = []
+	var st: Dictionary = d.get("stats", {})
+	for k in st:
+		var v: int = int(st[k])
+		(good if v > 0 else bad).append("%s %+d" % [S.stat_name(k), v])
+	var worse_if_up: Array = ["disease_chance", "fall_chance", "food_water_chance", "hunger", "energy_decay"]
+	var ef: Dictionary = d.get("effects", {})
+	for k in ef:
+		var v: float = float(ef[k])
+		var is_good: bool = (v < 0.0) if worse_if_up.has(k) else (v > 0.0)
+		(good if is_good else bad).append(effect_text(k, v))
+	return {"good": good, "bad": bad}
+
+
 static var EFFECT_NAMES: Dictionary = {
 	"power": I18n.t("сила удара"), "speed": I18n.t("скорость"), "loot": I18n.t("поиск"), "xp": I18n.t("опыт"),
 	"disease_chance": I18n.t("шанс заболеть"), "fall_chance": I18n.t("травмы в пути"), "food_water_chance": I18n.t("болезни от еды и сырой воды"),

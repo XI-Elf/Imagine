@@ -945,12 +945,16 @@ msgid "ядовитый"
 msgstr "отруйна"
 
 #: battle/combatant.gd
-msgid "ЛОВ"
-msgstr "СПР"
+msgid "ВОС"
+msgstr "СПО"
 
 #: battle/combatant.gd
-msgid "ХАР"
-msgstr "ХАР"
+msgid "ИНТ"
+msgstr "ІНТ"
+
+#: battle/combatant.gd
+msgid "ЛОВ"
+msgstr "СПР"
 
 #: battle/combatant.gd
 msgid "СИЛ"
@@ -965,12 +969,8 @@ msgid "УДА"
 msgstr "УДА"
 
 #: battle/combatant.gd
-msgid "ИНТ"
-msgstr "ІНТ"
-
-#: battle/combatant.gd
-msgid "ВОС"
-msgstr "СПР"
+msgid "ХАР"
+msgstr "ХАР"
 
 #: battle/dice_roller.gd
 msgid " [сильный удар ×%d]"
@@ -1385,16 +1385,16 @@ msgid "%s · %s · мировоззрение: %s"
 msgstr "%s · %s · світогляд: %s"
 
 #: characters/hero_create.gd
+msgid "Бонусы:"
+msgstr "Бонуси:"
+
+#: characters/hero_create.gd
 msgid "Вещей с собой нет: сумка пустая, всё нужное покупается или находится в пути."
 msgstr "Речей із собою немає: торба порожня, усе потрібне купується або знаходиться в дорозі."
 
 #: characters/hero_create.gd
 msgid "Возраст"
 msgstr "Вік"
-
-#: characters/hero_create.gd
-msgid "Все характеристики начинаются с 5. Можно опустить любую до 1 и забрать очко. Наведите на название, чтобы узнать, на что она влияет."
-msgstr "Усі характеристики починаються з 5. Будь-яку можна опустити до 1 і забрати очко. Наведіть на назву, щоб дізнатися, на що вона впливає."
 
 #: characters/hero_create.gd
 msgid "Выбрано %d из %d · достоинства %d · недостатки %d · мировоззрение: %s"
@@ -1495,6 +1495,10 @@ msgstr "Риси характеру"
 #: characters/hero_create.gd
 msgid "Чтобы продолжить: "
 msgstr "Щоб продовжити: "
+
+#: characters/hero_create.gd
+msgid "Штрафы:"
+msgstr "Штрафи:"
 
 #: characters/hero_create.gd
 msgid "без имени"
@@ -2109,6 +2113,14 @@ msgid "Записей нет. Напишите внизу, что вам пор�
 msgstr "Записів немає. Напишіть унизу, що вам доручили."
 
 #: characters/quest_journal.gd
+msgid "Интеллект высокий: записи подробные и с прикрасами."
+msgstr "Інтелект високий: записи докладні й з прикрасами."
+
+#: characters/quest_journal.gd
+msgid "Интеллект низкий: герой чертит каракули и пару слов — остальное не запомнит."
+msgstr "Інтелект низький: герой креслить карлючки й пару слів — решту не запам'ятає."
+
+#: characters/quest_journal.gd
 msgid "Сделано"
 msgstr "Зроблено"
 
@@ -2119,14 +2131,6 @@ msgstr "Знову"
 #: characters/quest_journal.gd
 msgid "Стереть"
 msgstr "Стерти"
-
-#: characters/quest_journal.gd
-msgid "Интеллект высокий: записи подробные и с прикрасами."
-msgstr "Інтелект високий: записи докладні й з прикрасами."
-
-#: characters/quest_journal.gd
-msgid "Интеллект низкий: герой чертит каракули и пару слов — остальное не запомнит."
-msgstr "Інтелект низький: герой креслить карлючки й пару слів — решту не запам'ятає."
 
 #: characters/quest_journal.gd
 msgid "Что поручили, кто, где и за сколько…"
@@ -3341,12 +3345,16 @@ msgid "Слишком устали: нужно %d выносливости"
 msgstr "Надто втомилися: потрібно %d витривалості"
 
 #: city/dialogue.gd
-msgid "Ловкость"
-msgstr "Спритність"
+msgid "Восприятие"
+msgstr "Сприйняття"
 
 #: city/dialogue.gd
-msgid "Харизма"
-msgstr "Харизма"
+msgid "Интеллект"
+msgstr "Інтелект"
+
+#: city/dialogue.gd
+msgid "Ловкость"
+msgstr "Спритність"
 
 #: city/dialogue.gd
 msgid "Сила"
@@ -3361,12 +3369,8 @@ msgid "Удача"
 msgstr "Удача"
 
 #: city/dialogue.gd
-msgid "Интеллект"
-msgstr "Інтелект"
-
-#: city/dialogue.gd
-msgid "Восприятие"
-msgstr "Сприйняття"
+msgid "Харизма"
+msgstr "Харизма"
 
 #: city/dialogue.gd
 msgid "Э-э… "
@@ -6045,12 +6049,20 @@ msgid "эссекские (англосаксонские)"
 msgstr "ессекські (англосаксонські)"
 
 #: data/characters/perks.json
-msgid "+1 к Ловкости навсегда."
-msgstr "+1 до Спритності назавжди."
+msgid "+1 к Восприятию навсегда."
+msgstr "+1 до Сприйняття назавжди."
 
 #: data/characters/perks.json
-msgid "+1 к Харизме навсегда."
-msgstr "+1 до Харизми назавжди."
+msgid "+1 к Интеллекту в разговорах за ранг."
+msgstr "+1 до Інтелекту в розмовах за ранг."
+
+#: data/characters/perks.json
+msgid "+1 к Интеллекту навсегда."
+msgstr "+1 до Інтелекту назавжди."
+
+#: data/characters/perks.json
+msgid "+1 к Ловкости навсегда."
+msgstr "+1 до Спритності назавжди."
 
 #: data/characters/perks.json
 msgid "+1 к Силе навсегда."
@@ -6065,16 +6077,8 @@ msgid "+1 к Удаче навсегда."
 msgstr "+1 до Удачі назавжди."
 
 #: data/characters/perks.json
-msgid "+1 к Интеллекту в разговорах за ранг."
-msgstr "+1 до Інтелекту в розмовах за ранг."
-
-#: data/characters/perks.json
-msgid "+1 к Интеллекту навсегда."
-msgstr "+1 до Інтелекту назавжди."
-
-#: data/characters/perks.json
-msgid "+1 к Восприятию навсегда."
-msgstr "+1 до Сприйняття назавжди."
+msgid "+1 к Харизме навсегда."
+msgstr "+1 до Харизми назавжди."
 
 #: data/characters/perks.json
 msgid "+1 к защите в бою."
@@ -6537,12 +6541,16 @@ msgid "Разведчик"
 msgstr "Розвідник"
 
 #: data/characters/perks.json
-msgid "Развить Ловкость"
-msgstr "Розвинути Спритність"
+msgid "Развить Восприятие"
+msgstr "Розвинути Сприйняття"
 
 #: data/characters/perks.json
-msgid "Развить Харизма"
-msgstr "Розвинути Харизма"
+msgid "Развить Интеллект"
+msgstr "Розвинути Інтелект"
+
+#: data/characters/perks.json
+msgid "Развить Ловкость"
+msgstr "Розвинути Спритність"
 
 #: data/characters/perks.json
 msgid "Развить Силу"
@@ -6557,12 +6565,8 @@ msgid "Развить Удачу"
 msgstr "Розвинути Удачу"
 
 #: data/characters/perks.json
-msgid "Развить Интеллект"
-msgstr "Розвинути Інтелект"
-
-#: data/characters/perks.json
-msgid "Развить Восприятие"
-msgstr "Розвинути Сприйняття"
+msgid "Развить Харизма"
+msgstr "Розвинути Харизма"
 
 #: data/characters/perks.json
 msgid "Расторопный"
@@ -6793,6 +6797,10 @@ msgid "Изящество"
 msgstr "Витонченість"
 
 #: data/characters/sheet.json
+msgid "Интеллект и память. Очки навыков за уровень, учёность, ремесло, лечение. При Интеллекте 3 и ниже разговоры идут иначе."
+msgstr "Інтелект і пам’ять. Очки навичок за рівень, вчені знання, ремесло, лікування. За Інтелекту 3 і нижче розмови йдуть інакше."
+
+#: data/characters/sheet.json
 msgid "Картография"
 msgstr "Картографія"
 
@@ -6863,10 +6871,6 @@ msgstr "Нічна істота"
 #: data/characters/sheet.json
 msgid "Ночью вы оживаете: +1 к Интеллекту и Восприятию ночью, −1 днём."
 msgstr "Вночі ви оживаєте: +1 до Інтелекту й Сприйняття вночі, −1 вдень."
-
-#: data/characters/sheet.json
-msgid "Харизма и вид. Красноречие, торговля, отношение горожан, сколько спутников пойдёт за вами."
-msgstr "Харизма і вигляд. Красномовство, торгівля, ставлення містян, скільки супутників піде за вами."
 
 #: data/characters/sheet.json
 msgid "Одарённый"
@@ -6977,10 +6981,6 @@ msgid "Стойкость к снадобьям"
 msgstr "Стійкість до зілля"
 
 #: data/characters/sheet.json
-msgid "Телосложение тела. Здоровье и его прибавка с уровнем, защита от яда и проклятья, заживление."
-msgstr "Статура тіла. Здоров’я і його приріст із рівнем, захист від отрути й прокляття, загоєння."
-
-#: data/characters/sheet.json
 msgid "Стрельба"
 msgstr "Стрільба"
 
@@ -6991,6 +6991,10 @@ msgstr "Стріляєте й метаєте швидко, але не ціли�
 #: data/characters/sheet.json
 msgid "Судьба. Шанс сильного удара, азартные игры, всё, где решает случай."
 msgstr "Доля. Шанс сильного удару, азартні ігри, усе, де вирішує випадок."
+
+#: data/characters/sheet.json
+msgid "Телосложение тела. Здоровье и его прибавка с уровнем, защита от яда и проклятья, заживление."
+msgstr "Статура тіла. Здоров’я і його приріст із рівнем, захист від отрути й прокляття, загоєння."
 
 #: data/characters/sheet.json
 msgid "Тяга к снадобьям"
@@ -7017,16 +7021,16 @@ msgid "Ужасно"
 msgstr "Жахливо"
 
 #: data/characters/sheet.json
-msgid "Интеллект и память. Очки навыков за уровень, учёность, ремесло, лечение. При Интеллекте 3 и ниже разговоры идут иначе."
-msgstr "Інтелект і пам’ять. Очки навичок за рівень, вчені знання, ремесло, лікування. За Інтелекту 3 і нижче розмови йдуть інакше."
-
-#: data/characters/sheet.json
 msgid "Умелый"
 msgstr "Вправний"
 
 #: data/characters/sheet.json
 msgid "Учёность"
 msgstr "Вченість"
+
+#: data/characters/sheet.json
+msgid "Харизма и вид. Красноречие, торговля, отношение горожан, сколько спутников пойдёт за вами."
+msgstr "Харизма і вигляд. Красномовство, торгівля, ставлення містян, скільки супутників піде за вами."
 
 #: data/characters/sheet.json
 msgid "Холодное оружие"
@@ -8285,22 +8289,6 @@ msgid "[Донести] Там… у ворот… плохой!"
 msgstr "[Донести] Там… біля брами… поганий!"
 
 #: data/dialogue/dialogues.json
-msgid "[Харизма] Стоишь… устал?"
-msgstr "[Харизма] Стоїш… втомився?"
-
-#: data/dialogue/dialogues.json
-msgid "[Харизма] Такой город держать — не каждому по плечу."
-msgstr "[Харизма] Таке місто тримати — не кожному під силу."
-
-#: data/dialogue/dialogues.json
-msgid "[Харизма] Ты… главный. Сильный."
-msgstr "[Харизма] Ти… головний. Сильний."
-
-#: data/dialogue/dialogues.json
-msgid "[Харизма] Тяжёлая служба у вас."
-msgstr "[Харизма] Важка у вас служба."
-
-#: data/dialogue/dialogues.json
 msgid "[Интеллект] Весы у тебя врут на четверть. Для меня тоже?"
 msgstr "[Інтелект] Терези в тебе брешуть на чверть. Для мене теж?"
 
@@ -8331,6 +8319,22 @@ msgstr "[Інтелект] Ти ведеш два списки. Для кого 
 #: data/dialogue/dialogues.json
 msgid "[Интеллект] Шкуры у тебя волчьи, а волков тут, говорят, давно нет."
 msgstr "[Інтелект] Шкури в тебе вовчі, а вовків тут, кажуть, давно нема."
+
+#: data/dialogue/dialogues.json
+msgid "[Харизма] Стоишь… устал?"
+msgstr "[Харизма] Стоїш… втомився?"
+
+#: data/dialogue/dialogues.json
+msgid "[Харизма] Такой город держать — не каждому по плечу."
+msgstr "[Харизма] Таке місто тримати — не кожному під силу."
+
+#: data/dialogue/dialogues.json
+msgid "[Харизма] Ты… главный. Сильный."
+msgstr "[Харизма] Ти… головний. Сильний."
+
+#: data/dialogue/dialogues.json
+msgid "[Харизма] Тяжёлая служба у вас."
+msgstr "[Харизма] Важка у вас служба."
 
 #: data/dialogue/dialogues.json
 msgid "«Быстрее — значит, где-то срезал. Срезал — значит, кто-то потом придёт ко мне жаловаться. Делай как велено.»"

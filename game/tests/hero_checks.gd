@@ -209,16 +209,16 @@ func _menu() -> void:
 	cr._refresh()
 	ok(cr.params()["subspecies"] == "veyran" and cr.sub_text.text.contains("скорость"), "в создании героя выбирается подвид, видны его эффекты")
 	await shot("h01_create.png")
-	# Риси (Huzzah 2026-10-30): ліва колонка — достоинства, права — недоліки, протилежні в одному рядку
-	var tgrid: GridContainer = cr._trait_btns["nimble"].get_parent()
+	# Черты (п.3 правок): две сплошные колонки без пустых клеток — достоинства слева, недостатки справа
+	var tgrid: Node = cr._trait_btns["nimble"].get_parent()
 	var cols_ok: bool = true
 	for t in cr._trait_btns:
-		var i: int = cr._trait_btns[t].get_index()
 		var good: bool = int(R.trait_def(t).get("cost", 0)) > 0
-		if (i % 2 == 0) != good:
+		if (cr._trait_btns[t].get_parent().get_index() == 0) != good:
 			cols_ok = false
-	ok(cols_ok and tgrid.columns == 2, "черты: достоинства слева, недостатки справа")
-	ok(cr._trait_btns["clumsy"].get_index() == cr._trait_btns["nimble"].get_index() + 1, "противоположная черта в той же строке")
+	ok(cols_ok and tgrid != cr._trait_btns["clumsy"].get_parent(), "черты: достоинства слева, недостатки справа")
+	ok(int(tgrid.get_theme_constant("separation")) == 0, "список черт без лишних вертикальных отступов")
+	ok(cr.sub_text.text.contains("Бонусы") and cr.sub_text.text.contains("Штрафы"), "подвид: бонусы и штрафы перечислены")
 	var tsc: Node = tgrid.get_parent()
 	while tsc != null and not (tsc is ScrollContainer):
 		tsc = tsc.get_parent()

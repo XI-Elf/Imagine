@@ -31,7 +31,7 @@ var name_edit: LineEdit
 var age_spin: SpinBox
 var origin_opt: OptionButton
 var sub_opt: OptionButton
-var sub_text: Label
+var sub_text: RichTextLabel
 var prof_opt: OptionButton
 var origin_text: Label
 var prof_text: Label
@@ -183,7 +183,15 @@ func _build_left() -> Control:
 	v.add_child(_label(I18n.t("Подвид"), 16, COL_DIM))
 	sub_opt = _keyed_options(P.C()["subspecies"])
 	v.add_child(sub_opt)
-	sub_text = _wrap_label(13, COL_DIM)
+	sub_text = RichTextLabel.new()
+	sub_text.bbcode_enabled = true
+	sub_text.fit_content = true
+	sub_text.scroll_active = false
+	sub_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub_text.custom_minimum_size = Vector2(200.0, 0.0)
+	sub_text.add_theme_font_size_override("normal_font_size", 13)
+	sub_text.add_theme_font_size_override("bold_font_size", 13)
+	sub_text.add_theme_color_override("default_color", COL_DIM)
 	v.add_child(sub_text)
 	v.add_child(HSeparator.new())
 	v.add_child(_label(I18n.t("Происхождение"), 16, COL_DIM))
@@ -202,14 +210,14 @@ func _build_left() -> Control:
 	v.add_child(_tags_label)
 	var tg := GridContainer.new()
 	tg.columns = 1
-	tg.add_theme_constant_override("v_separation", 2)
+	tg.add_theme_constant_override("v_separation", 0)
 	v.add_child(tg)
 	for k in S.skill_list():
 		var b := Button.new()
 		b.toggle_mode = true
 		b.focus_mode = Control.FOCUS_NONE
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size = Vector2(250.0, 24.0)
+		b.custom_minimum_size = Vector2(250.0, 22.0)
 		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_color_override("font_pressed_color", COL_GOLD)
 		b.tooltip_text = String(S.skills()[k].get("desc", ""))
@@ -269,9 +277,6 @@ func _build_right() -> Control:
 		row["total"] = _label("", 16, COL_GOLD, true)
 		grid.add_child(row["total"])
 		stat_rows[s] = row
-	var note := _wrap_label(12, COL_DIM)
-	note.text = I18n.t("Все характеристики начинаются с 5. Можно опустить любую до 1 и забрать очко. Наведите на название, чтобы узнать, на что она влияет.")
-	v.add_child(note)
 	_derived_label = _wrap_label(13, COL_TEXT)
 	v.add_child(_derived_label)
 	v.add_child(HSeparator.new())
@@ -299,26 +304,27 @@ func _build_right() -> Control:
 	v.add_child(_label(I18n.t("Черты характера"), 17, COL_GOLD))
 	_trait_info = _wrap_label(13, COL_TEXT)
 	v.add_child(_trait_info)
-	var tg := GridContainer.new()
-	tg.columns = 2
-	tg.add_theme_constant_override("h_separation", 4)
-	tg.add_theme_constant_override("v_separation", 3)
+	# Достоинства и недостатки — две сплошные колонки без пустых клеток и лишних отступов (п.3 правок)
+	var tg := HBoxContainer.new()
+	tg.add_theme_constant_override("separation", 4)
 	v.add_child(tg)
-	# Кожна риса у своїй колонці (Huzzah 2026-10-30): ліворуч достоинства, праворуч недоліки;
-	# протилежна риса стоїть у тому ж рядку, порожня клітинка — у риси без пари
-	tg.add_child(_label(I18n.t("Достоинства"), 13, COL_GOOD))
-	tg.add_child(_label(I18n.t("Недостатки"), 13, COL_BAD))
-	for t in _trait_rows(P.C()["traits"]):
-		if t == "":
-			tg.add_child(Control.new())
-			continue
+	var cols: Dictionary = {}
+	for key in ["good", "bad"]:
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 0)
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		col.add_child(_label(I18n.t("Достоинства") if key == "good" else I18n.t("Недостатки"), 13, COL_GOOD if key == "good" else COL_BAD))
+		tg.add_child(col)
+		cols[key] = col
+	for t in P.C()["traits"]:
 		var d: Dictionary = R.trait_def(t)
 		var c: int = int(d.get("cost", 0))
 		var b := Button.new()
 		b.text = "%s %s" % [d["title"], ("−%d" % c) if c > 0 else ("+%d" % -c)]
 		b.toggle_mode = true
 		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(160.0, 26.0)
+		b.custom_minimum_size = Vector2(150.0, 22.0)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_color_override("font_color", COL_GOOD if c > 0 else COL_BAD)
@@ -327,7 +333,7 @@ func _build_right() -> Control:
 		b.pressed.connect(toggle_trait.bind(t))
 		b.mouse_entered.connect(func() -> void: _trait_desc.text = _trait_full(t))
 		_trait_btns[t] = b
-		tg.add_child(b)
+		cols["good" if c > 0 else "bad"].add_child(b)
 	_trait_desc = _wrap_label(13, COL_DIM)
 	_trait_desc.text = I18n.t("Наведите на черту, чтобы увидеть описание. Зелёные — достоинства, красные — недостатки.")
 	v.add_child(_trait_desc)
@@ -533,7 +539,7 @@ func _refresh() -> void:
 		var test: Array = traits.duplicate()
 		test.append(t)
 		b.disabled = not traits.has(t) and P.traits_valid(test) != ""
-	sub_text.text = _describe(P.C()["subspecies"][subspecies()])
+	sub_text.text = _subspecies_bbcode(P.C()["subspecies"][subspecies()])
 	origin_text.text = _describe(P.C()["origins"][origin()])
 	prof_text.text = _describe(P.C()["professions"][profession()])
 	var sk: Array = []
@@ -550,6 +556,17 @@ func _refresh() -> void:
 	var pr: Array = problems()
 	hint_label.text = (I18n.t("Чтобы продолжить: ") + ", ".join(pr)) if not pr.is_empty() else ""
 	create_btn.disabled = not pr.is_empty()
+
+
+## Подвид (п.2 правок): краткое описание и полный перечень модификаторов — бонусы зелёным, штрафы красным
+func _subspecies_bbcode(d: Dictionary) -> String:
+	var m: Dictionary = P.subspecies_lines(d)
+	var s: String = String(d.get("text", ""))
+	if not m["good"].is_empty():
+		s += "\n[color=#%s]%s %s[/color]" % [COL_GOOD.to_html(false), I18n.t("Бонусы:"), "; ".join(PackedStringArray(m["good"]))]
+	if not m["bad"].is_empty():
+		s += "\n[color=#%s]%s %s[/color]" % [COL_BAD.to_html(false), I18n.t("Штрафы:"), "; ".join(PackedStringArray(m["bad"]))]
+	return s
 
 
 func _describe(d: Dictionary) -> String:
