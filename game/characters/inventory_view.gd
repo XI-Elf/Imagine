@@ -12,6 +12,7 @@ extends Control
 
 const Doll := preload("res://characters/paper_doll.gd")
 const Icons := preload("res://battle/battle_icons.gd")
+const ItemArt := preload("res://characters/item_art.gd")
 const Trade := preload("res://city/trade.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
 
@@ -721,6 +722,10 @@ func item_icon(id: String, r: Rect2) -> void:
 	var s: float = minf(r.size.x, r.size.y) * 0.5
 	if is_wear(id):
 		_wear_icon(Trade.item(id)["wear"], o, s)
+		ItemArt.wear_detail(self, id, o, s, Color(String(Trade.item(id)["wear"].get("color", "777777"))))
+		return
+	# П.7 правок: у каждой вещи свой рисунок (characters/item_art.gd); старые общие значки ниже — запасные
+	if ItemArt.draw(self, id, r):
 		return
 	# Q26: kind_of віддає назву мовою гри, а шаблон match має бути сталим — порівнюємо за номером
 	match [I18n.t("еда"), I18n.t("питьё"), I18n.t("лечение")].find(kind_of(id)):
@@ -773,23 +778,9 @@ func item_icon(id: String, r: Rect2) -> void:
 					draw_colored_polygon(_pts(o, s, [[-0.3, -0.65], [0.3, -0.65], [0.2, -0.3], [-0.2, -0.3]]), Color("6e5034"))
 
 
-## Значок одягу за видом (wear.look) і кольором
+## Значок одягу: силует виду й колір — characters/item_art.gd
 func _wear_icon(w: Dictionary, o: Vector2, s: float) -> void:
-	var c := Color(String(w.get("color", "777777")))
-	var shapes: Dictionary = {
-		"straw_hat": [[[-0.85, 0.25], [-0.4, 0.05], [-0.3, -0.45], [0.3, -0.45], [0.4, 0.05], [0.85, 0.25], [0.5, 0.4], [-0.5, 0.4]]],
-		"cap": [[[-0.6, 0.35], [-0.55, -0.15], [-0.25, -0.5], [0.25, -0.5], [0.55, -0.15], [0.6, 0.35]]],
-		"shirt": [[[-0.3, -0.7], [0.3, -0.7], [0.8, -0.4], [0.6, 0.0], [0.4, -0.15], [0.4, 0.75], [-0.4, 0.75], [-0.4, -0.15], [-0.6, 0.0], [-0.8, -0.4]]],
-		"jacket": [[[-0.3, -0.75], [0.3, -0.75], [0.85, -0.45], [0.8, 0.5], [0.5, 0.5], [0.45, 0.8], [-0.45, 0.8], [-0.5, 0.5], [-0.8, 0.5], [-0.85, -0.45]]],
-		"cloak": [[[-0.3, -0.75], [0.3, -0.75], [0.6, 0.0], [0.8, 0.8], [-0.8, 0.8], [-0.6, 0.0]]],
-		"gloves": [[[-0.75, -0.3], [-0.45, -0.6], [-0.1, -0.4], [-0.15, 0.4], [-0.6, 0.6], [-0.85, 0.2]], [[0.75, -0.3], [0.45, -0.6], [0.1, -0.4], [0.15, 0.4], [0.6, 0.6], [0.85, 0.2]]],
-		"trousers": [[[-0.5, -0.75], [0.5, -0.75], [0.55, 0.8], [0.1, 0.8], [0.0, -0.2], [-0.1, 0.8], [-0.55, 0.8]]],
-		"boots": [[[-0.75, -0.6], [-0.35, -0.6], [-0.35, 0.4], [-0.1, 0.5], [-0.1, 0.75], [-0.85, 0.75], [-0.75, 0.3]], [[0.15, -0.6], [0.55, -0.6], [0.55, 0.4], [0.8, 0.5], [0.8, 0.75], [0.05, 0.75], [0.15, 0.3]]]}
-	for poly in shapes.get(String(w.get("look", "")), [[[-0.55, -0.3], [0.55, -0.3], [0.7, 0.65], [-0.7, 0.65]]]):
-		var pts: PackedVector2Array = _pts(o, s, poly)
-		draw_colored_polygon(pts, c)
-		pts.append(pts[0])
-		draw_polyline(pts, INK, 2.0, true)
+	ItemArt.wear_icon(self, w, o, s)
 
 
 func _pts(o: Vector2, s: float, a: Array) -> PackedVector2Array:
