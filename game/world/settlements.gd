@@ -43,6 +43,12 @@ const OUTLINE_CELL_PX: float = 28.0 # з такої клітинки на екр
 const SIZE_ORDER: Array = ["hamlet", "village", "town", "city", "capital"]
 const BLOCKS: Dictionary = {"hamlet": 2, "village": 3, "town": 4, "city": 5, "capital": 6}   # кварталів у ряд на клітинку
 const DOT_PX: float = 24.0          # повний радіус знака міста на екрані (разом із зубцями): більший за точку героя (до 15,5 px)
+# Правки Huzzah 2026-11-03 (п.12): «персонаж достиг города» — только когда центр героя внутри зоны города
+# (радиус в метрах по размеру, не зависит от зума); знак на карте масштабируется вместе с зоной и не меньше MARKER_PX
+# по размеру города, внутри знака — картинка-медальон по уровню развития (art/medallion)
+const ZONE_M: Dictionary = {"hamlet": 14.0, "village": 20.0, "town": 28.0, "city": 40.0, "capital": 56.0}
+const MARKER_PX: Dictionary = {"hamlet": 22.0, "village": 27.0, "town": 33.0, "city": 40.0, "capital": 48.0}
+const MARKER_MAX_PX: float = 140.0  # крупнее знак не рисуется: дальше видно только кольцо самой зоны
 const ENTER_MAX_M: float = 48.0     # «Увійти» — коло знака в метрах: DOT_PX / зум; тут стеля (DOT_PX / HERO_MIN_ZOOM)
 const FOOTPRINT_M: float = 10.0     # слід міста для шляху героя й клітинок (_radius, _rect): не залежить від зуму
 const GATE_OFFSET_M: float = 6.0    # брама й точка виходу — стільки метрів від точки міста
@@ -157,6 +163,7 @@ func _load() -> void:
 		if s["_radius"] > 0.0:
 			# Точка: слід міста на карті — коло FOOTPRINT_M (шлях героя); коло входу залежить від зуму — enter_radius()
 			s["_radius"] = FOOTPRINT_M
+			s["_zone"] = float(s.get("zone_m", ZONE_M.get(String(s.get("size", "town")), 28.0)))
 			rect = Rect2(s["_center"] - Vector2.ONE * FOOTPRINT_M, Vector2.ONE * FOOTPRINT_M * 2.0)
 			s["_plan"] = _load_plan(s)
 			var gd: Vector2 = (s["_gate"] - s["_center"]).normalized()
@@ -219,12 +226,31 @@ func growth_stage_near(p: Vector2, radius_m: float) -> int:
 	return best
 
 
-## Радіус зони входу, м: рівно знак міста на екрані (DOT_PX пікселів) за поточного зуму; герой входить, коли
-## його центр торкається знака. Без гри — найдальший зум героя (стеля ENTER_MAX_M)
+## Радіус зони міста, м: герой «дійшов», лише коли його центр усередині (п.12 правок); від зуму не залежить
+func zone_radius(s: Dictionary) -> float:
+	return float(s.get("_zone", ZONE_M.get(String(s.get("size", "town")), 28.0)))
+
+
+## Радіус знака міста на екрані, px: не менший за мінімум для розміру міста й не менший за саму зону (до MARKER_MAX_PX)
+func marker_px(s: Dictionary) -> float:
+	var z: float = float(game.zoom) if game != null else 0.5
+	var base: float = float(MARKER_PX.get(String(s.get("size", "town")), 33.0))
+	return maxf(base, minf(zone_radius(s) * z, MARKER_MAX_PX))
+
+
+## Радіус знака в метрах за поточного зуму (наведення, клік по знаку)
+func marker_radius_m(s: Dictionary) -> float:
+	var z: float = float(game.zoom) if game != null and float(game.zoom) > 0.0 else 0.5
+	return maxf(zone_radius(s), marker_px(s) / z)
+
+
+## Радіус зони входу найбільшого міста (для старих викликів без міста)
 func enter_radius() -> float:
-	if game == null or float(game.zoom) <= 0.0:
-		return ENTER_MAX_M
-	return clampf(DOT_PX / float(game.zoom), 0.1, ENTER_MAX_M)
+	var best: float = 0.0
+	for s in list:
+		if radial(s):
+			best = maxf(best, zone_radius(s))
+	return best if best > 0.0 else ENTER_MAX_M
 
 
 func radial(s: Dictionary) -> bool:
@@ -241,7 +267,7 @@ func get_settlement(id: String) -> Dictionary:
 ## Поселення, на клітинці якого лежить точка p (порожньо — немає)
 func settlement_at(p: Vector2) -> Dictionary:
 	var s: Dictionary = by_cell.get(Vector2i(floori(p.x / cell_m), floori(p.y / cell_m)), {})
-	if not s.is_empty() and radial(s) and p.distance_to(s["_center"]) > enter_radius():
+	if not s.is_empty() and radial(s) and p.distance_to(s["_center"]) > marker_radius_m(s):
 		return {}
 	return s
 
@@ -337,7 +363,7 @@ func side_of(s: Dictionary, p: Vector2) -> String:
 # Зона підходу героя: "gate", "wall" або "" (далеко)
 func zone_of(s: Dictionary, p: Vector2) -> String:
 	if radial(s):
-		if p.distance_to(s["_center"]) > enter_radius():
+		if p.distance_to(s["_center"]) > zone_radius(s):
 			return ""
 		return "gate" if not s["walled"] or gate_open_now(s) else "wall"
 	if p.distance_to(s["_gate"]) <= GATE_R_M:
@@ -779,9 +805,13 @@ func _draw() -> void:
 		if radial(s):
 			var c0: Vector2 = game.world_to_screen(s["_center"])
 			if vp.has_point(c0):
-				_draw_dot(s, c0, hl or s == prompt_for)
-				# Підпис над точкою: герой з'являється під нею, на південь від міста
-				_draw_name(s, c0 - Vector2(0, DOT_PX + 8.5), font, hl, hl)
+				var rp: float = marker_px(s)
+				var zpx: float = zone_radius(s) * z
+				if zpx > rp + 2.0:
+					draw_arc(c0, zpx, 0.0, TAU, 96, Color(1.0, 0.85, 0.4, 0.5), 2.0, true)   # сама зона города, когда она крупнее знака
+				_draw_medallion(s, c0, rp, hl or s == prompt_for)
+				# Підпис над знаменом: герой з'являється під містом, на південь
+				_draw_name(s, c0 - Vector2(0, rp * 1.55 + 6.0), font, hl, hl)
 		elif cs >= OUTLINE_CELL_PX:
 			if vp.intersects(sr):
 				_draw_outline(s, cs, z)

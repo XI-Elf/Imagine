@@ -107,8 +107,7 @@ func _run() -> void:
 	ok(game.cam_pos.distance_to(st.spawn_point()) < 1.0, "новая игра: камера над городом")
 	var ex: Vector2 = st.exit_point(city["id"])
 	ok(ex != Vector2.INF and game.biome_at(ex) > 1 and ex.distance_to(city["_center"]) <= st.GATE_OFFSET_M + 0.5, "точка выхода на суше у самой точки города: %s" % ex)
-	game.zoom = st.DOT_PX / (st.GATE_OFFSET_M + 2.0)   # зум, на якому знак міста сягає точки виходу
-	ok(st.zone_of(city, ex) == "gate", "точка выхода — у ворот (в знаке города)")
+	ok(st.zone_of(city, ex) == "gate", "точка выхода — у ворот (внутри зоны города)")
 
 	# Знімки: здалеку щиток, зблизька обрис
 	game.cam_pos = Vector2(20812.5, 18000.0)
@@ -153,16 +152,21 @@ func _run() -> void:
 	await key(KEY_ESCAPE)
 	ok(st.prompt_for.is_empty() and not cast.hold_hero and not game.menu_open, "Esc — продолжить путь, меню паузы не открылось")
 
-	# Місто-точка (Huzzah 2026-10-29) + зона входу = знак міста (Huzzah 2026-10-30): за будь-якого зуму коло входу
-	# у метрах — DOT_PX пікселів, тобто рівно знак на екрані
+	# П.12 правок (2026-11-03): герой «дошёл» только внутри зоны города (метры по размеру, от зума не зависит);
+	# знак на карте не меньше минимума размера и не меньше самой зоны, внутри знака — картинка-медальон
+	var zr: float = st.zone_radius(city)
+	ok(zr == st.ZONE_M[String(city["size"])] and zr > st.GATE_OFFSET_M, "зона города по размеру: %.0f м" % zr)
 	for zz in [0.5, 2.0, 8.0, 40.0]:
 		game.zoom = zz
-		var er: float = st.enter_radius()
-		ok(is_equal_approx(er * zz, st.DOT_PX), "зум %.1f: зона входа %.2f м = %.1f px = знак города" % [zz, er, er * zz])
-		ok(not st.blocks(city["_center"]) and st.zone_of(city, city["_center"] + Vector2(0, er + 0.3)) == "" and st.zone_of(city, city["_center"] + Vector2(0, er - 0.3)) != "",
-			"зум %.1f: «Войти» только внутри знака, стены на карте нет" % zz)
-		ok(st.settlement_at(city["_center"] + Vector2(er + 0.3, 0)).is_empty() and not st.settlement_at(city["_center"] + Vector2(er - 0.3, 0)).is_empty(),
-			"зум %.1f: наведение/клик по знаку той же границы" % zz)
+		ok(not st.blocks(city["_center"]) and st.zone_of(city, city["_center"] + Vector2(0, zr + 0.3)) == "" and st.zone_of(city, city["_center"] + Vector2(0, zr - 0.3)) != "",
+			"зум %.1f: «Войти» только внутри зоны %.0f м, стены на карте нет" % [zz, zr])
+		var mpx: float = st.marker_px(city)
+		ok(mpx >= st.MARKER_PX[String(city["size"])] and (zr * zz <= st.MARKER_MAX_PX) == (mpx >= zr * zz - 0.01), "зум %.1f: знак %.0f px не меньше зоны (%.0f px) и минимума" % [zz, mpx, zr * zz])
+		var mr: float = st.marker_radius_m(city)
+		ok(st.settlement_at(city["_center"] + Vector2(mr + 0.3, 0)).is_empty() and not st.settlement_at(city["_center"] + Vector2(mr - 0.3, 0)).is_empty(),
+			"зум %.1f: наведение и клик по знаку той же границы" % zz)
+	ok(st.MARKER_PX["hamlet"] < st.MARKER_PX["village"] and st.MARKER_PX["village"] < st.MARKER_PX["town"] and st.MARKER_PX["town"] < st.MARKER_PX["city"] and st.MARKER_PX["city"] < st.MARKER_PX["capital"], "знаки разных городов пропорциональны размеру")
+	ok(st.medallion_texture(st.dev_level(city)) != null, "внутри знака города — картинка")
 	game.zoom = 0.4
 
 	# Уночі брама замкнена: біля точки — «Спробувати проникнути» (перелізти стіну)

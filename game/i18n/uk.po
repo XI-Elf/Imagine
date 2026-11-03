@@ -1053,8 +1053,8 @@ msgid "утонул"
 msgstr "утопився"
 
 #: characters/cast.gd
-msgid "\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I персонаж, Tab сумка"
-msgstr "\n\nG керування, Shift біг, Z сон, E пити, F їжа або обшукати руїни, T лікар, R верхи / пішки, I персонаж, Tab торба"
+msgid "\n\nЛКМ идти, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I персонаж, Tab сумка"
+msgstr ""
 
 #: characters/cast.gd
 msgid "\n\nПройдено %.1f км"
@@ -1079,10 +1079,6 @@ msgstr "\nНавички:"
 #: characters/cast.gd
 msgid "\nУровень %d, опыт %d / %d"
 msgstr "\nРівень %d, досвід %d / %d"
-
-#: characters/cast.gd
-msgid "   (камера свободна, G — к герою)"
-msgstr "   (камера вільна, G — до героя)"
 
 #: characters/cast.gd
 msgid " (НПС)"
@@ -1123,6 +1119,10 @@ msgstr "%s вилікував: %s (шанс %d %%)"
 #: characters/cast.gd
 msgid "%s погиб: %s"
 msgstr "%s загинув: %s"
+
+#: characters/cast.gd
+msgid "%s%s, ощущается %d °C, шаг %.1f км/ч"
+msgstr ""
 
 #: characters/cast.gd
 msgid ", высота %d м"
@@ -1195,10 +1195,6 @@ msgstr "Ви вилізли на сигнальну вежу: згори вид�
 #: characters/cast.gd
 msgid "Запас сил"
 msgstr "Запас сил"
-
-#: characters/cast.gd
-msgid "Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d  Воздействие проклятья %d   %s%s, ощущается %d °C, шаг %.1f км/ч%s"
-msgstr "Здоров'я %d  Ситість %d  Вода %d  Енергія %d  Сили %d  Вплив прокляття %d   %s%s, відчувається %d °C, крок %.1f км/год%s"
 
 #: characters/cast.gd
 msgid "Ингрид"
@@ -1285,10 +1281,6 @@ msgid "Руины уже обысканы: загляните через нес�
 msgstr "Руїни вже обшукані: загляньте за кілька днів"
 
 #: characters/cast.gd
-msgid "Свободная камера"
-msgstr "Вільна камера"
-
-#: characters/cast.gd
 msgid "Сигрид"
 msgstr "Сігрід"
 
@@ -1315,10 +1307,6 @@ msgstr "Ситість"
 #: characters/cast.gd
 msgid "Тора"
 msgstr "Тора"
-
-#: characters/cast.gd
-msgid "Управление героем"
-msgstr "Керування героєм"
 
 #: characters/cast.gd
 msgid "Фергус"
@@ -1481,6 +1469,10 @@ msgid "Создать (Enter)"
 msgstr "Створити (Enter)"
 
 #: characters/hero_create.gd
+msgid "Телосложение: %s"
+msgstr ""
+
+#: characters/hero_create.gd
 msgid "Характеристика"
 msgstr "Характеристика"
 
@@ -1509,16 +1501,28 @@ msgid "введите имя"
 msgstr "введіть ім'я"
 
 #: characters/hero_create.gd
+msgid "крупное, тяжёлое"
+msgstr ""
+
+#: characters/hero_create.gd
 msgid "ничего"
 msgstr "нічого"
 
-#: characters/hero_death.gd
-msgid "\nЛошадь погибла вместе с героем."
-msgstr "\nКінь загинув разом із героєм."
+#: characters/hero_create.gd
+msgid "обычное"
+msgstr ""
 
-#: characters/hero_death.gd
-msgid " Повозка с вещами осталась на месте гибели и пропадёт через %d дня."
-msgstr " Віз із речами лишився на місці загибелі й зникне за %d дні."
+#: characters/hero_create.gd
+msgid "плотное"
+msgstr ""
+
+#: characters/hero_create.gd
+msgid "сухое"
+msgstr ""
+
+#: characters/hero_create.gd
+msgid "хилое"
+msgstr ""
 
 #: characters/hero_death.gd
 msgid "%s погиб"
@@ -1529,52 +1533,60 @@ msgid "%s погибла"
 msgstr "%s загинула"
 
 #: characters/hero_death.gd
-msgid "Начать заново"
-msgstr "Почати заново"
+msgid "В трактирах помнят, как он ходил по здешним дорогам. Имя путают, шрам помнят."
+msgstr ""
+
+#: characters/hero_death.gd
+msgid "В трактирах помнят, как она ходила по здешним дорогам. Имя путают, шрам помнят."
+msgstr ""
+
+#: characters/hero_death.gd
+msgid "Мир его почти не заметил: прошёл, как дождь по пустоши, и не оставил следов."
+msgstr ""
+
+#: characters/hero_death.gd
+msgid "Мир её почти не заметил: прошла, как дождь по пустоши, и не оставила следов."
+msgstr ""
+
+#: characters/hero_death.gd
+msgid "Некролог"
+msgstr ""
 
 #: characters/hero_death.gd
 msgid "Новый герой: %s"
 msgstr "Новий герой: %s"
 
 #: characters/hero_death.gd
-msgid "Новый путник"
-msgstr "Новий мандрівник"
+msgid "О ней ещё долго рассказывали у костров, и каждый добавлял по шраму."
+msgstr ""
+
+#: characters/hero_death.gd
+msgid "О нём ещё долго рассказывали у костров, и каждый добавлял по шраму."
+msgstr ""
 
 #: characters/hero_death.gd
 msgid "Повозка прежнего героя: забрано вещей %d (с повозкой)"
 msgstr "Віз попереднього героя: забрано речей %d (з возом)"
 
 #: characters/hero_death.gd
-msgid "Причина: %s. Вещи и деньги пропали. Мир остаётся прежним: время, города, сданные поручения, обысканные руины."
-msgstr "Причина: %s. Речі й гроші пропали. Світ лишається тим самим: час, міста, здані доручення, обшукані руїни."
+msgid "Погибла: %s."
+msgstr ""
+
+#: characters/hero_death.gd
+msgid "Причина: %s."
+msgstr ""
 
 #: characters/hero_death.gd
 msgid "Продолжить (Enter)"
 msgstr "Продовжити (Enter)"
 
 #: characters/hero_death.gd
-msgid "Продолжить за %s (Enter)"
-msgstr "Продовжити за %s (Enter)"
+msgid "Прошла %.0f км, выиграла %d боёв, доросла до %d уровня."
+msgstr ""
 
 #: characters/hero_death.gd
-msgid "Удача %d"
-msgstr "Удача %d"
-
-#: characters/hero_death.gd
-msgid "Черты: "
-msgstr "Риси: "
-
-#: characters/hero_death.gd
-msgid "него"
-msgstr "нього"
-
-#: characters/hero_death.gd
-msgid "нет"
-msgstr "немає"
-
-#: characters/hero_death.gd
-msgid "неё"
-msgstr "неї"
+msgid "Прошёл %.0f км, выиграл %d боёв, дорос до %d уровня."
+msgstr ""
 
 #: characters/hero_profile.gd
 msgid "%s, %d %s. %s, ремесло — %s."
@@ -1856,6 +1868,10 @@ msgstr "Хроніка"
 msgid "Черт характера нет."
 msgstr "Рис характеру немає."
 
+#: characters/hero_window.gd
+msgid "нет"
+msgstr "немає"
+
 #: characters/inventory_view.gd
 msgid "\nДоспех в бою: %s"
 msgstr "\nОбладунок у бою: %s"
@@ -1923,6 +1939,10 @@ msgstr "Викинути всі речі з вибраного фільтра (�
 #: characters/inventory_view.gd
 msgid "Выпить"
 msgstr "Випити"
+
+#: characters/inventory_view.gd
+msgid "Деньги"
+msgstr ""
 
 #: characters/inventory_view.gd
 msgid "До %d видов оружия; окно «Подготовка к бою» предложит этот выбор"
@@ -2552,6 +2572,38 @@ msgstr "півд"
 msgid "ягод"
 msgstr "ягід"
 
+#: characters/rebirth_scene.gd
+msgid "%s не обрела покоя."
+msgstr ""
+
+#: characters/rebirth_scene.gd
+msgid "%s не обрёл покоя."
+msgstr ""
+
+#: characters/rebirth_scene.gd
+msgid "Другое имя. Чужая память. Чужие шрамы.\nЭто не милость. Это механизм."
+msgstr ""
+
+#: characters/rebirth_scene.gd
+msgid "Любая клавиша — дальше · Esc — пропустить"
+msgstr ""
+
+#: characters/rebirth_scene.gd
+msgid "Миру нужны руки. Он берёт то, что осталось, и отправляет обратно."
+msgstr ""
+
+#: characters/rebirth_scene.gd
+msgid "Небо раскололось давно. Земля так и не срослась."
+msgstr ""
+
+#: characters/rebirth_scene.gd
+msgid "Перерождение"
+msgstr "Переродження"
+
+#: characters/rebirth_scene.gd
+msgid "С тех пор души не уходят. Они остаются у края, как вода в треснувшей чаше."
+msgstr ""
+
 #: characters/transport.gd
 msgid "R — сесть"
 msgstr "R — сісти"
@@ -3065,8 +3117,8 @@ msgid "Купить: %s ×%d — %d"
 msgstr "Купити: %s ×%d — %d"
 
 #: city/city_world.gd
-msgid "ЛКМ или WASD идти · ПКМ стоп · Shift бег · E говорить · I персонаж · Tab сумка · M план"
-msgstr "ЛКМ або WASD іти · ПКМ стоп · Shift біг · E говорити · I персонаж · Tab торба · M план"
+msgid "ЛКМ или стрелки идти · ПКМ стоп · E говорить · I персонаж · Tab сумка · M план"
+msgstr ""
 
 #: city/city_world.gd
 msgid "Лечиться (%d)"
@@ -6513,10 +6565,6 @@ msgid "Переговорщик"
 msgstr "Перемовник"
 
 #: data/characters/perks.json
-msgid "Перерождение"
-msgstr "Переродження"
-
-#: data/characters/perks.json
 msgid "Поджигатель"
 msgstr "Палій"
 
@@ -9097,10 +9145,6 @@ msgid "%s, регион %s"
 msgstr "%s, регіон %s"
 
 #: game.gd
-msgid "WASD/стрелки камера, колесо масштаб, P пауза, [ ] скорость времени, C облака, B границы, M переход к X Y, O маркер в центре, H подробности, , . скорость погоды; G герой, Shift бег, Z сон, E пить, F еда, T лечиться у лекаря, I лист персонажа; у поселения E войти, Esc мимо"
-msgstr "WASD/стрілки камера, коліщатко масштаб, P пауза, [ ] швидкість часу, C хмари, B межі, M перехід до X Y, O маркер у центрі, H подробиці, , . швидкість погоди; G герой, Shift біг, Z сон, E пити, F їжа, T лікуватися в лікаря, I аркуш персонажа; біля поселення E увійти, Esc повз"
-
-#: game.gd
 msgid "X и Y в метрах через пробел: от 0 до %d и от 0 до %d"
 msgstr "X і Y у метрах через пробіл: від 0 до %d і від 0 до %d"
 
@@ -9279,6 +9323,10 @@ msgstr "проклятий луг"
 #: game.gd
 msgid "скрыты"
 msgstr "приховані"
+
+#: game.gd
+msgid "стрелки камера, колесо масштаб, P пауза, [ ] скорость времени, C облака, B границы, M переход к X Y, O маркер в центре, H подробности, , . скорость погоды; ЛКМ идти, Z сон, E пить, F еда, T лечиться у лекаря, I лист персонажа; у поселения E войти, Esc мимо"
+msgstr ""
 
 #: game.gd
 msgid "сумерки"
@@ -10313,10 +10361,6 @@ msgid "Здесь искать нечего"
 msgstr "Тут шукати нічого"
 
 #: world/foraging.gd
-msgid "Здесь уже всё обшарено: загляните через %d ч"
-msgstr "Тут уже все обнишпорено: загляньте через %d год"
-
-#: world/foraging.gd
 msgid "Нет сил шарить по кустам: отдохните"
 msgstr "Нема сил нишпорити по кущах: відпочиньте"
 
@@ -10325,20 +10369,8 @@ msgid "Обшарил округу (%d мин): %s"
 msgstr "Обнишпорив околицю (%d хв): %s"
 
 #: world/foraging.gd
-msgid "здесь уже кто-то шарил"
-msgstr "тут уже хтось нишпорив"
-
-#: world/foraging.gd
-msgid "нетронутое место"
-msgstr "незаймане місце"
-
-#: world/foraging.gd
-msgid "обшарено до нитки"
-msgstr "обнишпорено до нитки"
-
-#: world/foraging.gd
-msgid "почти всё собрано"
-msgstr "майже все зібрано"
+msgid "добыча по шансу"
+msgstr ""
 
 #: world/forks.gd
 msgid "награда пропадёт"
@@ -10387,10 +10419,6 @@ msgstr "Узяти все  [E]"
 #: world/loot_window.gd
 msgid "Груз: %.1f / %.0f кг"
 msgstr "Вантаж: %.1f / %.0f кг"
-
-#: world/loot_window.gd
-msgid "Запас места: каждый обход его вычерпывает, отрастает за трое суток"
-msgstr "Запас місця: кожен обхід його вичерпує, відростає за три доби"
 
 #: world/loot_window.gd
 msgid "Здесь оставлено с прошлого раза."
@@ -10735,6 +10763,10 @@ msgstr "Місто: "
 #: worlds/worlds.gd
 msgid "Застали врасплох во сне!"
 msgstr "Заскочили зненацька уві сні!"
+
+#: worlds/worlds.gd
+msgid "Из зарослей выходит прежний странник — %s. Его бросили, и теперь он враг."
+msgstr ""
 
 #: worlds/worlds.gd
 msgid "Первая победа в бою. Дорога научила: живой враг приходит снова, мёртвый — нет."
