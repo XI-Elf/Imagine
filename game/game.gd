@@ -217,10 +217,6 @@ func _process(delta: float) -> void:
 	# Поки героєм керує гравець, камера йде за ним (characters/cast.gd)
 	if not menu_open and not typing and not (cast != null and cast.controls_hero):
 		var dir: Vector2 = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-		if Input.is_physical_key_pressed(KEY_A): dir.x -= 1
-		if Input.is_physical_key_pressed(KEY_D): dir.x += 1
-		if Input.is_physical_key_pressed(KEY_W): dir.y -= 1
-		if Input.is_physical_key_pressed(KEY_S): dir.y += 1
 		dir = dir.limit_length(1.0)
 		if dir != Vector2.ZERO:
 			# Швидкість в метрах залежить від масштабу, щоб на екрані вона була однакова
@@ -805,7 +801,7 @@ func _update_hud() -> void:
 
 
 func _hint_line() -> String:
-	return I18n.t("WASD/стрелки камера, колесо масштаб, P пауза, [ ] скорость времени, C облака, B границы, M переход к X Y, O маркер в центре, H подробности, , . скорость погоды; G герой, Shift бег, Z сон, E пить, F еда, T лечиться у лекаря, I лист персонажа; у поселения E войти, Esc мимо")
+	return I18n.t("стрелки камера, колесо масштаб, P пауза, [ ] скорость времени, C облака, B границы, M переход к X Y, O маркер в центре, H подробности, , . скорость погоды; ЛКМ идти, Z сон, E пить, F еда, T лечиться у лекаря, I лист персонажа; у поселения E войти, Esc мимо")
 
 
 # Випадкова текстура 256 x 256: з неї будується весь шум

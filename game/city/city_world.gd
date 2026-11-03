@@ -665,11 +665,11 @@ func _drive_hero(env: Dictionary, delta: float) -> void:
 		return
 	var dir := Vector2.ZERO
 	if not _menu_blocked() and not _map_view:
-		if Input.is_physical_key_pressed(KEY_A) or Input.is_action_pressed("ui_left"): dir.x -= 1
-		if Input.is_physical_key_pressed(KEY_D) or Input.is_action_pressed("ui_right"): dir.x += 1
-		if Input.is_physical_key_pressed(KEY_W) or Input.is_action_pressed("ui_up"): dir.y -= 1
-		if Input.is_physical_key_pressed(KEY_S) or Input.is_action_pressed("ui_down"): dir.y += 1
-	var run: bool = Input.is_physical_key_pressed(KEY_SHIFT)
+		if Input.is_action_pressed("ui_left"): dir.x -= 1
+		if Input.is_action_pressed("ui_right"): dir.x += 1
+		if Input.is_action_pressed("ui_up"): dir.y -= 1
+		if Input.is_action_pressed("ui_down"): dir.y += 1
+	var run: bool = false   # бег по Shift убран (правки Huzzah 2026-11-03, п.11)
 	# Миша: утримання ЛКМ веде за курсором; клавіші й вікна перебивають шлях
 	if _mouse_hold and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not _menu_blocked():
 		_hold_t += delta
@@ -1970,7 +1970,7 @@ func _update_hud(env: Dictionary) -> void:
 			hint = I18n.t("E — говорить: %s") % n["actor"].display_name
 		elif not p.is_empty():
 			hint = "E — %s: %s" % [{"water": I18n.t("пить"), "container": I18n.t("обыскать"), "bed": I18n.t("лечь спать")}.get(p.get("kind", ""), I18n.t("осмотреть")), p["name"]]
-	_hint.text = hint if hint != "" else I18n.t("ЛКМ или WASD идти · ПКМ стоп · Shift бег · E говорить · I персонаж · Tab сумка · M план")
+	_hint.text = hint if hint != "" else I18n.t("ЛКМ или стрелки идти · ПКМ стоп · E говорить · I персонаж · Tab сумка · M план")
 	_hint.position = Vector2(14.0, vp.y - 60.0)
 	_top.visible = walking
 	_hint.visible = walking

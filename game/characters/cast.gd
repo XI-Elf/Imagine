@@ -7,7 +7,7 @@ const Art := preload("res://storybook/art.gd")
 ## на загальній карті лише герой; розпорядок НПС залишено для spawn_npc (тести, майбутні поселення).
 ## НПС далеко від героя й камери рахуються шматками по FAR_TICK_S ігрових секунд, за тими самими правилами.
 ##
-## Клавіші: G — створити героя (біля брами міста) / узяти або відпустити керування, WASD — іти, Shift — бігти,
+## Клавіші: G — створити героя (біля брами міста; вільної камери й керування WASD / бігу Shift більше немає — п.11 правок),
 ## Z — спати/прокинутися, E — пити біля води, F — шукати їжу й матеріали (world/foraging.gd), T — лікуватися в лікаря поруч, I — аркуш персонажа.
 ## Миша (characters/hero_route.gd): ЛКМ — іти в точку (містом — до брами), тримати ЛКМ — за курсором, ПКМ — стоп.
 
@@ -415,10 +415,6 @@ func _drive_hero(b: Dictionary, env: Dictionary, delta: float) -> void:
 	# Переміщення зупиняється, поки відкрите будь-яке меню (правило пакета), зокрема аркуш
 	if controls_hero and not hold_hero and not game.menu_open and not game.typing and not sheet_visible:
 		dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-		if Input.is_physical_key_pressed(KEY_A): dir.x -= 1
-		if Input.is_physical_key_pressed(KEY_D): dir.x += 1
-		if Input.is_physical_key_pressed(KEY_W): dir.y -= 1
-		if Input.is_physical_key_pressed(KEY_S): dir.y += 1
 	var a: Actor = b["actor"]
 	if dir != Vector2.ZERO and a.sleeping:
 		a.set_sleep(false)
@@ -431,7 +427,7 @@ func _drive_hero(b: Dictionary, env: Dictionary, delta: float) -> void:
 		by_route = dir != Vector2.ZERO
 	var goal: Vector2 = route.final_point() if by_route else Vector2.INF
 	var from: Vector2 = b["pos"]
-	var moved: bool = _step(b, dir.limit_length(1.0), Input.is_physical_key_pressed(KEY_SHIFT), delta)
+	var moved: bool = _step(b, dir.limit_length(1.0), false, delta)
 	# Крок дотягнувся до точки кліку або перескочив її — стати точно в неї (раніше герой
 	# зупинявся за 3 м до цілі, а біля самої цілі метався туди-сюди)
 	if goal != Vector2.INF and b["pos"].distance_to(from) >= from.distance_to(goal) - 0.01:
@@ -454,9 +450,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if hero.is_empty() or not hero["actor"].alive:
 				# Новий герой — через екран створення; з'являється біля брами міста (world/settlements.gd)
 				open_creator()
-			else:
-				controls_hero = not controls_hero
-				_event(I18n.t("Управление героем") if controls_hero else I18n.t("Свободная камера"))
+			# Режима свободной камеры больше нет (правки Huzzah 2026-11-03, п.11): у живого героя G ничего не делает
 		KEY_I:
 			if not hero.is_empty():
 				window.toggle("stats")
@@ -901,7 +895,7 @@ func _update_status() -> void:
 				int(a.res["stamina"]), int(a.res["radiation"]), game.biome_name(hero["pos"]),
 				I18n.t(", высота %d м") % int(round(alt / 10.0) * 10.0) if alt >= 20.0 else "",
 				int(round(a.feels_temp(env))), a.calculate_speed(env),
-				"" if controls_hero else I18n.t("   (камера свободна, G — к герою)")]
+				""]
 	_status.position = Vector2(14.0, vp.y - 34.0)
 	sheet_visible = window.visible or _creator != null
 
@@ -936,7 +930,7 @@ func sheet_text(a: Actor) -> String:
 	for k in sk:
 		t += "\n  %s %d %%%s" % [sk[k].get("name_ru", k), a.skill(k), " ◆" if a.tags.has(k) else ""]
 	t += I18n.t("\n\nПройдено %.1f км") % (a.distance_m / 1000.0)
-	t += I18n.t("\n\nG управление, Shift бег, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I персонаж, Tab сумка")
+	t += I18n.t("\n\nЛКМ идти, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I персонаж, Tab сумка")
 	return t
 
 
