@@ -35,6 +35,7 @@ const LOADING_BG := "res://art/menu_bg.jpg"
 const WorldSave := preload("res://world_save.gd")
 const AUTOSAVE_SEC: float = 300.0
 
+const TopBar := preload("res://ui/top_bar.gd")
 const Chronology := preload("res://world/chronology.gd")
 const ClockScene := preload("res://game_clock.tscn")
 const PhysicsScene := preload("res://world_physics.tscn")
@@ -91,6 +92,7 @@ static var BORDER_NAMES := [I18n.t("скрыты"), I18n.t("области"), I1
 var frame_count: int = 0
 var applied_version: int = -1
 
+var top_bar: CanvasLayer   # верхняя панель: показатели героя, время и погода (ui/top_bar.gd)
 var hud_label: Label
 var hud_panel: PanelContainer
 var hud_scroll: ScrollContainer
@@ -741,10 +743,8 @@ func _load_id_layer(path: String, uniform_name: String) -> Image:
 
 # Текст у куті: дата, час, біом під курсором; H — подробности (погода, X Y)
 func _update_hud() -> void:
-	var hour: float = clock.hour_of_day()
-	var hh: int = int(hour)
-	var mm: int = int((hour - float(hh)) * 60.0)
-	var compact: String = "%d %s %d   %02d:%02d\n%s" % [clock.day_of_month(), GameClock.MONTH_NAMES[clock.month()], clock.year(), hh, mm, GameClock.SEASON_NAMES[clock.season()] + " · " + I18n.t("Тёмная эпоха")]
+	# Время и дата — в верхней панели (ui/top_bar.gd, п.19 правок); здесь остаётся сезон и эпоха
+	var compact: String = GameClock.SEASON_NAMES[clock.season()] + " · " + I18n.t("Тёмная эпоха")
 	var m: Vector2 = _probe_world()
 	var over: bool = (observer_mode or _pointer_over_map()) and Board.inside(m)
 	if over and fog != null and not fog.known(m):
@@ -850,6 +850,10 @@ func _build_ui() -> void:
 	var ui_layer := CanvasLayer.new()
 	ui_layer.layer = 10
 	add_child(ui_layer)
+
+	top_bar = TopBar.new()
+	top_bar.setup(self)
+	add_child(top_bar)
 
 	hud_panel = PanelContainer.new()
 	hud_panel.mouse_filter = Control.MOUSE_FILTER_STOP

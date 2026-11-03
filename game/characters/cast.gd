@@ -891,13 +891,11 @@ func _update_status() -> void:
 		if not a.alive:
 			_status.text = I18n.t("Герой погиб: %s") % Actor.DEATH_CAUSES.get(a.death_cause, a.death_cause)
 		else:
+			# Показатели героя перенесены в верхнюю панель (ui/top_bar.gd, п.13 правок): внизу остаётся место и погода
 			var alt: float = game.height_at(hero["pos"]) if game.has_method("height_at") else 0.0
-			_status.text = I18n.t("Здоровье %d  Сытость %d  Вода %d  Энергия %d  Силы %d  Воздействие проклятья %d   %s%s, ощущается %d °C, шаг %.1f км/ч%s") % [
-				int(a.res["health"]), int(a.res["hunger"]), int(a.res["thirst"]), int(a.res["energy"]),
-				int(a.res["stamina"]), int(a.res["radiation"]), game.biome_name(hero["pos"]),
+			_status.text = I18n.t("%s%s, ощущается %d °C, шаг %.1f км/ч") % [game.biome_name(hero["pos"]),
 				I18n.t(", высота %d м") % int(round(alt / 10.0) * 10.0) if alt >= 20.0 else "",
-				int(round(a.feels_temp(env))), a.calculate_speed(env),
-				""]
+				int(round(a.feels_temp(env))), a.calculate_speed(env)]
 	_status.position = Vector2(14.0, vp.y - 34.0)
 	sheet_visible = window.visible or _creator != null
 

@@ -456,32 +456,19 @@ func _wrap(text: String, width: float, fs: int) -> PackedStringArray:
 	return out
 
 
-## Рядок показників героя значками (те, що раніше було лише внизу екрана)
+## Верхняя строка вкладки: только деньги. Показатели героя перенесены в постоянную верхнюю панель экрана
+## (ui/top_bar.gd, п.13 и 18 правок Huzzah 2026-11-03)
 func _draw_stats() -> void:
 	var bar := Rect2(0, 0, W, 42)
 	_panel_rect(bar, false)
+	_stat_rects.clear()
 	if actor == null:
 		return
-	var x: float = 14.0
-	for k in STAT_KEYS:
-		var v: float = float(actor.res.get(k, 0.0))
-		var mx: float = maxf(actor.max_of(k), 1.0)
-		var bad: bool = (v / mx > 0.25) if k == "radiation" else (v / mx < 0.25)
-		var r := Rect2(x - 6, 5, 104, 32)
-		_stat_rects[k] = r
-		if k == _stat_hover or k == _stat_pin:
-			draw_rect(r, Color(GOLD, 0.18))
-		if bad:
-			draw_rect(r, Color(RED_DARK, 0.6))
-			draw_rect(r, RED, false, 2.0)
-		stat_icon(self, k, Rect2(x, 9, 24, 24))
-		_text(Vector2(x + 30, 30), str(int(v)), 20, TEXT, true)
-		x += 112.0
-	# гроші праворуч
 	var money: String = str(int(bag.get("money", 0)))
 	_text_r(Vector2(W - 12, 30), money, 20, GOLD, true)
 	var mw: float = _font.get_string_size(money, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
 	coin(self, Vector2(W - 28 - mw, 21), 10.0)
+	_text(Vector2(14, 30), I18n.t("Деньги"), 17, DIM, true)
 
 
 func _draw_weight() -> void:

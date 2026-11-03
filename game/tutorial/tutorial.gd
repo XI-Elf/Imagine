@@ -674,7 +674,7 @@ func _layout() -> void:
 			"battle":
 				_card.position = Vector2(vp.x - _card.size.x - 16.0, vp.y - _card.size.y - 130.0)
 			_:
-				_card.position = Vector2((vp.x - _card.size.x) * 0.5, 16.0)
+				_card.position = Vector2((vp.x - _card.size.x) * 0.5, 64.0)
 
 
 func _notification(what: int) -> void:
