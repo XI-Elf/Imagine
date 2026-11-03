@@ -6,9 +6,9 @@ extends RefCounted
 const Data := preload("res://battle/battle_data.gd")
 const Sheet := preload("res://characters/sheet.gd")
 const STATS: Array = ["str", "dex", "con", "int", "wis", "cha", "lck"]
-static var STAT_NAMES: Dictionary = {"str": I18n.t("СИЛ"), "dex": I18n.t("ЛОВ"), "con": I18n.t("СТО"), "int": I18n.t("УМ"), "wis": I18n.t("ЧУТ"), "cha": I18n.t("ОБА"), "lck": I18n.t("УДА")}
+static var STAT_NAMES: Dictionary = {"str": I18n.t("СИЛ"), "dex": I18n.t("ЛОВ"), "con": I18n.t("ТЕЛ"), "int": I18n.t("ИНТ"), "wis": I18n.t("ВОС"), "cha": I18n.t("ХАР"), "lck": I18n.t("УДА")}
 # Характеристики -> боевой лист (решение Huzzah 2026-10-28: бой от характеристик): характеристика боя = характеристика × 2.
-# Боевая Чутьё — это Зоркость (внимательность, спасброски воли), Везение — своя седьмая
+# Боевая Восприятие — это Зоркость (внимательность, спасброски воли), Везение — своя седьмая
 const FROM_AMBER: Dictionary = {"str": "str", "dex": "agi", "con": "end", "int": "int", "wis": "per", "cha": "cha", "lck": "luck"}
 
 var actor: Actor
@@ -72,10 +72,10 @@ func build_from_actor(a: Actor, t: int, cfg: BattleConfig, loadout: Dictionary) 
 	var bt: Dictionary = Sheet.sect("battle")
 	for k in FROM_AMBER:
 		scores[k] = Sheet.stat_value(a, FROM_AMBER[k]) * int(bt.get("score_mult", 2))
-	# Порядок хода (2×ЧУТ + дары) → прибавка к инициативе
+	# Порядок хода (2×ВОС + дары) → прибавка к инициативе
 	per_bonus = int(floor((Sheet.sequence(a) - float(bt.get("init_ref", 10))) / maxf(float(bt.get("init_div", 2)), 1.0))) + int(fx("b_init"))
 	level = maxi(a.level, cfg.party_level)
-	# ОЗ: 15 + СИЛ + 2×СТО + за уровни
+	# ОЗ: 15 + СИЛ + 2×ТЕЛ + за уровни
 	max_hp = maxi(1, int(round(Sheet.hp_max(a) * float(bt.get("hp_mult", 1.0)))))
 	# Ход — от очков действия: 30 фт при 7 ОД, ±5 фт за каждое
 	speed_ft = maxi(int(bt.get("speed_min_ft", 15)), int(bt.get("speed_base_ft", 30)) + int(bt.get("speed_per_ap_ft", 5)) * (Sheet.ap(a) - int(bt.get("speed_ap_ref", 7))) + int(fx("b_speed_ft")))

@@ -17,7 +17,7 @@ signal km_passed(total_km: int)
 
 const R := preload("res://characters/actor_rules.gd")
 const S := preload("res://characters/sheet.gd")
-# Семь характеристик: Сила, Чутьё, Стойкость, Обаяние, Ум, Ловкость, Удача
+# Семь характеристик: Сила, Восприятие, Телосложение, Харизма, Интеллект, Ловкость, Удача
 const STATS: Array = ["str", "per", "end", "cha", "int", "agi", "luck"]
 const RESOURCES: Array = ["health", "hunger", "thirst", "energy", "radiation", "stamina"]
 # Довгий крок часу ріжеться на шматки, щоб пороги не перескакувалися
@@ -213,11 +213,11 @@ func remove_condition(id: String) -> void:
 		condition_removed.emit(id)
 
 
-# Шанс заболеть с учётом Стойкости и Удачи; p — вероятность за раз
+# Шанс заболеть с учётом Телосложения и Удачи; p — вероятность за раз
 func try_catch(id: String, p: float) -> bool:
 	if has_condition(id):
 		return false
-	# защита от яда 5×СТО % — половина её режет шанс хвори; Удача сверх 5 тоже
+	# защита от яда 5×ТЕЛ % — половина её режет шанс хвори; Удача сверх 5 тоже
 	p *= clampf(1.0 - float(S.poison_resist(self)) / 200.0, 0.1, 2.0)
 	p *= clampf(1.0 - float(R.section("stats").get("luck_chance_per_pt", 0.0)) * _over("luck"), 0.5, 1.5)
 	p *= mult("disease_chance")
@@ -313,7 +313,7 @@ func _step(h: float, env: Dictionary) -> void:
 		add_res("energy", -R.num("needs", "thirst_zero_energy_h", 2.0) * h)
 	var regen: float = _sum("health_regen")
 	if res["hunger"] > 0.0 and res["thirst"] > 0.0 and not is_bleeding():
-		# Заживление (СТО/3, мин. 1): 1 — как было, каждая единица сверху +50 %
+		# Заживление (ТЕЛ/3, мин. 1): 1 — как было, каждая единица сверху +50 %
 		regen += float(ch["health"].get("regen_per_hour", 0.5)) * (0.5 + 0.5 * float(S.healing_rate(self)))
 	add_res("health", (regen - dmg) * h)
 
@@ -513,7 +513,7 @@ func carry_capacity() -> float:
 	return kg * (0.5 + 0.5 * res["stamina"] / max_of("stamina")) * mult("power") + pack_kg
 
 
-## Защита от проклятья (радиации): 2×СТО % + дары
+## Защита от проклятья (радиации): 2×ТЕЛ % + дары
 func radiation_resist() -> float:
 	return clampf(float(S.rad_resist(self)) / 100.0, 0.0, 0.9)
 

@@ -671,7 +671,7 @@ func _water_near(p: Vector2) -> bool:
 	return false
 
 
-## Поиск еды: шанс от поиска (Чутьё, травмы рук, Выживание) и биома [Q19: проверяет tests/balance_checks.gd].
+## Поиск еды: шанс от поиска (Восприятие, травмы рук, Выживание) и биома [Q19: проверяет tests/balance_checks.gd].
 ## Одно и то же для героя и НПС
 func forage(b: Dictionary) -> bool:
 	var a: Actor = b["actor"]
@@ -910,7 +910,7 @@ func _update_status() -> void:
 func sheet_text(a: Actor) -> String:
 	var t: String = "%s%s\n\n" % [a.display_name, I18n.t(" (НПС)") if a.is_npc else ""]
 	var ch: Dictionary = R.characteristics()
-	# «Стойкость» — и характеристика 09, и ресурс пака: ресурс здесь зовётся «Запас сил»;
+	# «Телосложение» — и характеристика 09, и ресурс пака: ресурс здесь зовётся «Запас сил»;
 	# голод и жажда пака — шкалы сытости и воды (100 — сыт и напоен)
 	var shown: Dictionary = {"hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "stamina": I18n.t("Запас сил")}
 	for r in Actor.RESOURCES:

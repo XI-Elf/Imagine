@@ -145,7 +145,7 @@ static func stat_value(a: Actor, s: String) -> int:
 	return clampi(int(v), int(data().get("min", 1)), int(data().get("max", 10)))
 
 
-## Обаяние и Ум в разговоре (черта «Привлекательность», дар «Сладкоречивый»)
+## Харизма и Интеллект в разговоре (черта «Привлекательность», дар «Сладкоречивый»)
 static func talk_cha(a: Actor) -> int:
 	return stat_value(a, "cha") + int(eff(a, "talk_cha"))
 
@@ -559,7 +559,7 @@ static func trade_bonus(hero: Actor, trader: Actor = null, buying: bool = true) 
 	var t: Dictionary = sect("trade")
 	var tb: float = float(skill_value(trader, "barter")) if trader != null else float(t.get("trader_default", 40))
 	var hb: float = float(skill_value(hero, "barter")) if hero != null else tb
-	# «Привлекательность»: +2 ОБА в торговле = +8 % Торговли (4 × ОБА)
+	# «Привлекательность»: +2 ХАР в торговле = +8 % Торговли (4 × ХАР)
 	if hero != null:
 		hb += 4.0 * eff(hero, "talk_cha")
 	var b: float = clampf((hb - tb) * float(t.get("per_point", 0.003)), float(t.get("min", -0.15)), float(t.get("max", 0.3)))
@@ -580,7 +580,7 @@ static func quest_bonus(hero: Actor) -> float:
 
 
 # =====================================================================
-# СТАРЫЕ СОХРАНЕНИЯ: 7 характеристик 09 (база 4, Чутьё) и навыки пака уровнями
+# СТАРЫЕ СОХРАНЕНИЯ: 7 характеристик 09 (база 4, Восприятие) и навыки пака уровнями
 # =====================================================================
 static func is_legacy(d: Dictionary) -> bool:
 	if d.has("sheet"):
@@ -588,7 +588,7 @@ static func is_legacy(d: Dictionary) -> bool:
 	return d.get("stats", {}).has("wis") or not d.has("level")
 
 
-## Перевод старого персонажа: характеристика − 4 + 5 (в пределах 1–10), Чутьё уходит, Удача 5 + старая;
+## Перевод старого персонажа: характеристика − 4 + 5 (в пределах 1–10), Восприятие уходит, Удача 5 + старая;
 ## уровни старых навыков — как уровень навыка (значение ≈ уровень × 10 + 5), опыт навыков → опыт героя
 static func migrate(a: Actor, d: Dictionary) -> void:
 	var st: Dictionary = d.get("stats", {})

@@ -3,7 +3,7 @@ extends RefCounted
 ## гравець вибирає, скільки шукати (15 хв – 2 год), пошук іде обходами по round_min хвилин, кожен обхід коштує сил
 ## і показує знахідки у вікні (world/loot_window.gd) одразу. Місце має запас (richness): кожен обхід вибирає його,
 ## тож перший обхід найщедріший, а обшарене місце відростає regrow_h годин. Що можна знайти — за біомом
-## (data/world/forage.json), шанс множиться на search_efficiency (Чутьё, Виживання, дари), інструменти й факел уночі.
+## (data/world/forage.json), шанс множиться на search_efficiency (Восприятие, Виживання, дари), інструменти й факел уночі.
 ## Не взяте лишається на місці stash_h годин. Сумнівні гриби трапляються героям із низьким Чуттям.
 ## Числа [ВРЕМЕННО]. Пошук шумить: після нього Worlds кидає перевірку нападу (battle/encounters.gd).
 
@@ -117,7 +117,7 @@ static func search_round(a: Actor, biome: int, p: Vector2, now: float, searched:
 			continue
 		var n: int = rng.randi_range(int(l[1]), int(l[2]))
 		var got: String = String(id)
-		# Чутьё нижче порогу: частину грибів не відрізнити від поганок
+		# Восприятие нижче порогу: частину грибів не відрізнити від поганок
 		if got == "mushrooms" and a.stat("per") < num("toadstool_below_per", 5.0) and rng.randf() < num("toadstool_chance", 0.35):
 			got = "toadstool"
 		found[got] = int(found.get(got, 0)) + n

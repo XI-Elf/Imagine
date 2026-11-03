@@ -1,13 +1,13 @@
 extends RefCounted
 ## Розмови з варіантами відповідей (пункт 7, Huzzah 2026-10-29): дерева з data/dialogue/dialogues.json.
 ## Житель знаходиться за id з плану міста або за «role:<роль>». Варіанти з вимогами (характеристика, гроші, річ,
-## позначка) показуються лише тим, кому вони доступні, з міткою [Обаяние], [Ум]…; наслідки — гроші, речі,
+## позначка) показуються лише тим, кому вони доступні, з міткою [Харизма], [Интеллект]…; наслідки — гроші, речі,
 ## ставлення жителя, досвід, позначки «вже було». Стан (вузол розмови, ставлення, позначки) живе в місті.
 
 const Sheet := preload("res://characters/sheet.gd")
 const Trade := preload("res://city/trade.gd")
 const FILE := "res://data/dialogue/dialogues.json"
-static var STAT_TAGS: Dictionary = {"str": I18n.t("Сила"), "per": I18n.t("Чутьё"), "end": I18n.t("Стойкость"), "cha": I18n.t("Обаяние"), "int": I18n.t("Ум"), "agi": I18n.t("Ловкость"), "luck": I18n.t("Удача")}
+static var STAT_TAGS: Dictionary = {"str": I18n.t("Сила"), "per": I18n.t("Восприятие"), "end": I18n.t("Телосложение"), "cha": I18n.t("Харизма"), "int": I18n.t("Интеллект"), "agi": I18n.t("Ловкость"), "luck": I18n.t("Удача")}
 
 static var _data: Dictionary = {}
 
@@ -55,7 +55,7 @@ static func allowed(opt: Dictionary, hero: Actor, bag: Dictionary, state: Dictio
 		return false
 	if r.has("attitude") and int(state.get("attitude", 0)) < int(r["attitude"]):
 		return false
-	# Ум у розмові (з дарами): iq — лише для розумних, iq_max — лише для дурних
+	# Интеллект у розмові (з дарами): iq — лише для розумних, iq_max — лише для дурних
 	var iq: int = Sheet.talk_int(hero) if hero != null else 5
 	if r.has("iq") and iq < int(r["iq"]):
 		return false

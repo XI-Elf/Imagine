@@ -982,7 +982,7 @@ func talk(n: Dictionary) -> void:
 		text = "«%s»" % lines[int(n["line_i"]) % lines.size()]
 		if not tree.is_empty():
 			text = String(Dialogue.node(tree, String(_dlg(n).get("node", "start"))).get("text", text))
-		# при Уме 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
+		# при Интеллекте 3 и ниже — «тупые» разговоры, при 7+ — умные наблюдения
 		var dlg: Dictionary = Sheet.sect("dialogue")
 		if hero != null and Sheet.dumb(hero):
 			text += I18n.t(String(dlg.get("dumb_suffix", "")))

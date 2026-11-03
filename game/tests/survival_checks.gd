@@ -124,9 +124,9 @@ func _pure() -> void:
 
 	# Відстань за Розумом (пункт 12)
 	var Route := preload("res://characters/hero_route.gd")
-	ok(Route.distance_words(300.0, 2) == "рукой подать" and Route.distance_words(9000.0, 3) == "очень далеко", "Ум 1–3: словами")
-	ok(Route.distance_words(2600.0, 5) == "около 3 км", "Ум 4–6: округлённо (%s)" % Route.distance_words(2600.0, 5))
-	ok(Route.distance_words(2440.0, 8) == "2.4 км" or Route.distance_words(2440.0, 8) == "2,4 км", "Ум 7+: точно (%s)" % Route.distance_words(2440.0, 8))
+	ok(Route.distance_words(300.0, 2) == "рукой подать" and Route.distance_words(9000.0, 3) == "очень далеко", "Интеллект 1–3: словами")
+	ok(Route.distance_words(2600.0, 5) == "около 3 км", "Интеллект 4–6: округлённо (%s)" % Route.distance_words(2600.0, 5))
+	ok(Route.distance_words(2440.0, 8) == "2.4 км" or Route.distance_words(2440.0, 8) == "2,4 км", "Интеллект 7+: точно (%s)" % Route.distance_words(2440.0, 8))
 
 	# Стіна зсередини (пункт 14)
 	var WC := preload("res://city/wall_climb.gd")
@@ -148,10 +148,10 @@ func _pure() -> void:
 	# Журнал (пункт 15)
 	var J := preload("res://characters/quest_journal.gd")
 	var ic: Array = J.icons_for("Убить волков у старого города и принести шкуры старосте за 10 монет")
-	ok(ic.has("sword") and ic.has("house") and ic.has("hide") and ic.has("coin"), "Ум низкий: картинки %s" % [ic])
-	ok(J.crude_words("Убить волков у города").split(" ").size() <= 3, "Ум низкий: пара простых слов")
+	ok(ic.has("sword") and ic.has("house") and ic.has("hide") and ic.has("coin"), "Интеллект низкий: картинки %s" % [ic])
+	ok(J.crude_words("Убить волков у города").split(" ").size() <= 3, "Интеллект низкий: пара простых слов")
 	var rt: String = J.rich_text({"text": "принести шкуры старосте", "place": "Эшвик"}, "1 Хомана")
-	ok(rt.contains("Эшвик") and rt.contains("старосте с мутным") and rt.length() > 60, "Ум высокий: подробно")
+	ok(rt.contains("Эшвик") and rt.contains("старосте с мутным") and rt.length() > 60, "Интеллект высокий: подробно")
 
 
 func _run() -> void:

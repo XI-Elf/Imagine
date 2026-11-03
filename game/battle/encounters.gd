@@ -86,7 +86,7 @@ static func concealment(hero: Actor, env: Dictionary, ctx: Dictionary = {}) -> f
 		return CONCEAL_REF
 	var c: float = CONCEAL_REF
 	c += 0.006 * (float(hero.skill("sneak")) - 20.0)   # Скрытность (у ній уже є Ловкість)
-	c += 0.01 * (hero.stat("per") - 5.0)               # Чутьё: помічає ворога першим
+	c += 0.01 * (hero.stat("per") - 5.0)               # Восприятие: помічає ворога першим
 	c += float(COVER.get(terrain_key(int(env.get("biome", 4))), 0.0))
 	if bool(env.get("night", false)):
 		c += 0.1

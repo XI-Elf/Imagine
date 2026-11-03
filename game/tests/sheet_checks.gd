@@ -54,9 +54,9 @@ func _derived() -> void:
 	ok(S.skill_points_per_level(a) == 15 and S.hp_per_level(a) == 4, "15 очков и +4 здоровья за уровень")
 	a.set_stat("str", 10)
 	a.set_stat("end", 10)
-	ok(S.hp_max(a) == 45 and S.melee_damage(a) == 5, "СИЛ 10 СТО 10: здоровье 45, урон 5")
+	ok(S.hp_max(a) == 45 and S.melee_damage(a) == 5, "СИЛ 10 ТЕЛ 10: здоровье 45, урон 5")
 	a.level = 3
-	ok(S.hp_max(a) == 45 + 2 * 7, "по 2 + СТО/2 = 7 здоровья за уровень")
+	ok(S.hp_max(a) == 45 + 2 * 7, "по 2 + ТЕЛ/2 = 7 здоровья за уровень")
 
 
 func _skills() -> void:
@@ -96,9 +96,9 @@ func _levels() -> void:
 func _perks() -> void:
 	var a := Actor.new("a", "Дар")
 	S.gain_xp(a, 3000.0)
-	ok(S.perk_blocker(a, "toughness") != "", "«Крепкий» требует СТО 6 и УДА 6")
+	ok(S.perk_blocker(a, "toughness") != "", "«Крепкий» требует ТЕЛ 6 и УДА 6")
 	ok(S.perk_blocker(a, "educated") == "нужен уровень 6", "«Начитанный» — с 6 уровня")
-	ok(S.take_perk(a, "awareness") == "" and a.perks == {"awareness": 1} and a.perk_picks == 0, "взят дар «Чутьё»")
+	ok(S.take_perk(a, "awareness") == "" and a.perks == {"awareness": 1} and a.perk_picks == 0, "взят дар «Восприятие»")
 	ok(S.take_perk(a, "here_and_now") != "", "второй дар без права выбора не взять")
 	a.perk_picks = 1
 	ok(S.take_perk(a, "here_and_now") == "" and a.level == 4, "«Озарение» — сразу уровень")
@@ -126,7 +126,7 @@ func _traits() -> void:
 	ok(int(g.stat("luck")) == 6 and S.skill_value(g, "gambling") == 20 and S.skill_points_per_level(g) == 12, "Одарённый: +1 ко всем, −10 % навыкам, −5 очков")
 	var c := Actor.new("c", "Характер")
 	c.traits = ["strong_build", "prudent", "repulsive"]
-	ok(int(c.stat("str")) == 6 and int(c.stat("per")) == 6 and int(c.stat("cha")) == 4, "черты характера меняют характеристики (бывшая Мудрость → Чутьё)")
+	ok(int(c.stat("str")) == 6 and int(c.stat("per")) == 6 and int(c.stat("cha")) == 4, "черты характера меняют характеристики (бывшая Мудрость → Восприятие)")
 	c.quirks = ["bruiser"]
 	c.stats["str"] = 9
 	ok(int(c.stat("str")) == 10, "итог не выше 10")
@@ -135,7 +135,7 @@ func _traits() -> void:
 
 func _creation() -> void:
 	ok(S.alloc_valid({"str": 3, "agi": 2}) == "", "5 очков распределены")
-	ok(S.alloc_valid({"str": 5, "agi": 1, "cha": -1}) == "", "Обаяние опущена до 4 ради ещё одного очка")
+	ok(S.alloc_valid({"str": 5, "agi": 1, "cha": -1}) == "", "Харизма опущена до 4 ради ещё одного очка")
 	ok(S.alloc_valid({"str": 6, "agi": -1}) != "", "выше 10 нельзя")
 	ok(S.alloc_valid({"str": 2}) != "", "не все очки — нельзя")
 	ok(S.tags_valid(["bows", "sneak", "speech"]) == "" and S.tags_valid(["bows", "sneak"]) != "", "ровно 3 отметки")
@@ -184,4 +184,4 @@ func _battle() -> void:
 	b.set_stat("per", 10)
 	var d = Combatant.new()
 	d.build_from_actor(b, 0, Data.config(), Data.config().hero)
-	ok(d.speed_ft == 45 and d.crit_extra(null) == 1 and d.per_bonus == 5, "ЛОВ 10 (ОД 10): 45 фт; УДА 10: крит 19–20; ЧУТ 10: инициатива +5")
+	ok(d.speed_ft == 45 and d.crit_extra(null) == 1 and d.per_bonus == 5, "ЛОВ 10 (ОД 10): 45 фт; УДА 10: крит 19–20; ВОС 10: инициатива +5")

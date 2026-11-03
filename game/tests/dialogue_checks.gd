@@ -167,7 +167,7 @@ func _run() -> void:
 	await create_timer(1.6).timeout
 	await shot("d02_dialog_kid.png")
 
-	# Ум у розмові (Huzzah 2026-10-30): дурень говорить інакше, розумний бачить більше
+	# Интеллект у розмові (Huzzah 2026-10-30): дурень говорить інакше, розумний бачить більше
 	var city_hero: Actor = city.hero
 	var keep_int: Variant = city_hero.stats.get("int", null)
 	var keep_profile: Dictionary = city_hero.profile.duplicate()
@@ -177,14 +177,14 @@ func _run() -> void:
 	city.talk(elder)
 	await frames(2)
 	var dumb: Array = city._buttons.map(func(b): return b.text)
-	ok(dumb.any(func(s): return s.contains("Город… чего тут?")) and not dumb.any(func(s): return s.contains("Что у вас в городе")), "Ум 2: реплики косноязычные: %s" % [dumb])
-	ok(dumb.any(func(s): return s.contains("Еда. Дай.")), "Ум 2: есть вариант только для дурня")
+	ok(dumb.any(func(s): return s.contains("Город… чего тут?")) and not dumb.any(func(s): return s.contains("Что у вас в городе")), "Интеллект 2: реплики косноязычные: %s" % [dumb])
+	ok(dumb.any(func(s): return s.contains("Еда. Дай.")), "Интеллект 2: есть вариант только для дурня")
 	city_hero.stats["int"] = 9
 	city.talk(elder)
 	await frames(2)
 	var smart: Array = city._buttons.map(func(b): return b.text)
-	ok(smart.any(func(s): return s.contains("Что у вас в городе")) and smart.any(func(s): return s.contains("[Ум] Писарь")), "Ум 9: обычные реплики и умная: %d вариантов" % smart.size())
-	ok(not smart.any(func(s): return s.contains("Еда. Дай.")), "Ум 9: дурацкого варианта нет")
+	ok(smart.any(func(s): return s.contains("Что у вас в городе")) and smart.any(func(s): return s.contains("[Интеллект] Писарь")), "Интеллект 9: обычные реплики и умная: %d вариантов" % smart.size())
+	ok(not smart.any(func(s): return s.contains("Еда. Дай.")), "Интеллект 9: дурацкого варианта нет")
 	ok(smart.size() > dumb.size() - 1, "умному не меньше вариантов")
 	# Усі варіанти на екрані, колесо гортає розмову, а не мапу
 	await create_timer(1.6).timeout

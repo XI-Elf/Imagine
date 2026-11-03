@@ -314,7 +314,7 @@ func _fill_skills(a: Actor) -> void:
 			var fs: Array = S.skills()[k].get("stats", [])
 			row.add_child(_label("  от %s" % ", ".join(PackedStringArray(fs.map(func(x): return S.stat_short(x)))), 13, COL_DIM))
 			_body.add_child(row)
-	_body.add_child(_wrap("Навыки растут очками навыков: %d + 2 × Ум за каждый уровень. Опыт дают бои, поручения, путь, лечение и ремесло. «−» возвращает очки, пока окно открыто." % int(S.d("skill_points_base", 5)), 13, COL_DIM))
+	_body.add_child(_wrap("Навыки растут очками навыков: %d + 2 × Интеллект за каждый уровень. Опыт дают бои, поручения, путь, лечение и ремесло. «−» возвращает очки, пока окно открыто." % int(S.d("skill_points_base", 5)), 13, COL_DIM))
 
 
 func tag_skill(k: String) -> void:

@@ -326,7 +326,7 @@ static func zero_hp_check(roller, c) -> Dictionary:
 	elif total >= k.trauma_mid:
 		res = "down"
 	var what: Dictionary = {"trauma": I18n.t("тяжёлая травма, остаётся в сознании с 1 здоровья"), "down": I18n.t("без сознания, стабилен, травма"), "dead": I18n.t("смерть")}
-	return {"result": res, "roll": r, "text": I18n.t("%s при нуле здоровья: %s (СТО %+d, УДА %+d) — пороги %d/%d → %s.") % [
+	return {"result": res, "roll": r, "text": I18n.t("%s при нуле здоровья: %s (ТЕЛ %+d, УДА %+d) — пороги %d/%d → %s.") % [
 		c.title, r["text"], c.mod("con"), c.mod("lck"), k.trauma_high, k.trauma_mid, what[res]]}
 
 

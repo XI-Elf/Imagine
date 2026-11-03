@@ -7,7 +7,7 @@ const MAX := 80
 const Sheet := preload("res://characters/sheet.gd")
 const Journal := preload("res://characters/quest_journal.gd")
 
-## Як записано, залежить від Уму героя в мить запису (lv: 0 — каракулі, 1 — як є, 2 — з роздумом), як і журнал J
+## Як записано, залежить від Интеллекту героя в мить запису (lv: 0 — каракулі, 1 — як є, 2 — з роздумом), як і журнал J
 static var CODA: Dictionary = {
 	"start": I18n.t("Дорога длинная, а сапоги одни. Посмотрим, что сотрётся раньше."),
 	"city": I18n.t("Стены высокие, а люди за ними — те же, что снаружи, только записанные."),
@@ -39,7 +39,7 @@ static func add(w: Node, kind: String, text: String, t: float, key: String = "")
 		log.remove_at(1)
 
 
-## Рівень письма героя Worlds: 0 при Умі 3 і нижче, 2 при 7 і вище (Sheet.dumb / smart)
+## Рівень письма героя Worlds: 0 при Интеллекті 3 і нижче, 2 при 7 і вище (Sheet.dumb / smart)
 static func level_of(w: Node) -> int:
 	var a: Actor = w.hero_actor() if w != null and w.has_method("hero_actor") else null
 	if a == null:

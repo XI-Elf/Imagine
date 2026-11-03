@@ -19,7 +19,7 @@ extends Resource
 @export var injury_dc: int = 12
 @export var stat_offset: int = 6                 # боевое = значение Амбера + 6 (база 4 → 10)
 @export var luck_offset: int = 10                # LCK = Удача Амбера + 10
-@export var per_initiative_div: int = 4          # Чутьё сверх базы / 4 — к инициативе и внимательности
+@export var per_initiative_div: int = 4          # Восприятие сверх базы / 4 — к инициативе и внимательности
 @export var flanking: bool = true
 @export var high_ground_adv: bool = true
 @export var party_level: int = 1

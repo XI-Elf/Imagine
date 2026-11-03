@@ -1,5 +1,5 @@
 extends SceneTree
-## Карта героя на M (Huzzah 2026-10-30): ластик стирає ділянку, розпізнавання й доведення намальованого за Умом і Чутьём,
+## Карта героя на M (Huzzah 2026-10-30): ластик стирає ділянку, розпізнавання й доведення намальованого за Умом і Восприятием,
 ## окремий аркуш на кожну область з пунктиром краю, нова область — новий аркуш, збереження й старі збереження.
 ## godot --path game --rendering-driver opengl3 -s res://tests/parchment_checks.gd -- [тека_для_знімків]
 
@@ -100,7 +100,7 @@ func _pure() -> void:
 	ok(Parchment.cut_circle(line, Vector2(50, 50), 10.0)[0].size() == line.size(), "ластик мимо: линия цела")
 	ok(Parchment.cut_circle([0.0, 0.0, 1.0, 0.0], Vector2(0.5, 0), 5.0).is_empty(), "ластик целиком: точка исчезла")
 
-	ok(Sketch.quality(FakeActor.new(1.0)) == 0.0 and Sketch.quality(FakeActor.new(9.0)) == 1.0, "Ум и Чутьё 1 — 0, по 9 — 1")
+	ok(Sketch.quality(FakeActor.new(1.0)) == 0.0 and Sketch.quality(FakeActor.new(9.0)) == 1.0, "Интеллект и Восприятие 1 — 0, по 9 — 1")
 	ok(absf(Sketch.quality(FakeActor.new(5.0)) - 0.5) < 0.01, "средний герой — половина")
 
 	var land := FakeLand.new()
@@ -110,7 +110,7 @@ func _pure() -> void:
 	var info: Dictionary = Sketch.classify(ring, z, "black", land)
 	ok(info["k"] == "forest" and info["closed"], "обвёл лес — лес (%s)" % info["k"])
 	var low: Dictionary = Sketch.tidy(ring, info, 0.0, z, land, 1)
-	ok(low["pts"] == ring and low["m"].is_empty(), "Ум и Чутьё низкие: рисунок как есть")
+	ok(low["pts"] == ring and low["m"].is_empty(), "Интеллект и Восприятие низкие: рисунок как есть")
 	var high: Dictionary = Sketch.tidy(ring, info, 1.0, z, land, 1)
 	ok(high["m"].size() >= 3 and high["m"][0]["k"] == "tree", "высокие: домалёваны деревца (%d)" % high["m"].size())
 	var shift_px: float = _max_shift(ring, high["pts"]) * z
@@ -147,12 +147,12 @@ func _pure() -> void:
 	var named: bool = false
 	for m in tt["m"]:
 		named = named or (m["k"] == "label" and m["t"] == "Эшвик")
-	ok(named, "Ум высокий: подписал Эшвик")
+	ok(named, "Интеллект высокий: подписал Эшвик")
 	var tl: Dictionary = Sketch.tidy(town, ti, 0.3, z, land, 4)
 	var named_low: bool = false
 	for m in tl["m"]:
 		named_low = named_low or m["k"] == "label"
-	ok(not named_low, "Ум низкий: без подписи")
+	ok(not named_low, "Интеллект низкий: без подписи")
 
 
 func _run() -> void:
@@ -207,7 +207,7 @@ func _run() -> void:
 		pm.stroke_to(c + Vector2.from_angle(TAU * i / 40.0) * (90.0 + sin(i * 1.7) * 8.0))
 	pm._finish_stroke()
 	var last: Dictionary = pm.strokes[-1]
-	ok(String(last.get("k", "")) != "line" and float(last.get("q", 0)) >= 0.99, "круг узнан как %s, Ум и Чутьё 9" % last.get("k", "?"))
+	ok(String(last.get("k", "")) != "line" and float(last.get("q", 0)) >= 0.99, "круг узнан как %s, Интеллект и Восприятие 9" % last.get("k", "?"))
 	await shot("p02_tidy.png")
 
 	# Сусідня область — новий аркуш з обрисом
