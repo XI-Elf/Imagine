@@ -35,6 +35,7 @@ const LOADING_BG := "res://art/menu_bg.jpg"
 const WorldSave := preload("res://world_save.gd")
 const AUTOSAVE_SEC: float = 300.0
 
+const Chronology := preload("res://world/chronology.gd")
 const ClockScene := preload("res://game_clock.tscn")
 const PhysicsScene := preload("res://world_physics.tscn")
 # Персонажі: герой і НПС за спільними правилами (characters/)
@@ -152,6 +153,13 @@ func _startup() -> void:
 		_save_data = WorldSave.read(slot)
 		if not _save_data.is_empty():
 			WorldSave.apply_early(self, _save_data)
+	# «Новая игра» из главного меню продолжает мировую дату прошлой партии; прежний живой герой уходит ИИ (п.16 правок)
+	if Engine.has_meta("aw_chronology"):
+		Engine.remove_meta("aw_chronology")
+		if _save_data.is_empty():
+			var resume: float = Chronology.begin_session(clock._start_seconds())
+			if resume > 0.0:
+				clock.set_total(resume)
 	physics.game = self
 	physics.setup(clock, SRC_SIZE.x, SRC_SIZE.y)
 	clock.season_changed.connect(_on_season_changed)
@@ -976,4 +984,8 @@ func pointer_over_map() -> bool:
 func save_world(manual: bool = false) -> bool:
 	if not ready_done or clock == null:
 		return false
-	return WorldSave.write(self, manual)
+	var wrote: bool = WorldSave.write(self, manual)
+	if wrote:
+		var hb: Dictionary = cast.hero if cast != null else {}
+		Chronology.record(clock.total_seconds, hb["actor"] if not hb.is_empty() else null)
+	return wrote

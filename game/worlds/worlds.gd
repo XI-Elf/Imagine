@@ -34,6 +34,7 @@ const WorldEnv := preload("res://characters/world_env.gd")
 const JournalScript := preload("res://characters/quest_journal.gd")
 const WearRef := preload("res://characters/wear.gd")
 const Chronicle := preload("res://characters/chronicle.gd")
+const Chronology := preload("res://world/chronology.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
@@ -239,7 +240,14 @@ func _on_hero_km(_total_km: int, h: Actor) -> void:
 		game.event_text = t
 		game.event_timer = 5.0
 	if enc.roll_on_km(h, env, _rng):
-		start_battle({})
+		# Брошенный прежний герой, отданный ИИ, может выйти навстречу (п.16 правок)
+		var old: Actor = Chronology.meet(_rng)
+		if old != null:
+			game.event_text = I18n.t("Из зарослей выходит прежний странник — %s. Его бросили, и теперь он враг.") % old.display_name
+			game.event_timer = 6.0
+			start_battle({"enemies": [old]})
+		else:
+			start_battle({})
 
 
 ## Пункт 17: герой стоїть, спить або відпочиває в полі — щогодини гри кидається напад за маскуванням

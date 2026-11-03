@@ -11,6 +11,7 @@ const Art := preload("res://storybook/art.gd")
 ## Z — спати/прокинутися, E — пити біля води, F — шукати їжу й матеріали (world/foraging.gd), T — лікуватися в лікаря поруч, I — аркуш персонажа.
 ## Миша (characters/hero_route.gd): ЛКМ — іти в точку (містом — до брами), тримати ЛКМ — за курсором, ПКМ — стоп.
 
+const Chronology := preload("res://world/chronology.gd")
 const WorldEnv := preload("res://characters/world_env.gd")
 const R := preload("res://characters/actor_rules.gd")
 const Sheet := preload("res://characters/sheet.gd")
@@ -311,6 +312,7 @@ func _on_died(b: Dictionary, cause: String) -> void:
 	_event(I18n.t("%s погиб: %s") % [a.display_name, Actor.DEATH_CAUSES.get(cause, cause)])
 	if b["hero"]:
 		controls_hero = false
+		Chronology.hero_died(_now())
 		_chronicle("death", I18n.t("Погиб: %s.") % String(Actor.DEATH_CAUSES.get(cause, cause)).to_lower())
 
 

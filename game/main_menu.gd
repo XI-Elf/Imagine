@@ -131,6 +131,7 @@ func _on_hero_created(params: Dictionary) -> void:
 		return
 	Engine.set_meta("aw_load", "")
 	Engine.set_meta("aw_new_hero", params)
+	Engine.set_meta("aw_chronology", true)   # новая партия продолжает дату прошлой (world/chronology.gd)
 	_open_game()
 
 

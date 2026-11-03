@@ -173,6 +173,12 @@ func reset() -> void:
 	_sync_last()
 
 
+## Поставить мировое время (продолжение хронологии с прошлой партии, world/chronology.gd)
+func set_total(seconds: float) -> void:
+	total_seconds = seconds
+	_sync_last()
+
+
 ## Перескок часу вперед (бій, очікування): сигнали години, дня, року й сезону йдуть як за звичайного ходу
 func skip(seconds: float) -> void:
 	if seconds > 0.0:
