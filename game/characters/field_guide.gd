@@ -3,10 +3,10 @@ extends RefCounted
 const Trade := preload("res://city/trade.gd")
 const Craft := preload("res://city/craft.gd")
 
-const CATEGORY_NAMES: Dictionary = {
-	"all": "Все записи", "food": "Пища", "medicine": "Лечение", "resources": "Ресурсы",
-	"tools": "Инструменты и походное", "weapons": "Оружие", "clothing": "Одежда и броня",
-	"transport": "Транспорт", "quest": "Сюжетные",
+static var CATEGORY_NAMES: Dictionary = {
+	"all": I18n.t("Все записи"), "food": I18n.t("Пища"), "medicine": I18n.t("Лечение"), "resources": I18n.t("Ресурсы"),
+	"tools": I18n.t("Инструменты и походное"), "weapons": I18n.t("Оружие"), "clothing": I18n.t("Одежда и броня"),
+	"transport": I18n.t("Транспорт"), "quest": I18n.t("Сюжетные"),
 }
 
 static func categories() -> Array:

@@ -7,7 +7,7 @@ static func data() -> Dictionary:
 	if _data.is_empty():
 		var f := FileAccess.open(FILE, FileAccess.READ)
 		if f != null:
-			var parsed: Variant = JSON.parse_string(f.get_as_text())
+			var parsed: Variant = I18n.tree(JSON.parse_string(f.get_as_text()))  # тексти кампанії — через uk.po, як інші дані
 			if parsed is Dictionary:
 				_data = parsed
 	return _data

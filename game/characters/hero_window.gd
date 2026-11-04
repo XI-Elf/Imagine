@@ -855,9 +855,9 @@ func _fill_guide() -> void:
 		details.add_child(desc)
 		var meta: PackedStringArray = []
 		if float(entry.data.get("weight", 0.0)) > 0.0:
-			meta.append("%s кг" % str(entry.data.get("weight", 0.0)))
+			meta.append(I18n.t("%s кг") % str(entry.data.get("weight", 0.0)))
 		if int(entry.data.get("price", 0)) > 0:
-			meta.append("%s мон." % str(entry.data.get("price", 0)))
+			meta.append(I18n.t("%s мон.") % str(entry.data.get("price", 0)))
 		if entry.data.has("use"):
 			meta.append(I18n.t("можно употребить"))
 		if entry.data.has("wear"):
@@ -933,19 +933,19 @@ func _fill_story() -> void:
 	var w: Node = _worlds()
 	var state: Dictionary = w.get("campaign_state") if w != null and w.get("campaign_state") is Dictionary else StoryCampaign.fresh()
 	var data: Dictionary = StoryCampaign.data()
-	_body.add_child(_label(I18n.t(String(data.get("title", "Кампания"))), 21, COL_GOLD))
-	_body.add_child(_wrap(I18n.t(String(data.get("premise", ""))), 15, COL_TEXT))
+	_body.add_child(_label(String(data.get("title", I18n.t("Кампания"))), 21, COL_GOLD))
+	_body.add_child(_wrap(String(data.get("premise", "")), 15, COL_TEXT))
 	_body.add_child(HSeparator.new())
 	if StoryCampaign.is_complete(state):
 		_body.add_child(_label(I18n.t("Кампания завершена"), 19, COL_GOOD))
 		_body.add_child(_wrap(I18n.t("Ваш выбор стал частью летописи Эшвика."), 15, COL_TEXT))
 	else:
 		var ch: Dictionary = StoryCampaign.current(state)
-		_body.add_child(_label(I18n.t(String(ch.get("title", ""))), 19, COL_GOLD))
-		_body.add_child(_wrap(I18n.t(String(ch.get("summary", ""))), 15, COL_TEXT))
+		_body.add_child(_label(String(ch.get("title", "")), 19, COL_GOLD))
+		_body.add_child(_wrap(String(ch.get("summary", "")), 15, COL_TEXT))
 		for line in ch.get("dialogue", []):
-			_body.add_child(_label("%s" % I18n.t(String(line.get("speaker", ""))), 14, COL_GOLD))
-			_body.add_child(_wrap("«%s»" % I18n.t(String(line.get("text", ""))), 14, COL_TEXT))
+			_body.add_child(_label("%s" % String(line.get("speaker", "")), 14, COL_GOLD))
+			_body.add_child(_wrap("«%s»" % String(line.get("text", "")), 14, COL_TEXT))
 		var obj: Dictionary = ch.get("objective", {})
 		var need: int = maxi(1, int(obj.get("count", 1)))
 		var have: int = mini(int(state.get("progress", 0)), need)
@@ -955,10 +955,10 @@ func _fill_story() -> void:
 		_body.add_child(_label(I18n.t("Цель: %s — %d/%d") % [objective_text, have, need], 15, COL_GOOD if have >= need else COL_DIM))
 		if bool(state.get("awaiting_choice", false)):
 			var choice: Dictionary = ch.get("choice", {})
-			_body.add_child(_label(I18n.t(String(choice.get("prompt", "Ваше решение"))), 17, COL_GOLD))
+			_body.add_child(_label(String(choice.get("prompt", I18n.t("Ваше решение"))), 17, COL_GOLD))
 			for option in choice.get("options", []):
 				var b := Button.new()
-				b.text = I18n.t(String(option.get("title", ""))) + " — " + I18n.t(String(option.get("description", "")))
+				b.text = String(option.get("title", "")) + " — " + String(option.get("description", ""))
 				b.custom_minimum_size = Vector2(0, 48)
 				b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 				b.pressed.connect(_choose_story.bind(String(option.get("id", ""))))
@@ -969,8 +969,8 @@ func _fill_story() -> void:
 			var boss_id: String = String(boss.get("id", ""))
 			var loc: Dictionary = StoryCampaign.location(String(boss.get("location", "")))
 			var unlocked: bool = StoryCampaign.boss_unlocked(state, boss_id) and w != null
-			_body.add_child(_label(I18n.t(String(boss.get("name", ""))) + (" · " + I18n.t("доступен") if unlocked else " · " + I18n.t("пока закрыт")), 15, COL_GOOD if unlocked else COL_DIM))
-			_body.add_child(_wrap(I18n.t(String(boss.get("description", ""))) + "\n" + I18n.t(String(loc.get("name", ""))) + " — " + str(loc.get("position", [])), 13, COL_DIM))
+			_body.add_child(_label(String(boss.get("name", "")) + (" · " + I18n.t("доступен") if unlocked else " · " + I18n.t("пока закрыт")), 15, COL_GOOD if unlocked else COL_DIM))
+			_body.add_child(_wrap(String(boss.get("description", "")) + "\n" + String(loc.get("name", "")) + " — " + str(loc.get("position", [])), 13, COL_DIM))
 			if unlocked:
 				var bb := Button.new()
 				bb.text = I18n.t("Вступить в бой")
@@ -979,8 +979,8 @@ func _fill_story() -> void:
 	_body.add_child(HSeparator.new())
 	_body.add_child(_label(I18n.t("Действующие лица"), 17, COL_GOLD))
 	for person in data.get("characters", []):
-		_body.add_child(_label(I18n.t(String(person.get("name", ""))) + " — " + I18n.t(String(person.get("role", ""))), 15, COL_TEXT))
-		_body.add_child(_wrap(I18n.t("Мотив: %s\nМанера речи: %s") % [I18n.t(String(person.get("motive", ""))), I18n.t(String(person.get("voice", "")))], 13, COL_DIM))
+		_body.add_child(_label(String(person.get("name", "")) + " — " + String(person.get("role", "")), 15, COL_TEXT))
+		_body.add_child(_wrap(I18n.t("Мотив: %s\nМанера речи: %s") % [String(person.get("motive", "")), String(person.get("voice", ""))], 13, COL_DIM))
 	_body.add_child(HSeparator.new())
 	_body.add_child(_label(I18n.t("История решений"), 17, COL_GOLD))
 	for decision in state.get("history", []):
