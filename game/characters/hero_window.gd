@@ -669,7 +669,7 @@ func _fill_diary() -> void:
 			_body.add_child(_wrap(_read_note(String(n["text"])), 14, COL_TEXT))
 
 
-## Записка очима героя: з Умом 3 і нижче розбираються лише окремі слова
+## Записка очима героя: з Інтелектом 3 і нижче розбираються лише окремі слова
 func _read_note(text: String) -> String:
 	var a: Actor = _actor()
 	if a == null or not S.dumb(a):

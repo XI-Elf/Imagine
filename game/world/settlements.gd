@@ -708,7 +708,7 @@ func _input(event: InputEvent) -> void:
 		KEY_R:
 			if _water_btn.visible:
 				choose_water()
-		KEY_ESCAPE, KEY_Q, KEY_W, KEY_A, KEY_S, KEY_D, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT:
+		KEY_ESCAPE, KEY_Q, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT:
 			choose_continue()
 		_:
 			return
