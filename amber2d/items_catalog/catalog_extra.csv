@@ -1,0 +1,122 @@
+﻿Раздел,id,Назва (uk),Название (ru),Файл
+Бійці й істоти (портрети бою),archer,Розбійник-лучник,Бандит-лучник,extra/creatures/archer.png
+Бійці й істоти (портрети бою),bandit,Розбійник,Бандит,extra/creatures/bandit.png
+Бійці й істоти (портрети бою),boar,Кабан,Кабан,extra/creatures/boar.png
+Бійці й істоти (портрети бою),chief,Ватажок,Главарь,extra/creatures/chief.png
+Бійці й істоти (портрети бою),dog,Пес,Пёс,extra/creatures/dog.png
+Бійці й істоти (портрети бою),hero,Герой,Герой,extra/creatures/hero.png
+Бійці й істоти (портрети бою),hound,Радіаційний пес,Радиоактивный пёс,extra/creatures/hound.png
+Бійці й істоти (портрети бою),wolf,Вовк,Волк,extra/creatures/wolf.png
+Зброя в бою (значки),axe,Сокира,Топор,extra/battle_weapons/axe.png
+Зброя в бою (значки),bite,Укус,Укус,extra/battle_weapons/bite.png
+Зброя в бою (значки),bow,Лук,Лук,extra/battle_weapons/bow.png
+Зброя в бою (значки),cleaver,Тесак,Тесак,extra/battle_weapons/cleaver.png
+Зброя в бою (значки),club,Дубина,Дубина,extra/battle_weapons/club.png
+Зброя в бою (значки),fist,Кулаки,Кулаки,extra/battle_weapons/fist.png
+Зброя в бою (значки),knife,Ніж,Нож,extra/battle_weapons/knife.png
+Зброя в бою (значки),mace,Булава,Булава,extra/battle_weapons/mace.png
+Зброя в бою (значки),sling,Пращя,Праща,extra/battle_weapons/sling.png
+Зброя в бою (значки),spear,Спис,Копьё,extra/battle_weapons/spear.png
+Зброя в бою (значки),sword,Меч,Меч,extra/battle_weapons/sword.png
+Зброя в бою (значки),torch,Смолоскип,Факел,extra/battle_weapons/torch.png
+Зброя в бою (значки),tusk,Ікла,Клыки,extra/battle_weapons/tusk.png
+Дії в бою (значки),dash,Ривок,Рывок,extra/actions/dash.png
+Дії в бою (значки),disengage,Відступ,Отход,extra/actions/disengage.png
+Дії в бою (значки),dodge,Ухиляння,Уклонение,extra/actions/dodge.png
+Дії в бою (значки),fire_flask,Палаюча фляга,Горящая фляга,extra/actions/fire_flask.png
+Дії в бою (значки),flee,Втеча,Бегство,extra/actions/flee.png
+Дії в бою (значки),heal,Лікування,Лечение,extra/actions/heal.png
+Дії в бою (значки),help,Допомога,Помощь,extra/actions/help.png
+Дії в бою (значки),hide,Сховатися,Спрятаться,extra/actions/hide.png
+Дії в бою (значки),howl,Виття,Вой,extra/actions/howl.png
+Дії в бою (значки),log,Журнал бою,Журнал боя,extra/actions/log.png
+Дії в бою (значки),move,Рух,Движение,extra/actions/move.png
+Дії в бою (значки),net,Сітка,Сеть,extra/actions/net.png
+Дії в бою (значки),poison_dart,Отруйний дротик,Ядовитый дротик,extra/actions/poison_dart.png
+Дії в бою (значки),potion,Зілля,Зелье,extra/actions/potion.png
+Дії в бою (значки),ready,Приготуватися,Приготовиться,extra/actions/ready.png
+Дії в бою (значки),salve,Мазь,Мазь,extra/actions/salve.png
+Дії в бою (значки),second_wind,Друге дихання,Второе дыхание,extra/actions/second_wind.png
+Дії в бою (значки),shield,Щит,Щит,extra/actions/shield.png
+Дії в бою (значки),swap,Змінити зброю,Сменить оружие,extra/actions/swap.png
+Дії в бою (значки),war_cry,Бойовий клич,Боевой клич,extra/actions/war_cry.png
+Типи шкоди,bludgeoning,Дробильний,Дробящий,extra/damage/bludgeoning.png
+Типи шкоди,cold,Холод,Холод,extra/damage/cold.png
+Типи шкоди,fire,Вогонь,Огонь,extra/damage/fire.png
+Типи шкоди,piercing,Колючий,Колющий,extra/damage/piercing.png
+Типи шкоди,poison,Отрута,Яд,extra/damage/poison.png
+Типи шкоди,radiation,Радіація,Радиация,extra/damage/radiation.png
+Типи шкоди,slashing,Різальний,Рубящий,extra/damage/slashing.png
+Лялька героя,female_bare,"Лялька героїні, без одягу","Кукла героини, без одежды",extra/dolls/female_bare.png
+Лялька героя,female_dressed,Лялька героїні в одязі,Кукла героини в одежде,extra/dolls/female_dressed.png
+Лялька героя,male_bare,"Лялька героя, без одягу","Кукла героя, без одежды",extra/dolls/male_bare.png
+Лялька героя,male_dressed,Лялька героя в одязі,Кукла героя в одежде,extra/dolls/male_dressed.png
+Спрайти світу,bandit,Розбійник,Бандит,world/storybook/bandit.png
+Спрайти світу,bush_berry,Кущ ягід,Куст ягод,world/storybook/bush_berry.png
+Спрайти світу,bush_flower,Кущ квітів,Куст цветов,world/storybook/bush_flower.png
+Спрайти світу,cliff_gray,Скеля сіра,Скала серая,world/storybook/cliff_gray.png
+Спрайти світу,cobble,Бруківка,Брусчатка,world/storybook/cobble.png
+Спрайти світу,guard,Вартовий,Стражник,world/storybook/guard.png
+Спрайти світу,hall,Ратуша,Ратуша,world/storybook/hall.png
+Спрайти світу,healer,Лікар,Лекарь,world/storybook/healer.png
+Спрайти світу,hound,Радіаційний пес,Радиоактивный пёс,world/storybook/hound.png
+Спрайти світу,house,Будинок,Дом,world/storybook/house.png
+Спрайти світу,inn,Корчма,Трактир,world/storybook/inn.png
+Спрайти світу,masonry,Кладка,Кладка,world/storybook/masonry.png
+Спрайти світу,mesa_hot,Гаряче плато,Горячее плато,world/storybook/mesa_hot.png
+Спрайти світу,mountain_gray,Гора сіра,Гора серая,world/storybook/mountain_gray.png
+Спрайти світу,mountain_hot,Гора гаряча,Гора горячая,world/storybook/mountain_hot.png
+Спрайти світу,peak_gray,Вершина сіра,Вершина серая,world/storybook/peak_gray.png
+Спрайти світу,ridge_gray,Хребет сірий,Хребет серый,world/storybook/ridge_gray.png
+Спрайти світу,ridge_hot,Хребет гарячий,Хребет горячий,world/storybook/ridge_hot.png
+Спрайти світу,rock,Камінь,Камень,world/storybook/rock.png
+Спрайти світу,roof,Дах,Крыша,world/storybook/roof.png
+Спрайти світу,smithy,Кузня,Кузница,world/storybook/smithy.png
+Спрайти світу,stall,Ятка,Лавка,world/storybook/stall.png
+Спрайти світу,tech_dome,Техно-купол,Техно-купол,world/storybook/tech_dome.png
+Спрайти світу,tech_tower,Техно-вежа,Техно-башня,world/storybook/tech_tower.png
+Спрайти світу,tech_wreck,Техно-уламки,Техно-обломки,world/storybook/tech_wreck.png
+Спрайти світу,temple,Храм,Храм,world/storybook/temple.png
+Спрайти світу,traveler,Мандрівник,Путник,world/storybook/traveler.png
+Спрайти світу,tree_crooked,Крива сосна,Кривое дерево,world/storybook/tree_crooked.png
+Спрайти світу,tree_light,Світле дерево,Светлое дерево,world/storybook/tree_light.png
+Спрайти світу,tree_oak,Дуб,Дуб,world/storybook/tree_oak.png
+Спрайти світу,villager,Селянин,Селянин,world/storybook/villager.png
+Спрайти світу,well,Колодязь,Колодец,world/storybook/well.png
+Спрайти світу,woman,Жінка,Женщина,world/storybook/woman.png
+Спрайти світу,wood,"Дерево, дошки","Дерево, доски",world/storybook/wood.png
+Місцевість (текстури),t00_water,Вода,Вода,world/terrain/t00_water.png
+Місцевість (текстури),t01_coast,Узбережжя,Побережье,world/terrain/t01_coast.png
+Місцевість (текстури),t02_forest,Ліс,Лес,world/terrain/t02_forest.png
+Місцевість (текстури),t03_field1,Поле 1,Поле 1,world/terrain/t03_field1.png
+Місцевість (текстури),t04_field2,Поле 2,Поле 2,world/terrain/t04_field2.png
+Місцевість (текстури),t05_wasteland,Пустир,Пустошь,world/terrain/t05_wasteland.png
+Місцевість (текстури),t06_swamp,Болото,Болото,world/terrain/t06_swamp.png
+Місцевість (текстури),t07_mountains,Гори,Горы,world/terrain/t07_mountains.png
+Місцевість (текстури),t08_hot_mountains,Гарячі гори,Горячие горы,world/terrain/t08_hot_mountains.png
+Місцевість (текстури),t09_rad_forest,Радіаційний ліс,Радиоактивный лес,world/terrain/t09_rad_forest.png
+Місцевість (текстури),t10_rad_wasteland,Радіаційний пустир,Радиоактивная пустошь,world/terrain/t10_rad_wasteland.png
+Місцевість (текстури),t11_rad_swamp,Радіаційне болото,Радиоактивное болото,world/terrain/t11_rad_swamp.png
+Місцевість (текстури),t12_glow,Сяйво,Свечение,world/terrain/t12_glow.png
+Медальйони поселень,m0_camp,Табір,Лагерь,world/medallion/m0_camp.png
+Медальйони поселень,m1_ostrog,Острог,Острог,world/medallion/m1_ostrog.png
+Медальйони поселень,m2_sloboda,Слобода,Слобода,world/medallion/m2_sloboda.png
+Медальйони поселень,m3_posad,Посад,Посад,world/medallion/m3_posad.png
+Медальйони поселень,m4_gorod,Місто,Город,world/medallion/m4_gorod.png
+Медальйони поселень,m5_bolshoy_gorod,Велике місто,Большой город,world/medallion/m5_bolshoy_gorod.png
+Карти світу,map_biomes,Карта: біоми,Карта: биомы,world/map/map_biomes.png
+Карти світу,map_color,Карта: кольорова,Карта: цветная,world/map/map_color.png
+Карти світу,map_height,Карта: висоти,Карта: высоты,world/map/map_height.png
+Карти світу,map_hot,Карта: гарячі зони,Карта: горячие зоны,world/map/map_hot.png
+Карти світу,map_provinces,Карта: провінції,Карта: провинции,world/map/map_provinces.png
+Карти світу,map_regions,Карта: регіони,Карта: регионы,world/map/map_regions.png
+Карти світу,map_topo,Карта: топографія,Карта: топография,world/map/map_topo.png
+Карти світу,map_water,Карта: вода,Карта: вода,world/map/map_water.png
+Оформлення інтерфейсу,bar,Смуга,Полоса,world/comic_ui/bar.png
+Оформлення інтерфейсу,button,Кнопка,Кнопка,world/comic_ui/button.png
+Оформлення інтерфейсу,panel,Панель,Панель,world/comic_ui/panel.png
+Оформлення інтерфейсу,portrait,Рамка портрета,Рамка портрета,world/comic_ui/portrait.png
+Оформлення інтерфейсу,ribbon,Стрічка,Лента,world/comic_ui/ribbon.png
+Оформлення інтерфейсу,slot,Слот,Слот,world/comic_ui/slot.png
+Оформлення інтерфейсу,tech_plate,Техно-плита,Техно-плита,world/comic_ui/tech_plate.png
+Меню,menu_bg,Фон меню,Фон меню,world/menu_bg.png
