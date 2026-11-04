@@ -861,7 +861,11 @@ func _draw_ruins(font: Font) -> void:
 		var h: float = clampf(9.0 * game.zoom, 8.0, 260.0)
 		var done: bool = Ruins.looted_now(ruins_looted, s["key"], now)
 		var tint: Color = Color(0.62, 0.6, 0.56) if done else Color(0.92, 0.86, 0.78)
-		var key: String = "tech_dome" if Art.seed_at(absi(hash(s["key"])) % 9973, 7, 31) > 0.6 else "tech_wreck"
+		# Вигляд за біомом (ідея Pass4, без другого шару в world_decor): у лісі (7) — храм/зала, інакше — техноруїни
+		var roll: float = Art.seed_at(absi(hash(s["key"])) % 9973, 7, 31)
+		var key: String = "tech_dome" if roll > 0.6 else "tech_wreck"
+		if game.biome_at(s["pos"]) == 7:
+			key = "hall" if roll > 0.55 else "temple"
 		Art.sprite(self, key, sp + Vector2(-h * 0.1, 0.0), h * 0.8, tint)
 		Art.sprite(self, "rock", sp + Vector2(h * 0.62, h * 0.12), h * 0.3, tint)
 		if game.zoom >= 0.6:
