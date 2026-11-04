@@ -35,6 +35,7 @@ const JournalScript := preload("res://characters/quest_journal.gd")
 const WearRef := preload("res://characters/wear.gd")
 const Chronicle := preload("res://characters/chronicle.gd")
 const Chronology := preload("res://world/chronology.gd")
+const QuestCampaign := preload("res://world/quest_campaign.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
@@ -57,7 +58,8 @@ var city_states: Dictionary = {}   # city_id -> to_dict() міста після 
 var chronicle: Array = []           # хроніка героя: ключові події (characters/chronicle.gd); зникає разом з героєм
 var codex: Dictionary = {}          # кодекс: id знайдених записок -> ігрові секунди (world/codex.gd); живе довше за героя
 var left_carts: Array = []         # Q32: вози загиблих героїв на карті [{pos: [x, y], until: с гри, items}] (hero_death.gd)
-var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
+var battles_won: int = 0           # перемоги героя в боях за гру
+var campaign_state: Dictionary = QuestCampaign.new_state() # основная сюжетная кампания (доручення «перемогти» в містах, city_growth.gd)
 var _km_actor: Actor = null
 var sleep_fx: CanvasLayer = null
 var journal: CanvasLayer          # журнал завдань — розділ меню героя (characters/quest_journal.gd), пише гравець
@@ -178,6 +180,7 @@ func _attach(g: Node2D) -> void:
 	codex = {}
 	chronicle = []
 	battles_won = 0
+	campaign_state = QuestCampaign.new_state()
 	g.tree_exiting.connect(_on_game_exiting.bind(g))
 
 
@@ -291,6 +294,8 @@ func noise_check(hours: float) -> bool:
 
 func _on_enter_requested(s: Dictionary) -> void:
 	var id: String = String(s.get("city_id", s.get("id", "")))
+	if id == "s001":
+		campaign_event("visit_ashwick")
 	# entry: gate — через браму, sneak — пробрався через стіну, caught — спійманий під час спроби; side — бік міста
 	var ctx: Dictionary = {"settlement": s, "entry": String(s.get("entry", "gate")), "side": String(s.get("side", "south"))}
 	var st: Object = game.get("settlements")
@@ -462,6 +467,7 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
 	var outcome: String = String(result.get("outcome", ""))
 	if outcome == "win":
 		battles_won += 1
+		campaign_event("battle_win")
 		# Механіка 2: убиті звірі — на розбирання (Camp.butcher), шаблони з actor_id вороґів
 		var enc: Script = load(ENCOUNTERS) if ResourceLoader.exists(ENCOUNTERS) else null
 		if enc != null:
@@ -642,6 +648,25 @@ func _fade_to(a: float) -> void:
 
 
 # =====================================================================
+# ОСНОВНА СЮЖЕТНА КАМПАНІЯ
+# =====================================================================
+func campaign_event(event_id: String, amount: int = 1) -> void:
+	campaign_state = QuestCampaign.record(campaign_state, event_id, amount)
+	_campaign_sync()
+
+func campaign_current() -> Dictionary:
+	_campaign_sync()
+	return QuestCampaign.current(campaign_state)
+
+func _campaign_sync() -> void:
+	var km: float = hero_actor().distance_m / 1000.0 if hero_actor() != null else 0.0
+	var result: Dictionary = QuestCampaign.advance(campaign_state, km)
+	campaign_state = result["state"]
+	var reward: int = int(result.get("rewards", 0))
+	if reward > 0:
+		inventory["money"] = int(inventory.get("money", 0)) + reward
+
+# =====================================================================
 # ЗБЕРЕЖЕННЯ
 # =====================================================================
 func to_dict() -> Dictionary:
@@ -665,7 +690,7 @@ func to_dict() -> Dictionary:
 			list.append({"kind": "battle", "req": r, "state": state, "clock_was_paused": _clock_was_paused})
 	var cities: Dictionary = city_states.duplicate()
 	return {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
-		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true), "codex": codex.duplicate(),
+		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "campaign": campaign_state.duplicate(true), "left_carts": left_carts.duplicate(true), "codex": codex.duplicate(),
 		"journal": journal.to_array() if journal != null else [], "chronicle": chronicle.duplicate(true)}
 
 
@@ -683,6 +708,7 @@ func load_dict(d: Dictionary) -> void:
 		inventory = inv
 	city_states = d.get("city_states", {}) if d.get("city_states") is Dictionary else {}
 	battles_won = int(d.get("battles_won", 0))
+	campaign_state = d.get("campaign", QuestCampaign.new_state()).duplicate(true) if d.get("campaign", QuestCampaign.new_state()) is Dictionary else QuestCampaign.new_state()
 	left_carts = d.get("left_carts", []).duplicate(true) if d.get("left_carts") is Array else []
 	codex = d.get("codex", {}).duplicate() if d.get("codex") is Dictionary else {}
 	if journal != null:

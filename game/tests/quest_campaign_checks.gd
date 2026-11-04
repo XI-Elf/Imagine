@@ -1,0 +1,26 @@
+extends SceneTree
+## Статические проверки сюжетной кампании без загрузки игрового мира.
+const Campaign := preload("res://world/quest_campaign.gd")
+
+func _initialize() -> void:
+	var s: Dictionary = Campaign.new_state()
+	assert(Campaign.current(s).get("id") == "ashwick_signal")
+	s = Campaign.record(s, "visit_ashwick")
+	var a: Dictionary = Campaign.advance(s, 0.0)
+	assert(a["state"]["chapter"] == 1)
+	assert(a["rewards"] == 8)
+	s = Campaign.record(a["state"], "town_quest")
+	a = Campaign.advance(s, 0.0)
+	assert(a["state"]["chapter"] == 2)
+	s = Campaign.record(a["state"], "codex")
+	a = Campaign.advance(s, 0.0)
+	assert(a["state"]["chapter"] == 3)
+	s = Campaign.record(a["state"], "battle_win", 3)
+	a = Campaign.advance(s, 0.0)
+	assert(a["state"]["chapter"] == 4)
+	s = Campaign.record(a["state"], "town_quest", 2)
+	a = Campaign.advance(s, 10.0)
+	assert(a["state"]["finished"] == true)
+	assert(a["state"]["chapter"] == 5)
+	print("quest_campaign_checks: OK")
+	quit(0)

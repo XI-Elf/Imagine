@@ -88,9 +88,27 @@ func _save() -> void:
 	f.store_var({"version": 1}, false)
 	f.close()
 	ok(WorldSave.read(slot).is_empty(), "сохранение старой версии не читается")
-	ok(not WorldSave.list().any(func(h): return h["slot"] == slot), "и не показывается в списке")
+	ok(not WorldSave.list().any(func(h): return h["slot"] == slot), "несовместимое сохранение скрыто из списка загрузки")
+	ok(FileAccess.file_exists(WorldSave.path_of(slot)), "просмотр списка не удаляет несовместимое сохранение")
+	# Старый одиночный слот без заголовка тоже сохраняется для будущего мигратора.
+	var legacy := FileAccess.open(WorldSave.LEGACY_PATH, FileAccess.WRITE)
+	legacy.store_var({"version": 1, "legacy_probe": true}, false)
+	legacy.close()
+	WorldSave.list()
+	ok(WorldSave.legacy_save_exists() and FileAccess.file_exists(WorldSave.LEGACY_PATH), "legacy-сохранение не удаляется при просмотре списка")
+	DirAccess.remove_absolute(WorldSave.LEGACY_PATH)
+	# Резервная копия поддерживаемой версии должна быть доступна, если основной файл потерян.
+	var backup_slot: String = "__audit_backup"
+	var backup_path: String = WorldSave.path_of(backup_slot) + ".bak"
+	f = FileAccess.open(backup_path, FileAccess.WRITE)
+	f.store_var({"header": true, "version": WorldSave.VERSION, "unix": 1}, false)
+	f.store_var({"version": WorldSave.VERSION, "probe": "backup"}, false)
+	f.close()
+	ok(WorldSave.list().any(func(h): return h["slot"] == backup_slot and h.get("recovered_from_backup", false)), "резервная копия отображается при отсутствии основного файла")
+	ok(WorldSave.read(backup_slot).get("probe", "") == "backup", "резервная копия загружается без перезаписи")
+	WorldSave.delete(backup_slot)
 	WorldSave.delete(slot)
-	ok(not FileAccess.file_exists(WorldSave.path_of(slot)), "удаление ячейки")
+	ok(not FileAccess.file_exists(WorldSave.path_of(slot)), "явное удаление ячейки")
 
 
 # Збережений бій з ефектом, якого більше немає в data/battle/effects: не падає й не псує сусідні
