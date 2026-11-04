@@ -100,7 +100,7 @@ func _run() -> void:
 		game.settlements.choose_continue()
 	await create_timer(T.MIN_SHOW_S + 0.3).timeout
 	ok(T.seen.has("welcome"), "приветствие закрылось само, когда герой появился")
-	ok(await wait_hint(T, "walk", T.GAP_S + 2.0), "подсказка «Герой» (WASD, Shift)")
+	ok(await wait_hint(T, "walk", T.GAP_S + 2.0), "подсказка «Герой» (стрелки, мышь)")
 	await shot("t04_walk.png")
 	T.dismiss()
 	ok(T.seen.has("walk") and not T._card.visible, "«Понятно» закрывает подсказку")
@@ -178,6 +178,26 @@ func _run() -> void:
 	ok(await wait_hint(T, "hunger"), "включить снова в справке — подсказки вернулись (голод)")
 	T.restart()
 	ok(T.seen.is_empty(), "«Начать обучение заново» очищает показанное")
+
+	# Правдивість тексту (2D 12): того, чого в грі вже немає, довідка не обіцяє
+	var all_text: String = ""
+	for tab in T.KEYS:
+		for r in T.KEYS[tab]:
+			all_text += " ".join(PackedStringArray(r)) + " "
+	for m in T.MECHANICS:
+		all_text += String(m[1]) + " "
+	for h in T._hints:
+		all_text += String(h["text"]) + " "
+	ok(not ("WASD" in all_text) and not ("Shift —" in all_text) and not ("Бег (Shift)" in all_text), "в тексте нет WASD и бега по Shift")
+	ok(not ("лекарь-НПС" in all_text) and not ("свободной камерой" in all_text), "в тексте нет лекаря-НПС на карте и свободной камеры")
+	var ids: Array = T._hints.map(func(h): return h["id"])
+	ok("story" in ids and "story_choice" in ids and "guide" in ids, "есть подсказки про сюжет и справочник")
+	var HW := load("res://characters/hero_window.gd")
+	ok(HW.TABS.size() == 10 and HW.TABS[5] == "quests" and HW.TABS[6] == "map" and HW.TABS[8] == "diary" and HW.TABS[9] == "chronicle", "номера разделов меню героя совпадают с текстом подсказок (6 задания, 7 карта, 9 дневник, 0 хроника)")
+	W.campaign_state["awaiting_choice"] = true
+	ok(T._story_waits(), "сюжет ждёт выбора — подсказка про решение возможна")
+	W.campaign_state["awaiting_choice"] = false
+	ok(not T._story_waits(), "решение принято — подсказки про выбор нет")
 
 	print("TUTORIAL CHECKS: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)
