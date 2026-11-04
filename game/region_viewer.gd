@@ -15,10 +15,14 @@ var points: int = 0
 func _ready() -> void:
 	Engine.set_meta("aw_load", "")
 	game = load("res://game.tscn").instantiate()
-	add_child(game)
+	# Світ — поточна сцена (як у грі): фільтр темного світу й інші автозавантаження впізнають його
+	get_tree().root.add_child.call_deferred(game)
+	await get_tree().process_frame
 	get_tree().current_scene = game
 	while not game.ready_done:
 		await get_tree().process_frame
+	# Огляд починається вдень (світло й тіні видно), далі час іде як у грі
+	game.clock.total_seconds = floorf(game.clock.total_seconds / 86400.0) * 86400.0 + 11.0 * 3600.0
 	var tut: Node = get_node_or_null("/root/Tutorial")
 	if tut != null:
 		tut.enabled = false
