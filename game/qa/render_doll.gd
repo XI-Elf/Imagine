@@ -1,6 +1,6 @@
 extends SceneTree
-## Снимок куклы героя (characters/paper_doll.gd): мужчина и женщина, без одежды и в разных наборах.
-## godot --path game --rendering-driver opengl3 -s res://qa/render_doll.gd  (папка снимков — AMBER_QA_OUT)
+## Знімок ляльки героя (characters/paper_doll.gd): чоловік і жінка, без одягу й у різних наборах.
+## godot --path game --rendering-driver opengl3 -s res://qa/render_doll.gd  (тека знімків — AMBER_QA_OUT)
 const Doll := preload("res://characters/paper_doll.gd")
 const Inv := preload("res://characters/inventory_view.gd")
 const Trade := preload("res://city/trade.gd")
@@ -19,7 +19,7 @@ class Canvas extends Control:
 				for id in SETS[i]:
 					var w: Dictionary = Trade.item(id)["wear"]
 					looks[w["slot"]] = {"look": w["look"], "color": Color(w["color"])}
-				d.draw(self, Rect2(20 + (g * SETS.size() + i) * 165, 20, 150, 300), g == 1, looks)
+				d.draw(self, Rect2(20 + (g * SETS.size() + i) * 165, 20, 150, 300), g == 1, looks, [-0.8, 0.0, 0.5, 1.0][i])
 
 
 func _initialize() -> void:

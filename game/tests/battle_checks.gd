@@ -1,5 +1,5 @@
 extends SceneTree
-## Проверки боя без карты: DiceRoller, формулы (Combat_Formulas, раздел I), правила 5e, сетка, ход боя.
+## Проверки боя без карты: DiceRoller, формулы (Combat_Formulas, раздел I), правила боя, сетка, ход боя.
 ## godot --headless --path game -s res://tests/battle_checks.gd
 
 const Data := preload("res://battle/battle_data.gd")
@@ -88,8 +88,8 @@ func _stats() -> void:
 	a.set_stat("str", 8)
 	var c = Combatant.new()
 	c.build_from_actor(a, 0, Data.config(), Data.config().hero)
-	ok(c.scores["dex"] == 16 and c.scores["str"] == 14 and c.scores["con"] == 10 and c.scores["lck"] == 10, "Амбер + 6: Ловкость 10 → DEX 16, база 4 → 10, Удача 0 → LCK 10")
-	ok(c.max_hp == 10 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: HP 10 (к10 + ВЫН 0), меч и праща, кожаная броня")
+	ok(c.scores["dex"] == 20 and c.scores["str"] == 16 and c.scores["con"] == 10 and c.scores["lck"] == 10 and c.scores["wis"] == 10, "характеристика × 2: Ловкость 10 → DEX 20, Сила 8 → STR 16, 5 → 10")
+	ok(c.max_hp == 12 and c.weapons.size() == 2 and c.armor != null and c.armor.id == "leather", "герой: здоровье 15 (формула 33 × 0,36), меч и праща, кожаная броня")
 
 
 func mk(scores: Dictionary, armor: String = "none") -> Object:
@@ -104,14 +104,14 @@ func mk(scores: Dictionary, armor: String = "none") -> Object:
 	return c
 
 
-# --- Формулы урона: символьные проверки раздела I ---------------------------
+# --- Формули шкоди: символьні перевірки розділу I ---------------------------
 func _formulas() -> void:
 	var d := DiceRoller.new(9)
 	var t = mk({})
-	# фиксированный урон без костей: BASE = F
+	# фіксована шкода без костей: BASE = F
 	var comp: Array = [{"type": "slashing", "dice": "", "F": 10}]
 	ok(int(Rules.damage(d, t, comp, {}, 1)["total"]) == 10, "без брони, S и V: FINAL = BASE")
-	t.armor = Data.armor("leather")         # DR режущий 2
+	t.armor = Data.armor("leather")         # DR різальний 2
 	ok(int(Rules.damage(d, t, comp, {}, 1)["total"]) == 8, "P = 0: FINAL = max(0, BASE − DR) = 8")
 	ok(int(Rules.damage(d, t, comp, {"slashing": 1.0}, 1)["total"]) == 10, "P = 100 %: броня игнорируется")
 	ok(int(Rules.damage(d, t, comp, {"slashing": 0.5}, 1)["total"]) == 9, "P = 50 %: DR_EFF = floor(2 × 0,5) = 1")
@@ -134,7 +134,7 @@ func _formulas() -> void:
 	var a = mk({"str": 16})
 	var comps: Array = Rules.components(a, w)
 	ok(comps.size() == 2 and int(comps[0]["F"]) == 3 and int(comps[1]["F"]) == 0, "модификатор СИЛ добавлен один раз, в первый компонент")
-	# попадание: R = L — промах, R = H — крит, иначе ATK ≥ AC
+	# влучання: R = L — промах, R = H — крит, інакше ATK ≥ AC
 	var att = mk({"str": 16})
 	att.weapons = [Data.weapon("longsword")]
 	var tgt = mk({}, "plate")
@@ -148,14 +148,14 @@ func _formulas() -> void:
 	ok(hi["damage"]["parts"][0]["Q"] == 8, "на крите кости бросаются K_CRIT = 2 раза (4 + 4)")
 	d.forced = [10]
 	var mid: Dictionary = Rules.attack(d, att, tgt, Data.weapon("longsword"), null, ctx.duplicate())
-	ok(not mid["hit"] and int(mid["ATK"]) == 10 + 3 + 2, "ATK = R + M_ATK + PB = 15 против AC 16 — промах")
+	ok(not mid["hit"] and int(mid["ATK"]) == 10 + 3 + 2, "ATK = R + M_ATK + PB = 15 против: защита 16 — промах")
 	d.forced = [11, 5]
 	var mid2: Dictionary = Rules.attack(d, att, tgt, Data.weapon("longsword"), null, ctx.duplicate())
 	ok(mid2["hit"] and not mid2["crit"], "ATK 16 ≥ AC 16 — попадание: " + mid2["text"])
-	ok(mid2["text"].contains("Атака: 11 (d20)") and mid2["text"].contains("против AC 16") and mid2["text"].contains("Урон:"), "лог в формате «Атака: 11 (d20) … против AC 16 → … Урон: …»")
+	ok(mid2["text"].contains("Атака: 11 (d20)") and mid2["text"].contains("против: защита 16") and mid2["text"].contains("Урон:"), "лог в формате «Атака: 11 (d20) … против: защита 16 → … Урон: …»")
 
 
-# --- Правила 5e -------------------------------------------------------------
+# --- Правила боя -----------------------------------------------------------
 func _rules() -> void:
 	var t = mk({"dex": 16}, "leather")
 	ok(int(Rules.ac(t)["total"]) == 15, "кожаная: 12 + ЛОВ 3 = 15")
@@ -173,7 +173,7 @@ func _rules() -> void:
 	var st = mk({"dex": 10})
 	st.add_effect("stunned")
 	ok(not Rules.saving_throw(d, st, "dex", 5)["ok"], "оглушённый проваливает спасбросок Ловкости автоматически")
-	# преимущество/помеха
+	# перевага/перешкода
 	var p = mk({})
 	p.add_effect("prone")
 	var a2 = mk({})
@@ -185,7 +185,7 @@ func _rules() -> void:
 	var dg = mk({})
 	dg.add_effect("dodging")
 	ok(Rules.adv_dis(mk({}), dg, {"ranged": false, "dist_ft": 5})["dis"].size() > 0, "по уклоняющемуся — помеха")
-	# травма при 0 HP: пороги 15 / 8
+	# травма за 0 HP: пороги 15 / 8
 	var z = mk({"con": 10})
 	d.forced = [15]
 	ok(Rules.zero_hp_check(d, z)["result"] == "trauma", "0 HP: 15+ — травма, в сознании")
@@ -196,7 +196,7 @@ func _rules() -> void:
 	ok(Rules.fall_dice(25) == "2d6" and Rules.fall_dice(500) == "20d6" and Rules.fall_dice(5) == "", "падение: 1d6 за 10 футов, не больше 20d6")
 
 
-# --- Сетка ------------------------------------------------------------------
+# --- Сітка ------------------------------------------------------------------
 func _grid() -> void:
 	var g := Grid.new()
 	g.size = Vector2i(10, 10)
@@ -268,7 +268,7 @@ func _paths() -> void:
 	ok(cost == int(r[Vector2i(9, 5)]["cost"]) and cost == 40, "трудная местность — в обход, путь самый дешёвый: %d фт" % cost)
 
 
-# --- Бой целиком ------------------------------------------------------------
+# --- Бій цілком ------------------------------------------------------------
 func make_core(req: Dictionary) -> Node:
 	var c: Node = Core.new()
 	root.add_child(c)
@@ -312,7 +312,7 @@ func _battles() -> void:
 	core.end_turn()
 	ok(core.current() == h or core.outcome != "", "ИИ сходил, снова очередь героя (раунд %d)" % core.round_n)
 
-	# Атака по возможности: герой уходит от врага без Disengage
+	# Атака з нагоди: герой відходить від ворога без Disengage
 	var core2: Node = make_core({"terrain": "wasteland", "allies": [Actor.new("hero", "Герой", false, 3)], "enemies": [Enc.make_enemy("bandit", 0, rng)], "seed": 12})
 	var h2 = core2.hero()
 	var e2 = core2.all[1]
@@ -331,7 +331,7 @@ func _battles() -> void:
 	core2.disengage(h2)
 	core2.move_to(h2, Vector2i(8, 8))
 	ok(e2.has_reaction, "после Disengage атаки по возможности нет")
-	# Help по врагу даёт преимущество
+	# Help по ворогу дає перевагу
 	h2.cell = Vector2i(10, 8)
 	h2.start_turn_reset()
 	core2.help(h2, e2)
@@ -352,7 +352,7 @@ func _battles() -> void:
 	core2.free()
 	core.free()
 
-	# Полные бои под ИИ: герой тоже под ИИ
+	# Повні бої під ШІ: герой теж під ШІ
 	var stats: Dictionary = {}
 	for grp in ["bandits", "wolves", "boar", "hounds"]:
 		var w: int = 0

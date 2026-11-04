@@ -8,8 +8,8 @@ id = "fists"
 title = "Кулаки"
 icon = "fist"
 damage = [{
-"bonus": 1,
-"dice": "",
+"bonus": 0,
+"dice": "1d2",
 "type": "bludgeoning"
 }]
 proficiency = "natural"

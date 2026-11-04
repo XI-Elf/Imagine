@@ -1,9 +1,9 @@
 extends RefCounted
-## Кукла героя для инвентаря: фигура в полный рост спереди, рисуется кодом слоями
-## (контур тушью, плоский цвет, одна жёсткая тень — как в комиксе). Без одежды — база:
-## майка и короткие бриджи, босые ноги (Huzzah 2026-10-23). Надетые вещи (bag.equipped,
-## slot -> id; вид — items.json wear.look/color) рисуются поверх в своём порядке.
-## Координаты фигуры: 100 × 200, ноги внизу по центру; draw() вписывает её в rect.
+## Лялька героя для інвентарю: фігура на повний зріст спереду, малюється кодом шарами
+## (контур тушшю, пласкі кольори, одна жорстка тінь — як у коміксі). Без одягу — база:
+## майка й короткі бриджі, босі ноги (Huzzah 2026-10-23). Удягнені речі (bag.equipped,
+## slot -> id; вигляд — items.json wear.look/color) малюються поверх у своєму порядку.
+## Координати фігури: 100 × 200, ноги внизу по центру; draw() вписує її в rect.
 
 const INK := Color("1d1915")
 const SKIN := Color("e0b48c")
@@ -13,35 +13,53 @@ const TANK := Color("ece6d6")
 const SHORTS := Color("8a6a46")
 const SHADE := Color(0.12, 0.08, 0.15, 0.22)
 
-## Слоты в порядке показа: id, подпись
-const SLOTS: Array = [["head", "Голова"], ["body", "Тело"], ["back", "Плащ"], ["hands", "Руки"], ["legs", "Ноги"], ["feet", "Обувь"]]
+## Слоти в порядку показу: id, підпис
+static var SLOTS: Array = [["head", I18n.t("Голова")], ["body", I18n.t("Тело")], ["back", I18n.t("Плащ")], ["hands", I18n.t("Руки")], ["legs", I18n.t("Ноги")], ["feet", I18n.t("Обувь")]]
 
 var _ci: CanvasItem
 var _o: Vector2
 var _s: float
+var _kx: float = 1.0          # горизонтальный множитель текущей части тела (телосложение)
+const KX_FAT: float = 0.7     # на сколько тело шире при телосложении 10 (build = +1): ×1,7 — гипербола
+const KX_THIN: float = 0.4    # и уже при 1 (build ≈ −0,8): ×0,68
 
 
-## looks: slot -> {"look": String, "color": Color}
-func draw(ci: CanvasItem, rect: Rect2, female: bool, looks: Dictionary) -> void:
+## Телосложение −1…+1 из Телосложения и Силы (п.5/6/18 правок): Телосложение решает, Сила добавляет
+static func build_of(endurance: int, strength: int) -> float:
+	return clampf((float(endurance - 5) * 0.7 + float(strength - 5) * 0.3) / 5.0, -1.0, 1.0)
+
+
+## Множитель ширины тела для build: широкое тело гиперболизируется сильнее, чем худое
+static func width_of(build: float) -> float:
+	return 1.0 + (KX_FAT * build if build > 0.0 else KX_THIN * build)
+
+
+## looks: slot -> {"look": String, "color": Color}; build — телосложение −1…+1 (build_of): тело, руки и ноги
+## становятся шире или уже, голова почти не меняется
+func draw(ci: CanvasItem, rect: Rect2, female: bool, looks: Dictionary, build: float = 0.0) -> void:
 	_ci = ci
 	_s = minf(rect.size.y / 200.0, rect.size.x / 100.0)
 	_o = Vector2(rect.get_center().x - 50.0 * _s, rect.end.y - 200.0 * _s)
 	var cloak: Dictionary = looks.get("back", {})
+	_kx = width_of(build)
 	if not cloak.is_empty():
 		_cloak_back(cloak["color"])
 	_legs(looks.get("legs", {}), looks.get("feet", {}))
 	_torso(looks.get("body", {}))
 	_arms(looks.get("body", {}), looks.get("hands", {}))
+	_kx = 1.0 + 0.12 * build
 	_head(female, looks.get("head", {}))
+	_kx = width_of(build)
 	if not cloak.is_empty():
 		_cloak_front(cloak["color"])
+	_kx = 1.0
 
 
 # ---------------------------------------------------------------------
 func _p(a: Array) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	for q in a:
-		out.append(_o + Vector2(q[0], q[1]) * _s)
+		out.append(_o + Vector2(50.0 + (float(q[0]) - 50.0) * _kx, q[1]) * _s)
 	return out
 
 
@@ -52,7 +70,7 @@ func _mirror(a: Array) -> Array:
 	return out
 
 
-## Плоская заливка + контур; shade — тень справа (полоса от x)
+## Пласка заливка + контур; shade — тінь праворуч (смуга від x)
 func _shape(a: Array, col: Color, shade_from: float = -1.0) -> void:
 	var pts: PackedVector2Array = _p(a)
 	_ci.draw_colored_polygon(pts, col)
@@ -69,7 +87,7 @@ func _both(a: Array, col: Color, shade: bool = false) -> void:
 
 
 func _line(a: Array, b: Array, w: float = 0.8, col: Color = INK) -> void:
-	_ci.draw_line(_o + Vector2(a[0], a[1]) * _s, _o + Vector2(b[0], b[1]) * _s, col, maxf(1.0, w * _s))
+	_ci.draw_line(_o + Vector2(50.0 + (float(a[0]) - 50.0) * _kx, a[1]) * _s, _o + Vector2(50.0 + (float(b[0]) - 50.0) * _kx, b[1]) * _s, col, maxf(1.0, w * _s))
 
 
 func _ellipse(c: Array, rx: float, ry: float, col: Color, outline: bool = true) -> void:
@@ -84,7 +102,7 @@ func _ellipse(c: Array, rx: float, ry: float, col: Color, outline: bool = true) 
 
 
 # ---------------------------------------------------------------------
-# НОГИ: кожа, бриджи до колен или штаны, ступни или сапоги
+# НОГИ: шкіра, бриджі до колін або штани, ступні або чоботи
 const LEG := [[37, 98], [49.5, 98], [48, 130], [47, 176], [39, 176], [36.5, 130]]
 const FOOT := [[38, 174], [48, 174], [49, 184], [47.5, 187], [33, 187], [33.5, 182]]
 const SHORTS_L := [[36, 92], [50, 92], [50, 106], [49.5, 133], [36, 133], [35.5, 104]]
@@ -110,7 +128,7 @@ func _legs(legs: Dictionary, feet: Dictionary) -> void:
 
 
 # ---------------------------------------------------------------------
-# ТУЛОВИЩЕ: майка или рубаха/куртка
+# ТУЛУБ: майка або сорочка/куртка
 const TORSO := [[35, 42], [65, 42], [64, 70], [62, 94], [38, 94], [36, 70]]
 
 
@@ -118,7 +136,7 @@ func _torso(body: Dictionary) -> void:
 	_shape(TORSO, SKIN, 52.0)
 	match String(body.get("look", "")):
 		"":
-			# майка на узких лямках
+			# майка на вузьких бретельках
 			_shape([[39, 44], [43, 44], [44, 53], [56, 53], [57, 44], [61, 44], [63, 70], [62, 96], [38, 96], [37, 70]], TANK, 52.0)
 			_line([40, 80], [44, 82], 0.5, Color(INK, 0.4))
 		"shirt":
@@ -136,7 +154,7 @@ func _torso(body: Dictionary) -> void:
 
 
 # ---------------------------------------------------------------------
-# РУКИ: голые, рукава рубахи/куртки, рукавицы
+# РУКИ: голі, рукави сорочки/куртки, рукавиці
 const ARM := [[35, 43], [29, 47], [26, 74], [25, 100], [31, 101], [33, 76], [37, 56]]
 const SLEEVE := [[35, 41], [28, 46], [25, 74], [24, 99], [32, 100], [34, 76], [38, 56]]
 const HAND := [[24, 100], [32, 100], [32.5, 108], [29, 112], [24.5, 110], [23.5, 104]]
@@ -158,13 +176,13 @@ func _arms(body: Dictionary, hands: Dictionary) -> void:
 
 
 # ---------------------------------------------------------------------
-# ГОЛОВА: шея, лицо, волосы, головной убор
+# ГОЛОВА: шия, обличчя, волосся, головний убір
 func _head(female: bool, head: Dictionary) -> void:
 	_shape([[45.5, 30], [54.5, 30], [55, 43], [45, 43]], SKIN, 51.0)
 	var hair: Color = HAIR_F if female else HAIR_M
 	_ellipse([50, 22], 10.5, 12.5, SKIN)
 	_ci.draw_colored_polygon(_p([[51, 10], [60.5, 18], [60, 30], [55, 33]]), SHADE)
-	# лицо
+	# обличчя
 	_ellipse([46, 23], 1.1, 1.3, INK, false)
 	_ellipse([54, 23], 1.1, 1.3, INK, false)
 	_line([43.5, 19.5], [47.5, 19], 0.7)
@@ -189,7 +207,7 @@ func _head(female: bool, head: Dictionary) -> void:
 
 
 # ---------------------------------------------------------------------
-# ПЛАЩ: полотнище за спиной и накидка на плечах
+# ПЛАЩ: полотнище за спиною й накидка на плечах
 func _cloak_back(c: Color) -> void:
 	_shape([[33, 40], [67, 40], [76, 120], [80, 168], [66, 165], [50, 170], [34, 165], [20, 168], [24, 120]], Color(c).darkened(0.2))
 

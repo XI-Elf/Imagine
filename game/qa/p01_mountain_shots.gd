@@ -1,6 +1,6 @@
 extends SceneTree
-## Снимки объёма гор (patch 01 к 2D 07): светотень по карте высот на разных масштабах и герой на склоне.
-## godot --path game --rendering-driver opengl3 -s res://qa/p01_mountain_shots.gd -- x y  (папка — AMBER_QA_OUT)
+## Знімки об'єму гір (patch 01 до 2D 07): світлотінь за картою висот на різних масштабах і герой на схилі.
+## godot --path game --rendering-driver opengl3 -s res://qa/p01_mountain_shots.gd -- x y  (тека — AMBER_QA_OUT)
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://mountain_shots/"
 
 

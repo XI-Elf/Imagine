@@ -1,6 +1,6 @@
 extends RefCounted
-## Имена НПС: балтийские, эссекские, норвежские, ирландские (решение автора; список — data/characters/names.json).
-## pick() — случайное имя с учётом пола и культуры; used — имена, которые уже заняты (не повторяются, пока есть свободные).
+## Імена НПС: балтійські, ессекські, норвезькі, ірландські (рішення автора; список — data/characters/names.json).
+## pick() — випадкове ім'я з урахуванням статі й культури; used — імена, що вже зайняті (не повторюються, поки є вільні).
 
 const FILE := "res://data/characters/names.json"
 const CULTURES: Array = ["baltic", "essex", "norse", "irish"]
@@ -12,14 +12,14 @@ static var _read: bool = false
 static func data() -> Dictionary:
 	if not _read:
 		_read = true
-		var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(FILE)) if FileAccess.file_exists(FILE) else null
+		var v: Variant = I18n.tree(JSON.parse_string(FileAccess.get_file_as_string(FILE))) if FileAccess.file_exists(FILE) else null
 		_data = v.get("cultures", {}) if v is Dictionary else {}
 		if _data.is_empty():
 			push_error("npc_names: не прочитан " + FILE)
 	return _data
 
 
-## Все имена: gender "male" / "female" / "" (оба), culture — ключ из CULTURES или "" (все)
+## Усі імена: gender "male" / "female" / "" (обидві), culture — ключ із CULTURES або "" (усі)
 static func all(gender: String = "", culture: String = "") -> Array:
 	var out: Array = []
 	for c in CULTURES:
@@ -37,11 +37,11 @@ static func pick(rng: RandomNumberGenerator, gender: String = "", culture: Strin
 	if free.is_empty():
 		free = pool
 	if free.is_empty():
-		return "Безымянный"
+		return I18n.t("Безымянный")
 	return free[rng.randi() % free.size()]
 
 
-## Культура имени: ключ из CULTURES или ""
+## Культура імені: ключ із CULTURES або ""
 static func culture_of(name: String) -> String:
 	var first: String = name.get_slice(" ", name.get_slice_count(" ") - 1)
 	for c in CULTURES:

@@ -1,6 +1,6 @@
 extends SceneTree
-## Чистка кода 2D 07: проверки исправлений (часы после боя, сохранения, загрузка боя) и связей данных между модулями
-## (предметы, существа, эффекты, поручения роста, проверка целостности в заставке).
+## Чистка коду 2D 07: перевірки виправлень (годинник після бою, збереження, завантаження бою) і зв'язків даних між модулями
+## (предмети, істоти, ефекти, доручення росту, перевірка цілісності в заставці).
 ## godot --headless --path game -s res://tests/code_audit_checks.gd
 
 const WorldSave := preload("res://world_save.gd")
@@ -46,7 +46,7 @@ func _initialize() -> void:
 	quit(1 if fails > 0 else 0)
 
 
-# Бой прибавляет минуты через GameClock.skip: смена сезона и года не теряется (раньше _sync_last глотал сигналы)
+# Бій додає хвилини через GameClock.skip: зміна сезону й року не губиться (раніше _sync_last ковтав сигнали)
 func _clock() -> void:
 	var c := GameClock.new()
 	c.reset()
@@ -54,7 +54,7 @@ func _clock() -> void:
 	var years: Array = []
 	c.season_changed.connect(func(s: int) -> void: seasons.append(s))
 	c.year_changed.connect(func(y: int) -> void: years.append(y))
-	# 30 ноября 23:00 внутреннего года → после 2 часов уже зима
+	# 30 листопада 23:00 внутрішнього року → після 2 годин уже зима
 	c.total_seconds = 333.0 * GameClock.SECONDS_PER_DAY + 23.0 * 3600.0
 	c._sync_last()
 	c.skip(2.0 * 3600.0)
@@ -80,7 +80,7 @@ func _save() -> void:
 	g.clock.free()
 	g.free()
 	ok(WorldSave.read("__нет_такой_ячейки__").is_empty(), "чтение несуществующей ячейки — пусто, без падения")
-	# Файл другой версии не читается
+	# Файл іншої версії не читається
 	DirAccess.make_dir_recursive_absolute(WorldSave.DIR)
 	var slot: String = "__audit_old"
 	var f := FileAccess.open(WorldSave.path_of(slot), FileAccess.WRITE)
@@ -93,7 +93,7 @@ func _save() -> void:
 	ok(not FileAccess.file_exists(WorldSave.path_of(slot)), "удаление ячейки")
 
 
-# Сохранённый бой с эффектом, которого больше нет в data/battle/effects: не падает и не портит соседние
+# Збережений бій з ефектом, якого більше немає в data/battle/effects: не падає й не псує сусідні
 func _combatant() -> void:
 	var c := Combatant.new()
 	c.actor = Actor.new("t", "Проверочный", true, 1)
@@ -106,7 +106,7 @@ func _combatant() -> void:
 	ok(c.hp >= 1 and c.hp <= 10, "HP по здоровью в пределах")
 
 
-# Связи ресурсов боя: существа → оружие/броня/способности, способности → эффекты, конфиг → оружие/состояния
+# Зв'язки ресурсів бою: істоти → зброя/броня/здібності, здібності → ефекти, конфіг → зброя/стани
 func _battle_data() -> void:
 	var cfg: BattleConfig = Data.config()
 	var weapons: PackedStringArray = Data.list("weapons")
@@ -147,7 +147,7 @@ func _cond(id: String) -> Dictionary:
 	return preload("res://characters/actor_rules.gd").condition(id)
 
 
-# Город: предметы в лавках, поручениях и этапах роста есть в items.json; дома и жители этапов — в описании города
+# Місто: предмети в крамницях, дорученнях і етапах росту є в items.json; будинки й мешканці етапів — в описі міста
 func _city_data() -> void:
 	var items: Dictionary = Trade.items()
 	ok(not items.is_empty(), "items.json прочитан")
@@ -188,7 +188,7 @@ func _city_data() -> void:
 	ok(qn >= int(stages[-1]["points"]), "поручений (%d) хватает на последний этап (%d очков)" % [qn, int(stages[-1]["points"])])
 
 
-# Заставка проверяет файлы, которые есть, и классы, которые знает проект
+# Заставка перевіряє файли, що є, і класи, які знає проєкт
 func _intro_lists() -> void:
 	for s in Intro.SCRIPTS:
 		ok(ResourceLoader.exists(s[0]), "заставка: скрипт %s есть" % s[0])
@@ -203,7 +203,7 @@ func _intro_lists() -> void:
 		ok(known.has(n), "класс %s в кэше классов" % n)
 
 
-# Ключ местности боя от Worlds совпадает с encounters.terrain_key (одна таблица на два модуля)
+# Ключ місцевості бою від Worlds збігається з encounters.terrain_key (одна таблиця на два модулі)
 func _terrain() -> void:
 	var w: Node = root.get_node_or_null("Worlds")
 	ok(w != null, "автозагрузка Worlds есть")

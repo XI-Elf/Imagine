@@ -1,7 +1,7 @@
 extends SceneTree
-## Проверка переходов общая карта ↔ город ↔ бой (worlds/worlds.gd) на заглушках города и боя.
-## Нужен экран: под xvfb, --rendering-driver opengl3.
-## godot --path game --rendering-driver opengl3 -s res://tests/worlds_checks.gd -- [папка_для_снимков]
+## Перевірка переходів загальна карта ↔ місто ↔ бій (worlds/worlds.gd) на заглушках міста й бою.
+## Потрібен екран: під xvfb, --rendering-driver opengl3.
+## godot --path game --rendering-driver opengl3 -s res://tests/worlds_checks.gd -- [тека_для_знімків]
 
 const WorldSave := preload("res://world_save.gd")
 
@@ -52,7 +52,7 @@ func load_game(slot: String = "") -> Node2D:
 
 func _run() -> void:
 	W = root.get_node_or_null("Worlds")
-	# Заглушки города и боя — только в тестах (вопрос Q07)
+	# Заглушки міста й бою — лише в тестах (питання Q07)
 	W.test_doubles = {"city": load("res://tests/doubles/city_stub.gd"), "battle": load("res://tests/doubles/battle_stub.gd")}
 	ok(W != null, "автозагрузка Worlds есть")
 	var game: Node2D = await load_game()
@@ -64,8 +64,8 @@ func _run() -> void:
 	var hb: Dictionary = cast.hero
 	var hero: Actor = hb["actor"]
 	var start: Vector2 = hb["pos"]
-	# Один НПС рядом — союзник в бою
-	# НПС снаружи города сами не появляются (OVERWORLD_NPCS = false): ставим одного вручную
+	# Один НПС поруч — союзник у бою
+	# НПС поза містом самі не з'являються (OVERWORLD_NPCS = false): ставимо одного вручну
 	var npc: Dictionary = cast.spawn_npc(Actor.new("npc_t", "Проверочный", true, 5), start + Vector2(20, 0))
 	npc["pos"] = start + Vector2(20, 0)
 	npc["target"] = npc["pos"]
@@ -73,7 +73,7 @@ func _run() -> void:
 	game.zoom = 0.4
 	await frames(3)
 
-	# ---- Вход в город
+	# ---- Вхід у місто
 	var gate: Vector2 = start + Vector2(120.0, 40.0)
 	await W.enter_city("t1", {"return_pos": gate, "settlement": {"id": "t1", "name": "Проверочный"}, "stub": true})
 	ok(W.current_kind() == "city" and W.current_id() == "t1", "вошли в город")
@@ -95,7 +95,7 @@ func _run() -> void:
 	ok(city.pos.x > cpos0.x + 50.0, "в городе герой идёт (%.0f px)" % (city.pos.x - cpos0.x))
 	await shot("w01_city_stub.png")
 
-	# Esc в городе открывает меню игры
+	# Esc у місті відкриває меню гри
 	var esc := InputEventAction.new()
 	esc.action = "ui_cancel"
 	esc.pressed = true
@@ -106,7 +106,7 @@ func _run() -> void:
 	game._toggle_menu()
 	await frames(2)
 
-	# ---- Бой в городе
+	# ---- Бій у місті
 	await W.start_battle({"return_pos": city.pos, "stub": true,
 		"enemies": [Actor.new("bandit_1", "Разбойник", true, 7)]})
 	ok(W.current_kind() == "battle", "бой начался")
@@ -118,7 +118,7 @@ func _run() -> void:
 	ok(battle.req["inventory"] == W.inventory, "бой получил инвентарь")
 	await create_timer(1.0).timeout
 	await shot("w03_battle_in_city.png")
-	# Сохранение посреди боя в городе
+	# Збереження посеред бою в місті
 	ok(WorldSave.write(game, true), "сохранение в бою записано")
 	var slot: String = WorldSave.latest_slot()
 	var saved: Dictionary = WorldSave.read(slot)
@@ -134,8 +134,8 @@ func _run() -> void:
 	ok(game.clock.total_seconds - clk1 >= 600.0, "бой занял 10 игровых минут: +%.0f с" % (game.clock.total_seconds - clk1))
 	ok(city.visible and city.process_mode == Node.PROCESS_MODE_INHERIT, "город снова виден")
 
-	# ---- Выход из города
-	city.pos = Vector2(450, 560)   # к воротам
+	# ---- Вихід із міста
+	city.pos = Vector2(450, 560)   # до брами
 	while W.busy or W.current_kind() == "city":
 		await process_frame
 	ok(W.current_kind() == "overworld", "вышли на общую карту через ворота")
@@ -146,7 +146,7 @@ func _run() -> void:
 	await frames(3)
 	await shot("w04_back_on_map.png")
 
-	# ---- Бой на общей карте: союзник-НПС, возврат на место, гибель героя
+	# ---- Бій на загальній карті: союзник-НПС, повернення на місце, загибель героя
 	npc["pos"] = hb["pos"] + Vector2(15, 0)
 	await W.start_battle({"stub": true, "enemies": [Actor.new("wolf", "Волк", true, 3)]})
 	battle = W.current_node()
@@ -159,12 +159,12 @@ func _run() -> void:
 	ok(W.current_kind() == "overworld" and not hero.alive, "гибель героя в бою дошла до карты")
 	ok(hb["pos"] == gate, "после боя герой там же, где бой начался")
 
-	# ---- Город с повторным визитом помнит состояние
+	# ---- Місто з повторним візитом пам'ятає стан
 	await W.enter_city("t1", {"return_pos": gate, "stub": true})
 	ok(W.current_node().visits == 2, "второй визит: город помнит первый")
 	await W.leave()
 
-	# ---- Загрузка сохранения, сделанного в бою в городе
+	# ---- Завантаження збереження, зробленого в бою в місті
 	game.queue_free()
 	await frames(3)
 	ok(W.game == null and W.stack.is_empty(), "карта выгружена — миры сброшены")
@@ -182,7 +182,7 @@ func _run() -> void:
 	ok(W.current_kind() == "overworld" and game.cast.hero["pos"] == gate, "из загруженного города — к воротам")
 	ok(not game.clock.paused, "часы идут")
 
-	# ---- Выход в меню из города
+	# ---- Вихід у меню з міста
 	await W.enter_city("t2", {"return_pos": gate, "stub": true})
 	var c2: Node = W.current_node()
 	game._on_exit_pressed()

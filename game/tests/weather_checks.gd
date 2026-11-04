@@ -1,5 +1,5 @@
 extends SceneTree
-## Простая погода по сезону и биому (weather/simple_weather.gd, world_physics.gd, Q25).
+## Проста погода за сезоном і біомом (weather/simple_weather.gd, world_physics.gd, Q25).
 ## godot --headless --path game -s res://tests/weather_checks.gd
 
 const SimpleWeather := preload("res://weather/simple_weather.gd")
@@ -11,7 +11,7 @@ var fails: int = 0
 var checks: int = 0
 
 
-# Карта без картинок: те же окно и размеры, что у game.gd; запад — лес, восток — пустошь, зимой горы
+# Карта без картинок: те саме вікно й розміри, що в game.gd; захід — ліс, схід — пустка, узимку гори
 class FakeGame:
 	extends Node
 	const ATM_ORIGIN := GameScript.ATM_ORIGIN
@@ -44,7 +44,7 @@ func _initialize() -> void:
 	quit(1 if fails > 0 else 0)
 
 
-# Таблицы читаются, у каждого биома и сезона доли в сумме 1, тип по броску детерминирован
+# Таблиці читаються, у кожного біома й сезону частки в сумі 1, тип за кидком детермінований
 func _tables() -> void:
 	var w := SimpleWeather.new()
 	ok(not w.rules.is_empty(), "data/weather/weather.json читается")
@@ -61,7 +61,7 @@ func _tables() -> void:
 		and SimpleWeather.season_of(200.0) == 2 and SimpleWeather.season_of(300.0) == 3, "сезоны как у GameClock")
 
 
-# Частота типов на многих пятнах и периодах совпадает с весами таблицы (keep_chance не сдвигает доли)
+# Частота типів на багатьох плямах і періодах збігається з вагами таблиці (keep_chance не зсуває частки)
 func _shares() -> void:
 	var w := SimpleWeather.new()
 	for cs in [[4, 2], [5, 3], [8, 1]]:
@@ -76,12 +76,12 @@ func _shares() -> void:
 			var got: float = float(counts.get(ty, 0)) / float(n)
 			var want: float = w.share(ty, cs[0], cs[1])
 			ok(absf(got - want) < 0.04, "биом %d сезон %d: %s %.2f ≈ %.2f" % [cs[0], cs[1], ty, got, want])
-	# Пустошь летом суше болота осенью
+	# Пустка влітку сухіша за болото восени
 	ok(w.share("clear", 4, 2) > w.share("clear", 5, 3), "пустошь летом ясная чаще, чем болото осенью")
 	ok(w.share("fog", 9, 3) > w.share("fog", 4, 3), "в проклятом болоте туман чаще, чем в пустоши")
 
 
-# Зимой в горах ночью дождь становится снегом; летом в пустоши снега нет
+# Узимку в горах уночі дощ стає снігом; улітку в пустці снігу немає
 func _snow() -> void:
 	var w := SimpleWeather.new()
 	var winter: Dictionary = {}
@@ -100,7 +100,7 @@ func _snow() -> void:
 	ok(summer.size() >= 4, "летом в пустоши несколько типов погоды (%d)" % summer.size())
 
 
-# Смена периода плавная: за минуту погоды облачность и дождь меняются чуть-чуть
+# Зміна періоду плавна: за хвилину погоди хмарність і дощ змінюються трохи
 func _smooth() -> void:
 	var w := SimpleWeather.new()
 	var worst_c: float = 0.0
@@ -113,7 +113,7 @@ func _smooth() -> void:
 			t += 1.0 / 60.0
 			var cur: Dictionary = w.sample(p, 3, t, 120.0, 12.0)
 			worst_c = maxf(worst_c, absf(float(cur["cloud"]) - float(prev["cloud"])))
-			# Граница пятна, пересекающая точку при дрейфе, даёт скачок; его не считаем
+			# Межа плями, що перетинає точку під час дрейфу, дає стрибок; його не рахуємо
 			if w.spot_of(p.x / 1000.0 - 1.2 * t, p.y / 1000.0) == w.spot_of(p.x / 1000.0 - 1.2 * (t - 1.0 / 60.0), p.y / 1000.0):
 				worst_r = maxf(worst_r, absf(float(cur["rain_mm_h"]) - float(prev["rain_mm_h"])))
 			prev = cur
@@ -121,7 +121,7 @@ func _smooth() -> void:
 	ok(worst_c <= 0.86, "облачность меняется не больше, чем ясно↔гроза (%.2f)" % worst_c)
 
 
-# Погода движется: за сутки погоды в точке бывает больше одного типа, а соседние точки чаще совпадают
+# Погода рухається: за добу погоди в точці буває більше одного типу, а сусідні точки частіше збігаються
 func _moves() -> void:
 	var w := SimpleWeather.new()
 	var types: Dictionary = {}
@@ -141,7 +141,7 @@ func _moves() -> void:
 	ok(same_near > same_far, "рядом погода совпадает чаще, чем вдали (%d против %d)" % [same_near, same_far])
 
 
-# Узел погоды: текстуры для шейдера, погода в точке, сохранение, старые сохранения, скорость
+# Вузол погоди: текстури для шейдера, погода в точці, збереження, старі збереження, швидкість
 func _physics() -> void:
 	var g := FakeGame.new()
 	root.add_child(g)
@@ -151,7 +151,7 @@ func _physics() -> void:
 	g.physics = ph
 	g.add_child(ph)
 	ph.game = g
-	ph.weather_speed = 60.0   # из сохранения старой модели атмосферы
+	ph.weather_speed = 60.0   # зі збереження старої моделі атмосфери
 	ph.preload_state = PackedByteArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 	ph.setup(g.clock, GameScript.SRC_SIZE.x, GameScript.SRC_SIZE.y)
 	ok(ph.weather_speed == 1.0, "скорость погоды из старого сохранения сброшена на x1")
@@ -161,7 +161,7 @@ func _physics() -> void:
 	var n_cells: int = ph._cells_idx.size()
 	ok(n_cells > 400 and n_cells < 1200, "считается только окно карты (%d клеток)" % n_cells)
 	ok(ph._cells_biome.has(3) and ph._cells_biome.has(4), "у клеток биомы карты")
-	# Время погоды идёт за игровым и со скоростью
+	# Час погоди йде за ігровим і зі швидкістю
 	g.clock.total_seconds += 7200.0
 	ph._update_weather(true)
 	ok(absf(ph.weather_hours - 2.0) < 0.001, "2 часа игры = 2 часа погоды на x1")
@@ -174,7 +174,7 @@ func _physics() -> void:
 	ph.change_weather_speed(-9)
 	ok(ph.weather_speed == 0.25, "скорость не ниже x0.25")
 	ph.weather_speed = 1.0
-	# Скорость пересчёта окна (на экране это 2 раза в секунду)
+	# Швидкість перерахунку вікна (на екрані це 2 рази на секунду)
 	var t0: int = Time.get_ticks_usec()
 	for i in 5:
 		g.clock.total_seconds += 60.0
@@ -183,7 +183,7 @@ func _physics() -> void:
 	var per_frame: float = ms * float(ph.CELLS_PER_FRAME) / float(n_cells)
 	print("  пересчёт окна погоды: %.1f мс за проход, ~%.1f мс за кадр" % [ms, per_frame])
 	ok(per_frame < 5.0, "за кадр погода занимает мало (%.1f мс)" % per_frame)
-	# Обычный ход: проход разбит на кадры, текстура обновляется в конце
+	# Звичайний хід: прохід розбито на кадри, текстура оновлюється наприкінці
 	g.clock.total_seconds += 60.0
 	ph._upd_since = 1.0
 	var frames: int = 0
@@ -193,7 +193,7 @@ func _physics() -> void:
 		ph._update_weather(false)
 		frames += 1
 	ok(frames == ceili(float(n_cells) / float(ph.CELLS_PER_FRAME)), "проход окна за %d кадров" % frames)
-	# Погода в точке и через широту/долготу — одна и та же
+	# Погода в точці й через широту/довготу — одна й та сама
 	var p := Vector2(30000.0, 20000.0)
 	var here: Dictionary = ph.weather_here(p)
 	ok(here.has("type") and here.has("temp_c"), "погода в точке: тип и температура")
@@ -203,7 +203,7 @@ func _physics() -> void:
 	ok(ph.map_point(lat, lon).distance_to(p) < 1.0, "широта/долгота ↔ точка карты")
 	ok(absf(ph.temperature_at(lat, lon) - float(here["temp_c"])) < 0.01, "temperature_at = температура погоды в точке")
 	ok(ph.weather_name_at(lat, lon) == str(here["name"]), "название погоды для подсказки")
-	# Текстура совпадает с погодой клетки
+	# Текстура збігається з погодою клітинки
 	var k: int = ph._cells_idx[n_cells / 2]
 	var w: Dictionary = ph.weather.sample(ph._cells_p[n_cells / 2], ph._cells_biome[n_cells / 2], ph.weather_hours, g.clock.day_of_year(), g.clock.hour_of_day())
 	ok(absf(ph._cloud[k] - float(w["cloud"])) < 0.01, "облачность клетки = погода в её центре")
@@ -214,7 +214,7 @@ func _physics() -> void:
 		hi = maxf(hi, ph._cloud[kk])
 	var px: float = ph._img_a.get_pixel(k % 144, k / 144).r
 	ok(px >= lo - 0.01 and px <= hi + 0.01, "в текстуре сглаженная облачность в пределах окна")
-	# Годовые осадки копятся и сохраняются
+	# Річні опади накопичуються й зберігаються
 	for i in 48:
 		g.clock.total_seconds += 3600.0
 		ph._update_weather(true)
@@ -233,7 +233,7 @@ func _physics() -> void:
 	ok(absf(ry2 - ry) < 0.01, "годовые осадки из сохранения")
 	ph._on_year_changed(1)
 	ok(ph.rain_year_at(lat, lon) == 0.0, "новый год обнуляет осадки")
-	# Правила персонажа получают погоду: тип для штрафа скорости и дождь
+	# Правила персонажа отримують погоду: тип для штрафу швидкості й дощ
 	var env: Dictionary = WorldEnv.sample(g, p)
 	ok(env.get("weather", "") == here_type(ph, p), "world_env: погода в точке")
 	ph.travel_weather = false

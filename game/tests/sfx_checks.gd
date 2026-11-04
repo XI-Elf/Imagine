@@ -1,11 +1,11 @@
 extends SceneTree
-## Звуки CC0 (вопрос Q15): у каждого файла есть источник и лицензия CC0, все файлы грузятся, автозагрузка Sfx
-## играет нужные группы, бой даёт звуки взмаха, попадания и смерти, F9 выключает звук.
-## Затем короткий проход по игре: карта → город → бой с включённым Sfx, без ошибок.
+## Звуки CC0 (питання Q15): у кожного файлу є джерело й ліцензія CC0, усі файли вантажаться, автозавантаження Sfx
+## грає потрібні групи, бій дає звуки змаху, влучання й смерті, F9 вимикає звук.
+## Потім короткий прохід грою: карта → місто → бій з увімкненим Sfx, без помилок.
 ## godot --path game --rendering-driver opengl3 -s res://tests/sfx_checks.gd
 
 const MANIFEST := "res://data/audio/sounds.json"
-# Группы, которые зовёт audio/sfx.gd
+# Групи, які кличе audio/sfx.gd
 const USED: Array = ["step_gravel", "step_sand", "step_soft", "step_bones", "swing", "whoosh", "hit_blade", "hit_fist",
 	"hit_wood", "hit_metal", "die_man", "dog_bark", "dog_die", "draw_weapon", "ignite", "explode", "map_open",
 	"map_close", "door_open", "door_close", "gate", "pickup", "dig", "anvil", "amb_wind", "amb_desert",
@@ -84,7 +84,7 @@ func _manifest() -> void:
 	ok(bad.is_empty(), "у каждого звука CC0, автор, ссылка, пакет и файл: " + str(bad))
 	for p in packs:
 		ok(String(packs[p].get("src", "")) != "" and String(packs[p].get("doc", "")) != "", "пакет %s описан" % p)
-	# В папке нет файлов без записи
+	# У теці немає файлів без запису
 	var extra: Array = []
 	for fn in DirAccess.get_files_at("res://audio/sfx"):
 		if fn.ends_with(".ogg") and not snd.has(fn.get_basename()):
@@ -117,7 +117,7 @@ func _autoload(S: Node) -> void:
 	ok(AudioServer.get_bus_index("Sfx") >= 0 and AudioServer.get_bus_index("Ambience") >= 0, "шины Sfx и Ambience созданы")
 	for bed in S.BEDS:
 		ok(S._beds[bed]["player"].stream != null and S._beds[bed]["player"].stream.loop, "фон %s — петля" % bed)
-	# Бой: взмах, попадание кулаком, смерть цели
+	# Бій: змах, влучання кулаком, смерть цілі
 	var core := FakeCore.new()
 	S.connect_core(core)
 	var t := FakeFighter.new()
@@ -167,7 +167,7 @@ func _autoload(S: Node) -> void:
 	b.free()
 
 
-## Проход по игре: новая игра на карте, шаги героя, фон биома, город (ворота, шаги), бой (сигналы ядра)
+## Прохід грою: нова гра на карті, кроки героя, фон біома, місто (брама, кроки), бій (сигнали ядра)
 func _game(S: Node) -> void:
 	var W: Node = root.get_node("Worlds")
 	Engine.set_meta("aw_intro_done", true)
@@ -198,14 +198,14 @@ func _game(S: Node) -> void:
 		if S._beds[bed]["player"].playing:
 			loud.append(bed)
 	ok(loud.has("wind"), "на карте звучит ветер " + str(loud))
-	# Глобальная карта
+	# Глобальна карта
 	S.played.clear()
 	game.global_map = true
 	await frames(2)
 	game.global_map = false
 	await frames(2)
 	ok(S.played.has("map_open") and S.played.has("map_close"), "M: шорох карты")
-	# Город
+	# Місто
 	S.played.clear()
 	W._on_enter_requested(game.settlements.get_settlement("s001"))
 	await frames(2)
@@ -226,7 +226,7 @@ func _game(S: Node) -> void:
 		while W.busy:
 			await process_frame
 		await frames(3)
-	# Бой
+	# Бій
 	S.played.clear()
 	W.start_battle({"group": "bandits"})
 	await frames(2)
@@ -242,12 +242,16 @@ func _game(S: Node) -> void:
 			c.controlled = false
 		bs.prep_confirm()
 		var g: int = 0
+		var swung: bool = false   # played зберігає 64 останні звуки: у довгому бою змахи витісняються ударами з черги
+		var is_swing := func(x): return String(x) == "swing" or String(x).begins_with("whoosh_")
 		while bs.core.outcome == "" and g < 600:
 			bs.core.run_ai_turn()
+			swung = swung or S.played.any(is_swing)
 			g += 1
+		swung = swung or S.played.any(is_swing)   # до відкладених ударів: їхній скид може витіснити змахи
 		S._run_queue(2.0)
 		await create_timer(0.5).timeout
-		ok(S.played.any(func(x): return String(x) == "swing" or String(x).begins_with("whoosh_")), "в бою звучат взмахи " + str(S.played.slice(0, 8)))
+		ok(swung or S.played.any(is_swing), "в бою звучат взмахи " + str(S.played.slice(0, 8)))
 		ok(S.played.any(func(x): return String(x).begins_with("step_gravel_")), "в бою шаги по клеткам")
 		await frames(2)
 		bs.leave()

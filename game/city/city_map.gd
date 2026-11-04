@@ -1,15 +1,15 @@
 extends RefCounted
-## Карта города: сетка клеток из описания data/cities/<id>.json (дороги, площади, дома с дверью,
-## частокол с воротами, деревья, лотки, колодец). Проходимость, скорость по клетке, поиск пути для НПС.
-## Координаты мира города — метры от левого верхнего угла; клетка = cell_m метров.
-## План "radial" (Huzzah 2026-10-23: города радиальные, как в средневековье): стена — кольцо шириной
-## 2 клетки на радиусе wall_r вокруг center (клетки), дальше — земля за стеной (OUTSIDE, не пройти);
-## площадь может быть кругом ("circle": [cx, cy, r]). Без "plan" — прежний частокол по краю карты.
+## Карта міста: сітка клітинок з опису data/cities/<id>.json (дороги, площі, будинки з дверима,
+## частокіл із брамою, дерева, ятки, криниця). Прохідність, швидкість на клітинці, пошук шляху для НПС.
+## Координати світу міста — метри від лівого верхнього кута; клітинка = cell_m метрів.
+## План "radial" (Huzzah 2026-10-23: міста радіальні, як у середньовіччі): стіна — кільце завширшки
+## 2 клітинки на радіусі wall_r довкола center (клітинки), далі — земля за стіною (OUTSIDE, не пройти);
+## площа може бути колом ("circle": [cx, cy, r]). Без "plan" — колишній частокіл по краю карти.
 
 enum T { GRASS, ROAD, SQUARE, PALISADE, WALL, FLOOR, DOOR, WELL, GATE, FIELD, TREE, STALL, RUBBLE, OUTSIDE }
 
 const SOLID: Array = [T.PALISADE, T.WALL, T.WELL, T.TREE, T.STALL, T.OUTSIDE]
-# Множитель шага по клетке [ВРЕМЕННО]
+# Множник кроку на клітинці [Q19: не баланс, залишено]
 const SPEED: Dictionary = {
 	T.GRASS: 0.9, T.ROAD: 1.0, T.SQUARE: 1.0, T.FLOOR: 1.0, T.DOOR: 1.0, T.GATE: 1.0,
 	T.FIELD: 0.7, T.RUBBLE: 0.6,
@@ -20,10 +20,10 @@ var w: int = 0
 var h: int = 0
 var cell_m: float = 2.0
 var tiles: PackedByteArray = PackedByteArray()
-var bld: PackedInt32Array = PackedInt32Array()    # индекс дома для клеток внутри (пол, стены, дверь), иначе -1
-var buildings: Array = []                           # описания домов из JSON + "floor": [Vector2i]
-var gate_of: Dictionary = {}                        # Vector2i -> id ворот
-var closed_gates: Dictionary = {}                   # id -> true, пока ворота заперты
+var bld: PackedInt32Array = PackedInt32Array()    # індекс будинку для клітинок усередині (підлога, стіни, двері), інакше -1
+var buildings: Array = []                           # описи будинків із JSON + "floor": [Vector2i]
+var gate_of: Dictionary = {}                        # Vector2i -> id брами
+var closed_gates: Dictionary = {}                   # id -> true, поки брама замкнена
 var astar := AStarGrid2D.new()
 
 
@@ -71,8 +71,9 @@ func build(d: Dictionary) -> void:
 	for i in d.get("buildings", []).size():
 		_building(d["buildings"][i], i)
 	for p in d.get("props", []):
-		var t: int = {"stall": T.STALL, "well": T.WELL, "tree": T.TREE}.get(p["kind"], T.GRASS)
-		# Деревья только на траве; лотки и колодцы — на траве и площади
+		# техно-артефакти (tech_*, Q31 B) — перешкода, як ятка
+		var t: int = {"stall": T.STALL, "well": T.WELL, "tree": T.TREE}.get(p["kind"], T.STALL if String(p["kind"]).begins_with("tech_") else T.GRASS)
+		# Дерева лише на траві; ятки й криниці — на траві й площі
 		var allowed: Array = [T.GRASS] if t == T.TREE else [T.GRASS, T.SQUARE]
 		for c in p["cells"]:
 			if at(c[0], c[1]) in allowed:
@@ -84,7 +85,7 @@ func radial() -> bool:
 	return String(data.get("plan", "")) == "radial"
 
 
-## Центр города в метрах (радиальный план — центр стены, иначе середина карты)
+## Центр міста в метрах (радіальний план — центр стіни, інакше середина карти)
 func center_m() -> Vector2:
 	if radial():
 		return Vector2(data["center"][0], data["center"][1]) * cell_m
@@ -125,7 +126,7 @@ func _road(a: Vector2i, b: Vector2i, width: int) -> void:
 				_put(p.x + dx, p.y + dy, T.ROAD)
 
 
-# Дом: стены по краю, пол внутри, дверь в стене. Развалины: часть стен обвалилась, внутри завал, без крыши
+# Будинок: стіни по краю, підлога всередині, двері в стіні. Руїни: частина стін обвалилася, усередині завал, без даху
 func _building(b: Dictionary, idx: int) -> void:
 	var r: Array = b["rect"]
 	var ruins: bool = b.get("kind", "") == "ruins"
@@ -134,7 +135,7 @@ func _building(b: Dictionary, idx: int) -> void:
 		for x in range(r[0], r[0] + r[2]):
 			var edge: bool = x == r[0] or y == r[1] or x == r[0] + r[2] - 1 or y == r[1] + r[3] - 1
 			if edge:
-				# Обвал: каждая третья клетка стены развалин проходима (детерминированно от координат)
+				# Обвал: кожна третя клітинка стіни руїн прохідна (детерміновано від координат)
 				_put(x, y, T.RUBBLE if ruins and (x * 7 + y * 13) % 3 == 0 else T.WALL)
 			else:
 				_put(x, y, T.RUBBLE if ruins else T.FLOOR)
@@ -163,13 +164,13 @@ func _build_astar() -> void:
 	for y in h:
 		for x in w:
 			var t: int = at(x, y)
-			# НПС через ворота не ходят: за ними другой мир
+			# НПС крізь браму не ходять: за нею інший світ
 			astar.set_point_solid(Vector2i(x, y), t in SOLID or t == T.GATE)
 			astar.set_point_weight_scale(Vector2i(x, y), 1.0 / SPEED.get(t, 1.0))
 
 
 # =====================================================================
-# МЕТРЫ ↔ КЛЕТКИ
+# МЕТРИ ↔ КЛІТИНКИ
 # =====================================================================
 func cell_of(p: Vector2) -> Vector2i:
 	return Vector2i(floori(p.x / cell_m), floori(p.y / cell_m))
@@ -188,7 +189,7 @@ func tile_at(p: Vector2) -> int:
 	return at(c.x, c.y)
 
 
-## Индекс дома, внутри которого точка (пол, дверь), иначе -1
+## Індекс будинку, усередині якого точка (підлога, двері), інакше -1
 func building_at(p: Vector2) -> int:
 	var c: Vector2i = cell_of(p)
 	if c.x < 0 or c.y < 0 or c.x >= w or c.y >= h:
@@ -210,7 +211,7 @@ func speed_at(p: Vector2) -> float:
 	return float(SPEED.get(tile_at(p), 1.0))
 
 
-## Свободна ли точка для тела радиуса rad (проверка четырёх углов)
+## Чи вільна точка для тіла радіуса rad (перевірка чотирьох кутів)
 func is_free(p: Vector2, rad: float = 0.35) -> bool:
 	for o in [Vector2(-rad, -rad), Vector2(rad, -rad), Vector2(-rad, rad), Vector2(rad, rad)]:
 		var c: Vector2i = cell_of(p + o)
@@ -219,12 +220,12 @@ func is_free(p: Vector2, rad: float = 0.35) -> bool:
 	return true
 
 
-## Ворота под точкой, "" — нет
+## Брама під точкою, "" — немає
 func gate_at(p: Vector2) -> String:
 	return String(gate_of.get(cell_of(p), ""))
 
 
-## Путь в метрах (центры клеток) от a до b; пусто — не дойти
+## Шлях у метрах (центри клітинок) від a до b; порожньо — не дійти
 func path(a: Vector2, b: Vector2) -> PackedVector2Array:
 	var ca: Vector2i = cell_of(a).clamp(Vector2i.ZERO, Vector2i(w - 1, h - 1))
 	var cb: Vector2i = cell_of(b).clamp(Vector2i.ZERO, Vector2i(w - 1, h - 1))

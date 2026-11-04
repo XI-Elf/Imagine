@@ -1,17 +1,19 @@
 extends RefCounted
-## Сохранения мира в user://saves/<ячейка>.dat, чтобы после закрытия игры продолжить с того же места.
-## Ячейки: "autosave" (выход в меню, закрытие окна, раз в 5 минут) и ручные "manual_<время>" (меню паузы).
-## Сохраняются: время и скорость часов, скорость погоды и состояние атмосферы, камера карты,
-## герой и НПС (characters/cast.gd; в старых сохранениях их нет — тогда мир без персонажей),
-## в каком мире герой — город или бой поверх общей карты (worlds/worlds.gd, ключ "worlds").
-## Ландшафт и климатические таблицы в игре не меняются и не сохраняются.
-## В файле сначала заголовок (для списка загрузки), потом данные.
+## Збереження світу в user://saves/<комірка>.dat, щоб після закриття гри продовжити з того самого місця.
+## Комірки: "autosave" (вихід у меню, закриття вікна, раз на 5 хвилин) і ручні "manual_<час>" (меню паузи).
+## Зберігаються: час і швидкість годинника, швидкість погоди й стан атмосфери, камера карти,
+## герой і НПС (characters/cast.gd; у старих збереженнях їх немає — тоді світ без персонажів),
+## у якому світі герой — місто чи бій поверх загальної карти (worlds/worlds.gd, ключ "worlds"),
+## протоптані дороги загальної карти (world/trails_layer.gd, ключ "trails"; дороги в містах — у стані міста),
+## досліджена частина світу — туман війни (world/fog_layer.gd, ключ "fog"; без нього — відкрито лише навколо героя).
+## Ландшафт і кліматичні таблиці в грі не змінюються й не зберігаються.
+## У файлі спершу заголовок (для списку завантаження), потім дані.
 
 const DIR: String = "user://saves/"
-const LEGACY_PATH: String = "user://world_save.dat"   # первая версия: одна ячейка без заголовка
-# 5: карта 2D 04 (постапокалиптический вид, области и регионы).
-# 6: 2D 07 patch 01 — маленький радиальный город (клетка 1 м), рост с запасными поручениями, куртка на герое.
-# Сохранения другой версии удаляются при первом обращении к списку (вопрос Q05, Huzzah 2026-10-24)
+const LEGACY_PATH: String = "user://world_save.dat"   # перша версія: одна комірка без заголовка
+# 5: карта 2D 04 (постапокаліптичний вигляд, області й регіони).
+# 6: 2D 07 patch 01 — маленьке радіальне місто (клітинка 1 м), ріст із запасними дорученнями, куртка на герої.
+# Збереження іншої версії видаляються під час першого звернення до списку (питання Q05, Huzzah 2026-10-24)
 const VERSION: int = 6
 const AUTOSAVE: String = "autosave"
 const MANUAL_KEEP: int = 10
@@ -21,7 +23,7 @@ static func path_of(slot: String) -> String:
 	return LEGACY_PATH if slot == "legacy" else DIR + slot + ".dat"
 
 
-# Список сохранений, новые первыми: {slot, title, saved_at, unix, char_name, game_date}
+# Список збережень, нові першими: {slot, title, saved_at, unix, char_name, game_date}
 static func list() -> Array:
 	var out: Array = []
 	var dir := DirAccess.open(DIR)
@@ -32,17 +34,17 @@ static func list() -> Array:
 			var slot: String = f.get_basename()
 			var h: Dictionary = _header(path_of(slot))
 			if h.is_empty() or int(h.get("version", 0)) != VERSION:
-				# От другой сборки — удалить: загрузить его всё равно нельзя (Q05)
+				# Від іншої збірки — видалити: завантажити його однаково не можна (Q05)
 				push_warning("world_save: удалено сохранение другой версии %s" % path_of(slot))
 				DirAccess.remove_absolute(path_of(slot))
 				continue
 			h["slot"] = slot
 			out.append(h)
-	# Старая ячейка LEGACY_PATH лежит вне DIR и без заголовка — тоже удаляется (версии 1–4 не читаются)
+	# Стара комірка LEGACY_PATH лежить поза DIR і без заголовка — теж видаляється (версії 1–4 не читаються)
 	if FileAccess.file_exists(LEGACY_PATH):
 		DirAccess.remove_absolute(LEGACY_PATH)
 	for h in out:
-		h["title"] = "Автосохранение" if h["slot"] == AUTOSAVE else "Сохранение"
+		h["title"] = I18n.t("Автосохранение") if h["slot"] == AUTOSAVE else I18n.t("Сохранение")
 	out.sort_custom(func(a, b): return int(a["unix"]) > int(b["unix"]))
 	return out
 
@@ -96,7 +98,7 @@ static func delete(slot: String) -> void:
 		DirAccess.remove_absolute(p)
 
 
-# Состояние атмосферы берётся, когда фоновый поток свободен (ждём до 2 с)
+# Стан атмосфери береться, коли фоновий потік вільний (чекаємо до 2 с)
 static func atmosphere_bytes(physics: Node) -> PackedByteArray:
 	var bytes: PackedByteArray = physics.export_state()
 	var tries: int = 0
@@ -117,6 +119,10 @@ static func build(game: Node) -> Dictionary:
 	d["zoom"] = game.zoom
 	if game.get("cast") != null:
 		d["cast"] = game.cast.to_dict()
+	if game.get("trails") != null:
+		d["trails"] = game.trails.to_dict()
+	if game.get("fog") != null:
+		d["fog"] = game.fog.to_dict()
 	var worlds: Node = _worlds(game)
 	if worlds != null:
 		d["worlds"] = worlds.to_dict()
@@ -127,19 +133,19 @@ static func _worlds(game: Node) -> Node:
 	return game.get_tree().root.get_node_or_null("Worlds") if game.is_inside_tree() else null
 
 
-# Записать мир в ячейку. manual: новая ручная ячейка (старые ручные сверх 10 удаляются)
+# Записати світ у комірку. manual: нова ручна комірка (старі ручні понад 10 видаляються)
 static func write(game: Node, manual: bool = false) -> bool:
 	DirAccess.make_dir_recursive_absolute(DIR)
 	var slot: String = AUTOSAVE
 	if manual:
-		# Миллисекунды: две ручные записи в одну секунду не затирают друг друга
+		# Мілісекунди: два ручні записи в одну секунду не затирають один одного
 		slot = "manual_%d" % int(Time.get_unix_time_from_system() * 1000.0)
 	var d: Dictionary = build(game)
 	var header: Dictionary = {
 		"header": true, "version": VERSION, "saved_at": d["saved_at"], "unix": int(Time.get_unix_time_from_system()),
 		"game_date": GameClock.date_text(game.clock.total_seconds),
 	}
-	# Имя героя для списка сохранений (main_menu.gd)
+	# Ім'я героя для списку збережень (main_menu.gd)
 	var cast: Node = game.get("cast")
 	if cast != null and not cast.hero.is_empty():
 		header["char_name"] = cast.hero["actor"].display_name
@@ -160,7 +166,7 @@ static func write(game: Node, manual: bool = false) -> bool:
 		push_error("world_save: ошибка записи %s (%s)" % [tmp, error_string(werr)])
 		DirAccess.remove_absolute(tmp)
 		return false
-	# Старая ячейка сначала уходит в .bak: если переименование не удастся, она возвращается на место
+	# Стара комірка спершу йде в .bak: якщо перейменування не вдасться, вона повертається на місце
 	var bak: String = path + ".bak"
 	if FileAccess.file_exists(bak):
 		DirAccess.remove_absolute(bak)
@@ -182,11 +188,11 @@ static func write(game: Node, manual: bool = false) -> bool:
 	return ok
 
 
-# Раньше всего (до запуска физики): время и погода
+# Найперше (до запуску фізики): час і погода
 static func apply_early(game: Node, d: Dictionary) -> void:
 	game.clock.total_seconds = float(d.get("clock_total", game.clock.total_seconds))
 	game.clock._sync_last()
-	# Индекс скорости из сохранения — в пределах нынешнего списка GameClock.SPEEDS
+	# Індекс швидкості зі збереження — у межах теперішнього списку GameClock.SPEEDS
 	game.clock.speed_index = clampi(int(d.get("clock_speed", game.clock.speed_index)), 0, GameClock.SPEEDS.size() - 1)
 	game.physics.weather_speed = float(d.get("weather_speed", game.physics.weather_speed))
 	var atmo: Variant = d.get("atmosphere", PackedByteArray())
@@ -194,7 +200,7 @@ static func apply_early(game: Node, d: Dictionary) -> void:
 		game.physics.preload_state = atmo
 
 
-# После загрузки карты: камера
+# Після завантаження карти: камера
 static func apply_late(game: Node, d: Dictionary) -> void:
 	var cam: Variant = d.get("cam_pos", game.cam_pos)
 	if cam is Vector2:
@@ -203,6 +209,10 @@ static func apply_late(game: Node, d: Dictionary) -> void:
 	game._clamp_camera()
 	if game.get("cast") != null and d.get("cast") is Dictionary:
 		game.cast.load_dict(d["cast"])
+	if game.get("trails") != null:
+		game.trails.load_dict(d.get("trails", {}))
+	if game.get("fog") != null:
+		game.fog.load_dict(d.get("fog", {}))
 	var worlds: Node = _worlds(game)
 	if worlds != null and d.get("worlds") is Dictionary:
 		worlds.load_dict(d["worlds"])

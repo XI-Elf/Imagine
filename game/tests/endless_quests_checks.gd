@@ -1,6 +1,6 @@
 extends SceneTree
-## Бесконечные поручения после «Чёрнославля» (city/endless_quests.gd, вопрос Q14): город вырос до конца —
-## каждый из шести НПС раз за разом даёт новое поручение, награда платится, очки роста не растут, сохранение помнит взятое.
+## Нескінченні доручення після «Эшвика» (city/endless_quests.gd, питання Q14): місто виросло до кінця —
+## кожен із шести НПС раз у раз дає нове доручення, нагорода платиться, очки росту не ростуть, збереження пам'ятає взяте.
 ## godot --path game --headless -s res://tests/endless_quests_checks.gd
 
 const Trade := preload("res://city/trade.gd")
@@ -48,7 +48,7 @@ func do_quest(city: Node, n: Dictionary, q: Dictionary) -> void:
 			Trade.add(city.bag, String(q["item"]), int(q["n"]))
 		"pay":
 			city.bag["money"] = int(city.bag["money"]) + int(q["money"])
-	city.turn_in(n, q)
+	city.turn_in(n, q, "complicit")
 
 
 func _run() -> void:
@@ -60,23 +60,23 @@ func _run() -> void:
 	city.clock.paused = true
 	await frames(3)
 
-	# До последнего этапа бесконечных поручений нет
+	# До останнього етапу нескінченних доручень немає
 	for id in QUEST_NPCS:
 		for q in Growth.available(city.full_def, city.growth, id):
-			ok(not Endless.is_endless(q), "до Чёрнославля у %s нет бесконечных: %s" % [id, q["id"]])
+			ok(not Endless.is_endless(q), "до Эшвика у %s нет бесконечных: %s" % [id, q["id"]])
 	ok(not Endless.open_for(city.full_def, 3, "posadnik") and Endless.open_for(city.full_def, 4, "posadnik"), "открываются только на последнем этапе")
 	ok(not Endless.open_for(city.full_def, 4, "priest"), "у жителей без цепочки их нет")
 
-	# Город растёт до конца только основными поручениями
+	# Місто росте до кінця лише основними дорученнями
 	for pass_i in 10:
 		for n in city.npcs.duplicate():
 			var cq: Dictionary = Growth.current(city.full_def, city.growth, String(n["def"]["id"]))
 			if not cq.is_empty() and not Endless.is_endless(cq):
 				do_quest(city, npc(city, String(n["def"]["id"])), cq)
-	ok(city.stage == 4, "город вырос до Чёрнославля")
+	ok(city.stage == 4, "город вырос до Эшвика")
 	ok(Growth.points(city.growth) == 18 and Growth.endless_done(city.growth) == 0, "18 очков, бесконечных не сдано")
 
-	# У каждого из шести — бесконечное поручение; запасные цепочки остаются рядом
+	# У кожного з шести — нескінченне доручення; запасні ланцюжки лишаються поруч
 	for id in QUEST_NPCS:
 		var qs: Array = Growth.available(city.full_def, city.growth, id)
 		var e: Array = qs.filter(func(q): return Endless.is_endless(q))
@@ -86,11 +86,11 @@ func _run() -> void:
 	ok(tr_qs.any(func(q): return q["id"] == "trader_s"), "несданное запасное торговки по-прежнему доступно")
 	ok(Endless.is_endless(Growth.current(city.full_def, city.growth, "posadnik")), "current после цепочки — бесконечное (меню города видит его)")
 
-	# Одно и то же поручение при каждом вызове, пока не сдано
+	# Те саме доручення за кожного виклику, поки не здане
 	var a: Dictionary = Endless.make("s001", "smith", 5)
 	ok(a == Endless.make("s001", "smith", 5), "поручение №5 кузнеца одинаково при каждом вызове")
 
-	# Тексты идут кругами: тот же текст два раза подряд не выпадает; числа согласованы со словами
+	# Тексти йдуть колами: той самий текст двічі поспіль не випадає; числа узгоджено зі словами
 	var repeats: Array = []
 	for id in QUEST_NPCS:
 		var prev: String = ""
@@ -100,14 +100,14 @@ func _run() -> void:
 				repeats.append("%s №%d" % [id, i])
 			prev = t
 	ok(repeats.is_empty(), "подряд одно и то же не повторяется: %s" % [repeats])
-	ok(Endless._count(1, "old_coin") == "1 довоенную монету" and Endless._count(3, "scrap") == "3 куска металлолома" and Endless._count(5, "km") == "5 километров" and Endless._count(21, "km") == "21 километр" and Endless._count(12, "vegetables") == "12 пучков овощей", "формы слов: 1 монету, 3 куска, 5 километров")
+	ok(Endless._count(1, "old_coin") == "1 древную монету" and Endless._count(3, "scrap") == "3 куска металлолома" and Endless._count(5, "km") == "5 километров" and Endless._count(21, "km") == "21 километр" and Endless._count(12, "vegetables") == "12 пучков овощей", "формы слов: 1 монету, 3 куска, 5 километров")
 
-	# Текст: награда без «город вырастет», число подставлено
+	# Текст: нагорода без «місто виросте», число підставлено
 	var pq: Dictionary = Growth.current(city.full_def, city.growth, "posadnik")
 	ok(not city._quest_reward(pq).contains("вырастет") and city._quest_reward(pq).contains("%d" % int(pq["reward"])), "в предложении — только награда: %s" % city._quest_reward(pq))
 	ok(not String(pq["ask"]).contains("%"), "в тексте нет пропусков: %s" % pq["ask"])
 
-	# Взять, сохранить, загрузить: взятое помнится
+	# Узяти, зберегти, завантажити: узяте пам'ятається
 	city.take_quest(npc(city, "posadnik"), pq)
 	var st: Dictionary = city.to_dict()
 	var city2: Node2D = load("res://city/city_world.tscn").instantiate()
@@ -119,7 +119,7 @@ func _run() -> void:
 	ok(city2.stage == 4 and pq2 == pq and Growth.taken(city2.growth, pq2), "после загрузки взятое бесконечное на месте")
 	city2.queue_free()
 
-	# Сдать: награда, следующее — новое; очки роста и этап не меняются
+	# Здати: нагорода, наступне — нове; очки росту й етап не змінюються
 	var m0: int = int(bag["money"])
 	do_quest(city, npc(city, "posadnik"), pq)
 	ok(int(bag["money"]) == m0 + int(pq["reward"]) + (int(pq.get("money", 0))), "награда выдана: +%d" % int(pq["reward"]))
@@ -127,9 +127,10 @@ func _run() -> void:
 	ok(nq["id"] == "posadnik~e2" and not Growth.taken(city.growth, nq), "следующее поручение — №2, ещё не взято")
 	ok(Growth.points(city.growth) == 18 and city.stage == 4 and Growth.endless_done(city.growth) == 1, "очков роста по-прежнему 18, этап тот же")
 
-	# Тридцать поручений у каждого: все сдаются, объёмы растут с потолком, вещи только добываемые
+	# Тридцять доручень у кожного: усі здаються, обсяги ростуть зі стелею, речі лише ті, що здобуваються
 	var kinds: Dictionary = {}
 	var items: Dictionary = {}
+	var by_npc: Dictionary = {}
 	var bad: Array = []
 	var max_km: int = 0
 	var max_n: int = 0
@@ -143,6 +144,9 @@ func _run() -> void:
 			kinds[q["kind"]] = true
 			if q["kind"] == "bring":
 				items[q["item"]] = true
+				if not by_npc.has(id):
+					by_npc[id] = {}
+				by_npc[id][q["item"]] = true
 				if not String(q["ask"]).contains(Endless._count(int(q["n"]), String(q["item"]))):
 					bad.append("%s текст не про %s" % [q["id"], q["item"]])
 			if q["kind"] == "bring" and not Endless.PRICE.has(String(q["item"])):
@@ -158,11 +162,12 @@ func _run() -> void:
 				bad.append("%s не сдалось" % q["id"])
 	ok(bad.is_empty(), "180 поручений сданы: %s" % [bad])
 	ok(kinds.has("walk") and kinds.has("win") and kinds.has("bring") and not kinds.has("pay"), "виды: пройти, победить, принести (без «заплатить»): %s" % [kinds.keys()])
-	ok(items.size() == Endless.PRICE.size(), "приносить просят лом, монеты и овощи: %s" % [items.keys()])
+	ok(items.size() == Endless.PRICE.size(), "приносить просят лом, монеты, овощи и шкуры: %s" % [items.keys()])
+	ok(by_npc.get("tanner", {}).keys() == ["hide"] and by_npc.get("smith", {}).keys() == ["scrap"], "Q33: кожевник просит только шкуры, кузнец только лом: %s" % [by_npc])
 	ok(max_km <= 8 and max_n <= 6 and max_w <= 2, "потолок объёма: до %d км, %d шт., %d побед" % [max_km, max_n, max_w])
-	ok(Growth.points(city.growth) == 18 and Growth.stage(city.full_def, city.growth) == 4, "после 181 бесконечного очков 18, этап Чёрнославль")
+	ok(Growth.points(city.growth) == 18 and Growth.stage(city.full_def, city.growth) == 4, "после 181 бесконечного очков 18, этап «Крупный город»")
 
-	# Доска объявлений перечисляет и бесконечные
+	# Дошка оголошень перелічує й нескінченні
 	var board: Dictionary = {}
 	for p in city.def["places"]:
 		if p["id"] == "notice_board":

@@ -1,16 +1,16 @@
-# Поселения на общей карте -> data/world/settlements.json.
-# Доска делится на клетки поселений CELL_M x CELL_M метров; город занимает несколько клеток, число
-# клеток зависит от размера (SIZES). Места выбираются по слоям карты art/map:
-#   - только чистая суша: не вода (map_water), не радиоактивные биомы 7-9, не жаркие горы (map_hot);
-#   - лучше у воды (река, озеро, берег моря) и не в горах и болоте;
-#   - главный город в каждой области (размер по площади чистой суши области), деревни и хутора
-#     в крупных регионах, не ближе MIN_GAP_M к соседям.
-# Результат детерминирован (seed). Файл можно править руками: игра читает его как есть.
-# Режим single (так решил Huzzah 2026-10-22): один город на весь мир, у его ворот появляется герой.
-# Радиальные поселения (Huzzah 2026-10-23): город круглый — "radius" (метры) вокруг center, круг лежит
-# внутри клеток пятна (не больше radius_m размера); ворота — на окружности со стороны выбранной
-# стороны пятна, точка выхода GATE_OUT_M за стеной. План мира города строит tools/make_city_radial.py.
-# Запуск: python3 make_settlements.py <папка art/map> <выходной settlements.json> [seed] [single|all]
+# Поселення на загальній карті -> data/world/settlements.json.
+# Дошка ділиться на клітинки поселень CELL_M x CELL_M метрів; місто займає кілька клітинок, число
+# клітинок залежить від розміру (SIZES). Місця обираються за шарами карти art/map:
+#   - лише чистий суходіл: не вода (map_water), не радіоактивні біоми 7-9, не спекотні гори (map_hot);
+#   - краще біля води (річка, озеро, берег моря) і не в горах і болоті;
+#   - головне місто в кожній області (розмір за площею чистого суходолу області), села й садиби
+#     у великих регіонах, не ближче за MIN_GAP_M до сусідів.
+# Результат детермінований (seed). Файл можна правити вручну: гра читає його як є.
+# Режим single (так вирішив Huzzah 2026-10-22): одне місто на весь світ, біля його брами з'являється герой.
+# Радіальні поселення (Huzzah 2026-10-23): місто кругле — "radius" (метри) довкола center, коло лежить
+# усередині клітинок плями (не більше radius_m розміру); брама — на колі з боку обраної
+# сторони плями, точка виходу GATE_OUT_M за стіною. План світу міста будує tools/make_city_radial.py.
+# Запуск: python3 make_settlements.py <тека art/map> <вихідний settlements.json> [seed] [single|all]
 import sys, json, math, random
 import numpy as np
 from PIL import Image
@@ -21,16 +21,16 @@ map_dir, out_path = sys.argv[1], sys.argv[2]
 SEED = int(sys.argv[3]) if len(sys.argv) > 3 else 7
 MODE = sys.argv[4] if len(sys.argv) > 4 else 'single'
 SINGLE_SIZE = 'city'
-SINGLE_NAME = 'Чёрнославль'   # имя единственного города закреплено (его уже знают ветки «Мир города» и др.)
+SINGLE_NAME = 'Эшвик'   # назву єдиного міста закріплено (її вже знають гілки «Світ міста» та ін.)
 W, H = bp.BOARD_W, bp.BOARD_H
 CELL_M = 250.0
 NCX, NCY = int(math.ceil(W / CELL_M)), int(math.ceil(H / CELL_M))
 
-# Размеры: число клеток, имя, шаблон мира города
+# Розміри: число клітинок, назва, шаблон світу міста
 SIZES = {
-	'hamlet':  {'name': 'хутор',         'cells': 1,  'template': 'tpl_hamlet', 'radius_m': 60.0},
+	'hamlet':  {'name': 'усадьба',       'cells': 1,  'template': 'tpl_hamlet', 'radius_m': 60.0},
 	'village': {'name': 'деревня',       'cells': 2,  'template': 'tpl_village', 'radius_m': 90.0},
-	'town':    {'name': 'посёлок',       'cells': 4,  'template': 'tpl_town', 'radius_m': 140.0},
+	'town':    {'name': 'городок',       'cells': 4,  'template': 'tpl_town', 'radius_m': 140.0},
 	'city':    {'name': 'город',         'cells': 7,  'template': 'tpl_city', 'radius_m': 190.0},
 	'capital': {'name': 'крупный город', 'cells': 12, 'template': 'tpl_capital', 'radius_m': 260.0},
 }
@@ -44,7 +44,7 @@ prov = np.asarray(Image.open(map_dir + '/map_provinces.png')).astype(np.int32)
 reg = np.asarray(Image.open(map_dir + '/map_regions.png')).astype(np.int32)
 
 
-# Среднее и мода растра по клеткам поселений (растр покрывает всю доску W x H)
+# Середнє й мода растра за клітинками поселень (растр покриває всю дошку W x H)
 def cell_stats(img, fn):
 	ny, nx = img.shape
 	out = np.zeros((NCY, NCX), np.float32)
@@ -72,9 +72,9 @@ pcell = cell_stats(prov, mode_nz).astype(int)
 rcell = cell_stats(reg, mode_nz).astype(int)
 
 
-# Клетка целиком в одном регионе (а значит, и в одной области): в окне клетки с запасом BORDER_PAD_PX
-# пикселей растра на каждую сторону нет чужого номера — линия границы не проходит ни через клетку,
-# ни вплотную к её краю (так решил Huzzah: город не пересекает границы областей и регионов)
+# Клітинка цілком в одному регіоні (а отже, і в одній області): у вікні клітинки із запасом BORDER_PAD_PX
+# пікселів растра на кожен бік немає чужого номера — лінія межі не проходить ні через клітинку,
+# ні впритул до її краю (так вирішив Huzzah: місто не перетинає межі областей і регіонів)
 BORDER_PAD_PX = 2
 
 
@@ -92,14 +92,14 @@ def pure_cells(img):
 
 rpure = pure_cells(reg) & pure_cells(prov)
 
-# Центры клеток внутри гекса доски с отступом
+# Центри клітинок усередині гекса дошки з відступом
 cxs, cys = np.meshgrid((np.arange(NCX) + 0.5) * CELL_M, (np.arange(NCY) + 0.5) * CELL_M)
 in_board = bp.hex_norm(cxs - bp.CX, cys - bp.CY) <= bp.APO - 2 * CELL_M
 
-# Клетка годится под застройку: суша почти целиком, без радиации и жары
+# Клітинка годиться під забудову: суходіл майже цілком, без радіації й спеки
 buildable = in_board & (inside > 0.99) & (land > 0.97) & (rad < 0.02) & (hotc < 0.02) & (pcell > 0) & rpure
 
-# Расстояние до воды в клетках (обход по соседям; вода — клетка, где воды хотя бы 15 %)
+# Відстань до води в клітинках (обхід сусідами; вода — клітинка, де води хоча б 15 %)
 dist_w = np.full((NCY, NCX), 99, np.int32)
 dist_w[wet > 0.15] = 0
 for step in range(1, 12):
@@ -109,11 +109,11 @@ for step in range(1, 12):
 	grow[:, 1:] |= prev[:, :-1]; grow[:, :-1] |= prev[:, 1:]
 	dist_w[grow & (dist_w == 99)] = step
 
-# Оценка места: у воды (1-2 клетки), не в горах и болоте
+# Оцінка місця: біля води (1-2 клітинки), не в горах і болоті
 score = np.where(buildable, 1.0, -1e9)
 score += np.where(dist_w == 1, 1.2, np.where(dist_w == 2, 0.9, np.where(dist_w <= 4, 0.4, 0.0)))
 score -= 1.2 * mount + 0.8 * swamp
-# Подальше от радиации и жаркой зоны (соседи клетки)
+# Подалі від радіації й спекотної зони (сусіди клітинки)
 pad = np.pad(np.maximum(rad, hotc), 2)
 near_bad = np.zeros_like(rad)
 for dy in range(5):
@@ -124,7 +124,7 @@ score -= 1.5 * near_bad
 rng = random.Random(SEED)
 
 
-# Пятно из n клеток от центра: соседние годные клетки по возрастанию расстояния (с лёгким шумом)
+# Пляма з n клітинок від центру: сусідні придатні клітинки за зростанням відстані (з легким шумом)
 def footprint(cx, cy, n):
 	cells = [(cx, cy)]
 	front = set()
@@ -172,20 +172,20 @@ def try_place(mask, size):
 	return None
 
 
-# ---- Имена ----
-ROOTS = ['Бел', 'Вер', 'Глин', 'Дуб', 'Жар', 'Звен', 'Кам', 'Клён', 'Крут', 'Лип', 'Лис', 'Мох', 'Мост',
-	'Озер', 'Ольх', 'Перун', 'Под', 'Рыб', 'Рябин', 'Сер', 'Сосн', 'Студ', 'Тёмн', 'Тихо', 'Туман', 'Ус',
-	'Чёрн', 'Яр', 'Бор', 'Брод', 'Вол', 'Гор', 'Дол', 'Зар', 'Ив', 'Кедр', 'Кос', 'Лес', 'Луг', 'Мед',
-	'Нов', 'Охот', 'Пес', 'Ржав', 'Сол', 'Стар', 'Сух', 'Тур', 'Хмел', 'Ясн', 'Вран', 'Смол', 'Гуд',
-	'Берез', 'Вишн', 'Голуб', 'Дым', 'Ёлк', 'Журав', 'Знам', 'Калин', 'Ковыл', 'Лён', 'Малин', 'Медв',
-	'Орл', 'Полын', 'Ракит', 'Сокол', 'Терн', 'Ухв', 'Хвощ', 'Черёмух', 'Шипш', 'Щеглов', 'Ягод', 'Ветл',
-	'Глух', 'Дрозд', 'Камыш', 'Мшан', 'Ореш']
+# ---- Назви ----
+# Європейські корені й закінчення (Huzzah 2026-10-28): англосаксонські, норвезькі, ірландські, балтійські
+ROOTS = ['Эш', 'Блэк', 'Брэд', 'Бри', 'Кол', 'Дарн', 'Элм', 'Фэр', 'Грин', 'Хэз', 'Холм', 'Лэнг', 'Мил',
+	'Норт', 'Оук', 'Рэд', 'Солт', 'Стон', 'Торн', 'Уит', 'Уиндл', 'Вуд', 'Ярн', 'Аск', 'Бьёрк', 'Эйк',
+	'Фьяль', 'Грен', 'Хельг', 'Ис', 'Квист', 'Линд', 'Мёр', 'Ос', 'Рён', 'Скоу', 'Сол', 'Стейн', 'Тор',
+	'Ульф', 'Вик', 'Ард', 'Бал', 'Карр', 'Дун', 'Эннис', 'Глен', 'Инвер', 'Килл', 'Кнок', 'Лис', 'Мой',
+	'Ратх', 'Слив', 'Тул', 'Акмен', 'Беже', 'Гинтар', 'Ежер', 'Кальн', 'Лауке', 'Мишк', 'Пуш', 'Ужу',
+	'Упе', 'Вейт', 'Жальг', 'Друв', 'Мед', 'Раг', 'Сауле', 'Вилк', 'Гирн', 'Дауг', 'Рам']
 ENDS = {
-	'hamlet': ['ов хутор', 'ин хутор', 'ова заимка', 'ина заимка', 'ов двор'],
-	'village': ['ово', 'ино', 'ки', 'цы', 'овка', 'ище', 'ичи', 'ево'],
-	'town': ['ец', 'овск', 'ин', 'ичи', 'ово', 'ск'],
-	'city': ['град', 'город', 'омир', 'ославль', 'ск'],
-	'capital': ['град', 'ополь', 'ославль', 'город'],
+	'hamlet': ['стед', 'торп', 'гард', 'кот', 'ли'],
+	'village': ['тон', 'бю', 'форд', 'хэм', 'вик', 'кальнис', 'ишкес', 'ли'],
+	'town': ['бери', 'хольм', 'бридж', 'стад', 'мор', 'гала'],
+	'city': ['вик', 'бург', 'честер', 'хейм', 'дун'],
+	'capital': ['бург', 'честер', 'хейм', 'стад'],
 }
 used_names = set()
 used_roots = set()
@@ -195,9 +195,9 @@ def make_name(size):
 	for _ in range(500):
 		r = rng.choice(ROOTS)
 		e = rng.choice(ENDS[size])
-		# Корень на гласную: «Тихо» + «овск» -> «Тиховск»
+		# Корінь на голосну: «Сауле» + «ишкес» -> «Саулишкес»
 		n = r + (e[1:] if r[-1] in 'аеёиоуыэюя' and e[0] in 'аеёиоуыэюя' else e)
-		# Один корень — одно поселение, чтобы имена не путались
+		# Один корінь — одне поселення, щоб назви не плуталися
 		if r not in used_roots:
 			used_roots.add(r)
 			used_names.add(n)
@@ -207,8 +207,8 @@ def make_name(size):
 	return n
 
 
-# Ворота: середина свободной стороны пятна (сосед — суша вне города), лучше к югу; точка
-# GATE_OUT_M за краем пятна. Сюда игрок выходит из города
+# Брама: середина вільної сторони плями (сусід — суходіл поза містом), краще на південь; точка
+# GATE_OUT_M за краєм плями. Сюди гравець виходить із міста
 GATE_OUT_M = 40.0
 
 
@@ -224,7 +224,7 @@ def gate_of(fp, center):
 				continue
 			p = ((x + 0.5 + dx * 0.5) * CELL_M + dx * GATE_OUT_M, (y + 0.5 + dy * 0.5) * CELL_M + dy * GATE_OUT_M)
 			s = (2.0 if dy == 1 else 0.0) - math.hypot(p[0] - center[0], p[1] - center[1]) / CELL_M + (1.0 if buildable[q[1], q[0]] else 0.0)
-			# Ворота и площадка перед ними — в том же регионе, что и город
+			# Брама й майданчик перед нею — у тому самому регіоні, що й місто
 			if rpure[q[1], q[0]] and rcell[q[1], q[0]] == rcell[fp[0][1], fp[0][0]]:
 				s += 3.0
 			if s > best_s:
@@ -232,7 +232,7 @@ def gate_of(fp, center):
 	return best
 
 
-# Точка доски — чистая суша (вода, радиация и жаркие горы — нет)
+# Точка дошки — чистий суходіл (вода, радіація й спекотні гори — ні)
 def clean_at(x, y):
 	if not (0 <= x < W and 0 <= y < H) or bp.hex_norm(x - bp.CX, y - bp.CY) > bp.APO - 100:
 		return False
@@ -241,34 +241,10 @@ def clean_at(x, y):
 	return water[wy, wx] < 0.5 and 0 < bio[by, bx] < 7 and hot[by, bx] < 0.5
 
 
-# Дорога от ворот наружу: шаги ROAD_STEP_M, плавно петляет, обходит воду и заражённые места
-ROAD_STEP_M, ROAD_LEN_M = 40.0, 1600.0
+# Готової дороги від брами немає (Huzzah 2026-10-28): дороги протоптуються в грі (world/trails.gd)
 
 
-def road_from(g, center):
-	d = math.atan2(g[1] - center[1], g[0] - center[0])
-	# Ворота на стороне: дорога сначала перпендикулярно стене
-	d = round(d / (math.pi / 2)) * (math.pi / 2)
-	pts = [g]
-	x, y = g
-	bend = 0.0
-	while len(pts) * ROAD_STEP_M < ROAD_LEN_M:
-		bend = max(-0.5, min(0.5, bend + rng.uniform(-0.12, 0.12)))
-		for turn in (0.0, 0.3, -0.3, 0.6, -0.6, 0.9, -0.9):
-			a = d + bend + turn
-			nx, ny = x + math.cos(a) * ROAD_STEP_M, y + math.sin(a) * ROAD_STEP_M
-			cx, cy = int(nx // CELL_M), int(ny // CELL_M)
-			if clean_at(nx, ny) and not (0 <= cx < NCX and 0 <= cy < NCY and taken[cy, cx]):
-				break
-		else:
-			break
-		d = a - bend
-		x, y = nx, ny
-		pts.append((x, y))
-	return [[round(px, 1), round(py, 1)] for px, py in pts]
-
-
-# Эмблемы на щитке: поле, фигура, цвет фигуры
+# Емблеми на щитку: поле, фігура, колір фігури
 EMBLEMS = [
 	{'field': '#26262c', 'charge': 'tower', 'tint': '#e2b84c'},
 	{'field': '#7a1f1f', 'charge': 'crown', 'tint': '#f0d488'},
@@ -286,7 +262,7 @@ def add(fp, size):
 		taken[y, x] = True
 	sid = 's%03d' % n
 	g = gate_of(fp, center) or (center[0], center[1] + CELL_M)
-	# Круглая стена: наибольший круг из центра внутри клеток пятна, но не больше radius_m размера
+	# Кругла стіна: найбільше коло з центру всередині клітинок плями, але не більше radius_m розміру
 	cells = set(fp)
 	radius = SIZES[size]['radius_m']
 	while radius > 20.0 and not all((int((center[0] + math.cos(a) * radius * t) // CELL_M), int((center[1] + math.sin(a) * radius * t) // CELL_M)) in cells
@@ -302,16 +278,15 @@ def add(fp, size):
 		'city_id': sid, 'template': SIZES[size]['template'],
 		'walled': size in ('town', 'city', 'capital'),
 		'emblem': EMBLEMS[(n - 1) % len(EMBLEMS)],
-		'road': road_from(g, center),
 	})
 
 
-# 1) Главный город области: размер по чистой суше области
+# 1) Головне місто області: розмір за чистим суходолом області
 prov_ids = sorted(int(k) for k in names['provinces'])
 area = {p: int((buildable & (pcell == p)).sum()) for p in prov_ids}
 rank = sorted(prov_ids, key=lambda p: -area[p])
 if MODE == 'single':
-	# Один город: лучшее место в области с самой большой чистой сушей
+	# Одне місто: найкраще місце в області з найбільшим чистим суходолом
 	rank = rank[:1]
 for i, p in enumerate(rank):
 	a = area[p]
@@ -325,7 +300,7 @@ for i, p in enumerate(rank):
 			add(fp, s)
 			break
 
-# 2) Посёлки, деревни и хутора в регионах: чем больше чистой суши, тем крупнее
+# 2) Містечка, села й садиби в регіонах: що більше чистого суходолу, то більші
 reg_ids = sorted(int(k) for k in names['regions']) if MODE != 'single' else []
 rarea = {r: int((buildable & (rcell == r)).sum()) for r in reg_ids}
 for r in sorted(reg_ids, key=lambda r: -rarea[r]):
@@ -333,7 +308,7 @@ for r in sorted(reg_ids, key=lambda r: -rarea[r]):
 	if a < 6:
 		continue
 	if any(s['region'] == r for s in placed):
-		# В крупном регионе бывает второе поселение
+		# У великому регіоні буває друге поселення
 		if a < 120:
 			continue
 	size = 'town' if a >= 150 else 'village' if a >= 40 else 'hamlet'
@@ -347,16 +322,16 @@ for r in sorted(reg_ids, key=lambda r: -rarea[r]):
 
 out = {
 	'_note': 'Поселения на общей карте. Создано tools/make_settlements.py (seed %d); можно править руками. '
-		'Координаты center, gate и road — метры доски; road — дорога от ворот наружу; cells — клетки [cx, cy] размером cell_m, клетка cx покрывает X от cx*cell_m. '
+		'Координаты center и gate — метры доски; готовой дороги нет — дороги протаптываются в игре (world/trails.gd); cells — клетки [cx, cy] размером cell_m, клетка cx покрывает X от cx*cell_m. '
 		'gate — точка выхода из города на общую карту. city_id — ключ мира города (data/cities/<city_id>.json, '
 		'нет файла — data/cities/<template>.json).' % SEED,
 	'cell_m': CELL_M,
-	# Проникновение через стену [ВРЕМЕННО]: шанс = base + per_agi*(Ловк-5) + per_per*(Восп-5) + per_luck*(Удача-5)
+	# Проникновение через стену [ВРЕМЕННО]: шанс = base + per_sneak*(Скрытность% - sneak_ref) + per_per*(Восп-5) + per_luck*(Удача-5)
 	# + night (ночью) - per_kg_over*(кг сверх free_kg); ×hurt_mult при травме рук/ног, ×low_mult при здоровье
 	# или силах ниже трети; верхом нельзя. Неудача: «заметили» с шансом caught_day/caught_night
 	# (минус per_agi_caught за Ловкость сверх 5), иначе стража настороже cooldown_h игровых часов.
 	# Сорвался со стены: fall_chance — травма fall_condition. Попытка тратит stamina_cost сил.
-	'sneak': {'base': 0.3, 'per_agi': 0.05, 'per_per': 0.02, 'per_luck': 0.01, 'night': 0.2,
+	'sneak': {'base': 0.3, 'per_sneak': 0.005, 'sneak_ref': 20.0, 'per_per': 0.02, 'per_luck': 0.01, 'night': 0.2,
 		'free_kg': 15.0, 'per_kg_over': 0.01, 'hurt_mult': 0.3, 'low_mult': 0.5,
 		'hurt_conditions': ['luxation_arm', 'broken_arm', 'broken_leg', 'blindness'],
 		'min': 0.05, 'max': 0.9, 'caught_day': 0.5, 'caught_night': 0.25, 'per_agi_caught': 0.03,

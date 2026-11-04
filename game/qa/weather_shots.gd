@@ -1,6 +1,6 @@
 extends SceneTree
-## Снимки простой погоды (Q25): вся карта в четыре сезона и через 6 часов, облака включены.
-## godot --path game --rendering-driver opengl3 -s res://qa/weather_shots.gd  (папка — AMBER_QA_OUT)
+## Знімки простої погоди (Q25): уся карта в чотири сезони й через 6 годин, хмари ввімкнено.
+## godot --path game --rendering-driver opengl3 -s res://qa/weather_shots.gd  (тека — AMBER_QA_OUT)
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://weather_shots/"
 
 

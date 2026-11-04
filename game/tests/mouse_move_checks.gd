@@ -1,6 +1,6 @@
 extends SceneTree
-## Ход героя мышью: общая карта (characters/hero_route.gd) и мир города (city/city_route.gd).
-## godot --path game --rendering-driver opengl3 -s res://tests/mouse_move_checks.gd -- [папка_для_снимков]
+## Хід героя мишею: загальна карта (characters/hero_route.gd) і світ міста (city/city_route.gd).
+## godot --path game --rendering-driver opengl3 -s res://tests/mouse_move_checks.gd -- [тека_для_знімків]
 
 var fails: int = 0
 var checks: int = 0
@@ -51,7 +51,7 @@ func _initialize() -> void:
 	_run()
 
 
-# Быстрый ход по пути: много шагов за кадр (как прошли бы минуты игры); у чужого поселения — «Продолжить путь»
+# Швидкий хід шляхом: багато кроків за кадр (як минули б хвилини гри); біля чужого поселення — «Продовжити шлях»
 func run_route(game: Node2D, max_steps: int = 60000, continue_prompts: bool = true) -> Dictionary:
 	var cast: Node2D = game.cast
 	var st: Node2D = game.settlements
@@ -85,7 +85,7 @@ func _run() -> void:
 	while not game.ready_done and Time.get_ticks_msec() - t0 < 120000:
 		await process_frame
 	ok(game.ready_done, "карта загрузилась")
-	game.physics.travel_weather = false   # дождь и гроза замедляют ход: шаги проверяются без погоды
+	game.physics.travel_weather = false   # дощ і гроза сповільнюють хід: кроки перевіряються без погоди
 	var cast: Node2D = game.cast
 	var st: Node2D = game.settlements
 	var city: Dictionary = st.list[0]
@@ -98,11 +98,11 @@ func _run() -> void:
 	game.zoom = 0.5
 	await frames(5)
 	st.choose_continue()
-	# Случайные нападения в пути (worlds.gd, по км) уводили героя в бой посреди проверки — тест падал через раз
+	# Випадкові напади в дорозі (worlds.gd, за км) забирали героя в бій посеред перевірки — тест падав через раз
 	for c in h["actor"].km_passed.get_connections():
 		h["actor"].km_passed.disconnect(c["callable"])
 
-	# 1. Клик мышью по суше рядом: путь задан, герой дошёл
+	# 1. Клік мишею по суходолу поруч: шлях задано, герой дійшов
 	var aim: Vector2 = cast._find_land(h["pos"] + Vector2(260, 120), 1500.0, true)
 	await click(game.world_to_screen(aim))
 	ok(cast.route.active(), "ЛКМ по карте задаёт путь")
@@ -117,14 +117,14 @@ func _run() -> void:
 	await click(game.world_to_screen(h["pos"]), MOUSE_BUTTON_RIGHT)
 	ok(not cast.route.active(), "ПКМ останавливает")
 
-	# 3. WASD перебивает путь
+	# 3. WASD перебиває шлях
 	cast.route.go_to(h["pos"] + Vector2(150, 0))
 	Input.action_press("ui_left")
 	await frames(3)
 	Input.action_release("ui_left")
 	ok(not cast.route.active(), "клавиши отменяют путь")
 
-	# 4. Обход города: с севера на юг мимо стены
+	# 4. Обхід міста: з півночі на південь повз стіну
 	var rect: Rect2 = city["_rect"]
 	var north: Vector2 = cast._find_land(Vector2(rect.get_center().x, rect.position.y - 400.0), 600.0, true)
 	var south: Vector2 = cast._find_land(Vector2(rect.get_center().x + 300.0, rect.end.y + 400.0), 600.0, true)
@@ -146,7 +146,7 @@ func _run() -> void:
 	ok(r["prompts"] == 0, "мимо города без вопросов «проникнуть» (%d)" % r["prompts"])
 	ok(h["pos"].distance_to(south) < 8.0, "обошёл город (%.0f м до цели, выборов у стены: %d)" % [h["pos"].distance_to(south), r["prompts"]])
 
-	# 5. Клик по городу — к воротам, там выбор «Войти»; путь закончен
+	# 5. Клік по місту — до брами, там вибір «Увійти»; шлях закінчено
 	game.zoom = 0.05
 	game.cam_pos = h["pos"]
 	await frames(2)
@@ -159,18 +159,18 @@ func _run() -> void:
 	ok(not cast.route.active(), "путь окончен у ворот")
 	game.zoom = 0.5
 	await shot("mm03_gate_prompt.png")
-	# Клик мимо, пока открыт выбор, — «Продолжить путь» и идти
+	# Клік повз, поки відкритий вибір, — «Продовжити шлях» і йти
 	await click(game.world_to_screen(h["pos"] + Vector2(-180, 60)))
 	ok(st.prompt_for.is_empty() and cast.route.active(), "клик по карте при выборе — продолжить путь")
 	cast.route.cancel()
-	# Снова клик по городу, стоя у ворот, — выбор открывается заново
+	# Знову клік по місту, стоячи біля брами, — вибір відкривається заново
 	await click(game.world_to_screen(city["_center"]))
 	await run_route(game, 60000, false)
 	await frames(3)
 	ok(st.prompt_kind == "gate", "повторный клик по городу у ворот — снова «Войти»")
 	st.choose_continue()
 
-	# 6. За край мира — нельзя; в воду — к берегу
+	# 6. За край світу — не можна; у воду — до берега
 	ok(not cast.route.go_to(Vector2(-3000, -3000)), "за край мира путь не строится")
 	var wet := Vector2.INF
 	var r0: float = 50.0
@@ -189,7 +189,7 @@ func _run() -> void:
 		ok(wok and game.biome_at(cast.route.target) != 1, "клик в воду у берега — цель на берегу (%s, путь %s, биом цели %d)" % [wet, wok, game.biome_at(cast.route.target) if wok else -1])
 	cast.route.cancel()
 
-	# 7. Длинный путь (10 км) считается быстро
+	# 7. Довгий шлях (10 км) рахується швидко
 	var far: Vector2 = cast._find_land(h["pos"] + Vector2(9000, -3000), 3000.0, true)
 	tp = Time.get_ticks_msec()
 	var got: bool = cast.route.go_to(far)
@@ -211,7 +211,7 @@ func _run() -> void:
 
 
 # =====================================================================
-# МИР ГОРОДА
+# СВІТ МІСТА
 # =====================================================================
 func city_run(c: Node, max_steps: int = 20000) -> void:
 	var n: int = 0
@@ -233,7 +233,7 @@ func _city() -> void:
 	c.clock.total_seconds = t - fposmod(t, 86400.0) + 12.0 * 3600.0
 	c.hero.res["thirst"] = 40.0
 
-	# Клик по колодцу на площади — дойти и напиться
+	# Клік по криниці на площі — дійти й напитися
 	var well: Dictionary = {}
 	for p in c.def["places"]:
 		if p["id"] == "well_square":
@@ -247,7 +247,7 @@ func _city() -> void:
 	ok(c.hero_pos.distance_to(wp) < c.LOOK_M, "дошёл до колодца (%.1f м)" % c.hero_pos.distance_to(wp))
 	ok(c.hero.res["thirst"] > 60.0, "напился (вода %d)" % int(c.hero.res["thirst"]))
 
-	# Клик в стену дома — к ближайшему свободному месту, без прохода сквозь стены
+	# Клік у стіну будинку — до найближчого вільного місця, без проходу крізь стіни
 	var bld: Dictionary = c.map.buildings[2]
 	var fl: Array = bld["floor"]
 	var inside: Vector2 = c.map.center_of(fl[fl.size() / 2])
@@ -259,7 +259,7 @@ func _city() -> void:
 	await city_run(c)
 	ok(c.map.building_at(c.hero_pos) == bld["index"], "герой в доме")
 
-	# Клик по жителю — подойти и заговорить
+	# Клік по мешканцю — підійти й заговорити
 	var npc: Dictionary = {}
 	for n in c.npcs:
 		if n["actor"].alive and not n["actor"].sleeping and c.map.building_at(n["pos"]) < 0:
@@ -272,21 +272,21 @@ func _city() -> void:
 		await shot("mm05_city_talk.png")
 		c._close_panel()
 
-	# Пока открыто окно — клики не ведут героя
+	# Поки відкрите вікно — кліки не ведуть героя
 	c.open_bag()
 	await click(Vector2(50, 50))
 	ok(not c.route.active(), "при открытом окне клик не ведёт героя")
 	c._close_panel()
-	if c.get("window") != null:   # сумка — во вкладке окна героя (hero/patch)
+	if c.get("window") != null:   # сумка — у вкладці вікна героя (hero/patch)
 		c.window.close()
 
-	# Клик по воротам — выйти (отдельный запуск: герой у ворот, сообщение о выходе)
+	# Клік по брамі — вийти (окремий запуск: герой біля брами, повідомлення про вихід)
 	var gate_cell: Vector2i = Vector2i(c.def["gates"][0]["cells"][1][0], c.def["gates"][0]["cells"][1][1])
 	ok(c.route.click(c.map.center_of(gate_cell)), "клик по воротам — путь")
 	await city_run(c)
 	ok(c.event_text.find("Выход") >= 0, "вышел в ворота: %s" % c.event_text)
 
-	# Ночью ворота заперты — клик не ведёт
+	# Уночі брама замкнена — клік не веде
 	c.clock.total_seconds = c.clock.total_seconds - fposmod(c.clock.total_seconds, 86400.0) + 86400.0 + 23.5 * 3600.0
 	await frames(3)
 	ok(not c.route.click(c.map.center_of(gate_cell)) and c.event_text.find("заперт") >= 0, "ночью ворота заперты: %s" % c.event_text)

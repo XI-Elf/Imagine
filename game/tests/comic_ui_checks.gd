@@ -1,8 +1,8 @@
 extends SceneTree
-## Комикс-оформление интерфейса (ui/comic_ui.gd, ui/comic_skin.gd; Q08 D, Q24 A) и правило Q21 A
-## (статичен только terrain карты). Главное меню, список сохранений, создание героя, карта (HUD, M, пауза),
-## подсказки F1, окно героя. Нужен экран: под xvfb, --rendering-driver opengl3.
-## godot --path game --rendering-driver opengl3 -s res://tests/comic_ui_checks.gd -- [папка_для_снимков]
+## Комікс-оформлення інтерфейсу (ui/comic_ui.gd, ui/comic_skin.gd; Q08 D, Q24 A) і правило Q21 A
+## (статичний лише terrain карти). Головне меню, список збережень, створення героя, карта (HUD, M, пауза),
+## підказки F1, вікно героя. Потрібен екран: під xvfb, --rendering-driver opengl3.
+## godot --path game --rendering-driver opengl3 -s res://tests/comic_ui_checks.gd -- [тека_для_знімків]
 
 const ComicUI := preload("res://ui/comic_ui.gd")
 
@@ -35,7 +35,7 @@ func shot(name: String) -> void:
 func _initialize() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	shots = args[0] if args.size() > 0 else ""
-	_run.call_deferred()   # после автозагрузок: тему вливает ComicSkin
+	_run.call_deferred()   # після автозавантажень: тему вливає ComicSkin
 
 
 func is_comic(sb: StyleBox, tex: Texture2D = ComicUI.T_PANEL) -> bool:
@@ -48,7 +48,7 @@ func src(path: String) -> String:
 
 
 func _run() -> void:
-	# ---- картинки и поля nine-patch
+	# ---- картинки й поля nine-patch
 	for k in ComicUI.MARGIN:
 		var t: Texture2D = ComicUI._tex(k)
 		var m: Array = ComicUI.MARGIN[k]
@@ -61,7 +61,7 @@ func _run() -> void:
 			same = same and meta.has(k) and str(meta[k]["margin"].map(func(v): return int(v))) == str(ComicUI.MARGIN[k]) \
 				and str(meta[k]["content"].map(func(v): return int(v))) == str(ComicUI.CONTENT[k])
 	ok(same, "поля в comic_ui.gd совпадают с тем, что записал tools/make_comic_ui.py")
-	# тёмная палитра: середина панели — уголь
+	# темна палітра: середина панелі — вугілля
 	var img: Image = ComicUI.T_PANEL.get_image()
 	if img.is_compressed():
 		img.decompress()
@@ -70,7 +70,7 @@ func _run() -> void:
 	var edge: Color = img.get_pixel(img.get_width() / 2, 12)
 	ok(edge.b > edge.r and edge.get_luminance() < 0.45, "рамка — тёмная сталь")
 
-	# ---- общая тема (автозагрузка ComicSkin)
+	# ---- спільна тема (автозавантаження ComicSkin)
 	ok(root.get_node_or_null("ComicSkin") != null, "автозагрузка ComicSkin есть")
 	var b := Button.new()
 	root.add_child(b)
@@ -81,7 +81,7 @@ func _run() -> void:
 	var pb := ProgressBar.new()
 	root.add_child(pb)
 	ok(is_comic(pb.get_theme_stylebox("background"), ComicUI.T_BAR), "шкала — рамка комикса")
-	# под CanvasLayer тема корня не доходит, тема по умолчанию — доходит
+	# під CanvasLayer тема кореня не доходить, тема за замовчуванням — доходить
 	var cl := CanvasLayer.new()
 	root.add_child(cl)
 	var b2 := Button.new()
@@ -90,18 +90,18 @@ func _run() -> void:
 	for n in [b, pc, pb, cl]:
 		n.queue_free()
 
-	# ---- в окнах нет старых плоских рамок
+	# ---- у вікнах немає старих пласких рамок
 	for path in ["res://main_menu.gd", "res://characters/hero_window.gd", "res://characters/hero_create.gd",
 			"res://world/settlements.gd", "res://city/city_world.gd", "res://tutorial/tutorial.gd",
 			"res://city/city_menu.gd", "res://characters/hero_death.gd"]:
 		ok(not src(path).contains("StyleBoxFlat.new()"), "%s: плоских рамок StyleBoxFlat больше нет" % path.get_file())
 	ok(not src("res://characters/inventory_view.gd").contains("draw_texture_rect(marble("), "инвентарь не рисует мрамор")
 
-	# ---- Q21 A: terrain карты статичен (шейдеры карты без TIME), остальное может двигаться
+	# ---- Q21 A: terrain карти статичний (шейдери карти без TIME), решта може рухатися
 	ok(not src("res://map_shaders.gd").contains("TIME"), "Q21: шейдер карты без TIME — terrain неподвижен")
 	ok(src("res://storybook/art.gd").contains("sway"), "Q21: декор и фигуры могут двигаться (покачивание осталось)")
 
-	# ---- главное меню и список сохранений
+	# ---- головне меню й список збережень
 	Engine.set_meta("aw_intro_done", true)   # без заставки
 	var menu: Control = load("res://main_menu.tscn").instantiate()
 	root.add_child(menu)
@@ -120,7 +120,7 @@ func _run() -> void:
 	menu.queue_free()
 	await frames(2)
 
-	# ---- карта: HUD, переход по координатам, пауза, подсказки
+	# ---- карта: HUD, перехід за координатами, пауза, підказки
 	Engine.set_meta("aw_load", "")
 	var game: Node2D = load("res://game.tscn").instantiate()
 	root.add_child(game)
@@ -156,7 +156,7 @@ func _run() -> void:
 		tut.toggle_help()
 		await shot("u06_help.png")
 		tut.toggle_help()
-	# окно героя (если хозяин карты его держит)
+	# вікно героя (якщо господар карти його тримає)
 	var hw: Node = null
 	for n in game.find_children("*", "CanvasLayer", true, false):
 		if n.get_script() != null and String(n.get_script().resource_path).ends_with("hero_window.gd"):

@@ -1,5 +1,5 @@
 extends SceneTree
-## Имена НПС: четыре культуры, без повторов, у всех жителей городов — имя из списка.
+## Імена НПС: чотири культури, без повторів, у всіх мешканців міст — ім'я зі списку.
 ## godot --headless --path game -s res://tests/npc_names_checks.gd
 
 const Names := preload("res://characters/npc_names.gd")
@@ -30,7 +30,7 @@ func _init() -> void:
 	ok(uniq.size() == 40, "40 имён без повторов")
 	ok(Names.all("female").has(Names.pick(rng, "female")), "пол учитывается")
 	ok(Names.culture_of(Names.pick(rng, "", "irish")) == "irish", "культура учитывается")
-	# Жители городов
+	# Мешканці міст
 	for f in DirAccess.get_files_at("res://data/cities"):
 		if not f.begins_with("s") or not f.ends_with(".json"):
 			continue

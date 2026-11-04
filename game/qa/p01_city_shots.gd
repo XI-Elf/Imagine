@@ -1,6 +1,6 @@
 extends SceneTree
-## Снимки маленького города (patch 01 к 2D 07): дома под спрайтами, начало и полный город.
-## godot --path game --rendering-driver opengl3 -s res://qa/shots_growth.gd  (папка — AMBER_QA_OUT)
+## Знімки маленького міста (patch 01 до 2D 07): будинки під спрайтами, початок і повне місто.
+## godot --path game --rendering-driver opengl3 -s res://qa/shots_growth.gd  (тека — AMBER_QA_OUT)
 const Growth := preload("res://city/city_growth.gd")
 var OUT: String = OS.get_environment("AMBER_QA_OUT") if OS.has_environment("AMBER_QA_OUT") else "user://growth_shots/"
 
@@ -17,7 +17,7 @@ func capture(name: String) -> void:
 	print("CAPTURE ", name)
 
 
-# Сданы первые поручения в порядке этапов, пока город не дойдёт до этапа st
+# Здано перші доручення в порядку етапів, доки місто не дійде до етапу st
 func state_for(def: Dictionary, st: int) -> Dictionary:
 	var g: Dictionary = Growth.new_state()
 	for k in 30:

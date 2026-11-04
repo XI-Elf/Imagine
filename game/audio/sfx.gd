@@ -1,39 +1,39 @@
 extends Node
-## Звуки (вопрос Q15, Huzzah 2026-10-24: «свободные звуки CC0»): шаги, бой, интерфейс, фон карты и города.
-## Автозагрузка Sfx сама следит за миром через Worlds (карта, город, бой), поэтому чужие скрипты не правятся.
-## Источник и лицензия каждого файла — data/audio/sounds.json и ЗВУКИ_CC0.txt в корне игры.
-## F9 — звук вкл/выкл (запоминается в user://audio.cfg).
+## Звуки (питання Q15, Huzzah 2026-10-24: «вільні звуки CC0»): кроки, бій, інтерфейс, фон карти й міста.
+## Автозавантаження Sfx саме стежить за світом через Worlds (карта, місто, бій), тому чужі скрипти не правляться.
+## Джерело й ліцензія кожного файлу — data/audio/sounds.json і ЗВУКИ_CC0.txt у корені гри.
+## F9 — звук увімк./вимк. (запам'ятовується в user://audio.cfg).
 
 const MANIFEST := "res://data/audio/sounds.json"
 const CFG := "user://audio.cfg"
 const WorldEnv := preload("res://characters/world_env.gd")
 const VOICES: int = 14
-const STEP_S: float = 0.42            # реальных секунд между шагами
+const STEP_S: float = 0.42            # реальних секунд між кроками
 const OFF_DB: float = -60.0
-const FADE_DB_S: float = 30.0         # скорость затухания фона, дБ в секунду
-# Покрытие под ногами по номерам биомов game.BIOME_NAMES
+const FADE_DB_S: float = 30.0         # швидкість згасання фону, дБ за секунду
+# Покриття під ногами за номерами біомів game.BIOME_NAMES
 const SURFACE: Array = ["", "", "step_sand", "step_soft", "step_gravel", "step_soft", "step_gravel",
 	"step_bones", "step_bones", "step_bones"]
-# Фоновые петли: имя → звук
+# Фонові петлі: ім'я → звук
 const BEDS: Dictionary = {"wind": "amb_wind", "desert": "amb_desert", "water": "amb_water_1",
 	"rumble": "amb_rumble", "fire": "amb_fire"}
 
 var enabled: bool = true
-var volume: float = 0.8               # общая громкость звуков 0..1
-var sounds: Dictionary = {}           # id → запись из sounds.json
+var volume: float = 0.8               # загальна гучність звуків 0..1
+var sounds: Dictionary = {}           # id → запис із sounds.json
 var streams: Dictionary = {}          # id → AudioStream
 var groups: Dictionary = {}           # «step_gravel» → [step_gravel_0, …]
-var played: Array = []                # последние сыгранные id (для тестов)
+var played: Array = []                # останні зіграні id (для тестів)
 var _voices: Array = []
-var _beds: Dictionary = {}            # имя → {player, target}
-var _queue: Array = []                # отложенные звуки {t, id, db, pitch}
+var _beds: Dictionary = {}            # ім'я → {player, target}
+var _queue: Array = []                # відкладені звуки {t, id, db, pitch}
 var _rng := RandomNumberGenerator.new()
 var _step_t: float = 0.0
-var _life_t: float = 4.0              # до следующего звука жизни (птица, собака, топор)
+var _life_t: float = 4.0              # до наступного звуку життя (птах, собака, сокира)
 var _last_pos := Vector2.INF
 var _last_city_pos := Vector2.INF
 var _last_bld: int = -2
-var _watch: Dictionary = {}           # прошлые значения: окно героя, карта, сон, деньги, руины
+var _watch: Dictionary = {}           # минулі значення: вікно героя, карта, сон, гроші, руїни
 var _battle_core: Object = null
 var _kind: String = ""
 
@@ -113,7 +113,7 @@ func has_sound(name: String) -> bool:
 	return sounds.has(name) or groups.has(name)
 
 
-## Сыграть звук по id или группе (случайный из группы) с громкостью db и разбросом высоты
+## Зіграти звук за id або групою (випадковий із групи) з гучністю db і розкидом висоти
 func play(name: String, db: float = 0.0, pitch: float = 1.0, spread: float = 0.06) -> bool:
 	var id: String = name
 	if not sounds.has(id):
@@ -195,7 +195,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 # =====================================================================
-# ИНТЕРФЕЙС: щелчок любой кнопки
+# ІНТЕРФЕЙС: клацання будь-якої кнопки
 # =====================================================================
 func _on_node_added(n: Node) -> void:
 	if n is BaseButton and not n.pressed.is_connected(_on_button):
@@ -207,7 +207,7 @@ func _on_button() -> void:
 
 
 # =====================================================================
-# КАЖДЫЙ КАДР
+# КОЖЕН КАДР
 # =====================================================================
 func _process(delta: float) -> void:
 	_run_queue(delta)
@@ -215,7 +215,7 @@ func _process(delta: float) -> void:
 		_beds[bed]["target"] = OFF_DB
 	var game: Node = Worlds.game if is_instance_valid(Worlds.game) else null
 	if game != null and game.get("ready_done") == false:
-		game = null   # карта ещё строится: погода и высоты не готовы
+		game = null   # карта ще будується: погода й висоти не готові
 	if game == null:
 		_kind = ""
 		_battle_core = null
@@ -276,7 +276,7 @@ func _on_world_changed(from: String, to: String) -> void:
 
 
 # =====================================================================
-# ОБЩАЯ КАРТА
+# ЗАГАЛЬНА КАРТА
 # =====================================================================
 func _overworld(game: Node, delta: float) -> void:
 	var body: Dictionary = Worlds.hero_body()
@@ -293,7 +293,7 @@ func _overworld(game: Node, delta: float) -> void:
 	if body.is_empty() or global or sleeping or Worlds.menu_open():
 		_last_pos = Vector2.INF if body.is_empty() else body["pos"]
 		return
-	# Шаги: только когда герой и правда идёт, громче на близком зуме
+	# Кроки: тільки коли герой справді йде, гучніше на близькому зумі
 	var pos: Vector2 = body["pos"]
 	var moved: bool = _last_pos != Vector2.INF and pos.distance_to(_last_pos) > 0.001 and pos.distance_to(_last_pos) < 500.0
 	_last_pos = pos
@@ -327,7 +327,7 @@ func _overworld_beds(game: Node, focus: Vector2, biome: int, night: bool, dim: f
 		_bed("water", -12.0 + dim)
 
 
-## Звуки жизни вокруг: птицы в лесу днём, капли на болоте, летучие мыши ночью в проклятых землях
+## Звуки життя довкола: птахи в лісі вдень, краплі на болоті, кажани вночі в проклятих землях
 func _life(delta: float, biome: int, night: bool, db: float) -> void:
 	_life_t -= delta
 	if _life_t > 0.0:
@@ -342,7 +342,7 @@ func _life(delta: float, biome: int, night: bool, db: float) -> void:
 
 
 # =====================================================================
-# ГОРОД
+# МІСТО
 # =====================================================================
 func _city(city: Node, delta: float) -> void:
 	if city == null or city.get("hero_pos") == null:
@@ -373,7 +373,7 @@ func _city(city: Node, delta: float) -> void:
 				play("step_gravel", -6.0)
 	else:
 		_step_t = minf(_step_t, 0.1)
-	# Жизнь города днём: собака, топор, кузня, птицы
+	# Життя міста вдень: собака, сокира, кузня, птахи
 	_life_t -= delta
 	if _life_t <= 0.0:
 		_life_t = _rng.randf_range(6.0, 14.0)
@@ -390,7 +390,7 @@ func _city(city: Node, delta: float) -> void:
 
 
 # =====================================================================
-# БОЙ
+# БІЙ
 # =====================================================================
 func _battle(scene: Node) -> void:
 	_bed("wind", -24.0)
@@ -403,7 +403,7 @@ func _battle(scene: Node) -> void:
 	connect_core(core)
 
 
-## Подписка на сигналы ядра боя (battle_core.gd); вызывается и тестами
+## Підписка на сигнали ядра бою (battle_core.gd); викликається й тестами
 func connect_core(core: Object) -> void:
 	if core.has_signal("acted") and not core.acted.is_connected(_on_acted):
 		core.acted.connect(_on_acted)
@@ -472,7 +472,7 @@ func _ability_sound(ab: Object) -> void:
 
 
 func _death_check(t: Object, after_s: float) -> void:
-	# Урон снимается сразу после сигнала, поэтому смотрим цель чуть позже
+	# Шкода знімається одразу після сигналу, тому дивимося на ціль трохи пізніше
 	if t == null:
 		return
 	get_tree().create_timer(after_s * 0.5).timeout.connect(func() -> void:
@@ -492,7 +492,7 @@ func _on_finished(outcome: String) -> void:
 
 
 # =====================================================================
-# ОБЩИЕ СЛЕЖЕНИЯ: окно героя, глобальная карта, сон, деньги, руины
+# ЗАГАЛЬНЕ СТЕЖЕННЯ: вікно героя, глобальна карта, сон, гроші, руїни
 # =====================================================================
 func _watch_common(game: Node, kind: String) -> void:
 	var owner: Node = Worlds.current_node() if kind == "city" else game.get("cast")
@@ -528,12 +528,12 @@ func _watch_common(game: Node, kind: String) -> void:
 		play_later("pickup", 0.7, -6.0))
 
 
-## Свойство объекта равно true (у заглушек и чужих сцен его может не быть)
+## Властивість об'єкта дорівнює true (у заглушок і чужих сцен її може не бути)
 static func _is(o: Object, prop: String) -> bool:
 	return o != null and o.get(prop) == true
 
 
-## Звук только при смене значения (первое наблюдение — молча)
+## Звук лише при зміні значення (перше спостереження — мовчки)
 func _changed(key: String, value: Variant, on_change: Callable) -> void:
 	if _watch.has(key) and _watch[key] != value:
 		if not (value is int and value < int(_watch[key])):

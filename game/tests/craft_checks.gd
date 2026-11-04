@@ -1,6 +1,6 @@
 extends SceneTree
-## Крафт у кожевника и кузнеца (city/craft.gd, вопрос Q18, Huzzah 2026-10-24): рецепты, заказ у мастера,
-## своими руками с навыком (шанс, опыт, выносливость, порча), уроки, шкуры со зверей в бою, окно мастерской в городе.
+## Крафт у шкіряника й коваля (city/craft.gd, питання Q18, Huzzah 2026-10-24): рецепти, замовлення в майстра,
+## своїми руками з навичкою (шанс, досвід, витривалість, псування), уроки, шкури зі звірів у бою, вікно майстерні в місті.
 ## godot --headless --path game -s res://tests/craft_checks.gd
 
 const Trade := preload("res://city/trade.gd")
@@ -9,6 +9,7 @@ const Data := preload("res://battle/battle_data.gd")
 const Core := preload("res://battle/battle_core.gd")
 const Enc := preload("res://battle/encounters.gd")
 const R := preload("res://characters/actor_rules.gd")
+const Sheet := preload("res://characters/sheet.gd")
 
 var fails: int = 0
 var checks: int = 0
@@ -64,7 +65,7 @@ func _data() -> void:
 	for i in range(1, lv.size()):
 		sorted = sorted and lv[i] >= lv[i - 1]
 	ok(sorted and lv.size() >= 6, "рецепты кузни по уровню: %s" % str(lv))
-	# Что выковано — годится в бой: оружие известно бою, доспех есть среди доспехов
+	# Що викувано — годиться в бій: зброя відома бою, обладунок є серед обладунків
 	var cfg: Resource = Data.config()
 	var unusable: Array = []
 	for id in recipes:
@@ -107,7 +108,9 @@ func _order() -> void:
 
 
 func _self() -> void:
+	# Ремесло = 3×УМ; при УМ 1 — 3 %, «уровень 0»
 	var hero := Actor.new("hero", "Герой", false, 7)
+	hero.set_stat("int", 1)
 	var bag: Dictionary = Trade.new_bag(0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 18
@@ -127,9 +130,9 @@ func _self() -> void:
 	var lv_seen: Array = []
 	for i in 40:
 		hero.set_res("stamina", hero.max_of("stamina"))
-		var before: float = float(hero.skills["sewing"]["xp"])
+		var before: float = hero.xp
 		var r: Dictionary = Craft.make(bag, vest, hero, rng)
-		var gained: float = float(hero.skills["sewing"]["xp"]) - before
+		var gained: float = hero.xp - before
 		if r["ok"]:
 			wins += 1
 			hides -= 2
@@ -142,7 +145,10 @@ func _self() -> void:
 	ok(Trade.count(bag, "hide_vest") == wins, "вещей столько, сколько удач: %d" % Trade.count(bag, "hide_vest"))
 	ok(Trade.count(bag, "hide") == hides, "при порче пропадает половина материалов: осталось %d шкур" % Trade.count(bag, "hide"))
 	ok(lv_seen.is_empty(), "опыт идёт за каждую попытку")
-	ok(hero.skill_level("sewing") >= 3, "40 попыток подняли портняжное дело до %d" % hero.skill_level("sewing"))
+	ok(hero.level >= 2 and hero.skill_points > 0, "40 попыток — опыт персонажа: %d уровень, %d очков навыков" % [hero.level, hero.skill_points])
+	# Навык растёт очками, уроками и книгами, а не повторением
+	Sheet.train(hero, "repair", 30)
+	ok(hero.skill_level("sewing") == 3, "Ремесло 33 %% — «уровень 3»: %d" % hero.skill_level("sewing"))
 	ok(Craft.chance(vest, hero) > 0.7 and Craft.chance(vest, hero) <= 0.95, "с навыком шанс растёт, но не выше 95 %%: %.2f" % Craft.chance(vest, hero))
 	ok(Craft.chance(jacket, hero) > 0.0, "с навыком %d открылась кожаная куртка" % hero.skill_level("sewing"))
 	hero.set_res("stamina", hero.max_of("stamina"))
@@ -156,7 +162,7 @@ func _lessons() -> void:
 	var smith: Actor = _master("smith", 2)
 	var bag: Dictionary = Trade.new_bag(500)
 	var fee: int = Craft.lesson_fee(hero, "blacksmith")
-	ok(Craft.lesson(bag, hero, smith, "blacksmith") == "" and int(bag["money"]) == 500 - fee and float(hero.skills["blacksmith"]["xp"]) > 0.0, "урок: %d монет, опыт кузнеца %d" % [fee, int(hero.skills["blacksmith"]["xp"])])
+	ok(Craft.lesson(bag, hero, smith, "blacksmith") == "" and int(bag["money"]) == 500 - fee and hero.skill("repair") == 25 and hero.xp > 0.0, "урок: %d монет, Ремесло 15 → %d %%" % [fee, hero.skill("repair")])
 	var n: int = 1
 	while Craft.lesson(bag, hero, smith, "blacksmith") == "" and n < 50:
 		n += 1
@@ -187,7 +193,7 @@ func _battle_hides() -> void:
 
 
 func _button(city: Node, prefix: String) -> Button:
-	for b in city._buttons:
+	for b in city._buttons + city._tab_buttons:
 		if b.text.find(prefix) >= 0:
 			return b
 	return null
@@ -211,7 +217,7 @@ func _city() -> void:
 	ok(city._npc_on_duty_here(tanner), "кожевник на работе (%.1f ч)" % city.clock.hour_of_day())
 	city.talk(tanner)
 	var b: Button = _button(city, "Мастерская")
-	ok(b != null, "в разговоре с кожевником есть «Мастерская»")
+	ok(b != null and city._tab_buttons.has(b), "в разговоре с кожевником есть вкладка «Мастерская» (Q34)")
 	if b == null:
 		return
 	b.pressed.emit()

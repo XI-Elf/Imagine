@@ -1,7 +1,7 @@
 extends RefCounted
 ## Руины на общей карте (вопрос Q04, Huzzah 2026-10-24: «лом падает с бандитов и лежит в руинах на общей карте»).
 ## В пустошах и проклятых землях стоят развалины; герой рядом с ними по F обыскивает их и находит металлолом,
-## иногда довоенную монету. Обысканные руины пусты RESPAWN_DAYS игровых дней.
+## иногда древную монету. Обысканные руины пусты RESPAWN_DAYS игровых дней.
 ## Места не хранятся: сетка GRID_M по карте, в клетке руины с вероятностью CHANCE (хеш клетки), если там подходящий биом.
 ## Обысканные — словарь "x:y" -> игровые секунды обыска (characters/cast.gd, to_dict ключ "ruins_looted").
 
@@ -9,7 +9,7 @@ const GRID_M: float = 450.0
 const CHANCE: float = 0.22
 const REACH_M: float = 30.0
 const RESPAWN_DAYS: float = 3.0
-const BIOMES: Array = [4, 7, 8]      # пустошь, проклятый лес, проклятая пустошь (game.gd BIOME_NAMES)
+const BIOMES: Array = [4, 7, 8]      # пустка, проклятий ліс, проклята пустка (game.gd BIOME_NAMES)
 
 
 static func _hash(x: int, y: int, k: int) -> float:
@@ -22,7 +22,7 @@ static func key_of(c: Vector2i) -> String:
 	return "%d:%d" % [c.x, c.y]
 
 
-## Руины в клетке сетки c или Vector2.INF
+## Руїни в клітинці сітки c або Vector2.INF
 static func site_in(game: Node, c: Vector2i) -> Vector2:
 	if _hash(c.x, c.y, 1) > CHANCE:
 		return Vector2.INF
@@ -35,7 +35,7 @@ static func site_in(game: Node, c: Vector2i) -> Vector2:
 	return p
 
 
-## Все руины в прямоугольнике карты (метры): [{key, pos}]
+## Усі руїни в прямокутнику карти (метри): [{key, pos}]
 static func in_rect(game: Node, r: Rect2) -> Array:
 	var out: Array = []
 	var c0 := Vector2i(floori(r.position.x / GRID_M), floori(r.position.y / GRID_M))
@@ -48,7 +48,7 @@ static func in_rect(game: Node, r: Rect2) -> Array:
 	return out
 
 
-## Ближайшие к точке руины в пределах REACH_M или {}
+## Найближчі до точки руїни в межах REACH_M або {}
 static func near(game: Node, p: Vector2) -> Dictionary:
 	for s in in_rect(game, Rect2(p - Vector2(REACH_M, REACH_M), Vector2(REACH_M, REACH_M) * 2.0)):
 		if s["pos"].distance_to(p) <= REACH_M:
@@ -60,8 +60,8 @@ static func looted_now(looted: Dictionary, key: String, now: float) -> bool:
 	return looted.has(key) and now - float(looted[key]) < RESPAWN_DAYS * 86400.0
 
 
-## Обыскать: {"scrap": n, "old_coin": n} (пусто, если обысканы недавно). Вещи кладутся в сумку bag (Trade)
-## [ВРЕМЕННО] 1–3 куска лома, больше при хорошем поиске; монета — в одном случае из шести
+## Обшукати: {"scrap": n, "old_coin": n} (порожньо, якщо обшукано нещодавно). Речі кладуться в сумку bag (Trade)
+## [Q19: не баланс, залишено] 1–3 шматки брухту, більше за доброго пошуку; монета — в одному випадку із шести
 static func search(site: Dictionary, looted: Dictionary, now: float, search_eff: float, rng: RandomNumberGenerator, bag: Dictionary) -> Dictionary:
 	if looted_now(looted, site["key"], now):
 		return {}

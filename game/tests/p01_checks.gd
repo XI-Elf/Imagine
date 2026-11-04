@@ -1,7 +1,7 @@
 extends SceneTree
-## Правки 2D 07 patch 01 (Huzzah 2026-10-23): сон в лачуге и пробуждение, анимация фигурок в городе,
-## доспех боя из надетого на «Тело». Нужен экран (xvfb, --rendering-driver opengl3):
-## godot --path game --rendering-driver opengl3 -s res://tests/p01_checks.gd -- [папка_для_снимков]
+## Правки 2D 07 patch 01 (Huzzah 2026-10-23): сон у халупі й пробудження, анімація фігурок у місті,
+## обладунок бою з удягненого на «Тіло». Потрібен екран (xvfb, --rendering-driver opengl3):
+## godot --path game --rendering-driver opengl3 -s res://tests/p01_checks.gd -- [тека_для_знімків]
 
 const Core := preload("res://battle/battle_core.gd")
 const Trade := preload("res://city/trade.gd")
@@ -59,7 +59,7 @@ func _run() -> void:
 	ok(not city.hero.sleeping, "первый шаг будит")
 	city.move_hero(Vector2.LEFT, false, 0.1, env)
 	ok(city.hero_pos != start, "после пробуждения идёт")
-	# Выспался — встаёт сам
+	# Виспався — встає сам
 	city.hero.set_sleep(true)
 	city.hero.res["energy"] = 100.0
 	city.move_hero(Vector2.ZERO, false, 0.1, env)
@@ -67,7 +67,7 @@ func _run() -> void:
 	city.hero.sleep_h = 2.0
 	city.move_hero(Vector2.ZERO, false, 0.1, env)
 	ok(not city.hero.sleeping, "с полной энергией встаёт сам")
-	# Анимация: стоя дышит, на ходу шагает — кадры отличаются
+	# Анімація: стоячи дихає, на ходу крокує — кадри різняться
 	var g: Dictionary = city.def["gates"][0]
 	city.hero_pos = Vector2(g["spawn"][0], g["spawn"][1]) * city.map.cell_m + Vector2(0, -3)
 	city._process(0.05)
