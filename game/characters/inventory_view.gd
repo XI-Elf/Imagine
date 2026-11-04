@@ -280,15 +280,6 @@ func _btn(text: String, cb: Callable, size_px: int, on: bool = false) -> Button:
 	return b
 
 
-## Стиль кнопки коміксу (раніше — плита мармуру; назву залишено для старих викликів)
-static func marble_box(light: bool, hover: bool = false, dim: bool = false) -> StyleBox:
-	if dim:
-		return ComicUI.button_box("disabled")
-	if light:
-		return ComicUI.button_box("hover_pressed" if hover else "pressed")
-	return ComicUI.button_box("hover" if hover else "normal")
-
-
 func _stat_at(p: Vector2) -> String:
 	for k in _stat_rects:
 		if (_stat_rects[k] as Rect2).has_point(p):
@@ -501,19 +492,6 @@ func _draw_doll() -> void:
 	_doll.draw(self, fig, female, looks(), build)
 
 
-## Силует героя за текстурою його фішки: темна заливка зі світлою обвідкою
-static func pawn_silhouette(ci: CanvasItem, fig: Rect2) -> void:
-	var t: Texture2D = silhouette_tex()
-	if t == null:
-		return
-	var k: float = minf(fig.size.y / float(t.get_height()), fig.size.x / float(t.get_width()))
-	var sz: Vector2 = Vector2(t.get_size()) * k
-	var r := Rect2(Vector2(fig.get_center().x - sz.x * 0.5, fig.end.y - sz.y), sz)
-	for d in [Vector2(-2, 0), Vector2(2, 0), Vector2(0, -2), Vector2(0, 2), Vector2(-1.5, -1.5), Vector2(1.5, 1.5), Vector2(-1.5, 1.5), Vector2(1.5, -1.5)]:
-		ci.draw_texture_rect(t, Rect2(r.position + d, r.size), false, Color(0.62, 0.67, 0.74, 0.9))
-	ci.draw_texture_rect(t, r, false, Color(0.13, 0.15, 0.18))
-
-
 ## Білий силует із картинки фішки (альфа та сама), фарбується модуляцією; один на гру
 static func silhouette_tex() -> Texture2D:
 	if _tex.has("pawn"):
@@ -603,12 +581,6 @@ static func marble(light: bool) -> Texture2D:
 			img.set_pixel(x, y, c.lerp(vc, clampf(vein * (0.6 if light else 0.8) + fine, 0.0, 1.0)))
 	_tex[key] = ImageTexture.create_from_image(img)
 	return _tex[key]
-
-
-static func rivet(ci: CanvasItem, c: Vector2, r: float = 3.5) -> void:
-	ci.draw_circle(c + Vector2(0.8, 1.2), r, Color(0, 0, 0, 0.5))
-	ci.draw_circle(c, r, Color("8796ab"))
-	ci.draw_circle(c - Vector2(r, r) * 0.3, r * 0.45, Color("e6edf6"))
 
 
 ## Комірка: сталева комірка коміксу (дрібна — тонка табличка, щоб умістився підпис),

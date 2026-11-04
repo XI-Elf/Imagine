@@ -60,14 +60,6 @@ static func inst(id: String) -> Dictionary:
 	return data().get("by_id", {}).get(id, {})
 
 
-static func ids_of(cat: String) -> Array:
-	var out: Array = []
-	for x in data().get("inst", []):
-		if String(x["cat"]) == cat:
-			out.append(String(x["id"]))
-	return out
-
-
 func _init(rate: int = 22050, tempo: float = 96.0, md: String = "min", shift: int = 0, seed_value: int = 1) -> void:
 	sr = rate
 	bpm = tempo

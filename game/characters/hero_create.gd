@@ -365,29 +365,6 @@ func _build_right() -> Control:
 	return v
 
 
-## Рядки сітки рис: [достоинство, недолік] парами за «opp»; "" — порожня клітинка
-func _trait_rows(ids: Variant) -> Array:
-	var good: Array = []
-	var bad: Array = []
-	for t in ids:
-		(good if int(R.trait_def(t).get("cost", 0)) > 0 else bad).append(t)
-	var out: Array = []
-	var used: Dictionary = {}
-	for t in good:
-		var o: String = String(R.trait_def(t).get("opp", ""))
-		out.append(t)
-		if bad.has(o):
-			out.append(o)
-			used[o] = true
-		else:
-			out.append("")
-	for t in bad:
-		if not used.has(t):
-			out.append("")
-			out.append(t)
-	return out
-
-
 func _trait_full(t: String) -> String:
 	var d: Dictionary = R.trait_def(t)
 	var s: String = P.trait_text(t)

@@ -191,18 +191,6 @@ func _load_plan(s: Dictionary) -> Dictionary:
 	return {}
 
 
-## План на теперішньому етапі росту міста (city/city_growth.gd): етап — за станом міста в Worlds.city_states
-func _plan_now(s: Dictionary) -> Dictionary:
-	var d: Dictionary = s["_plan"]
-	if not Growth.has_growth(d):
-		return d
-	var k: int = Growth.stage(d, _growth_of(s))
-	if int(s.get("_plan_stage", -1)) != k:
-		s["_plan_stage"] = k
-		s["_plan_view"] = Growth.view(d, k)
-	return s["_plan_view"]
-
-
 ## Стан росту міста з Worlds.city_states (нова гра — початковий)
 func _growth_of(s: Dictionary) -> Dictionary:
 	var w: Node = get_node_or_null("/root/Worlds")
@@ -1063,30 +1051,6 @@ func _draw_medallion(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:
 	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0) + 1.5, Color(0.1, 0.07, 0.05, 0.9))
 	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0), gate_col)
 	_draw_banner(c0 + Vector2(0, -rp * 0.86), rp * 0.46, _emblem_for(s), hl)
-
-
-## Знак міста: кругла мурована стіна з зубцями кольору герба, всередині — поле герба й ядро;
-## підсвічене — світле кільце. Розмір сталий за будь-якого масштабу, щоб місто не губилося поряд із героєм
-func _draw_dot(s: Dictionary, c0: Vector2, hl: bool) -> void:
-	var em: Dictionary = _emblem_for(s)
-	var tint := Color(String(em.get("tint", "#e2b84c")))
-	var field := Color(String(em.get("field", "#26262c")))
-	var dark := Color(0.08, 0.06, 0.05)
-	var r: float = DOT_PX - 5.5   # зубці виступають до DOT_PX: знак на екрані = зона входу
-	draw_circle(c0 + Vector2(2.0, 3.0), r + 4.0, Color(0, 0, 0, 0.45))
-	# Зубці стіни: вісім квадратиків по колу
-	for i in 8:
-		var d := Vector2.from_angle(TAU * float(i) / 8.0 - PI * 0.5)
-		var t: Vector2 = c0 + d * (r + 1.0)
-		draw_rect(Rect2(t - Vector2(4.5, 4.5), Vector2(9, 9)), dark)
-		draw_rect(Rect2(t - Vector2(3.0, 3.0), Vector2(6, 6)), tint)
-	draw_circle(c0, r + 2.0, dark)
-	draw_circle(c0, r, tint)
-	draw_circle(c0, r * 0.68, dark)
-	draw_circle(c0, r * 0.6, field)
-	draw_circle(c0, r * 0.24, tint)
-	if hl:
-		draw_arc(c0, DOT_PX - 1.0, 0.0, TAU, 48, Color(1.0, 0.92, 0.6), 2.0, true)   # підсвітка — по краю знака, не ширше за зону
 
 
 ## Знамено з гербом: поперечка, полотнище кольору поля з ластівчиним хвостом, фігура герба

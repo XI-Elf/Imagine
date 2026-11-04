@@ -1028,26 +1028,6 @@ msgstr "перешкода"
 msgid "преим."
 msgstr "перев."
 
-#: battle/encounters.gd
-msgid "в тени"
-msgstr "в тіні"
-
-#: battle/encounters.gd
-msgid "заметен"
-msgstr "помітний"
-
-#: battle/encounters.gd
-msgid "на виду"
-msgstr "на виду"
-
-#: battle/encounters.gd
-msgid "невидим"
-msgstr "невидимий"
-
-#: battle/encounters.gd
-msgid "укрыт"
-msgstr "укритий"
-
 #: characters/actor.gd
 msgid "болезнь"
 msgstr "хвороба"
@@ -1093,48 +1073,12 @@ msgid "утонул"
 msgstr "утопився"
 
 #: characters/cast.gd
-msgid "\n\nЛКМ идти, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I меню героя"
-msgstr "\n\nЛКМ іти, Z сон, E пити, F їжа або обшукати руїни, T лікар, R верхи / пішки, I меню героя"
-
-#: characters/cast.gd
-msgid "\n\nПройдено %.1f км"
-msgstr "\n\nПройдено %.1f км"
-
-#: characters/cast.gd
-msgid "\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n"
-msgstr "\n\nСила удару ×%.2f   Пошук ×%.2f   Швидкість ×%.2f\nВага, яку несе %.0f кг   Захист від прокляття %d %%\n"
-
-#: characters/cast.gd
-msgid "\n\nСостояния:"
-msgstr "\n\nСтани:"
-
-#: characters/cast.gd
-msgid "\n  + %s (%.0f ч)"
-msgstr "\n  + %s (%.0f год)"
-
-#: characters/cast.gd
-msgid "\nНавыки:"
-msgstr "\nНавички:"
-
-#: characters/cast.gd
-msgid "\nУровень %d, опыт %d / %d"
-msgstr "\nРівень %d, досвід %d / %d"
-
-#: characters/cast.gd
-msgid " (НПС)"
-msgstr " (НПС)"
-
-#: characters/cast.gd
 msgid " (обысканы)"
 msgstr " (обшукані)"
 
 #: characters/cast.gd
 msgid " (спит)"
 msgstr " (спить)"
-
-#: characters/cast.gd
-msgid " (стадия %d)"
-msgstr " (стадія %d)"
 
 #: characters/cast.gd
 msgid " (тонет!)"
@@ -1147,10 +1091,6 @@ msgstr " · ніч, без смолоскипа видно гірше"
 #: characters/cast.gd
 msgid " и дар"
 msgstr " і дар"
-
-#: characters/cast.gd
-msgid " нет"
-msgstr " немає"
 
 #: characters/cast.gd
 msgid "%s вылечил: %s (шанс %d %%)"
@@ -1209,10 +1149,6 @@ msgid "Витаутас"
 msgstr "Вітаутас"
 
 #: characters/cast.gd
-msgid "Вода"
-msgstr "Вода"
-
-#: characters/cast.gd
 msgid "Воды рядом нет"
 msgstr "Води поруч немає"
 
@@ -1235,10 +1171,6 @@ msgstr "Досяг рівня %d."
 #: characters/cast.gd
 msgid "Забрались на сигнальную вышку: сверху видно на %.1f км вокруг"
 msgstr "Ви вилізли на сигнальну вежу: згори видно на %.1f км довкола"
-
-#: characters/cast.gd
-msgid "Запас сил"
-msgstr "Запас сил"
 
 #: characters/cast.gd
 msgid "Ингрид"
@@ -1343,10 +1275,6 @@ msgstr "Сон"
 #: characters/cast.gd
 msgid "Сорха"
 msgstr "Сорха"
-
-#: characters/cast.gd
-msgid "Сытость"
-msgstr "Ситість"
 
 #: characters/cast.gd
 msgid "Тора"
@@ -1861,6 +1789,10 @@ msgid " (снято: %s)"
 msgstr " (знято: %s)"
 
 #: characters/hero_window.gd
+msgid " (стадия %d)"
+msgstr " (стадія %d)"
+
+#: characters/hero_window.gd
 msgid " · можно сдать"
 msgstr " · можна здати"
 
@@ -1917,6 +1849,10 @@ msgid "Взять дар «%s»"
 msgstr "Узяти дар «%s»"
 
 #: characters/hero_window.gd
+msgid "Вода"
+msgstr "Вода"
+
+#: characters/hero_window.gd
 msgid "Вступить в бой"
 msgstr "Вступити в бій"
 
@@ -1971,6 +1907,10 @@ msgstr "Завдання"
 #: characters/hero_window.gd
 msgid "Закрепить финальное решение"
 msgstr "Закріпити фінальне рішення"
+
+#: characters/hero_window.gd
+msgid "Запас сил"
+msgstr "Запас сил"
 
 #: characters/hero_window.gd
 msgid "Записки найдены: %d из %d"
@@ -2175,6 +2115,10 @@ msgstr "Довідник виживальника"
 #: characters/hero_window.gd
 msgid "Сумки нет."
 msgstr "Торби немає."
+
+#: characters/hero_window.gd
+msgid "Сытость"
+msgstr "Ситість"
 
 #: characters/hero_window.gd
 msgid "Травм и болезней нет. Всё цело."

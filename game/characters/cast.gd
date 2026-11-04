@@ -902,40 +902,6 @@ func _update_status() -> void:
 	sheet_visible = window.visible or _creator != null
 
 
-## Аркуш персонажа: годиться для героя й для будь-якого НПС
-func sheet_text(a: Actor) -> String:
-	var t: String = "%s%s\n\n" % [a.display_name, I18n.t(" (НПС)") if a.is_npc else ""]
-	var ch: Dictionary = R.characteristics()
-	# «Телосложение» — и характеристика 09, и ресурс пака: ресурс здесь зовётся «Запас сил»;
-	# голод и жажда пака — шкалы сытости и воды (100 — сыт и напоен)
-	var shown: Dictionary = {"hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "stamina": I18n.t("Запас сил")}
-	for r in Actor.RESOURCES:
-		t += "%s: %d / %d\n" % [shown.get(r, ch.get(r, {}).get("name_ru", r)), int(a.res[r]), int(a.max_of(r))]
-	var names: Dictionary = R.section("stats").get("names", {})
-	t += "\n"
-	for s in Actor.STATS:
-		t += "%s %d   " % [names.get(s, s), int(a.stat(s))]
-	t += I18n.t("\n\nСостояния:")
-	if a.conditions.is_empty() and a.buffs.is_empty():
-		t += I18n.t(" нет")
-	for c in a.conditions:
-		var d: Dictionary = R.condition(c["id"])
-		t += "\n  %s%s" % [d.get("name_ru", c["id"]), "" if c["id"] != "radiation_sickness" else I18n.t(" (стадия %d)") % int(c["stage"])]
-	for bf in a.buffs:
-		t += I18n.t("\n  + %s (%.0f ч)") % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])]
-	var dv: Dictionary = a.derived()
-	t += I18n.t("\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n") % [
-		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0)]
-	t += I18n.t("\nУровень %d, опыт %d / %d") % [a.level, int(a.xp), Sheet.xp_to_next(a)]
-	t += I18n.t("\nНавыки:")
-	var sk: Dictionary = R.skills()
-	for k in sk:
-		t += "\n  %s %d %%%s" % [sk[k].get("name_ru", k), a.skill(k), " ◆" if a.tags.has(k) else ""]
-	t += I18n.t("\n\nПройдено %.1f км") % (a.distance_m / 1000.0)
-	t += I18n.t("\n\nЛКМ идти, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I меню героя")
-	return t
-
-
 # =====================================================================
 # ЗБЕРЕЖЕННЯ
 # =====================================================================
