@@ -858,12 +858,14 @@ func _draw_ruins(font: Font) -> void:
 	var now: float = game.clock.total_seconds
 	for s in Ruins.in_rect(game, Rect2(game.cam_pos - vs * 0.5, vs).grow(40.0)):
 		var sp: Vector2 = game.world_to_screen(s["pos"])
-		var h: float = clampf(9.0 * game.zoom, 8.0, 260.0)
+		var h: float = clampf(24.0 * game.zoom, 12.0, 480.0)  # спрайт руїн у world_decor — до 23 м заввишки
 		var done: bool = Ruins.looted_now(ruins_looted, s["key"], now)
-		var tint: Color = Color(0.62, 0.6, 0.56) if done else Color(0.92, 0.86, 0.78)
-		var key: String = "tech_dome" if Art.seed_at(absi(hash(s["key"])) % 9973, 7, 31) > 0.6 else "tech_wreck"
-		Art.sprite(self, key, sp + Vector2(-h * 0.1, 0.0), h * 0.8, tint)
-		Art.sprite(self, "rock", sp + Vector2(h * 0.62, h * 0.12), h * 0.3, tint)
+		# Самі руїни малює шар світу (storybook/world_decor.gd, Pass4: храм/зала/техноруїни за біомом).
+		# Тут — лише те, що змінюється в грі: обшукані руїни притінені попелястою плямою, і підпис
+		if done:
+			draw_set_transform(sp + Vector2(0, -h * 0.25), 0.0, Vector2(1.0, 0.55))
+			draw_circle(Vector2.ZERO, h * 0.75, Color(0.18, 0.17, 0.16, 0.42))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		if game.zoom >= 0.6:
 			var label: String = I18n.t("Руины") + (I18n.t(" (обысканы)") if done else "")
 			draw_string_outline(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, 4, Color(0, 0, 0, 0.9))

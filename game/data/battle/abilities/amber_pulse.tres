@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_pulse"]
+
+[resource]
+script = ExtResource("1_pulse")
+id = "amber_pulse"
+title = "Импульс маяка"
+description = "Действие: узкий луч проклятого янтаря бьёт на расстоянии. Спасбросок Телосложения; при провале цель оглушена. Раз за бой."
+cost = "action"
+kind = "save"
+target = "enemy"
+stat = "int"
+range_ft = 40
+radius_ft = 0
+save_stat = "con"
+damage = [{"bonus": 2, "dice": "2d6", "type": "radiation"}]
+apply_effect = "stunned"
+effect_on_fail_only = true
+uses_per_battle = 1

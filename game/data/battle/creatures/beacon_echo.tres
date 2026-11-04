@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BattleCreature" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_beacon_echo"]
+
+[resource]
+script = ExtResource("1_beacon_echo")
+id = "beacon_echo"
+title = "Эхо протокола"
+level = 5
+scores = {
+"cha": 14,
+"con": 18,
+"dex": 16,
+"int": 16,
+"lck": 12,
+"str": 12,
+"wis": 16
+}
+hp_dice = "9d8"
+natural_ac = 15
+weapons = PackedStringArray("amber_blast")
+abilities = PackedStringArray("amber_pulse", "howl")
+immune = PackedStringArray()
+save_profs = PackedStringArray("con")
+speed_ft = 30
+ai = "support"
+morale = 0.0

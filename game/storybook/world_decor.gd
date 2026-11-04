@@ -16,8 +16,10 @@ extends Node2D
 ## клітинки не перекривають одна одну навпаки. Дрібниця проявляється з наближенням через uniform шейдера.
 
 const Art := preload("res://storybook/art.gd")
+const Ruins := preload("res://world/ruins.gd")
 
 const CHUNK: float = 128.0
+const RUIN_CLEAR_M: float = 16.0     # галявина навколо руїн у лісі
 const BUILD_MS: float = 5.0            # скільки мілісекунд кадру можна витрачати на нові клітинки
 const MAX_CACHED: int = 2500           # клітинок у пам'яті (дані), вузли — лише видимі
 const BIG_FROM_Z: float = 0.5          # велике (дерева, гори) видно з цього масштабу (пікселів на метр)
@@ -32,13 +34,14 @@ const FLOATS: int = 16                 # на екземпляр у буфері
 
 ## Ключ спрайта -> висота комірки атласу (пікс.)
 const KEYS: Array = ["tree_oak", "tree_light", "tree_crooked", "mountain_gray", "ridge_gray", "peak_gray", "cliff_gray",
-	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock", "tech_tower"]
+	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock", "tech_tower", "temple", "hall", "tech_wreck", "tech_dome"]
 const CELL_PX: int = 288
 const PAD: int = 16
 
 var game: Node2D
 var _root := Node2D.new()
 var _atlas: ImageTexture
+var _ruin_cache: Dictionary = {}        # клітинка сітки руїн -> точка руїни або Vector2.INF
 var _uv: Dictionary = {}               # ключ -> Color(u0, v0, du, dv)
 var _aspect: Dictionary = {}           # ключ -> ширина / висота
 var _mesh: ArrayMesh
@@ -148,7 +151,7 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 	# Велике: дерева сіткою 5,5 м (ліс), гори по 9 м, решта рідше
 	_grid(o, 5.5, 1, func(p: Vector2, n: float, b: int):
 		if b == 3 or b == 7:
-			if n > 0.18 and not _clearing(p):
+			if n > 0.18 and not _clearing(p) and not _near_ruin(p, RUIN_CLEAR_M):
 				var key: String = ["tree_oak", "tree_oak", "tree_light", "tree_crooked"][int(n * 37.0) % 4] if b == 3 else ["tree_crooked", "tree_crooked", "tree_light"][int(n * 37.0) % 3]
 				big.append([p, key, 7.0 + fposmod(n * 13.7, 1.0) * 5.0, Color(0.88, 0.8, 1.0) if b == 7 else Color.WHITE]))
 	_grid(o, 11.0, 2, func(p: Vector2, n: float, b: int):
@@ -167,6 +170,33 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 	_grid(o, 64.0, 5, func(p: Vector2, n: float, b: int):
 		if b in [2, 3, 4, 7, 8] and n > 0.993:
 			big.append([p, "tech_tower", 16.0 + fposmod(n * 911.0, 1.0) * 8.0, Color.WHITE]))
+	# Руїни — не абстрактний маркер: малюємо саме в тих детермінованих точках,
+	# які використовує інтеракція F (world/ruins.gd). Розташування не дублюється окремим RNG.
+	var ruin_step: float = Ruins.GRID_M
+	var ruin_c0 := Vector2i(floori(o.x / ruin_step), floori(o.y / ruin_step))
+	var ruin_c1 := Vector2i(floori((o.x + CHUNK) / ruin_step), floori((o.y + CHUNK) / ruin_step))
+	for ry in range(ruin_c0.y, ruin_c1.y + 1):
+		for rx in range(ruin_c0.x, ruin_c1.x + 1):
+			var ruin_cell := Vector2i(rx, ry)
+			var ruin_pos: Vector2 = Ruins.site_in(game, ruin_cell)
+			if ruin_pos == Vector2.INF:
+				continue
+			if ruin_pos.x < o.x or ruin_pos.y < o.y or ruin_pos.x >= o.x + CHUNK or ruin_pos.y >= o.y + CHUNK:
+				continue
+			var ruin_biome: int = game.biome_at(ruin_pos)
+			var ruin_roll: float = Art.seed_at(rx, ry, 31)
+			var ruin_key: String = "temple"
+			var ruin_tint: Color = Color(0.78, 0.75, 0.68)
+			var ruin_height: float = 12.0 + ruin_roll * 7.0
+			if ruin_biome == 7:
+				# У лісі навколо руїни галявина (дерева не ставляться ближче RUIN_CLEAR_M), і сама споруда вища за крони
+				ruin_key = "hall" if ruin_roll > 0.55 else "temple"
+				ruin_tint = Color(0.68, 0.72, 0.62)
+				ruin_height = 17.0 + ruin_roll * 6.0
+			elif ruin_biome == 8:
+				ruin_key = "tech_dome" if ruin_roll > 0.68 else "tech_wreck"
+				ruin_tint = Color(0.76, 0.78, 0.80)
+			big.append([ruin_pos, ruin_key, ruin_height, ruin_tint])
 	# Дрібниця: кущі й каміння по 4 м
 	_grid(o, 4.0, 4, func(p: Vector2, n: float, b: int):
 		if (b == 3 or b == 7) and _clearing(p) and n > 0.8:
@@ -316,6 +346,21 @@ func glade(p: Vector2, b: int) -> bool:
 
 
 # Галявина в лісі й суха трава в пустці — ті самі плями, що малює шейдер (map_shaders.gd)
+## Чи є руїна ближче r метрів (ті самі детерміновані точки, що й у world/ruins.gd); кеш за клітинкою сітки руїн
+func _near_ruin(p: Vector2, r: float) -> bool:
+	var step: float = Ruins.GRID_M
+	var c := Vector2i(floori(p.x / step), floori(p.y / step))
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var cell := c + Vector2i(dx, dy)
+			if not _ruin_cache.has(cell):
+				_ruin_cache[cell] = Ruins.site_in(game, cell)
+			var site: Vector2 = _ruin_cache[cell]
+			if site != Vector2.INF and site.distance_to(p) < r:
+				return true
+	return false
+
+
 func _clearing(p: Vector2) -> bool:
 	return _noise2(p / 520.0 + Vector2(4.3, 9.1)) > 0.66
 

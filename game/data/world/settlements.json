@@ -1,119 +1,121 @@
 {
- "_note": "Поселения на общей карте. Создано tools/make_settlements.py (seed 7); можно править руками. Координаты center и gate — метры доски; готовой дороги нет — дороги протаптываются в игре (world/trails.gd); cells — клетки [cx, cy] размером cell_m, клетка cx покрывает X от cx*cell_m. gate — точка выхода из города на общую карту. city_id — ключ мира города (data/cities/<city_id>.json, нет файла — data/cities/<template>.json).",
- "cell_m": 250.0,
- "sneak": {
-  "base": 0.3,
-  "per_sneak": 0.005,
-  "sneak_ref": 20.0,
-  "per_per": 0.02,
-  "per_luck": 0.01,
-  "night": 0.2,
-  "free_kg": 15.0,
-  "per_kg_over": 0.01,
-  "hurt_mult": 0.3,
-  "low_mult": 0.5,
-  "hurt_conditions": [
-   "luxation_arm",
-   "broken_arm",
-   "broken_leg",
-   "blindness"
-  ],
-  "min": 0.05,
-  "max": 0.9,
-  "caught_day": 0.5,
-  "caught_night": 0.25,
-  "per_agi_caught": 0.03,
-  "cooldown_h": 1.0,
-  "fall_chance": 0.1,
-  "fall_condition": "luxation_arm",
-  "stamina_cost": 30.0
- },
- "sizes": {
-  "hamlet": {
-   "name": "усадьба",
-   "cells": 1,
-   "template": "tpl_hamlet",
-   "radius_m": 60.0
+  "_note": "Поселения на общей карте. Создано tools/make_settlements.py (seed 7); можно править руками. Координаты center и gate — метры доски; готовой дороги нет — дороги протаптываются в игре (world/trails.gd); cells — клетки [cx, cy] размером cell_m, клетка cx покрывает X от cx*cell_m. gate — точка выхода из города на общую карту. city_id — ключ мира города (data/cities/<city_id>.json, нет файла — data/cities/<template>.json).",
+  "cell_m": 250.0,
+  "sneak": {
+    "base": 0.3,
+    "per_sneak": 0.005,
+    "sneak_ref": 20.0,
+    "per_per": 0.02,
+    "per_luck": 0.01,
+    "night": 0.2,
+    "free_kg": 15.0,
+    "per_kg_over": 0.01,
+    "hurt_mult": 0.3,
+    "low_mult": 0.5,
+    "hurt_conditions": [
+      "luxation_arm",
+      "broken_arm",
+      "broken_leg",
+      "blindness"
+    ],
+    "min": 0.05,
+    "max": 0.9,
+    "caught_day": 0.5,
+    "caught_night": 0.25,
+    "per_agi_caught": 0.03,
+    "cooldown_h": 1.0,
+    "fall_chance": 0.1,
+    "fall_condition": "luxation_arm",
+    "stamina_cost": 30.0
   },
-  "village": {
-   "name": "деревня",
-   "cells": 2,
-   "template": "tpl_village",
-   "radius_m": 90.0
+  "sizes": {
+    "hamlet": {
+      "name": "усадьба",
+      "cells": 1,
+      "template": "tpl_hamlet",
+      "radius_m": 60.0
+    },
+    "village": {
+      "name": "деревня",
+      "cells": 2,
+      "template": "tpl_village",
+      "radius_m": 90.0
+    },
+    "town": {
+      "name": "городок",
+      "cells": 4,
+      "template": "tpl_town",
+      "radius_m": 140.0
+    },
+    "city": {
+      "name": "город",
+      "cells": 7,
+      "template": "tpl_city",
+      "radius_m": 190.0
+    },
+    "capital": {
+      "name": "крупный город",
+      "cells": 12,
+      "template": "tpl_capital",
+      "radius_m": 260.0
+    }
   },
-  "town": {
-   "name": "городок",
-   "cells": 4,
-   "template": "tpl_town",
-   "radius_m": 140.0
-  },
-  "city": {
-   "name": "город",
-   "cells": 7,
-   "template": "tpl_city",
-   "radius_m": 190.0
-  },
-  "capital": {
-   "name": "крупный город",
-   "cells": 12,
-   "template": "tpl_capital",
-   "radius_m": 260.0
-  }
- },
- "settlements": [
-  {
-   "id": "s001",
-   "name": "Эшвик",
-   "size": "city",
-   "cells": [
-    [
-     12,
-     67
-    ],
-    [
-     11,
-     67
-    ],
-    [
-     12,
-     68
-    ],
-    [
-     13,
-     68
-    ],
-    [
-     11,
-     68
-    ],
-    [
-     10,
-     67
-    ],
-    [
-     12,
-     69
-    ]
-   ],
-   "center": [
-    3017.9,
-    17053.6
-   ],
-   "radius": 190.0,
-   "gate": [
-    2898.9,
-    17250.4
-   ],
-   "province": 7,
-   "region": 40,
-   "city_id": "s001",
-   "template": "tpl_city",
-   "walled": true,
-   "emblem": {
-    "field": "#26262c",
-    "charge": "tower",
-    "tint": "#e2b84c"
-   }
-  }
- ]
+  "settlements": [
+    {
+      "id": "s001",
+      "name": "Эшвик",
+      "size": "city",
+      "cells": [
+        [
+          12,
+          67
+        ],
+        [
+          11,
+          67
+        ],
+        [
+          12,
+          68
+        ],
+        [
+          13,
+          68
+        ],
+        [
+          11,
+          68
+        ],
+        [
+          10,
+          67
+        ],
+        [
+          12,
+          69
+        ]
+      ],
+      "center": [
+        3017.9,
+        17053.6
+      ],
+      "radius": 190.0,
+      "gate": [
+        2898.9,
+        17250.4
+      ],
+      "province": 7,
+      "region": 40,
+      "city_id": "s001",
+      "template": "tpl_city",
+      "walled": true,
+      "emblem": {
+        "field": "#292c2b",
+        "charge": "amber_eye",
+        "tint": "#d6a64a",
+        "secondary": "#7b4932",
+        "motto": "ПАМЯТЬ НЕ ГАСНЕТ"
+      }
+    }
+  ]
 }

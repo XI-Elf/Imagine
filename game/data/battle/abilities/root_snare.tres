@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BattleAbility" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_root"]
+
+[resource]
+script = ExtResource("1_root")
+id = "root_snare"
+title = "Корневой захват"
+description = "Действие: корни из трещин хватают противника. Спасбросок Ловкости; при провале цель опутана. Раз за бой."
+cost = "action"
+kind = "save"
+target = "enemy"
+stat = "str"
+range_ft = 20
+radius_ft = 0
+save_stat = "dex"
+damage = [{"bonus": 0, "dice": "1d6", "type": "bludgeoning"}]
+apply_effect = "restrained"
+effect_on_fail_only = true
+uses_per_battle = 1

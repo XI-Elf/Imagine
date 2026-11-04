@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BattleWeapon" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_amber"]
+
+[resource]
+script = ExtResource("1_amber")
+id = "amber_blast"
+title = "Импульс янтарного эха"
+icon = "torch"
+damage = [{"bonus": 2, "dice": "2d6", "type": "radiation"}, {"bonus": 0, "dice": "1d4", "type": "bludgeoning"}]
+proficiency = "natural"
+ranged = true
+range_ft = 40
+long_range_ft = 80
+attack_bonus = 2
