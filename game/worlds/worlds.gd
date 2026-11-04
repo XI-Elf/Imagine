@@ -180,6 +180,7 @@ func _attach(g: Node2D) -> void:
 	codex = {}
 	chronicle = []
 	battles_won = 0
+	campaign_state = StoryCampaign.fresh()  # новий герой — кампанія з початку (як міста й кодекс)
 	g.tree_exiting.connect(_on_game_exiting.bind(g))
 
 
@@ -729,7 +730,7 @@ func load_dict(d: Dictionary) -> void:
 	if journal != null:
 		journal.load_array(d.get("journal", []))
 	chronicle = d.get("chronicle", []).duplicate(true) if d.get("chronicle") is Array else []
-	campaign_state = d.get("campaign", StoryCampaign.fresh()).duplicate(true) if d.get("campaign", StoryCampaign.fresh()) is Dictionary else StoryCampaign.fresh()
+	campaign_state = StoryCampaign.migrate(d.get("campaign", null))  # міграція: 2D 11 без ключа, чужа схема без version -> з початку
 	if not list.is_empty() and game.get("cast") != null:
 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))
 	for e in list:

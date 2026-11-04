@@ -109,17 +109,3 @@ func _draw() -> void:
 		draw_line(m + Vector2(-hr * 0.25, 0), m + Vector2(hr * 0.25, 0), Color(0.35, 0.15, 0.12), 2.5)
 	else:
 		draw_arc(m + Vector2(0, -hr * 0.25 * mood), hr * 0.3, PI * 0.2 if mood > 0 else PI * 1.2, PI * 0.8 if mood > 0 else PI * 1.8, 10, Color(0.35, 0.15, 0.12), 2.5)
-	# Финальный слой — существующий ручной арт проекта. Обрезаем до погрудного плана,
-	# чтобы портреты диалога совпадали с чернильно-акварельными спрайтами мира.
-	var art_key: String = "villager"
-	match role:
-		"guard": art_key = "guard"
-		"bandit": art_key = "bandit"
-		"healer", "elder": art_key = "woman"
-		"trader", "innkeeper", "traveler": art_key = "traveler"
-	var art_path: String = "res://art/storybook/%s.png" % art_key
-	if ResourceLoader.exists(art_path):
-		var portrait_tex: Texture2D = load(art_path)
-		var source_size := Vector2(portrait_tex.get_width(), portrait_tex.get_height() * 0.60)
-		var target := Rect2(Vector2(13.0, 13.0), size - Vector2(26.0, 26.0))
-		draw_texture_rect_region(portrait_tex, target, Rect2(Vector2.ZERO, source_size), Color.WHITE, false, true)

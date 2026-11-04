@@ -995,10 +995,20 @@ func _draw_outline(s: Dictionary, cs: float, z: float) -> void:
 			for j in n:
 				var roll: float = rng.randf()
 				var foot: Vector2 = p + Vector2((float(i) + 0.5 + rng.randf_range(-0.13, 0.13)) * bw, (float(j) + 0.8 + rng.randf_range(-0.10, 0.10)) * bw)
-				if roll < 0.16:
-					buildings.append({"foot": foot, "key": "tree_oak", "height": bw * 0.62})
-				elif roll > 0.28:
-					buildings.append({"foot": foot, "key": "house" if roll < 0.78 else "inn", "height": bw * rng.randf_range(0.58, 0.85)})
+				if roll < 0.13:
+					buildings.append({"foot": foot, "key": "tree_oak" if roll < 0.08 else "tree_crooked", "height": bw * rng.randf_range(0.52, 0.68)})
+				elif roll < 0.19:
+					buildings.append({"foot": foot, "key": "well", "height": bw * 0.48})
+				elif roll < 0.25:
+					buildings.append({"foot": foot, "key": "stall", "height": bw * 0.52})
+				elif roll < 0.32:
+					buildings.append({"foot": foot, "key": "smithy", "height": bw * rng.randf_range(0.58, 0.78)})
+				elif roll < 0.39:
+					buildings.append({"foot": foot, "key": "temple", "height": bw * rng.randf_range(0.62, 0.82)})
+				elif roll < 0.46:
+					buildings.append({"foot": foot, "key": "inn", "height": bw * rng.randf_range(0.58, 0.82)})
+				elif roll > 0.50:
+					buildings.append({"foot": foot, "key": "house", "height": bw * rng.randf_range(0.56, 0.82)})
 	buildings.append({"foot": game.world_to_screen(s["_center"]), "key": "hall", "height": cs * 0.36})
 	buildings.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["foot"].y < b["foot"].y)
 	for building in buildings:

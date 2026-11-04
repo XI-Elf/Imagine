@@ -1123,6 +1123,8 @@ func hear_tale(n: Dictionary) -> void:
 	bag["money"] = int(bag["money"]) - fee
 	var w: Node = get_node_or_null("/root/Worlds")
 	w.codex[String(tale["id"])] = clock.total_seconds
+	if w.has_method("campaign_event"):
+		w.campaign_event("codex")
 	_chronicle("talk", I18n.t("Услышал от %s: «%s». Записано в дневник.") % [n["actor"].display_name, tale["title"]], "tale:" + String(tale["id"]))
 	var opts: Array = [[I18n.t("Назад"), func(): talk(n)]]
 	_open_panel("talk", "%s: %s" % [n["actor"].display_name, tale["title"]], "%s\n\n%s" % [tale["text"], I18n.t("Записано в дневник героя (вкладка 6).")], opts)
@@ -1485,6 +1487,8 @@ func _draw_ground(l: Node2D) -> void:
 			if under_sprite:
 				texture = grass
 			Art.surface(l, texture, r, _period(texture))
+			if not under_sprite and t in [T.GRASS, T.TREE, T.FIELD, T.ROAD, T.GATE, T.SQUARE, T.RUBBLE]:
+				_draw_tile_detail(l, t, x, y, r, cs)
 			if under_sprite:
 				l.draw_rect(r, Color(0.48, 0.53, 0.34, 0.30))
 				continue
@@ -1502,6 +1506,53 @@ func _draw_ground(l: Node2D) -> void:
 	for c in trails.stage_of:
 		if map.at(c.x, c.y) in TRAIL_TILES and not _sprite_cell(c.x, c.y):
 			Art.surface(l, dirt, Rect2(Vector2(c) * cs, Vector2(cs, cs)), _period(dirt), Color(1, 1, 1, TRAIL_ALPHA[trails.stage_of[c]]))
+
+
+## Дрібна нерегулярність поверхонь. Детермінована за координатами: не мерехтить і не змінює карту.
+## Це лише живописний шар — тип клітинки, прохідність і пошук шляху не зачіпаються.
+func _draw_tile_detail(l: Node2D, tile: int, x: int, y: int, r: Rect2, cs: float) -> void:
+	var city_salt: int = int(hash(city_id) % 100000)
+	var a: float = Art.seed_at(x, y, city_salt + 11)
+	var b: float = Art.seed_at(x, y, city_salt + 29)
+	var c: float = Art.seed_at(x, y, city_salt + 47)
+	var ink: Color = Color(0.18, 0.15, 0.11, 0.16)
+	var pale: Color = Color(0.88, 0.82, 0.66, 0.12)
+	var origin: Vector2 = r.position
+	if tile in [T.GRASS, T.TREE, T.FIELD]:
+		# Короткі трав'яні штрихи й рідкісні сухі стебла, не рівномірна сітка.
+		var count: int = 1 + int(a * 3.0)
+		for i in count:
+			var n: float = Art.seed_at(x + i * 17, y - i * 13, 71)
+			var px: float = 0.12 + fposmod(n * 2.31, 0.76)
+			var py: float = 0.12 + fposmod(n * 3.73, 0.76)
+			var at: Vector2 = origin + Vector2(px, py) * cs
+			var lean: float = (n - 0.5) * cs * 0.12
+			l.draw_line(at, at + Vector2(lean, -cs * (0.045 + n * 0.035)), Color(0.18, 0.22, 0.12, 0.20), 0.8)
+		if b > 0.78:
+			var pebble: Vector2 = origin + Vector2(0.18 + c * 0.62, 0.2 + a * 0.58) * cs
+			l.draw_circle(pebble, maxf(0.65, cs * 0.018), Color(0.55, 0.48, 0.34, 0.24))
+	elif tile in [T.ROAD, T.GATE]:
+		# Вибоїни та сліди коліс на ґрунтовій дорозі.
+		if a > 0.24:
+			var at: Vector2 = origin + Vector2(0.16 + b * 0.58, 0.18 + c * 0.58) * cs
+			l.draw_line(at, at + Vector2(cs * (0.08 + c * 0.08), cs * 0.018), Color(0.20, 0.15, 0.10, 0.16), 1.0)
+		if b > 0.72:
+			var at2: Vector2 = origin + Vector2(0.2 + c * 0.55, 0.2 + a * 0.55) * cs
+			l.draw_circle(at2, maxf(0.7, cs * 0.022), Color(0.75, 0.65, 0.48, 0.16))
+	elif tile == T.SQUARE:
+		# Нерегулярні потертості між плитами площі.
+		if a > 0.42:
+			var at: Vector2 = origin + Vector2(0.18 + b * 0.56, 0.18 + c * 0.56) * cs
+			l.draw_line(at, at + Vector2(cs * (0.06 + c * 0.08), cs * (0.015 + a * 0.02)), ink, 0.8)
+		if b > 0.82:
+			var at2: Vector2 = origin + Vector2(0.2 + c * 0.55, 0.2 + a * 0.55) * cs
+			l.draw_circle(at2, maxf(0.55, cs * 0.014), pale)
+	elif tile == T.RUBBLE:
+		# Дрібні уламки в завалах підкреслюють зруйновану кладку.
+		for i in 2:
+			var n: float = Art.seed_at(x + i * 23, y + i * 31, 103)
+			var at: Vector2 = origin + Vector2(0.14 + n * 0.62, 0.16 + fposmod(n * 2.7, 0.65)) * cs
+			l.draw_line(at, at + Vector2(cs * 0.07, cs * 0.025), Color(0.12, 0.10, 0.09, 0.24), 1.1)
 
 
 ## Повтор текстури в пікселях міста: за справжнім розміром візерунка (TEX_M), інакше як раніше
@@ -1553,6 +1604,17 @@ func _body(l: Node2D, p: Vector2, col: Color, a: Actor, dir: Vector2) -> void:
 ## Підпис у світі міста: шар малювання дахів лише запам'ятовує його, малює _draw_labels поверх усього
 func _label(_l: Node2D, _font: Font, at: Vector2, text: String, col: Color) -> void:
 	_labels.append([at, text, col])
+
+
+## Позначка нерозвіданої споруди на плані: без текстового «?» — лише стриманий знак на карті.
+func _draw_unknown_marker(l: Node2D, at: Vector2) -> void:
+	var k: float = 1.0 / maxf(cam.zoom.x, 0.05)
+	var radius: float = 5.0 * k
+	l.draw_circle(at, radius + 2.0 * k, Color(0.04, 0.035, 0.025, 0.72))
+	l.draw_arc(at, radius, 0.0, TAU, 20, Color(0.78, 0.66, 0.43, 0.88), maxf(k, 1.0))
+	l.draw_circle(at, 1.35 * k, Color(0.91, 0.79, 0.55, 0.92))
+	l.draw_line(at + Vector2(-8.0, 0.0) * k, at + Vector2(-5.5, 0.0) * k, Color(0.78, 0.66, 0.43, 0.75), maxf(k, 1.0))
+	l.draw_line(at + Vector2(5.5, 0.0) * k, at + Vector2(8.0, 0.0) * k, Color(0.78, 0.66, 0.43, 0.75), maxf(k, 1.0))
 
 
 ## Підписи: 15 px на екрані за будь-якого масштабу, на темній плашці з обвідкою, повна непрозорість
@@ -1747,10 +1809,12 @@ func _draw_roofs(l: Node2D) -> void:
 	# Labels and interaction markers remain above scenery, legible at any zoom.
 	for b in map.buildings:
 		var known: bool = discovered.has(String(b["id"]))
-		if known or _map_view:
-			var rr: Array = b["rect"]
-			var center := Vector2(float(rr[0]) + float(rr[2]) * 0.5, float(rr[1]) + float(rr[3]) * 0.5) * cs
-			_label(l, font, center, String(b["name"]) if known else "?", Color(1.0, 0.95, 0.8))
+		var rr: Array = b["rect"]
+		var center := Vector2(float(rr[0]) + float(rr[2]) * 0.5, float(rr[1]) + float(rr[3]) * 0.5) * cs
+		if known:
+			_label(l, font, center, String(b["name"]), Color(1.0, 0.95, 0.8))
+		elif _map_view:
+			_draw_unknown_marker(l, center)
 	for n in npcs:
 		if n["pos"].distance_to(hero_pos) < 10.0 and _visible_for_hero(n["pos"]):
 			_label(l, font, n["pos"] * PX + Vector2(0, -PX * 2.1), n["actor"].display_name + (I18n.t(" (спит)") if n["actor"].sleeping else ""), Color(0.98, 0.93, 0.78))
@@ -2054,9 +2118,10 @@ func turn_in(n: Dictionary, q: Dictionary, choice: String = "") -> void:
 	var id: String = String(n["def"]["id"])
 	var extra: int = _speech_extra(q)
 	Growth.complete(full_def, growth, q, bag)
-	var world_manager: Node = get_node_or_null("/root/Worlds")
-	if world_manager != null and world_manager.has_method("campaign_event"):
-		world_manager.campaign_event("city_quest", city_id)
+	if not bool(q.get("endless", false)):  # безкінечні доручення сюжет не рухають (фільтр Pass5)
+		var world_manager: Node = get_node_or_null("/root/Worlds")
+		if world_manager != null and world_manager.has_method("campaign_event"):
+			world_manager.campaign_event("city_quest", city_id)
 	_chronicle("quest", I18n.t("Выполнил поручение «%s» для %s.") % [q["title"], n["actor"].display_name], "quest:" + String(q["id"]))
 	var text: String = "«%s»" % q["done"]
 	if fork_text != "":
