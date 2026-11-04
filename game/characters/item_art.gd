@@ -50,6 +50,9 @@ const SPECS: Dictionary = {
 	"scrap": ["scrap", "6e7a87", "8c4a1e", "rust"],
 	"old_coin": ["coin", "c9a24b", "8a6a24", "worn"],
 	"amber": ["gem", "e09a2c", "f6d27a", ""],
+	"amber_key_fragment": ["key_fragment", "d6a64a", "7b4932", "rings"],
+	"flooded_ledger_page": ["ledger_page", "d8c692", "5a4b39", "ink"],
+	"beacon_lens": ["lens", "d6a64a", "8d9aa0", "crack"],
 	"brushwood": ["sticks", "7a5a3a", "4a3624", ""],
 	"driftwood": ["log", "b8a98a", "8a7a5c", "grain"],
 	"reed": ["reeds", "b9b45a", "7a8a3a", ""],
@@ -94,6 +97,13 @@ static func draw(ci: CanvasItem, id: String, r: Rect2) -> bool:
 	var o: Vector2 = r.get_center()
 	var s: float = minf(r.size.x, r.size.y) * 0.5
 	_shape(ci, String(sp[0]), o, s, Color(String(sp[1])), Color(String(sp[2])), String(sp[3]))
+	# Лёгкая сухая штриховка поверх заливки: единая тушевая фактура для еды,
+	# материалов, оружия и экипировки, без замены исходных силуэтов предметов.
+	var seed_value: int = abs(hash(id))
+	for i in 4:
+		var x: float = -0.42 + float((seed_value >> (i * 3)) & 7) * 0.11
+		var y: float = -0.48 + float((seed_value >> (i * 4 + 2)) & 7) * 0.12
+		ci.draw_line(o + Vector2(x, y) * s, o + Vector2(x + 0.13, y + 0.18) * s, Color(0.10, 0.07, 0.05, 0.22), maxf(0.8, s * 0.012))
 	return true
 
 
@@ -165,6 +175,22 @@ static func _disc(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
 
 static func _shape(ci: CanvasItem, kind: String, o: Vector2, s: float, c1: Color, c2: Color, mark: String) -> void:
 	match kind:
+		"key_fragment":
+			_poly(ci, o, s, [[-0.18, -0.8], [0.18, -0.8], [0.18, 0.18], [0.58, 0.18], [0.58, 0.42], [0.3, 0.42], [0.3, 0.7], [-0.05, 0.7], [-0.05, 0.18], [-0.18, 0.18]], c1)
+			_disc(ci, o + Vector2(0, -0.52) * s, s * 0.22, c2)
+			for i in 3:
+				ci.draw_arc(o + Vector2(0, -0.52) * s, s * (0.28 + i * 0.09), 0.3, 2.7, 16, c2, 1.2)
+		"ledger_page":
+			_poly(ci, o, s, [[-0.58, -0.78], [0.42, -0.78], [0.62, -0.56], [0.62, 0.78], [-0.58, 0.78]], c1)
+			ci.draw_line(o + Vector2(0.42, -0.78) * s, o + Vector2(0.42, -0.56) * s, c2, 1.5)
+			for i in 4:
+				ci.draw_line(o + Vector2(-0.36, -0.35 + i * 0.22) * s, o + Vector2(0.38, -0.35 + i * 0.22) * s, c2, 1.5)
+			ci.draw_line(o + Vector2(-0.3, -0.48) * s, o + Vector2(0.15, -0.48) * s, Color("7b4932"), 2.0)
+		"lens":
+			_disc(ci, o, s * 0.62, c2)
+			_poly(ci, o, s, [[0, -0.7], [0.48, -0.3], [0.62, 0.1], [0.28, 0.62], [-0.28, 0.62], [-0.62, 0.1], [-0.48, -0.3]], c1)
+			ci.draw_line(o + Vector2(-0.22, -0.35) * s, o + Vector2(0.18, 0.45) * s, Color("efe6d2"), 2.0)
+			ci.draw_line(o + Vector2(0.18, 0.45) * s, o + Vector2(0.34, 0.1) * s, INK, 1.3)
 		"loaf":
 			_poly(ci, o, s, [[-0.8, 0.35], [-0.7, -0.15], [-0.3, -0.45], [0.3, -0.45], [0.7, -0.15], [0.8, 0.35], [0.5, 0.5], [-0.5, 0.5]], c1)
 			for i in 3:

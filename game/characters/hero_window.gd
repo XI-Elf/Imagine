@@ -22,9 +22,10 @@ const BATTLE_CONFIG := "res://data/battle/config.tres"
 
 const Codex := preload("res://world/codex.gd")
 const Chronicle := preload("res://characters/chronicle.gd")
-const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "quests", "map", "injuries", "diary", "chronicle"]
+const StoryCampaign := preload("res://story/campaign.gd")
+const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "quests", "map", "injuries", "diary", "chronicle", "story"]
 static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"),
-	"quests": I18n.t("Задания"), "map": I18n.t("Карта"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
+	"quests": I18n.t("Задания"), "map": I18n.t("Карта"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника"), "story": I18n.t("Кампания")}
 const TAB_KEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 const EMBED_H: float = 500.0       # высота вкладок «Задания» и «Карта»
 const COL_TEXT := Color("d8cfb0")
@@ -193,6 +194,9 @@ func refresh() -> void:
 	var sig: String = tab + "|" + JSON.stringify(_bag())
 	if tab == "diary":
 		sig += "|%d" % _codex().size()
+	if tab == "story":
+		var w_story: Node = _worlds()
+		sig += "|%s" % JSON.stringify(w_story.get("campaign_state") if w_story != null else {})
 	if tab == "chronicle":
 		sig += "|%d" % Chronicle.entries(get_node_or_null("/root/Worlds")).size()
 	if a != null:
@@ -243,6 +247,8 @@ func refresh() -> void:
 			_fill_diary()
 		"chronicle":
 			_fill_chronicle()
+		"story":
+			_fill_story()
 
 
 # =====================================================================
@@ -686,6 +692,93 @@ func _read_note(text: String) -> String:
 # =====================================================================
 # ХРОНІКА: ключові події життя самого героя (не історія світу)
 # =====================================================================
+
+
+# =====================================================================
+# СЮЖЕТНАЯ КАМПАНИЯ: выборы, персонажи и особые встречи
+# =====================================================================
+func _fill_story() -> void:
+	var w: Node = _worlds()
+	var state: Dictionary = w.get("campaign_state") if w != null and w.get("campaign_state") is Dictionary else StoryCampaign.fresh()
+	var data: Dictionary = StoryCampaign.data()
+	_body.add_child(_label(String(data.get("title", "Кампания")), 21, COL_GOLD))
+	_body.add_child(_wrap(String(data.get("premise", "")), 15, COL_TEXT))
+	_body.add_child(HSeparator.new())
+	if StoryCampaign.is_complete(state):
+		_body.add_child(_label(I18n.t("Кампания завершена"), 19, COL_GOOD))
+		_body.add_child(_wrap(I18n.t("Ваш выбор стал частью летописи Эшвика."), 15, COL_TEXT))
+	else:
+		var ch: Dictionary = StoryCampaign.current(state)
+		_body.add_child(_label(String(ch.get("title", "")), 19, COL_GOLD))
+		_body.add_child(_wrap(String(ch.get("summary", "")), 15, COL_TEXT))
+		for line in ch.get("dialogue", []):
+			_body.add_child(_label("%s" % String(line.get("speaker", "")), 14, COL_GOLD))
+			_body.add_child(_wrap("«%s»" % String(line.get("text", "")), 14, COL_TEXT))
+		var obj: Dictionary = ch.get("objective", {})
+		var need: int = maxi(1, int(obj.get("count", 1)))
+		var have: int = mini(int(state.get("progress", 0)), need)
+		var objective_names: Dictionary = {"city_enter": I18n.t("Прибыть в Эшвик"), "city_quest": I18n.t("Сдать поручение в Эшвике"), "travel_km": I18n.t("Пройти указанное расстояние"), "boss_defeated": I18n.t("Победить особого противника"), "ending_chosen": I18n.t("Закрепить финальное решение")}
+		var objective_text: String = String(objective_names.get(String(obj.get("event", "")), String(obj.get("event", ""))))
+		_body.add_child(HSeparator.new())
+		_body.add_child(_label(I18n.t("Цель: %s — %d/%d") % [objective_text, have, need], 15, COL_GOOD if have >= need else COL_DIM))
+		if bool(state.get("awaiting_choice", false)):
+			var choice: Dictionary = ch.get("choice", {})
+			_body.add_child(_label(String(choice.get("prompt", I18n.t("Ваше решение"))), 17, COL_GOLD))
+			for option in choice.get("options", []):
+				var b := Button.new()
+				b.text = String(option.get("title", "")) + " — " + String(option.get("description", ""))
+				b.custom_minimum_size = Vector2(0, 48)
+				b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				b.pressed.connect(_choose_story.bind(String(option.get("id", ""))))
+				_body.add_child(b)
+		_body.add_child(HSeparator.new())
+		_body.add_child(_label(I18n.t("Особые противники"), 17, COL_GOLD))
+		for boss in data.get("bosses", []):
+			var boss_id: String = String(boss.get("id", ""))
+			var loc: Dictionary = StoryCampaign.location(String(boss.get("location", "")))
+			var unlocked: bool = StoryCampaign.boss_unlocked(state, boss_id) and w != null
+			_body.add_child(_label(String(boss.get("name", "")) + (" · " + I18n.t("доступен") if unlocked else " · " + I18n.t("пока закрыт")), 15, COL_GOOD if unlocked else COL_DIM))
+			_body.add_child(_wrap(String(boss.get("description", "")) + "\n" + String(loc.get("name", "")) + " — " + str(loc.get("position", [])), 13, COL_DIM))
+			if unlocked:
+				var bb := Button.new()
+				bb.text = I18n.t("Вступить в бой")
+				bb.pressed.connect(func(): w.start_story_boss(boss_id); _sig = ""; refresh())
+				_body.add_child(bb)
+	_body.add_child(HSeparator.new())
+	_body.add_child(_label(I18n.t("Действующие лица"), 17, COL_GOLD))
+	for person in data.get("characters", []):
+		_body.add_child(_label(String(person.get("name", "")) + " — " + String(person.get("role", "")), 15, COL_TEXT))
+		_body.add_child(_wrap(I18n.t("Мотив: %s\nМанера речи: %s") % [String(person.get("motive", "")), String(person.get("voice", ""))], 13, COL_DIM))
+	_body.add_child(HSeparator.new())
+	_body.add_child(_label(I18n.t("История решений"), 17, COL_GOLD))
+	for decision in state.get("history", []):
+		_body.add_child(_label("%s: %s" % [String(decision.get("chapter", "")), String(decision.get("option", ""))], 14, COL_GOOD))
+
+func _choose_story(option_id: String) -> void:
+	var w: Node = _worlds()
+	if w == null: return
+	var state: Dictionary = w.get("campaign_state")
+	var option: Dictionary = StoryCampaign.choose(state, option_id)
+	if option.is_empty(): return
+	var inventory: Dictionary = w.get("inventory")
+	if inventory is Dictionary:
+		for item_id in option.get("items", {}):
+			Trade.add(inventory, String(item_id), int(option["items"][item_id]))
+	# Последствия решений закрепляются в состоянии поселения и переживают выход/повторный вход.
+	var cities: Dictionary = w.get("city_states")
+	if cities is Dictionary:
+		var ashwick: Dictionary = cities.get("s001", {})
+		var rep: Dictionary = ashwick.get("story_reputation", {})
+		for effect_id in state.get("effects", {}):
+			if String(effect_id).ends_with("_reputation"):
+				rep[String(effect_id)] = int(state["effects"][effect_id])
+		ashwick["story_reputation"] = rep
+		ashwick["story_flags"] = state.get("flags", {}).duplicate(true)
+		cities["s001"] = ashwick
+	_sig = ""
+	refresh()
+
+
 func _fill_chronicle() -> void:
 	var log: Array = Chronicle.entries(get_node_or_null("/root/Worlds"))
 	if log.is_empty():

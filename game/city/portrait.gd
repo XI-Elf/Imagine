@@ -66,11 +66,29 @@ func _draw() -> void:
 	var c := Vector2(size.x * 0.5, size.y * 0.44)
 	var hr: float = size.x * 0.22
 	# плечі й тулуб
-	draw_colored_polygon(PackedVector2Array([Vector2(size.x * 0.12, size.y - 12.0), Vector2(size.x * 0.2, size.y * 0.72), Vector2(size.x * 0.8, size.y * 0.72), Vector2(size.x * 0.88, size.y - 12.0)]), cloth)
+	var torso := PackedVector2Array([Vector2(size.x * 0.12, size.y - 12.0), Vector2(size.x * 0.2, size.y * 0.72), Vector2(size.x * 0.8, size.y * 0.72), Vector2(size.x * 0.88, size.y - 12.0)])
+	draw_colored_polygon(torso, cloth)
+	var torso_line := torso.duplicate(); torso_line.append(torso[0])
+	draw_polyline(torso_line, Color(0.08, 0.07, 0.06, 0.9), 2.2, true)
+	# Штриховка ткани: короткие неровные штрихи вместо гладкой заливки.
+	for k in 7:
+		var xx: float = size.x * (0.24 + float(k) * 0.075)
+		draw_line(Vector2(xx, size.y * 0.78), Vector2(xx - size.x * 0.055, size.y * 0.91), cloth.lightened(0.16), 1.0)
+	draw_line(Vector2(size.x * 0.5, size.y * 0.72), Vector2(size.x * 0.5, size.y - 13.0), Color(0.08, 0.07, 0.06, 0.8), 1.4)
 	draw_rect(Rect2(c + Vector2(-hr * 0.35, hr * 0.7), Vector2(hr * 0.7, hr * 0.6)), skin.darkened(0.15))
 	# голова, волосся
 	draw_circle(c, hr, skin)
-	draw_arc(c, hr, PI * 1.05, PI * 1.95, 18, hair, hr * 0.5)
+	draw_arc(c, hr, 0.0, TAU, 36, Color(0.08, 0.06, 0.05), 1.8, true)
+	# Неровная масса волос с прядями, тушевая обводка лица.
+	draw_colored_polygon(PackedVector2Array([c + Vector2(-hr, -hr * 0.05), c + Vector2(-hr * 0.86, -hr * 0.78), c + Vector2(-hr * 0.25, -hr * 1.12), c + Vector2(hr * 0.45, -hr * 1.04), c + Vector2(hr, -hr * 0.2), c + Vector2(hr * 0.62, -hr * 0.52), c + Vector2(-hr * 0.48, -hr * 0.5)]), hair)
+	draw_polyline(PackedVector2Array([c + Vector2(-hr, -hr * 0.05), c + Vector2(-hr * 0.86, -hr * 0.78), c + Vector2(-hr * 0.25, -hr * 1.12), c + Vector2(hr * 0.45, -hr * 1.04), c + Vector2(hr, -hr * 0.2)]), Color(0.06, 0.05, 0.04), 1.8, true)
+	for strand in 4:
+		var sx: float = -hr * 0.55 + float(strand) * hr * 0.34
+		draw_line(c + Vector2(sx, -hr * 0.85), c + Vector2(sx - hr * 0.12, -hr * 0.48), hair.lightened(0.2), 1.0)
+	if role in ["elder", "innkeeper", "smith"]:
+		# Щетина/борода — разные силуэты у старших и ремесленников.
+		draw_colored_polygon(PackedVector2Array([c + Vector2(-hr * 0.72, hr * 0.2), c + Vector2(-hr * 0.52, hr * 0.78), c + Vector2(0, hr * 1.18), c + Vector2(hr * 0.52, hr * 0.78), c + Vector2(hr * 0.72, hr * 0.2)]), hair.darkened(0.08))
+		draw_polyline(PackedVector2Array([c + Vector2(-hr * 0.72, hr * 0.2), c + Vector2(0, hr * 1.18), c + Vector2(hr * 0.72, hr * 0.2)]), Color(0.07, 0.05, 0.04), 1.5, true)
 	if role == "guard":
 		draw_arc(c, hr * 1.05, PI, TAU, 18, Color(0.45, 0.45, 0.42), hr * 0.35)   # шолом
 	# очі стежать за курсором
@@ -91,3 +109,17 @@ func _draw() -> void:
 		draw_line(m + Vector2(-hr * 0.25, 0), m + Vector2(hr * 0.25, 0), Color(0.35, 0.15, 0.12), 2.5)
 	else:
 		draw_arc(m + Vector2(0, -hr * 0.25 * mood), hr * 0.3, PI * 0.2 if mood > 0 else PI * 1.2, PI * 0.8 if mood > 0 else PI * 1.8, 10, Color(0.35, 0.15, 0.12), 2.5)
+	# Финальный слой — существующий ручной арт проекта. Обрезаем до погрудного плана,
+	# чтобы портреты диалога совпадали с чернильно-акварельными спрайтами мира.
+	var art_key: String = "villager"
+	match role:
+		"guard": art_key = "guard"
+		"bandit": art_key = "bandit"
+		"healer", "elder": art_key = "woman"
+		"trader", "innkeeper", "traveler": art_key = "traveler"
+	var art_path: String = "res://art/storybook/%s.png" % art_key
+	if ResourceLoader.exists(art_path):
+		var portrait_tex: Texture2D = load(art_path)
+		var source_size := Vector2(portrait_tex.get_width(), portrait_tex.get_height() * 0.60)
+		var target := Rect2(Vector2(13.0, 13.0), size - Vector2(26.0, 26.0))
+		draw_texture_rect_region(portrait_tex, target, Rect2(Vector2.ZERO, source_size), Color.WHITE, false, true)

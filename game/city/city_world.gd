@@ -2054,6 +2054,9 @@ func turn_in(n: Dictionary, q: Dictionary, choice: String = "") -> void:
 	var id: String = String(n["def"]["id"])
 	var extra: int = _speech_extra(q)
 	Growth.complete(full_def, growth, q, bag)
+	var world_manager: Node = get_node_or_null("/root/Worlds")
+	if world_manager != null and world_manager.has_method("campaign_event"):
+		world_manager.campaign_event("city_quest", city_id)
 	_chronicle("quest", I18n.t("Выполнил поручение «%s» для %s.") % [q["title"], n["actor"].display_name], "quest:" + String(q["id"]))
 	var text: String = "«%s»" % q["done"]
 	if fork_text != "":
