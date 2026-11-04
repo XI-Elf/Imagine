@@ -123,6 +123,7 @@ var settlements: Node2D     # міста й поселення на загаль
 var trails: Node2D          # протоптані дороги (world/trails_layer.gd): з'являються там, де ходять
 var fog: CanvasLayer        # туман війни (world/fog_layer.gd): невідоме закрите, досліджене зберігається
 var decor: Node2D           # дерева, гори, кущі (storybook/world_decor.gd)
+var region_view: CanvasLayer  # V: огляд регіону «як мальована карта» (world/region_view.gd)
 
 
 func _ready() -> void:
@@ -193,6 +194,9 @@ func _startup() -> void:
 	fog = FogScript.new()
 	fog.game = self
 	add_child(fog)
+	region_view = preload("res://world/region_view.gd").new()
+	add_child(region_view)
+	region_view.setup(self)
 	# Два кадри: шейдер компілюється при першому малюванні
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -382,6 +386,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			physics.change_weather_speed(1)
 		if event.physical_keycode == KEY_COMMA:
 			physics.change_weather_speed(-1)
+		# Огляд регіону (world/region_view.gd): закриває V / Esc сам огляд
+		if event.physical_keycode == KEY_V and region_view != null:
+			region_view.open()
 		# Хмари згори
 		if event.physical_keycode == KEY_C:
 			show_clouds = not show_clouds
