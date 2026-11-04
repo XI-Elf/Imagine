@@ -16,7 +16,6 @@ extends Node2D
 ## клітинки не перекривають одна одну навпаки. Дрібниця проявляється з наближенням через uniform шейдера.
 
 const Art := preload("res://storybook/art.gd")
-const Ruins := preload("res://world/ruins.gd")
 
 const CHUNK: float = 128.0
 const BUILD_MS: float = 5.0            # скільки мілісекунд кадру можна витрачати на нові клітинки
@@ -33,7 +32,7 @@ const FLOATS: int = 16                 # на екземпляр у буфері
 
 ## Ключ спрайта -> висота комірки атласу (пікс.)
 const KEYS: Array = ["tree_oak", "tree_light", "tree_crooked", "mountain_gray", "ridge_gray", "peak_gray", "cliff_gray",
-	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock", "tech_tower", "temple", "hall", "tech_wreck", "tech_dome"]
+	"mountain_hot", "mesa_hot", "ridge_hot", "bush_flower", "bush_berry", "rock", "tech_tower"]
 const CELL_PX: int = 288
 const PAD: int = 16
 
@@ -168,31 +167,6 @@ func _chunk_data(k: Vector2i) -> Dictionary:
 	_grid(o, 64.0, 5, func(p: Vector2, n: float, b: int):
 		if b in [2, 3, 4, 7, 8] and n > 0.993:
 			big.append([p, "tech_tower", 16.0 + fposmod(n * 911.0, 1.0) * 8.0, Color.WHITE]))
-	# Руїни — не абстрактний маркер: малюємо саме в тих детермінованих точках,
-	# які використовує інтеракція F (world/ruins.gd). Розташування не дублюється окремим RNG.
-	var ruin_step: float = Ruins.GRID_M
-	var ruin_c0 := Vector2i(floori(o.x / ruin_step), floori(o.y / ruin_step))
-	var ruin_c1 := Vector2i(floori((o.x + CHUNK) / ruin_step), floori((o.y + CHUNK) / ruin_step))
-	for ry in range(ruin_c0.y, ruin_c1.y + 1):
-		for rx in range(ruin_c0.x, ruin_c1.x + 1):
-			var ruin_cell := Vector2i(rx, ry)
-			var ruin_pos: Vector2 = Ruins.site_in(game, ruin_cell)
-			if ruin_pos == Vector2.INF:
-				continue
-			if ruin_pos.x < o.x or ruin_pos.y < o.y or ruin_pos.x >= o.x + CHUNK or ruin_pos.y >= o.y + CHUNK:
-				continue
-			var ruin_biome: int = game.biome_at(ruin_pos)
-			var ruin_roll: float = Art.seed_at(rx, ry, 31)
-			var ruin_key: String = "temple"
-			var ruin_tint: Color = Color(0.78, 0.75, 0.68)
-			if ruin_biome == 7:
-				ruin_key = "hall" if ruin_roll > 0.55 else "temple"
-				ruin_tint = Color(0.68, 0.72, 0.62)
-			elif ruin_biome == 8:
-				ruin_key = "tech_dome" if ruin_roll > 0.68 else "tech_wreck"
-				ruin_tint = Color(0.76, 0.78, 0.80)
-			var ruin_height: float = 12.0 + ruin_roll * 7.0
-			big.append([ruin_pos, ruin_key, ruin_height, ruin_tint])
 	# Дрібниця: кущі й каміння по 4 м
 	_grid(o, 4.0, 4, func(p: Vector2, n: float, b: int):
 		if (b == 3 or b == 7) and _clearing(p) and n > 0.8:
