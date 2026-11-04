@@ -1,15 +1,16 @@
 extends SceneTree
 ## Сумісність збережень (злиття 2D 12): файл, записаний справжньою грою 2D 11 (tests/fixtures/save_2d11.dat:
 ## герой «Сумісний» у Ешвіку, взяті доручення шкіряника, ніж), відкривається новою збіркою без втрат.
-## Кампанія в такому файлі відсутня — має початися з першого розділу; після запису й повторного читання прогрес кампанії зберігається.
+## Кампанію 2D 12 вирізано (modules_cut/quests_2d12): файл 2D 12 з ключем «campaign», сюжетною річчю в сумці
+## й боєм із сюжетним босом відкривається без помилок; ключ кампанії переноситься в нове збереження без змін.
 ## Також: перегляд списку збережень не видаляє файли іншої версії (пункт аудиту 2D 10).
 ## godot --path game --rendering-driver opengl3 -s res://tests/save_compat_checks.gd
 
 const WorldSave := preload("res://world_save.gd")
 const Trade := preload("res://city/trade.gd")
-const StoryCampaign := preload("res://story/campaign.gd")
 const FIXTURE := "res://tests/fixtures/save_2d11.dat"
 const SLOT := "compat_2d11"
+const SLOT12 := "compat_2d12_campaign"
 var fails: int = 0
 var checks: int = 0
 
@@ -83,23 +84,43 @@ func _run() -> void:
 	ok(game.cast.hero["actor"].display_name == "Сумісний", "ім'я героя збережене")
 	ok(W.current_kind() == "city" and W.current_node() != null and W.current_node().city_id == "s001", "після завантаження — у Ешвіку")
 	ok(Trade.count(W.inventory, "knife") == 1 and Trade.count(W.inventory, "water_flask") == 2, "сумка з 2D 11 на місці")
-	# Вхід у Ешвік під час завантаження сам зараховує мету першого розділу («прибути до Ешвіка»)
-	ok(int(W.campaign_state.get("version", 0)) == 1 and int(W.campaign_state.get("chapter", -1)) == 0 and W.campaign_state.get("completed", [1]).is_empty() and W.campaign_state.get("history", [1]).is_empty(),
-		"кампанія для старого збереження починається з першого розділу")
+	ok(W.get("campaign_state") == null and not W.has_method("campaign_event"), "кампанії в грі немає (модуль вирізано)")
+	ok(not WorldSave.read(SLOT).is_empty(), "файл 2D 11 і далі читається")
 
-	# Прогрес кампанії переживає запис і повторне читання
-	ok(W.campaign_event("city_enter", "s001"), "подія кампанії «прибути до Ешвіка» зарахована")
-	var ch_before: int = int(W.campaign_state.get("chapter", 0))
-	var waiting: bool = bool(W.campaign_state.get("awaiting_choice", false))
-	ok(WorldSave.write(game, true), "запис у новому форматі")
-	var slot2: String = WorldSave.latest_slot()
+	# Файл 2D 12 з кампанією: той самий світ + ключ «campaign», сюжетна річ у сумці, збережений бій із босом
+	var hdr: Dictionary = {}
+	var fr := FileAccess.open(WorldSave.path_of(SLOT), FileAccess.READ)
+	var first: Variant = fr.get_var(false)
+	fr.close()
+	if first is Dictionary and first.has("header"):
+		hdr = first.duplicate(true)
+	var d12: Dictionary = d.duplicate(true)
+	var campaign: Dictionary = {"version": 1, "chapter": 2, "progress": 1, "awaiting_choice": true, "completed": ["arrival", "amber_trace"], "flags": {"told_guard": true}, "effects": {}, "history": []}
+	d12["worlds"]["campaign"] = campaign
+	d12["worlds"]["inventory"]["items"]["beacon_lens"] = 1
+	var stack: Array = d12["worlds"].get("stack", [])
+	stack.append({"kind": "battle", "req": {"origin": "story_boss:boss_warden", "enemies_dicts": [], "allies_ids": []}, "state": {}})
+	d12["worlds"]["stack"] = stack
+	var fw := FileAccess.open(WorldSave.path_of(SLOT12), FileAccess.WRITE)
+	if not hdr.is_empty():
+		fw.store_var(hdr, false)
+	fw.store_var(d12, false)
+	fw.close()
 	game.queue_free()
 	await frames(5)
-	game = await load_game(slot2)
+	game = await load_game(SLOT12)
 	await wait_worlds(W)
-	ok(int(W.campaign_state.get("chapter", -1)) == ch_before and bool(W.campaign_state.get("awaiting_choice", false)) == waiting and int(W.campaign_state.get("version", 0)) == 1,
-		"стан кампанії відновлено (розділ %d, очікує вибору: %s)" % [ch_before, waiting])
+	ok(game.ready_done and not game.cast.hero.is_empty(), "збереження 2D 12 з кампанією завантажилося")
+	ok(W.current_kind() != "battle", "бій із вирізаним сюжетним босом не відновлюється")
+	ok(Trade.count(W.inventory, "beacon_lens") == 0 and Trade.count(W.inventory, "knife") == 1, "сюжетна річ прибрана з сумки, решта на місці")
+	ok(WorldSave.write(game, true), "запис після завантаження")
+	var slot2: String = WorldSave.latest_slot()
+	var back: Dictionary = WorldSave.read(slot2)
+	ok(back.get("worlds", {}).get("campaign", {}) == campaign, "ключ кампанії перенесено в нове збереження без змін")
+	game.queue_free()
+	await frames(5)
 	WorldSave.delete(slot2)
+	WorldSave.delete(SLOT12)
 	WorldSave.delete(SLOT)
 	print("SAVE COMPAT CHECKS: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)

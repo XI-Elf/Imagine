@@ -6,7 +6,7 @@ const Craft := preload("res://city/craft.gd")
 static var CATEGORY_NAMES: Dictionary = {
 	"all": I18n.t("Все записи"), "food": I18n.t("Пища"), "medicine": I18n.t("Лечение"), "resources": I18n.t("Ресурсы"),
 	"tools": I18n.t("Инструменты и походное"), "weapons": I18n.t("Оружие"), "clothing": I18n.t("Одежда и броня"),
-	"transport": I18n.t("Транспорт"), "quest": I18n.t("Сюжетные"),
+	"transport": I18n.t("Транспорт"),
 }
 
 static func categories() -> Array:
