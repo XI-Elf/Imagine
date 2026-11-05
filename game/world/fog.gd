@@ -15,6 +15,7 @@ var cells: PackedByteArray           # 0 — невідоме, 255 — відк�
 var opened: int = 0                  # скільки клітинок відкрито
 var version: int = 0                 # росте щоразу, коли відкрилася хоч одна клітинка (шар оновлює текстуру)
 var _last: Vector2 = Vector2(-1.0, -1.0)
+var world_map: RefCounted = null    # world/world_map.gd: рахує відкрите по областях (необов'язково)
 
 
 func _init(size: Vector2 = Vector2(41625.0, 36000.0)) -> void:
@@ -50,6 +51,8 @@ func reveal(p: Vector2, r: float = VISION_M) -> int:
 			if dx * dx + dy * dy <= r2 and cells[y * cols + x] == 0:
 				cells[y * cols + x] = 255
 				fresh += 1
+				if world_map != null:
+					world_map.cell_opened(y * cols + x)
 	opened += fresh
 	if fresh > 0:
 		version += 1
@@ -96,4 +99,6 @@ func load_dict(d: Variant) -> void:
 				for v in cells:
 					if v != 0:
 						opened += 1
+	if world_map != null:
+		world_map.sync_explored(cells)
 	version += 1

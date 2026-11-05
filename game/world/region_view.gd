@@ -29,6 +29,7 @@ const MOUNTAIN_STEP: float = 2.8   # гори — рідша сітка (у кр
 const FRAME_CELLS: int = 2         # товщина рамки гір довкола регіону (у кроках гір)
 const MARGIN: float = 1.1          # запас довкола регіону при вписуванні в екран
 const MAX_ZOOM: float = 4.0
+const RELEASE_S: float = 90.0       # стільки секунд закритий огляд тримає в пам'яті картинки й вузли
 const CHECK_S: float = 1.0         # як часто перевіряти, чи змінився світ
 const REBUILD_MIN_S: float = 5.0   # не частіше перебудова через тропи й туман (місто й руїни — одразу)
 const CITY_R_PX: Dictionary = {"hamlet": 52.0, "village": 70.0, "town": 90.0, "city": 125.0, "capital": 145.0}
@@ -296,12 +297,47 @@ func close() -> void:
 	is_open = false
 	visible = false
 	_dragging = false
+	_closed_t = 0.0
 	if game.terrain_layer != null:
 		game.terrain_layer.visible = true
 	var cast: Node = game.get("cast")
 	if cast != null and _held_hero:
 		cast.hold_hero = _prev_hold
 		_held_hero = false
+
+
+## Вивантажити все важке (стан гри не чіпає): наступний open() збирає заново
+func release() -> void:
+	if _root == null or is_open:
+		return
+	_root.queue_free()
+	_root = null
+	_ground = null
+	_outside = null
+	_static = null
+	_live = null
+	_fog = null
+	_hud = null
+	_grade = null
+	_info = null
+	_title = null
+	_hint = null
+	_plate = null
+	_ground_mat = null
+	_fog_tex = null
+	_fog_version = -1
+	_trails_tex = null
+	_trails_img = null
+	_flats.clear()
+	_items.clear()
+	_shadows.clear()
+	_mist.clear()
+	_labels.clear()
+	_sig = ""
+	_sig_quick = ""
+	_applied = -1
+	art = RegionArt.new()
+	_closed_t = 0.0
 
 
 func toggle() -> void:
@@ -410,8 +446,14 @@ func _ensure_ground() -> void:
 
 
 var _applied: int = -1
+var _closed_t: float = 0.0
 func _process(delta: float) -> void:
 	if not is_open or game == null:
+		# Закритий огляд довго не потрібен — віддаємо пам'ять (атлас, текстури землі, вузли); V відбудує за мить
+		if _root != null and not standalone and game != null:
+			_closed_t += delta
+			if _closed_t >= RELEASE_S:
+				release()
 		return
 	var vp: Vector2 = _root.get_viewport_rect().size
 	var z: float = _zoom()
@@ -1042,6 +1084,9 @@ func _update_info() -> void:
 				var g: Dictionary = st._growth_of(s)
 				var stg: int = Growth.stage(plan, g)
 				lines.append(I18n.t("%s — %s: домов %d, строится %d") % [s.get("name", ""), Growth.stage_name(plan, stg), stats["buildings"], stats["scaffolds"]])
+	var rt: Node = game.get("region_tracker")
+	if rt != null and rt.map.is_ready and rt.map.cells_total(region_id) > 0:
+		lines.append(I18n.t("Исследовано: %d%%") % int(round(rt.map.explored_fraction(region_id) * 100.0)))
 	var cast: Node = game.get("cast")
 	var looted: int = 0
 	if cast != null:

@@ -162,6 +162,8 @@ static func build(game: Node) -> Dictionary:
 		d["trails"] = game.trails.to_dict()
 	if game.get("fog") != null:
 		d["fog"] = game.fog.to_dict()
+	if game.get("region_tracker") != null:
+		d["world_map"] = game.region_tracker.to_dict()
 	var worlds: Node = _worlds(game)
 	if worlds != null:
 		d["worlds"] = worlds.to_dict()
@@ -252,6 +254,8 @@ static func apply_late(game: Node, d: Dictionary) -> void:
 		game.trails.load_dict(d.get("trails", {}))
 	if game.get("fog") != null:
 		game.fog.load_dict(d.get("fog", {}))
+	if game.get("region_tracker") != null:
+		game.region_tracker.load_dict(d.get("world_map"))
 	var worlds: Node = _worlds(game)
 	if worlds != null and d.get("worlds") is Dictionary:
 		worlds.load_dict(d["worlds"])

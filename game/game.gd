@@ -44,6 +44,7 @@ const CastScript := preload("res://characters/cast.gd")
 const SettlementsScript := preload("res://world/settlements.gd")
 const TrailsScript := preload("res://world/trails_layer.gd")
 const FogScript := preload("res://world/fog_layer.gd")
+const RegionTrackerScript := preload("res://world/region_tracker.gd")
 
 # Колишня розгортка 36000 x 18000 м: у ній живе модель атмосфери
 const SRC_SIZE := Vector2(36000.0, 18000.0)
@@ -123,6 +124,7 @@ var settlements: Node2D     # міста й поселення на загаль
 var trails: Node2D          # протоптані дороги (world/trails_layer.gd): з'являються там, де ходять
 var fog: CanvasLayer        # туман війни (world/fog_layer.gd): невідоме закрите, досліджене зберігається
 var decor: Node2D           # дерева, гори, кущі (storybook/world_decor.gd)
+var region_tracker: Node       # області світу: дані, дослідженість, відвідані (world/region_tracker.gd)
 var region_view: CanvasLayer  # V: огляд регіону «як мальована карта» (world/region_view.gd)
 
 
@@ -194,6 +196,9 @@ func _startup() -> void:
 	fog = FogScript.new()
 	fog.game = self
 	add_child(fog)
+	region_tracker = RegionTrackerScript.new()
+	add_child(region_tracker)
+	region_tracker.setup(self)
 	region_view = preload("res://world/region_view.gd").new()
 	add_child(region_view)
 	region_view.setup(self)
