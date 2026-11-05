@@ -54,6 +54,9 @@ uniform sampler2D atm_a : filter_linear, repeat_enable;
 uniform sampler2D atm_b : filter_linear, repeat_enable;
 uniform float flow_phase = 0.0;
 uniform float drift_scale = 0.02;
+// Огляд регіону (world/region_view.gd, Huzzah 2026-11-05: «без цих текстур гір і дерев»): земля — рівні мальовані
+// кольори біомів без намальованих гір, лісу й світлотіні рельєфу; гори й дерева там стоять спрайтами. У грі 0.
+uniform float overview_flat = 0.0;
 
 const float PI_C = 3.14159265;
 const float TAU_C = 6.2831853;
@@ -201,6 +204,20 @@ float biome_at(vec2 p) {
 }
 
 // Вода в точке: 0..1, от 0,5 — вода (как water_at в game.gd)
+// Колір біому для рівної землі огляду
+vec3 flat_biome(float b) {
+	int bi = int(b + 0.5);
+	if (bi == 2) return vec3(0.58, 0.53, 0.40);   // берег
+	if (bi == 3) return vec3(0.33, 0.40, 0.21);   // ліс — під деревами луг
+	if (bi == 4) return vec3(0.49, 0.45, 0.32);   // пустка
+	if (bi == 5) return vec3(0.29, 0.34, 0.23);   // болото
+	if (bi == 6) return vec3(0.40, 0.41, 0.30);   // гори — під горами суха трава
+	if (bi == 7) return vec3(0.34, 0.31, 0.36);   // проклятий ліс
+	if (bi == 8) return vec3(0.42, 0.36, 0.39);   // проклята пустка
+	if (bi == 9) return vec3(0.27, 0.25, 0.31);   // прокляте болото
+	return vec3(0.15, 0.25, 0.28);                 // вода
+}
+
 float water_at(vec2 p) {
 	return textureLod(water_tex, clamp(p / map_size, vec2(0.0), vec2(1.0)), 0.0).r;
 }
@@ -424,6 +441,16 @@ void fragment() {
 		float hot = smoothstep(0.45, 0.55, hot_at(P));
 		vec2 Ph = P;
 		vec3 base = texture(map_tex, Ph / map_size).rgb;
+		if (overview_flat > 0.5) {
+			// п'ять вибірок — м'яка межа біомів; крупні плями світлішої й темнішої трави, як на мальованій карті
+			float o = 70.0;
+			vec3 fc = flat_biome(biome_at(P)) * 0.4 + (flat_biome(biome_at(P + vec2(o, 0.0))) + flat_biome(biome_at(P - vec2(o, 0.0)))
+				+ flat_biome(biome_at(P + vec2(0.0, o))) + flat_biome(biome_at(P - vec2(0.0, o)))) * 0.15;
+			if (hot_at(P) > 0.5) { fc = mix(fc, vec3(0.50, 0.36, 0.25), 0.7); }
+			fc *= 0.86 + 0.26 * fbm(P, 900.0);
+			fc = mix(fc, fc * vec3(1.08, 1.1, 0.92), smoothstep(0.55, 0.75, fbm(P + vec2(300.0, 900.0), 2400.0)) * 0.6);
+			base = fc;
+		}
 		// Harmonize the overview with the painted palette without altering geography/data masks.
 		if (use_textures) {
 			int bi_over = int(biome_at(P) + 0.5);
@@ -439,7 +466,7 @@ void fragment() {
 		float wa = max(fwidth(wv), 0.002);
 		float wet = smoothstep(0.5 - wa, 0.5 + wa, wv);
 		// Вблизи: рисунок биома суши с неровной границей (пиксель слоя биомов ~17,6 м), вода — точно по маске
-		float near_k = smoothstep(0.08, 0.6, zoom);
+		float near_k = overview_flat > 0.5 ? 0.0 : smoothstep(0.08, 0.6, zoom);
 		vec3 col = base;
 		vec3 emis = vec3(0.0);
 		if (near_k > 0.0) {
@@ -460,6 +487,10 @@ void fragment() {
 			float rk = smoothstep(0.1, 1.0, rain) * (1.0 - wet) * near_k;
 			col = mix(col, col * 0.78 + vec3(0.02, 0.03, 0.05), rk * 0.6);
 		}
+		if (overview_flat > 0.5) {
+			// вода огляду — за маскою води (ріки й озера), темна бірюза з легкими брижами
+			col = mix(col, vec3(0.14, 0.25, 0.29) * (0.9 + 0.2 * fbm(P, 300.0)), wet);
+		}
 		// Снег зимой слегка пудрит сушу вне воды (в жарких горах снега нет)
 		float winter = smoothstep(0.55, 0.95, -seas) * (1.0 - hot);
 		float bb = biome_at(P);
@@ -468,7 +499,7 @@ void fragment() {
 		}
 		// Рельеф: светотень склонов, вершины светлее и холоднее, на самых высоких — снег
 		float hgt = height_at(P);
-		if (hgt > 0.002 && wet < 0.5) {
+		if (hgt > 0.002 && wet < 0.5 && overview_flat < 0.5) {
 			col *= clamp(1.0 + relief(P) * 1.15, 0.5, 1.45);
 			col = mix(col, col * 1.06 + vec3(0.02, 0.03, 0.05), hgt * 0.3);
 			col = mix(col, vec3(0.90, 0.91, 0.94), smoothstep(0.82, 0.97, hgt + 0.08 * fbm(P, 90.0)) * (1.0 - hot) * 0.7);

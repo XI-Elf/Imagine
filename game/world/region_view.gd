@@ -375,6 +375,7 @@ func _ensure_ground() -> void:
 	_ground_mat = game.render_mat.duplicate() as ShaderMaterial
 	_ground_mat.set_shader_parameter("show_clouds", 0.0)
 	_ground_mat.set_shader_parameter("border_mode", 0)
+	_ground_mat.set_shader_parameter("overview_flat", 1.0)   # рівна земля без намальованих гір, лісу й рельєфу (map_shaders.gd)
 	var imgs: Array[Image] = []
 	var any: bool = false
 	for n in game.TERRAIN_FILES:
