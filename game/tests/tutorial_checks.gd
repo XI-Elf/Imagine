@@ -74,7 +74,7 @@ func _run() -> void:
 
 	# F1 поверх гри: пауза, вкладка за місцем, клавіші не йдуть у гру
 	await key(KEY_F1)
-	ok(T.is_help_open() and paused and T._tabs.current_tab == 0, "F1 на карте — справка, вкладка «Карта»")
+	ok(T.is_help_open() and paused and T._tabs.current_tab == 0, "F1 на местности — справка, вкладка «Местность»")
 	await shot("t02_help_map.png")
 	var had_hero: bool = not game.cast.hero.is_empty()
 	await key(KEY_G)

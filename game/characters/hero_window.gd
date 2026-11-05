@@ -28,7 +28,7 @@ const Chronicle := preload("res://characters/chronicle.gd")
 const StoryCampaign := preload("res://story/campaign.gd")
 const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "quests", "map", "injuries", "diary", "chronicle"]
 static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"),
-	"quests": I18n.t("Задания"), "map": I18n.t("Карта"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
+	"quests": I18n.t("Задания"), "map": I18n.t("Карта героя"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
 const TAB_KEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 const EMBED_H: float = 500.0       # высота вкладок «Задания» и «Карта»
 const COL_TEXT := Color("d8cfb0")
@@ -230,7 +230,7 @@ func refresh() -> void:
 		c.queue_free()
 	if a == null:
 		_title.text = I18n.t("Героя нет")
-		_body.add_child(_label(I18n.t("Создайте героя: G на карте."), 16, COL_DIM))
+		_body.add_child(_label(I18n.t("Создайте героя: G на местности."), 16, COL_DIM))
 		if tab == "map":
 			_fill_map()
 		return
@@ -747,7 +747,7 @@ func _fill_diary() -> void:
 	var pr: Dictionary = Codex.progress(found)
 	_body.add_child(_label(I18n.t("Записки найдены: %d из %d") % [int(pr["found"]), int(pr["total"])], 17, COL_GOLD))
 	if found.is_empty():
-		_body.add_child(_wrap(I18n.t("Пока пусто. Записки лежат в руинах на карте и в тайниках городов (F у руин, E у тайника). Найденное само складывается в книгу по разделам."), 15, COL_DIM))
+		_body.add_child(_wrap(I18n.t("Пока пусто. Записки лежат в руинах на местности и в тайниках городов (F у руин, E у тайника). Найденное само складывается в книгу по разделам."), 15, COL_DIM))
 		return
 	for ch in Codex.chapters():
 		var here: Array = []

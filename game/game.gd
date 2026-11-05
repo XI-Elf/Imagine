@@ -589,7 +589,7 @@ func toggle_global_map() -> void:
 		var vs: Vector2 = get_viewport_rect().size
 		zoom = clampf(minf(vs.x / MAP_SIZE.x, vs.y / MAP_SIZE.y) * 0.97, min_zoom, MAX_ZOOM)
 		cam_pos = MAP_SIZE * 0.5
-		event_text = I18n.t("Глобальная карта · M — назад")
+		event_text = I18n.t("Карта мира · M — назад")
 	else:
 		zoom = _gm_zoom
 		cam_pos = _gm_cam
