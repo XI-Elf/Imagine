@@ -33,7 +33,10 @@ static func clear_m(level: int) -> float:
 ## Нерівний край галявини: множник радіуса від кута (той самий для всіх розрахунків)
 static func clear_edge(seed_v: int, ang: float) -> float:
 	var a: float = float(seed_v % 628) * 0.01
-	return 1.0 + 0.16 * sin(3.0 * ang + a) + 0.09 * sin(5.0 * ang + a * 1.7)
+	var b: float = float((seed_v / 7) % 628) * 0.01
+	var c: float = float((seed_v / 31) % 628) * 0.01
+	# Низькі гармоніки дають витягнуту, «з затоками» форму, а не коло
+	return clampf(1.0 + 0.24 * sin(2.0 * ang + a) + 0.17 * sin(3.0 * ang + b) + 0.11 * sin(5.0 * ang + c) + 0.07 * sin(8.0 * ang + a * 2.0), 0.55, 1.65)
 
 
 ## Нерівна пляма: список точок (від центру, метри), радіус R * (1 + хвилі + дрібний шум)
@@ -91,32 +94,52 @@ static func plan(id: String, level: int, gate_dir: Vector2) -> Dictionary:
 	out["roads"] = roads
 	# Стіна: з рівня 1 частокіл, з рівня 3 — камінь із вежами
 	out["wall"] = 0 if level < 1 else (1 if level < 3 else 2)
+	var gaps: Array = []
+	for i in 32:
+		gaps.append(rng.randf() < (0.3 if level < 3 else 0.12))   # прогалини: частокіл не замкнений
+	out["wall_gaps"] = gaps
 	# Будівлі: зал у центрі, решта — спіраллю від центру (золотий кут), з відступом від доріг до брами
 	var bld: Array = [{"key": "hall", "p": Vector2.ZERO, "h": KIND_H["hall"] * (0.7 + 0.08 * float(level))}]
 	if level == 0:
 		bld[0]["key"] = "house"
 		bld[0]["h"] = KIND_H["house"]
 	var n_b: int = HOUSES[level]
-	var golden: float = 2.39996
-	for i in n_b:
-		var rr: float = R * 0.82 * sqrt((float(i) + 0.8) / float(n_b + 1)) + R * 0.12
-		var a4: float = float(i) * golden + rng.randf_range(-0.2, 0.2)
-		var v: Vector2 = Vector2.from_angle(a4)
-		if v.dot(gd) > 0.93 and rr > R * 0.3 and rr < R * 1.0:
-			a4 += 0.35    # не ставимо на головну дорогу
-			v = Vector2.from_angle(a4)
+	var placed: Array = [Vector2.ZERO]
+	var tries: int = 0
+	while bld.size() - 1 < n_b and tries < 400:
+		tries += 1
+		var v: Vector2
+		if rng.randf() < 0.55 and not roads.is_empty():
+			# вздовж стежки: дім збоку від дороги (стрічкова забудова)
+			var rd: Dictionary = roads[rng.randi() % mini(roads.size(), 3)]
+			var pts: PackedVector2Array = rd["pts"]
+			var idx: int = rng.randi_range(1, mini(pts.size() - 1, 7))
+			var tang: Vector2 = (pts[idx] - pts[idx - 1]).normalized()
+			var side: float = (1.0 if rng.randf() < 0.5 else -1.0) * R * rng.randf_range(0.16, 0.34)
+			v = pts[idx] + Vector2(-tang.y, tang.x) * side
+		else:
+			var ang: float = rng.randf() * TAU
+			v = Vector2.from_angle(ang) * R * sqrt(rng.randf()) * 0.95 * clear_edge(seed_v, ang) * Vector2(1.0, 0.86)
+		var ok_pos: bool = true
+		for q in placed:
+			if v.distance_to(q) < R * 0.2:
+				ok_pos = false
+				break
+		if not ok_pos:
+			continue
+		placed.append(v)
 		var kind: String = KINDS[rng.randi() % KINDS.size()]
-		if kind == "temple" and (level < 3 or bld.size() > 3 and bld.any(func(b): return b["key"] == "temple")):
+		if kind == "temple" and (level < 3 or bld.any(func(b): return b["key"] == "temple")):
 			kind = "house"
 		if kind == "inn" and level < 2:
 			kind = "house"
-		bld.append({"key": kind, "p": v * rr * Vector2(1.0, 0.86), "h": KIND_H[kind] * rng.randf_range(0.85, 1.12)})
+		bld.append({"key": kind, "p": v, "h": KIND_H[kind] * rng.randf_range(0.85, 1.12)})
 	# Сади й дерева біля краю
 	for i in 2 + level * 2:
 		var a5: float = rng.randf() * TAU
 		if Vector2.from_angle(a5).dot(gd) > 0.85:
 			continue
-		bld.append({"key": "tree_oak" if rng.randf() < 0.65 else "tree_crooked", "p": Vector2.from_angle(a5) * R * rng.randf_range(1.12, 1.5) * Vector2(1.0, 0.86),
+		bld.append({"key": "tree_oak" if rng.randf() < 0.65 else "tree_crooked", "p": Vector2.from_angle(a5) * R * rng.randf_range(1.0, 1.4) * clear_edge(seed_v, a5) * Vector2(1.0, 0.86),
 			"h": rng.randf_range(6.0, 9.0)})
 	bld.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["p"].y < b["p"].y)
 	out["buildings"] = bld
@@ -168,34 +191,40 @@ static func paint(node: Node2D, p: Dictionary, c0: Vector2, k: float, hl: bool) 
 	var wall: int = p["wall"]
 	if wall > 0:
 		var gd: Vector2 = p["gate"]
-		var wr: float = R * 1.02
-		var seg: int = 28
+		var seg: int = 32
+		var gaps: Array = p["wall_gaps"]
 		var col: Color = Color(0.30, 0.21, 0.12) if wall == 1 else Color(0.55, 0.52, 0.46)
 		var wd: float = maxf(1.4, k * (1.1 if wall == 1 else 1.9))
+		var sd: int = int(p["seed"])
 		var prev: Vector2 = Vector2.INF
 		for i in seg + 1:
-			var ang: float = TAU * float(i) / float(seg)
+			var ang: float = TAU * float(i % seg) / float(seg)
 			var v: Vector2 = Vector2.from_angle(ang)
-			var q: Vector2 = c0 + v * wr * Vector2(1.0, 0.86) * k
-			var in_gate: bool = v.dot(gd) > 0.965
-			if prev != Vector2.INF and not in_gate:
+			var q: Vector2 = c0 + v * R * 0.9 * clear_edge(sd, ang) * Vector2(1.0, 0.86) * k
+			var in_gate: bool = v.dot(gd) > 0.95
+			if prev != Vector2.INF and not in_gate and not bool(gaps[(i - 1) % seg]):
 				node.draw_line(prev + Vector2(0, 1.2), q + Vector2(0, 1.2), Color(0, 0, 0, 0.25), wd + 1.0, true)
 				node.draw_line(prev, q, col, wd, true)
 				if wall == 1 and i % 2 == 0:   # загострені палі
 					node.draw_line(q, q + Vector2(0, -wd * 1.4), col.lightened(0.12), maxf(1.0, wd * 0.55), true)
-			if wall == 2 and i % 4 == 0 and not in_gate:
+			if wall == 2 and i % 5 == 0 and not in_gate and not bool(gaps[i % seg]):
 				node.draw_rect(Rect2(q - Vector2(wd, wd * 1.6), Vector2(wd * 2.0, wd * 2.2)), col.lightened(0.1))
 				node.draw_rect(Rect2(q - Vector2(wd, wd * 1.6), Vector2(wd * 2.0, wd * 2.2)), Color(0, 0, 0, 0.45), false, 1.0)
 			prev = q
 		for sgn in [-1.0, 1.0]:   # стовпи брами
-			var gp: Vector2 = c0 + (gd.rotated(0.2 * sgn)) * wr * Vector2(1.0, 0.86) * k
+			var ga: float = gd.angle() + 0.17 * sgn
+			var gp: Vector2 = c0 + Vector2.from_angle(ga) * R * 0.9 * clear_edge(sd, ga) * Vector2(1.0, 0.86) * k
 			node.draw_rect(Rect2(gp - Vector2(wd * 0.8, wd * 1.8), Vector2(wd * 1.6, wd * 2.4)), Color(0.22, 0.15, 0.09))
 	# 5. Будинки, дерева — за y
 	for b in p["buildings"]:
 		Art.sprite(node, String(b["key"]), c0 + Vector2(b["p"]) * k, float(b["h"]) * k)
 	# Виділення: золотий пунктир по краю витоптаної землі
 	if hl:
-		var arcs: int = 24
-		for i in arcs:
-			var a0: float = TAU * float(i) / float(arcs)
-			node.draw_arc(c0, R * 1.35 * k, a0, a0 + TAU / float(arcs) * 0.55, 4, Color(1.0, 0.85, 0.4, 0.85), 2.0, true)
+		var sd2: int = int(p["seed"])
+		var prevh: Vector2 = Vector2.INF
+		for i in 49:
+			var ang2: float = TAU * float(i % 48) / 48.0
+			var qh: Vector2 = c0 + Vector2.from_angle(ang2) * R * 1.2 * clear_edge(sd2, ang2) * Vector2(1.0, 0.86) * k
+			if prevh != Vector2.INF and i % 2 == 0:
+				node.draw_line(prevh, qh, Color(1.0, 0.85, 0.4, 0.85), 2.0, true)
+			prevh = qh
