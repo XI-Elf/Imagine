@@ -2,7 +2,6 @@ extends Node2D
 const Art := preload("res://storybook/art.gd")
 const Ground := preload("res://world/settlement_ground.gd")
 const Growth := preload("res://city/city_growth.gd")
-const StoryCampaign := preload("res://story/campaign.gd")
 const Sheet := preload("res://characters/sheet.gd")
 ## Города и поселения на общей карте. Реестр — data/world/settlements.json (tools/make_settlements.py,
 ## можно править руками). Сейчас по решению Huzzah город один на весь мир, герой появляется у его ворот.
@@ -843,32 +842,8 @@ func _draw() -> void:
 			if vp.has_point(c):
 				var rank: int = SIZE_ORDER.find(s["size"])
 				var w: float = 24.0 + 3.0 * maxi(rank, 0)
-				_draw_shield(c + Vector2(0, -w * 0.25), w, _emblem_for(s), hl)
+				_draw_shield(c + Vector2(0, -w * 0.25), w, s.get("emblem", {}), hl)
 				_draw_name(s, c + Vector2(0, w * 1.05), font, hl, false)
-	# Сюжетные места появляются на глобальной карте только после открытия соответствующей главы.
-	var world_manager: Node = get_node_or_null("/root/Worlds")
-	var story_state: Dictionary = world_manager.get("campaign_state") if world_manager != null and world_manager.get("campaign_state") is Dictionary else StoryCampaign.fresh()
-	var current_story_id: String = String(StoryCampaign.current(story_state).get("id", ""))
-	var completed_story: Array = story_state.get("completed", [])
-	for loc in StoryCampaign.data().get("locations", []):
-		var unlock_id: String = String(loc.get("unlock_chapter", ""))
-		if current_story_id != unlock_id and not completed_story.has(unlock_id):
-			continue
-		var coords: Array = loc.get("position", [])
-		if coords.size() != 2:
-			continue
-		var marker: Vector2 = game.world_to_screen(Vector2(float(coords[0]), float(coords[1])))
-		if not vp.has_point(marker):
-			continue
-		draw_circle(marker + Vector2(2, 3), 15.0, Color(0, 0, 0, 0.5))
-		draw_arc(marker, 15.0, 0.0, TAU, 40, Color("d6a64a"), 2.0, true)
-		draw_colored_polygon(PackedVector2Array([marker + Vector2(0, -10), marker + Vector2(9, 0), marker + Vector2(0, 10), marker + Vector2(-9, 0)]), Color("3a3025"))
-		draw_polyline(PackedVector2Array([marker + Vector2(0, -10), marker + Vector2(9, 0), marker + Vector2(0, 10), marker + Vector2(-9, 0), marker + Vector2(0, -10)]), Color("e4b75a"), 1.5, true)
-		draw_circle(marker, 2.8, Color("f4d48a"))
-		var loc_name: String = String(loc.get("name", ""))
-		var loc_width: float = font.get_string_size(loc_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-		draw_string_outline(font, marker + Vector2(-loc_width * 0.5, 28), loc_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color(0, 0, 0, 0.9))
-		draw_string(font, marker + Vector2(-loc_width * 0.5, 28), loc_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("ead7aa"))
 	# Підказка біля героя: вибір закритий, E — відкрити
 	var qz: Dictionary = _quiet_zone()
 	if not qz.is_empty():
@@ -880,28 +855,6 @@ func _draw() -> void:
 
 
 # Щиток: поле, облямівка, фігура емблеми
-func _emblem_for(s: Dictionary) -> Dictionary:
-	var em: Dictionary = s.get("emblem", {}).duplicate(true)
-	var w: Node = get_node_or_null("/root/Worlds")
-	var state: Dictionary = w.get("campaign_state") if w != null and w.get("campaign_state") is Dictionary else {}
-	var flags: Dictionary = state.get("flags", {})
-	if flags.has("aided_refugees") or flags.has("ledger_public"):
-		em["charge"] = "thorn"
-		em["field"] = "#49332e"
-		em["tint"] = "#d6c18b"
-	elif flags.has("told_guard") or flags.has("ledger_sealed"):
-		em["charge"] = "amber_eye"
-		em["field"] = "#292c2b"
-		em["tint"] = "#d6a64a"
-	if flags.has("ending_silence"):
-		em["field"] = "#303a42"
-		em["tint"] = "#aebfbd"
-	elif flags.has("ending_warning"):
-		em["field"] = "#3d2b22"
-		em["tint"] = "#f0b84e"
-	return em
-
-
 func _draw_shield(c: Vector2, w: float, em: Dictionary, hl: bool) -> void:
 	var h: float = w * 1.2
 	var top: float = c.y - h * 0.5
@@ -948,11 +901,6 @@ func _draw_charge(m: Vector2, u: float, em: Dictionary, field: Color, tint: Colo
 			draw_colored_polygon(PackedVector2Array([m + Vector2(-2.3*u, 1.8*u), m + Vector2(-1.8*u, -0.4*u), m + Vector2(-0.8*u, -2.3*u), m + Vector2(0.8*u, -2.3*u), m + Vector2(1.8*u, -0.4*u), m + Vector2(2.3*u, 1.8*u)]), tint)
 			draw_line(m + Vector2(-2.7*u, 1.8*u), m + Vector2(2.7*u, 1.8*u), tint, maxf(1.0, 0.5*u))
 			draw_circle(m + Vector2(0, 2.3*u), 0.55*u, tint)
-		"thorn":
-			for k in 3:
-				var x: float = float(k - 1) * 1.65 * u
-				draw_line(m + Vector2(x, 2.8*u), m + Vector2(x, -2.5*u), tint, maxf(1.0, 0.6*u))
-				draw_colored_polygon(PackedVector2Array([m + Vector2(x, -2.5*u), m + Vector2(x - 1.0*u, -0.7*u), m + Vector2(x + 1.0*u, -0.7*u)]), tint)
 		"crown":
 			draw_rect(Rect2(m + Vector2(-3.0 * u, 0.5 * u), Vector2(6.0 * u, 1.6 * u)), tint)
 			for k in 3:

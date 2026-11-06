@@ -643,30 +643,6 @@
       "weight": 0.8,
       "category": "tools",
       "description": "Набор для ремонта снаряжения."
-    },
-    "amber_key_fragment": {
-      "name": "Фрагмент янтарного ключа",
-      "price": 0,
-      "weight": 0.2,
-      "unique": true,
-      "category": "quest",
-      "description": "Тёплый фрагмент старого механизма с концентрическими линиями на срезе."
-    },
-    "flooded_ledger_page": {
-      "name": "Страница журнала водосброса",
-      "price": 0,
-      "weight": 0.05,
-      "unique": true,
-      "category": "quest",
-      "description": "Мокрая страница с перечнем вычеркнутых смен и отметкой янтарного ключа."
-    },
-    "beacon_lens": {
-      "name": "Линза сигнального маяка",
-      "price": 0,
-      "weight": 0.6,
-      "unique": true,
-      "category": "quest",
-      "description": "Треснувшая линза, собирающая слабый свет в узкий янтарный луч."
     }
   }
 }

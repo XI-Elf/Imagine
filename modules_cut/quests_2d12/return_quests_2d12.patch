@@ -1,0 +1,2084 @@
+diff --git a/README_RU.txt b/README_RU.txt
+index 5c05f4f..4ef39c3 100644
+--- a/README_RU.txt
++++ b/README_RU.txt
+@@ -130,4 +130,5 @@ AMBER WORLD — 2D
+ - Сохранения и настройки обучения лежат в папке пользователя Godot (user://), а не рядом с игрой.
+ 
+ 
+-Версия 2D 12 (единая сборка): «Справочник выжившего» — I → «Дневник»; принятые поручения Эшвика — I → «Задания». Сюжетная кампания «Пепел помнит имена» вырезана в отдельный модуль (modules_cut/quests_2d12, архив «Amber Game — 2D 12 квесты (вырезано).zip»). Отчёт о слиянии: docs/2d12/ОТЧЁТ_СЛИЯНИЯ_2D12.md.
++Обновление Pass 6: сюжетная кампания «Пепел помнит имена», персонажи, развилки, два босса, сюжетные предметы и эмблема Эшвика описаны в docs/2d12/CAMPAIGN_AND_EMBLEMS_PASS6.md.
++Версия 2D 12 (единая сборка): кампания — в меню героя I → «Задания»; «Справочник выжившего» — I → «Дневник». Отчёт о слиянии: docs/2d12/ОТЧЁТ_СЛИЯНИЯ_2D12.md.
+diff --git a/README_UK.txt b/README_UK.txt
+index 4e5a92e..d36a2de 100644
+--- a/README_UK.txt
++++ b/README_UK.txt
+@@ -129,4 +129,4 @@ AMBER WORLD — 2D
+ - ART_DIRECTION.md — художній стиль і звідки взято малюнки.
+ - Збереження й налаштування навчання лежать у теці користувача Godot (user://), а не поруч із грою.
+ 
+-Версія 2D 12 (єдина збірка): «Довідник виживальника» — I → «Щоденник»; прийняті доручення Ешвіка — I → «Завдання». Сюжетну кампанію «Попіл пам'ятає імена» вирізано в окремий модуль (modules_cut/quests_2d12, архів «Amber Game — 2D 12 квесты (вырезано).zip»). Звіт про злиття: docs/2d12/ОТЧЁТ_СЛИЯНИЯ_2D12.md.
++Версія 2D 12 (єдина збірка): сюжетна кампанія «Попіл пам'ятає імена» — меню героя I → «Завдання»; «Довідник виживальника» — I → «Щоденник». Звіт про злиття: docs/2d12/ОТЧЁТ_СЛИЯНИЯ_2D12.md.
+diff --git a/docs/2d12/CAMPAIGN_AND_EMBLEMS_PASS6.md b/docs/2d12/CAMPAIGN_AND_EMBLEMS_PASS6.md
+new file mode 100644
+index 0000000..b26e5f8
+--- /dev/null
++++ b/docs/2d12/CAMPAIGN_AND_EMBLEMS_PASS6.md
+@@ -0,0 +1,19 @@
++# Amber World — Campaign & Emblems Pass 6
++
++## Added
++- Data-driven campaign `game/data/story/campaign.json`: six chapters, dialogue scenes, five named characters with motives/voice notes, four meaningful decisions, two boss encounters, two story locations, three quest-item definitions.
++- `game/story/campaign.gd`: deterministic campaign state, objective event routing, decision flags/effects, boss unlock rules.
++- `Worlds.campaign_state` is serialized in `worlds.to_dict()` and restored in `load_dict()`. Old saves without this key receive a fresh campaign state; other save fields remain untouched.
++- Story events: entering Ashwick, handing in a city quest, travelling kilometres, and defeating a named story boss.
++- Hero menu receives a `Кампания` tab with current chapter, authored dialogue, objective progress, decisions, cast, boss/location records and launch controls.
++- Two `BattleCreature` boss templates are wired to the existing battle actor pipeline. Boss fight can start only within the configured radius of its story location.
++- Ashwick emblem changed to the Amber Eye; emblem drawing now supports unique wolf, bell and thorn charges for future settlements.
++- NPC portraits gain ink contours, cloth hatching and role-specific facial silhouettes, retaining the current role/seed variation.
++
++## Compatibility / limitations
++- Existing settlement ID `s001`, world coordinates, city layout, movement and collision systems are unchanged.
++- No old assets or mechanics were removed.
++- Story items are registered in the live city item catalog and are awarded by the corresponding campaign decisions. Automatic world loot placement remains a later task.
++- Both bosses use dedicated `BattleCreature`, `BattleWeapon`, and `BattleAbility` resources; their attacks are wired to the existing combat pipeline.
++- The current source archive contains one registered settlement (Ashwick), so only its emblem is changed. Additional emblem glyphs are implemented for future settlements.
++- Godot 4.7 executable is not available in this environment; GDScript parsing/runtime tests were not executed. Static JSON and archive checks only.
+diff --git a/game/characters/field_guide.gd b/game/characters/field_guide.gd
+index a313171..e1279d7 100644
+--- a/game/characters/field_guide.gd
++++ b/game/characters/field_guide.gd
+@@ -6,7 +6,7 @@ const Craft := preload("res://city/craft.gd")
+ static var CATEGORY_NAMES: Dictionary = {
+ 	"all": I18n.t("Все записи"), "food": I18n.t("Пища"), "medicine": I18n.t("Лечение"), "resources": I18n.t("Ресурсы"),
+ 	"tools": I18n.t("Инструменты и походное"), "weapons": I18n.t("Оружие"), "clothing": I18n.t("Одежда и броня"),
+-	"transport": I18n.t("Транспорт"),
++	"transport": I18n.t("Транспорт"), "quest": I18n.t("Сюжетные"),
+ }
+ 
+ static func categories() -> Array:
+diff --git a/game/characters/hero_window.gd b/game/characters/hero_window.gd
+index 0d46bd1..928e6a8 100644
+--- a/game/characters/hero_window.gd
++++ b/game/characters/hero_window.gd
+@@ -25,6 +25,7 @@ const BATTLE_CONFIG := "res://data/battle/config.tres"
+ 
+ const Codex := preload("res://world/codex.gd")
+ const Chronicle := preload("res://characters/chronicle.gd")
++const StoryCampaign := preload("res://story/campaign.gd")
+ const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "quests", "map", "injuries", "diary", "chronicle"]
+ static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"),
+ 	"quests": I18n.t("Задания"), "map": I18n.t("Карта"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
+@@ -198,6 +199,9 @@ func refresh() -> void:
+ 	var sig: String = tab + "|" + JSON.stringify(_bag())
+ 	if tab == "diary":
+ 		sig += "|%d|%s|%s" % [_codex().size(), diary_mode, guide_category]
++	if tab == "quests":
++		var w_story: Node = _worlds()
++		sig += "|%s" % JSON.stringify(w_story.get("campaign_state") if w_story != null else {})
+ 	if tab == "chronicle":
+ 		sig += "|%d" % Chronicle.entries(get_node_or_null("/root/Worlds")).size()
+ 	if tab == "quests":
+@@ -280,6 +284,8 @@ func _embed_host() -> Control:
+ 
+ 
+ func _fill_quests() -> void:
++	_fill_story()  # сюжетна кампанія — перший розділ «Завдань» (не 11-та вкладка: меню героя має рівно 10 розділів)
++	_body.add_child(HSeparator.new())
+ 	_fill_active_city_quests()
+ 	var w: Node = _worlds()
+ 	var j: Variant = w.get("journal") if w != null else null
+@@ -905,6 +911,93 @@ func _read_note(text: String) -> String:
+ # =====================================================================
+ # ХРОНІКА: ключові події життя самого героя (не історія світу)
+ # =====================================================================
++
++
++# =====================================================================
++# СЮЖЕТНАЯ КАМПАНИЯ: выборы, персонажи и особые встречи
++# =====================================================================
++func _fill_story() -> void:
++	var w: Node = _worlds()
++	var state: Dictionary = w.get("campaign_state") if w != null and w.get("campaign_state") is Dictionary else StoryCampaign.fresh()
++	var data: Dictionary = StoryCampaign.data()
++	_body.add_child(_label(String(data.get("title", I18n.t("Кампания"))), 21, COL_GOLD))
++	_body.add_child(_wrap(String(data.get("premise", "")), 15, COL_TEXT))
++	_body.add_child(HSeparator.new())
++	if StoryCampaign.is_complete(state):
++		_body.add_child(_label(I18n.t("Кампания завершена"), 19, COL_GOOD))
++		_body.add_child(_wrap(I18n.t("Ваш выбор стал частью летописи Эшвика."), 15, COL_TEXT))
++	else:
++		var ch: Dictionary = StoryCampaign.current(state)
++		_body.add_child(_label(String(ch.get("title", "")), 19, COL_GOLD))
++		_body.add_child(_wrap(String(ch.get("summary", "")), 15, COL_TEXT))
++		for line in ch.get("dialogue", []):
++			_body.add_child(_label("%s" % String(line.get("speaker", "")), 14, COL_GOLD))
++			_body.add_child(_wrap("«%s»" % String(line.get("text", "")), 14, COL_TEXT))
++		var obj: Dictionary = ch.get("objective", {})
++		var need: int = maxi(1, int(obj.get("count", 1)))
++		var have: int = mini(int(state.get("progress", 0)), need)
++		var objective_names: Dictionary = {"city_enter": I18n.t("Прибыть в Эшвик"), "city_quest": I18n.t("Сдать поручение в Эшвике"), "travel_km": I18n.t("Пройти указанное расстояние"), "boss_defeated": I18n.t("Победить особого противника"), "ending_chosen": I18n.t("Закрепить финальное решение")}
++		var objective_text: String = String(objective_names.get(String(obj.get("event", "")), String(obj.get("event", ""))))
++		_body.add_child(HSeparator.new())
++		_body.add_child(_label(I18n.t("Цель: %s — %d/%d") % [objective_text, have, need], 15, COL_GOOD if have >= need else COL_DIM))
++		if bool(state.get("awaiting_choice", false)):
++			var choice: Dictionary = ch.get("choice", {})
++			_body.add_child(_label(String(choice.get("prompt", I18n.t("Ваше решение"))), 17, COL_GOLD))
++			for option in choice.get("options", []):
++				var b := Button.new()
++				b.text = String(option.get("title", "")) + " — " + String(option.get("description", ""))
++				b.custom_minimum_size = Vector2(0, 48)
++				b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
++				b.pressed.connect(_choose_story.bind(String(option.get("id", ""))))
++				_body.add_child(b)
++		_body.add_child(HSeparator.new())
++		_body.add_child(_label(I18n.t("Особые противники"), 17, COL_GOLD))
++		for boss in data.get("bosses", []):
++			var boss_id: String = String(boss.get("id", ""))
++			var loc: Dictionary = StoryCampaign.location(String(boss.get("location", "")))
++			var unlocked: bool = StoryCampaign.boss_unlocked(state, boss_id) and w != null
++			_body.add_child(_label(String(boss.get("name", "")) + (" · " + I18n.t("доступен") if unlocked else " · " + I18n.t("пока закрыт")), 15, COL_GOOD if unlocked else COL_DIM))
++			_body.add_child(_wrap(String(boss.get("description", "")) + "\n" + String(loc.get("name", "")) + " — " + str(loc.get("position", [])), 13, COL_DIM))
++			if unlocked:
++				var bb := Button.new()
++				bb.text = I18n.t("Вступить в бой")
++				bb.pressed.connect(func(): w.start_story_boss(boss_id); _sig = ""; refresh())
++				_body.add_child(bb)
++	_body.add_child(HSeparator.new())
++	_body.add_child(_label(I18n.t("Действующие лица"), 17, COL_GOLD))
++	for person in data.get("characters", []):
++		_body.add_child(_label(String(person.get("name", "")) + " — " + String(person.get("role", "")), 15, COL_TEXT))
++		_body.add_child(_wrap(I18n.t("Мотив: %s\nМанера речи: %s") % [String(person.get("motive", "")), String(person.get("voice", ""))], 13, COL_DIM))
++	_body.add_child(HSeparator.new())
++	_body.add_child(_label(I18n.t("История решений"), 17, COL_GOLD))
++	for decision in state.get("history", []):
++		_body.add_child(_label("%s: %s" % [String(decision.get("chapter", "")), String(decision.get("option", ""))], 14, COL_GOOD))
++
++func _choose_story(option_id: String) -> void:
++	var w: Node = _worlds()
++	if w == null: return
++	var state: Dictionary = w.get("campaign_state")
++	var option: Dictionary = StoryCampaign.choose(state, option_id)
++	if option.is_empty(): return
++	var inventory: Dictionary = w.get("inventory")
++	if inventory is Dictionary:
++		for item_id in option.get("items", {}):
++			Trade.add(inventory, String(item_id), int(option["items"][item_id]))
++	# Последствия решений закрепляются в состоянии поселения и переживают выход/повторный вход.
++	var cities: Dictionary = w.get("city_states")
++	if cities is Dictionary:
++		var ashwick: Dictionary = cities.get("s001", {})
++		var rep: Dictionary = ashwick.get("story_reputation", {})
++		for effect_id in state.get("effects", {}):
++			if String(effect_id).ends_with("_reputation"):
++				rep[String(effect_id)] = int(state["effects"][effect_id])
++		ashwick["story_reputation"] = rep
++		ashwick["story_flags"] = state.get("flags", {}).duplicate(true)
++		cities["s001"] = ashwick
++	_sig = ""
++	refresh()
++
++
+ func _fill_chronicle() -> void:
+ 	var log: Array = Chronicle.entries(get_node_or_null("/root/Worlds"))
+ 	if log.is_empty():
+diff --git a/game/characters/item_art.gd b/game/characters/item_art.gd
+index 886d43f..999f956 100644
+--- a/game/characters/item_art.gd
++++ b/game/characters/item_art.gd
+@@ -50,6 +50,9 @@ const SPECS: Dictionary = {
+ 	"scrap": ["scrap", "6e7a87", "8c4a1e", "rust"],
+ 	"old_coin": ["coin", "c9a24b", "8a6a24", "worn"],
+ 	"amber": ["gem", "e09a2c", "f6d27a", ""],
++	"amber_key_fragment": ["key_fragment", "d6a64a", "7b4932", "rings"],
++	"flooded_ledger_page": ["ledger_page", "d8c692", "5a4b39", "ink"],
++	"beacon_lens": ["lens", "d6a64a", "8d9aa0", "crack"],
+ 	"brushwood": ["sticks", "7a5a3a", "4a3624", ""],
+ 	"driftwood": ["log", "b8a98a", "8a7a5c", "grain"],
+ 	"reed": ["reeds", "b9b45a", "7a8a3a", ""],
+@@ -172,6 +175,22 @@ static func _disc(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
+ 
+ static func _shape(ci: CanvasItem, kind: String, o: Vector2, s: float, c1: Color, c2: Color, mark: String) -> void:
+ 	match kind:
++		"key_fragment":
++			_poly(ci, o, s, [[-0.18, -0.8], [0.18, -0.8], [0.18, 0.18], [0.58, 0.18], [0.58, 0.42], [0.3, 0.42], [0.3, 0.7], [-0.05, 0.7], [-0.05, 0.18], [-0.18, 0.18]], c1)
++			_disc(ci, o + Vector2(0, -0.52) * s, s * 0.22, c2)
++			for i in 3:
++				ci.draw_arc(o + Vector2(0, -0.52) * s, s * (0.28 + i * 0.09), 0.3, 2.7, 16, c2, 1.2)
++		"ledger_page":
++			_poly(ci, o, s, [[-0.58, -0.78], [0.42, -0.78], [0.62, -0.56], [0.62, 0.78], [-0.58, 0.78]], c1)
++			ci.draw_line(o + Vector2(0.42, -0.78) * s, o + Vector2(0.42, -0.56) * s, c2, 1.5)
++			for i in 4:
++				ci.draw_line(o + Vector2(-0.36, -0.35 + i * 0.22) * s, o + Vector2(0.38, -0.35 + i * 0.22) * s, c2, 1.5)
++			ci.draw_line(o + Vector2(-0.3, -0.48) * s, o + Vector2(0.15, -0.48) * s, Color("7b4932"), 2.0)
++		"lens":
++			_disc(ci, o, s * 0.62, c2)
++			_poly(ci, o, s, [[0, -0.7], [0.48, -0.3], [0.62, 0.1], [0.28, 0.62], [-0.28, 0.62], [-0.62, 0.1], [-0.48, -0.3]], c1)
++			ci.draw_line(o + Vector2(-0.22, -0.35) * s, o + Vector2(0.18, 0.45) * s, Color("efe6d2"), 2.0)
++			ci.draw_line(o + Vector2(0.18, 0.45) * s, o + Vector2(0.34, 0.1) * s, INK, 1.3)
+ 		"loaf":
+ 			_poly(ci, o, s, [[-0.8, 0.35], [-0.7, -0.15], [-0.3, -0.45], [0.3, -0.45], [0.7, -0.15], [0.8, 0.35], [0.5, 0.5], [-0.5, 0.5]], c1)
+ 			for i in 3:
+diff --git a/game/city/city_world.gd b/game/city/city_world.gd
+index 8e20b5a..98cc604 100644
+--- a/game/city/city_world.gd
++++ b/game/city/city_world.gd
+@@ -1123,6 +1123,8 @@ func hear_tale(n: Dictionary) -> void:
+ 	bag["money"] = int(bag["money"]) - fee
+ 	var w: Node = get_node_or_null("/root/Worlds")
+ 	w.codex[String(tale["id"])] = clock.total_seconds
++	if w.has_method("campaign_event"):
++		w.campaign_event("codex")
+ 	_chronicle("talk", I18n.t("Услышал от %s: «%s». Записано в дневник.") % [n["actor"].display_name, tale["title"]], "tale:" + String(tale["id"]))
+ 	var opts: Array = [[I18n.t("Назад"), func(): talk(n)]]
+ 	_open_panel("talk", "%s: %s" % [n["actor"].display_name, tale["title"]], "%s\n\n%s" % [tale["text"], I18n.t("Записано в дневник героя (вкладка 6).")], opts)
+@@ -2116,6 +2118,10 @@ func turn_in(n: Dictionary, q: Dictionary, choice: String = "") -> void:
+ 	var id: String = String(n["def"]["id"])
+ 	var extra: int = _speech_extra(q)
+ 	Growth.complete(full_def, growth, q, bag)
++	if not bool(q.get("endless", false)):  # безкінечні доручення сюжет не рухають (фільтр Pass5)
++		var world_manager: Node = get_node_or_null("/root/Worlds")
++		if world_manager != null and world_manager.has_method("campaign_event"):
++			world_manager.campaign_event("city_quest", city_id)
+ 	_chronicle("quest", I18n.t("Выполнил поручение «%s» для %s.") % [q["title"], n["actor"].display_name], "quest:" + String(q["id"]))
+ 	var text: String = "«%s»" % q["done"]
+ 	if fork_text != "":
+diff --git a/game/data/battle/abilities/amber_pulse.tres b/game/data/battle/abilities/amber_pulse.tres
+new file mode 100644
+index 0000000..57aba31
+--- /dev/null
++++ b/game/data/battle/abilities/amber_pulse.tres
+@@ -0,0 +1,20 @@
++[gd_resource type="Resource" script_class="BattleAbility" format=3]
++
++[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_pulse"]
++
++[resource]
++script = ExtResource("1_pulse")
++id = "amber_pulse"
++title = "Импульс маяка"
++description = "Действие: узкий луч проклятого янтаря бьёт на расстоянии. Спасбросок Телосложения; при провале цель оглушена. Раз за бой."
++cost = "action"
++kind = "save"
++target = "enemy"
++stat = "int"
++range_ft = 40
++radius_ft = 0
++save_stat = "con"
++damage = [{"bonus": 2, "dice": "2d6", "type": "radiation"}]
++apply_effect = "stunned"
++effect_on_fail_only = true
++uses_per_battle = 1
+diff --git a/game/data/battle/abilities/root_snare.tres b/game/data/battle/abilities/root_snare.tres
+new file mode 100644
+index 0000000..a4b0caf
+--- /dev/null
++++ b/game/data/battle/abilities/root_snare.tres
+@@ -0,0 +1,20 @@
++[gd_resource type="Resource" script_class="BattleAbility" format=3]
++
++[ext_resource type="Script" path="res://battle/res/battle_ability.gd" id="1_root"]
++
++[resource]
++script = ExtResource("1_root")
++id = "root_snare"
++title = "Корневой захват"
++description = "Действие: корни из трещин хватают противника. Спасбросок Ловкости; при провале цель опутана. Раз за бой."
++cost = "action"
++kind = "save"
++target = "enemy"
++stat = "str"
++range_ft = 20
++radius_ft = 0
++save_stat = "dex"
++damage = [{"bonus": 0, "dice": "1d6", "type": "bludgeoning"}]
++apply_effect = "restrained"
++effect_on_fail_only = true
++uses_per_battle = 1
+diff --git a/game/data/battle/creatures/amber_warden.tres b/game/data/battle/creatures/amber_warden.tres
+new file mode 100644
+index 0000000..54863b5
+--- /dev/null
++++ b/game/data/battle/creatures/amber_warden.tres
+@@ -0,0 +1,27 @@
++[gd_resource type="Resource" script_class="BattleCreature" format=3]
++
++[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_amber_warden"]
++
++[resource]
++script = ExtResource("1_amber_warden")
++id = "amber_warden"
++title = "Сторож без лица"
++level = 4
++scores = {
++"cha": 6,
++"con": 18,
++"dex": 10,
++"int": 8,
++"lck": 10,
++"str": 17,
++"wis": 14
++}
++hp_dice = "8d8"
++natural_ac = 16
++weapons = PackedStringArray("mace")
++abilities = PackedStringArray("root_snare")
++immune = PackedStringArray()
++save_profs = PackedStringArray("con")
++speed_ft = 30
++ai = "melee"
++morale = 0.0
+diff --git a/game/data/battle/creatures/beacon_echo.tres b/game/data/battle/creatures/beacon_echo.tres
+new file mode 100644
+index 0000000..2d46aa1
+--- /dev/null
++++ b/game/data/battle/creatures/beacon_echo.tres
+@@ -0,0 +1,27 @@
++[gd_resource type="Resource" script_class="BattleCreature" format=3]
++
++[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_beacon_echo"]
++
++[resource]
++script = ExtResource("1_beacon_echo")
++id = "beacon_echo"
++title = "Эхо протокола"
++level = 5
++scores = {
++"cha": 14,
++"con": 18,
++"dex": 16,
++"int": 16,
++"lck": 12,
++"str": 12,
++"wis": 16
++}
++hp_dice = "9d8"
++natural_ac = 15
++weapons = PackedStringArray("amber_blast")
++abilities = PackedStringArray("amber_pulse", "howl")
++immune = PackedStringArray()
++save_profs = PackedStringArray("con")
++speed_ft = 30
++ai = "support"
++morale = 0.0
+diff --git a/game/data/battle/weapons/amber_blast.tres b/game/data/battle/weapons/amber_blast.tres
+new file mode 100644
+index 0000000..44941a6
+--- /dev/null
++++ b/game/data/battle/weapons/amber_blast.tres
+@@ -0,0 +1,15 @@
++[gd_resource type="Resource" script_class="BattleWeapon" format=3]
++
++[ext_resource type="Script" path="res://battle/res/battle_weapon.gd" id="1_amber"]
++
++[resource]
++script = ExtResource("1_amber")
++id = "amber_blast"
++title = "Импульс янтарного эха"
++icon = "torch"
++damage = [{"bonus": 2, "dice": "2d6", "type": "radiation"}, {"bonus": 0, "dice": "1d4", "type": "bludgeoning"}]
++proficiency = "natural"
++ranged = true
++range_ft = 40
++long_range_ft = 80
++attack_bonus = 2
+diff --git a/game/data/cities/items.json b/game/data/cities/items.json
+index 1f1ba96..58129c7 100644
+--- a/game/data/cities/items.json
++++ b/game/data/cities/items.json
+@@ -643,6 +643,30 @@
+       "weight": 0.8,
+       "category": "tools",
+       "description": "Набор для ремонта снаряжения."
++    },
++    "amber_key_fragment": {
++      "name": "Фрагмент янтарного ключа",
++      "price": 0,
++      "weight": 0.2,
++      "unique": true,
++      "category": "quest",
++      "description": "Тёплый фрагмент старого механизма с концентрическими линиями на срезе."
++    },
++    "flooded_ledger_page": {
++      "name": "Страница журнала водосброса",
++      "price": 0,
++      "weight": 0.05,
++      "unique": true,
++      "category": "quest",
++      "description": "Мокрая страница с перечнем вычеркнутых смен и отметкой янтарного ключа."
++    },
++    "beacon_lens": {
++      "name": "Линза сигнального маяка",
++      "price": 0,
++      "weight": 0.6,
++      "unique": true,
++      "category": "quest",
++      "description": "Треснувшая линза, собирающая слабый свет в узкий янтарный луч."
+     }
+   }
+ }
+\ No newline at end of file
+diff --git a/game/data/story/campaign.json b/game/data/story/campaign.json
+new file mode 100644
+index 0000000..d991b81
+--- /dev/null
++++ b/game/data/story/campaign.json
+@@ -0,0 +1,346 @@
++{
++  "version": 1,
++  "title": "Пепел помнит имена",
++  "premise": "После катастрофы Эшвик держится на старых стенах и чужих тайнах. Сигнал из-под земли зовёт не к спасению, а к выбору: кому достанется право решить, что останется от прежнего мира.",
++  "characters": [
++    {
++      "id": "mara_vey",
++      "name": "Мара Вей",
++      "role": "Смотрительница маяка",
++      "motive": "Хочет восстановить маяк, чтобы предупреждать поселения о волнах влияния проклятия. Скрывает, что прежний запуск маяка погубил её отряд.",
++      "voice": "Говорит коротко, не просит доверия и всегда называет цену решения."
++    },
++    {
++      "id": "brann",
++      "name": "Бранн Керн",
++      "role": "Капитан ворот",
++      "motive": "Считает порядок единственной защитой Эшвика. Боится, что открытая правда вызовет панику и расколет город.",
++      "voice": "Резкий, практичный, говорит языком долга и последствий."
++    },
++    {
++      "id": "sister_elen",
++      "name": "Сестра Элен",
++      "role": "Хранительница приюта",
++      "motive": "Спасает людей, которых городские власти записали в пропавшие. Готова нарушить любой приказ ради живых.",
++      "voice": "Спокойная, внимательная к деталям, не осуждает слабость."
++    },
++    {
++      "id": "oren",
++      "name": "Орен Соль",
++      "role": "Мастер-ремесленник",
++      "motive": "Изучает янтарные фрагменты и надеется вернуть утраченные ремёсла. Не доверяет ни культу, ни городской страже.",
++      "voice": "Объясняет через устройство вещей, любит точные определения."
++    },
++    {
++      "id": "the_witness",
++      "name": "Свидетель",
++      "role": "Голос из-под земли",
++      "motive": "Пытается завершить незаконченный протокол маяка; неясно, человек ли это, память или чужой разум.",
++      "voice": "Повторяет знакомые слова с неверными интонациями."
++    }
++  ],
++  "chapters": [
++    {
++      "id": "signal",
++      "title": "I. Сигнал под стеной",
++      "summary": "У южных ворот Эшвика Мара передаёт герою обрывок сигнала. Бранн требует молчать, Элен просит сначала найти пропавших у старого водосброса.",
++      "dialogue": [
++        {
++          "speaker": "Мара Вей",
++          "text": "Слышишь низкий звон? Он идёт не с неба. Под камнем есть второй город — и он проснулся."
++        },
++        {
++          "speaker": "Бранн Керн",
++          "text": "Никаких вылазок без приказа. Последний, кто пошёл на этот звук, вернулся без имени."
++        },
++        {
++          "speaker": "Сестра Элен",
++          "text": "Если пойдёшь к водосбросу, ищи людей, не ответы. Ответы умеют ждать."
++        }
++      ],
++      "objective": {
++        "event": "city_enter",
++        "target": "s001",
++        "count": 1
++      },
++      "choice": {
++        "id": "first_oath",
++        "prompt": "Кому доверить первые сведения?",
++        "options": [
++          {
++            "id": "guard",
++            "title": "Передать сигнал Бранну",
++            "description": "Усилить порядок и получить пропуск стражи.",
++            "effects": {
++              "guard_reputation": 1,
++              "refugee_reputation": -1
++            },
++            "flag": "told_guard",
++            "items": {}
++          },
++          {
++            "id": "refugees",
++            "title": "Помочь Элен и скрыть сигнал",
++            "description": "Приют получит поддержку, но стража станет подозрительнее.",
++            "effects": {
++              "guard_reputation": -1,
++              "refugee_reputation": 1
++            },
++            "flag": "aided_refugees",
++            "items": {}
++          }
++        ]
++      }
++    },
++    {
++      "id": "names",
++      "title": "II. Имена в журнале",
++      "summary": "В старом журнале водосброса перечислены люди, которых официально никогда не существовало. Орен узнаёт почерк инженеров маяка.",
++      "dialogue": [
++        {
++          "speaker": "Орен Соль",
++          "text": "Это не список погибших. Видишь одинаковые пропуски? Здесь вычеркнули не людей — целые смены. Кто-то переписал журнал после запуска."
++        },
++        {
++          "speaker": "Мара Вей",
++          "text": "Я не прошу меня оправдать. Найди страницу с отметкой янтарного ключа. Тогда поймёшь, почему я осталась."
++        }
++      ],
++      "objective": {
++        "event": "city_quest",
++        "target": "s001",
++        "count": 1
++      },
++      "choice": {
++        "id": "ledger_truth",
++        "prompt": "Что сделать с найденной страницей?",
++        "options": [
++          {
++            "id": "publish",
++            "title": "Открыть её жителям",
++            "description": "Город узнает правду; доверие к власти снизится.",
++            "effects": {
++              "public_truth": 1,
++              "guard_reputation": -1
++            },
++            "flag": "ledger_public",
++            "items": {
++              "flooded_ledger_page": 1
++            }
++          },
++          {
++            "id": "seal",
++            "title": "Передать страницу Маре",
++            "description": "Сохранить спокойствие и дать Маре время подготовиться.",
++            "effects": {
++              "mara_trust": 1,
++              "public_truth": -1
++            },
++            "flag": "ledger_sealed",
++            "items": {
++              "flooded_ledger_page": 1
++            }
++          }
++        ]
++      }
++    },
++    {
++      "id": "amber_trace",
++      "title": "III. След янтаря",
++      "summary": "След ведёт к затопленной часовне за старой дорогой. Там хранится янтарный ключ — не украшение, а часть механизма, удерживающего сигнал.",
++      "dialogue": [
++        {
++          "speaker": "Свидетель",
++          "text": "Ключ не открывает дверь. Он напоминает двери, что она когда-то была стеной."
++        },
++        {
++          "speaker": "Орен Соль",
++          "text": "Не вставляй его в первый попавшийся паз. Устройство отвечает на тепло, но запоминает руку."
++        }
++      ],
++      "objective": {
++        "event": "travel_km",
++        "target": "",
++        "count": 3
++      },
++      "choice": {
++        "id": "key_use",
++        "prompt": "Как поступить с янтарным ключом?",
++        "options": [
++          {
++            "id": "study",
++            "title": "Отдать ключ Орену для изучения",
++            "description": "Открывает ремесленную ветвь и снижает риск при настройке механизма.",
++            "effects": {
++              "craft_knowledge": 1
++            },
++            "flag": "key_studied",
++            "items": {
++              "amber_key_fragment": 1
++            }
++          },
++          {
++            "id": "return",
++            "title": "Вернуть ключ Маре",
++            "description": "Укрепляет доверие Мары, но часть сведений останется скрытой.",
++            "effects": {
++              "mara_trust": 1
++            },
++            "flag": "key_returned",
++            "items": {
++              "amber_key_fragment": 1
++            }
++          }
++        ]
++      }
++    },
++    {
++      "id": "warden",
++      "title": "IV. Сторож без лица",
++      "summary": "У затопленной часовни стоит страж механизма — существо, собранное из костяных пластин, корней и старых сигнальных колец. Оно не охраняет сокровище. Оно удерживает проход.",
++      "dialogue": [
++        {
++          "speaker": "Свидетель",
++          "text": "Не называй его чудовищем. Он всё ещё выполняет приказ, которого больше никто не помнит."
++        }
++      ],
++      "objective": {
++        "event": "boss_defeated",
++        "target": "boss_warden",
++        "count": 1
++      }
++    },
++    {
++      "id": "beacon",
++      "title": "V. Сердце маяка",
++      "summary": "За часовней находится узел старого маяка. Последний запуск может предупредить другие поселения, но разбудит то, что отвечает из-под земли.",
++      "dialogue": [
++        {
++          "speaker": "Мара Вей",
++          "text": "Я однажды выбрала за всех. Больше не буду. Скажи, что мы должны оставить после себя."
++        },
++        {
++          "speaker": "Свидетель",
++          "text": "ПРОТОКОЛ НЕ ЗАВЕРШЁН. НАЗОВИТЕ ТЕХ, КТО ОСТАНЕТСЯ."
++        }
++      ],
++      "objective": {
++        "event": "boss_defeated",
++        "target": "boss_beacon_core",
++        "count": 1
++      },
++      "choice": {
++        "id": "ending",
++        "prompt": "Как завершить работу маяка?",
++        "options": [
++          {
++            "id": "warn",
++            "title": "Запустить маяк на полную мощность",
++            "description": "Другие поселения получат предупреждение; проклятые земли станут активнее.",
++            "effects": {
++              "world_warning": 1,
++              "curse_pressure": 1
++            },
++            "flag": "ending_warning",
++            "items": {
++              "beacon_lens": 1
++            }
++          },
++          {
++            "id": "silence",
++            "title": "Погасить сигнал навсегда",
++            "description": "Эшвик сохранит тишину, но дальние поселения останутся без предупреждения.",
++            "effects": {
++              "world_warning": -1,
++              "curse_pressure": -1
++            },
++            "flag": "ending_silence",
++            "items": {
++              "beacon_lens": 1
++            }
++          }
++        ]
++      }
++    },
++    {
++      "id": "epilogue",
++      "title": "Эпилог. Те, кто помнит",
++      "summary": "Решение героя становится частью новой летописи Эшвика. У города меняется знамя, а в хронике появляется запись о том, что было сохранено и чем пришлось заплатить.",
++      "objective": {
++        "event": "ending_chosen",
++        "target": "",
++        "count": 1
++      }
++    }
++  ],
++  "locations": [
++    {
++      "id": "flooded_chapel",
++      "name": "Затопленная часовня",
++      "position": [
++        3017.9,
++        13553.6
++      ],
++      "radius": 90,
++      "description": "Полузатопленная часовня, проросшая корнями; вход отмечен тремя янтарными кольцами.",
++      "unlock_chapter": "amber_trace"
++    },
++    {
++      "id": "beacon_core",
++      "name": "Подземное сердце маяка",
++      "position": [
++        6517.9,
++        19553.6
++      ],
++      "radius": 100,
++      "description": "Старая сигнальная камера под разрушенным наблюдательным пунктом.",
++      "unlock_chapter": "beacon"
++    }
++  ],
++  "bosses": [
++    {
++      "id": "boss_warden",
++      "name": "Сторож без лица",
++      "creature": "amber_warden",
++      "location": "flooded_chapel",
++      "terrain": "swamp",
++      "biome": 5,
++      "description": "Бронированный страж прохода. Уязвим к дробящему оружию; его янтарное ядро вспыхивает перед тяжёлым ударом."
++    },
++    {
++      "id": "boss_beacon_core",
++      "name": "Эхо протокола",
++      "creature": "beacon_echo",
++      "location": "beacon_core",
++      "terrain": "rad_wasteland",
++      "biome": 8,
++      "description": "Сгусток памяти и проклятого янтаря. Меняет темп боя и поддерживает себя импульсами сигнала."
++    }
++  ],
++  "story_items": [
++    {
++      "id": "amber_key_fragment",
++      "name": "Фрагмент янтарного ключа",
++      "description": "Тёплый на ощупь фрагмент старого механизма. На срезе видны концентрические линии, похожие на годовые кольца дерева.",
++      "category": "quest",
++      "weight": 0.2,
++      "unique": true
++    },
++    {
++      "id": "flooded_ledger_page",
++      "name": "Страница журнала водосброса",
++      "description": "Мокрая страница с перечнем вычеркнутых смен и отметкой янтарного ключа.",
++      "category": "quest",
++      "weight": 0.05,
++      "unique": true
++    },
++    {
++      "id": "beacon_lens",
++      "name": "Линза сигнального маяка",
++      "description": "Треснувшая линза, которая собирает слабый свет в узкий янтарный луч.",
++      "category": "quest",
++      "weight": 0.6,
++      "unique": true
++    }
++  ]
++}
+diff --git a/game/i18n/uk.po b/game/i18n/uk.po
+index 3e88d84..063b1f5 100644
+--- a/game/i18n/uk.po
++++ b/game/i18n/uk.po
+@@ -1364,6 +1364,10 @@ msgstr "Їжа"
+ msgid "Ресурсы"
+ msgstr "Ресурси"
+ 
++#: characters/field_guide.gd
++msgid "Сюжетные"
++msgstr "Сюжетні"
++
+ #: characters/field_guide.gd
+ msgid "Транспорт"
+ msgstr "Транспорт"
+@@ -1832,6 +1836,14 @@ msgstr "Бойові здібності"
+ msgid "В бой — не больше %d видов оружия"
+ msgstr "До бою — не більше %d видів зброї"
+ 
++#: characters/hero_window.gd
++msgid "Ваш выбор стал частью летописи Эшвика."
++msgstr "Ваш вибір став частиною літопису Ешвіка."
++
++#: characters/hero_window.gd
++msgid "Ваше решение"
++msgstr "Ваше рішення"
++
+ #: characters/hero_window.gd
+ msgid "Взять дар «%s»"
+ msgstr "Узяти дар «%s»"
+@@ -1840,6 +1852,10 @@ msgstr "Узяти дар «%s»"
+ msgid "Вода"
+ msgstr "Вода"
+ 
++#: characters/hero_window.gd
++msgid "Вступить в бой"
++msgstr "Вступити в бій"
++
+ #: characters/hero_window.gd
+ msgid "Выберите дар (можно: %d)"
+ msgstr "Оберіть дар (можна: %d)"
+@@ -1872,6 +1888,10 @@ msgstr "Дари"
+ msgid "Действуют"
+ msgstr "Діють"
+ 
++#: characters/hero_window.gd
++msgid "Действующие лица"
++msgstr "Дійові особи"
++
+ #: characters/hero_window.gd
+ msgid "Дневник"
+ msgstr "Щоденник"
+@@ -1884,6 +1904,10 @@ msgstr "Журналу немає."
+ msgid "Задания"
+ msgstr "Завдання"
+ 
++#: characters/hero_window.gd
++msgid "Закрепить финальное решение"
++msgstr "Закріпити фінальне рішення"
++
+ #: characters/hero_window.gd
+ msgid "Запас сил"
+ msgstr "Запас сил"
+@@ -1908,6 +1932,18 @@ msgstr "Інвентар"
+ msgid "История"
+ msgstr "Історія"
+ 
++#: characters/hero_window.gd
++msgid "История решений"
++msgstr "Історія рішень"
++
++#: characters/hero_window.gd
++msgid "Кампания"
++msgstr "Кампанія"
++
++#: characters/hero_window.gd
++msgid "Кампания завершена"
++msgstr "Кампанію завершено"
++
+ #: characters/hero_window.gd
+ msgid "Карта"
+ msgstr "Карта"
+@@ -1940,6 +1976,10 @@ msgstr "Особисті нотатки героя"
+ msgid "Мировоззрение: %s (добро %+d, закон %+d)"
+ msgstr "Світогляд: %s (добро %+d, закон %+d)"
+ 
++#: characters/hero_window.gd
++msgid "Мотив: %s\nМанера речи: %s"
++msgstr "Мотив: %s\nМанера мови: %s"
++
+ #: characters/hero_window.gd
+ msgid "Навыки"
+ msgstr "Навички"
+@@ -1968,6 +2008,10 @@ msgstr "Новий дар — на рівні %d."
+ msgid "Особенности"
+ msgstr "Особливості"
+ 
++#: characters/hero_window.gd
++msgid "Особые противники"
++msgstr "Особливі супротивники"
++
+ #: characters/hero_window.gd
+ msgid "Отметить"
+ msgstr "Відмітити"
+@@ -1984,6 +2028,10 @@ msgstr "Переродження: готово"
+ msgid "Перерождение: можно взять черту"
+ msgstr "Переродження: можна взяти рису"
+ 
++#: characters/hero_window.gd
++msgid "Победить особого противника"
++msgstr "Перемогти особливого супротивника"
++
+ #: characters/hero_window.gd
+ msgid "Подходящих даров нет: поднимите уровень, характеристики или навыки."
+ msgstr "Відповідних дарів немає: підніміть рівень, характеристики чи навички."
+@@ -2016,6 +2064,10 @@ msgstr "Предметів у розділі: %d"
+ msgid "Предметы, материалы, ремесло и приёмы, известные герою. Сведения берутся из игровых баз данных."
+ msgstr "Предмети, матеріали, ремесло й прийоми, відомі героєві. Відомості беруться з ігрових баз даних."
+ 
++#: characters/hero_window.gd
++msgid "Прибыть в Эшвик"
++msgstr "Прибути до Ешвіка"
++
+ #: characters/hero_window.gd
+ msgid "Принятые поручения Эшвика"
+ msgstr "Прийняті доручення Ешвіка"
+@@ -2024,10 +2076,18 @@ msgstr "Прийняті доручення Ешвіка"
+ msgid "Причина: "
+ msgstr "Причина: "
+ 
++#: characters/hero_window.gd
++msgid "Пройти указанное расстояние"
++msgstr "Пройти вказану відстань"
++
+ #: characters/hero_window.gd
+ msgid "Ремесло и рецепты"
+ msgstr "Ремесло й рецепти"
+ 
++#: characters/hero_window.gd
++msgid "Сдать поручение в Эшвике"
++msgstr "Здати доручення в Ешвіку"
++
+ #: characters/hero_window.gd
+ msgid "Сила удара ×%.2f · Поиск ×%.2f · Скорость ×%.2f · Переносимый вес %.0f кг · Защита от проклятья %d %% · Пройдено %.1f км"
+ msgstr "Сила удару ×%.2f · Пошук ×%.2f · Швидкість ×%.2f · Вага, яку несе %.0f кг · Захист від прокляття %d %% · Пройдено %.1f км"
+@@ -2092,6 +2152,10 @@ msgstr "Характеристики"
+ msgid "Хроника"
+ msgstr "Хроніка"
+ 
++#: characters/hero_window.gd
++msgid "Цель: %s — %d/%d"
++msgstr "Мета: %s — %d/%d"
++
+ #: characters/hero_window.gd
+ msgid "Черт характера нет."
+ msgstr "Рис характеру немає."
+@@ -2112,6 +2176,10 @@ msgstr "біль"
+ msgid "до выздоровления около %d ч"
+ msgstr "до одужання близько %d год"
+ 
++#: characters/hero_window.gd
++msgid "доступен"
++msgstr "доступний"
++
+ #: characters/hero_window.gd
+ msgid "истощение"
+ msgstr "виснаження"
+@@ -2140,6 +2208,10 @@ msgstr "отруєння"
+ msgid "плата мастеру"
+ msgstr "плата майстрові"
+ 
++#: characters/hero_window.gd
++msgid "пока закрыт"
++msgstr "поки закритий"
++
+ #: characters/hero_window.gd
+ msgid "потеря здоровья"
+ msgstr "втрата здоров'я"
+@@ -4496,6 +4568,14 @@ msgstr "моно 44.1 кГц, гучність піку -8 дБ, Ogg Vorbis"
+ msgid "моно 44.1 кГц, громкость пика -9 дБ, Ogg Vorbis"
+ msgstr "моно 44.1 кГц, гучність піку -9 дБ, Ogg Vorbis"
+ 
++#: data/battle/abilities/amber_pulse.tres
++msgid "Действие: узкий луч проклятого янтаря бьёт на расстоянии. Спасбросок Телосложения; при провале цель оглушена. Раз за бой."
++msgstr "Дія: вузький промінь проклятого бурштину б'є на відстані. Рятівний кидок Статури; у разі провалу ціль приголомшена. Раз за бій."
++
++#: data/battle/abilities/amber_pulse.tres
++msgid "Импульс маяка"
++msgstr "Імпульс маяка"
++
+ #: data/battle/abilities/fire_flask.tres
+ msgid "Бросок склянки: все в радиусе 1 клетки — спасбросок Ловкости, 2d6 огня (половина при успехе), провал — горит."
+ msgstr "Кидок скляночки: усі в радіусі 5 футів — рятівний кидок Спритності, 2d6 вогню (половина при успіху), провал — горить."
+@@ -4532,6 +4612,14 @@ msgstr "Далека атака Спритністю: 1d4 колючої + 1d6 
+ msgid "Ядовитый дротик"
+ msgstr "Отруйний дротик"
+ 
++#: data/battle/abilities/root_snare.tres
++msgid "Действие: корни из трещин хватают противника. Спасбросок Ловкости; при провале цель опутана. Раз за бой."
++msgstr "Дія: коріння з тріщин хапає супротивника. Рятівний кидок Спритності; у разі провалу ціль обплутана. Раз за бій."
++
++#: data/battle/abilities/root_snare.tres
++msgid "Корневой захват"
++msgstr "Кореневе захоплення"
++
+ #: data/battle/abilities/second_wind.tres
+ msgid "Бонусное действие: восстановить 1d10 + уровень к здоровью. Раз за бой."
+ msgstr "Бонусна дія: відновити 1d10 + рівень здоров’я. Раз за бій."
+@@ -4660,6 +4748,10 @@ msgstr "Оглушений"
+ msgid "Без сознания"
+ msgstr "Непритомний"
+ 
++#: data/battle/weapons/amber_blast.tres
++msgid "Импульс янтарного эха"
++msgstr "Імпульс бурштинової луни"
++
+ #: data/battle/weapons/battleaxe.tres
+ msgid "Боевой топор"
+ msgstr "Бойова сокира"
+@@ -7964,6 +8056,10 @@ msgstr "Лісові ягоди. Можна з'їсти сирими."
+ msgid "Лечебная мазь для обработки повреждений."
+ msgstr "Лікувальна мазь для оброблення ушкоджень."
+ 
++#: data/cities/items.json
++msgid "Линза сигнального маяка"
++msgstr "Лінза сигнального маяка"
++
+ #: data/cities/items.json
+ msgid "Лист пергамента"
+ msgstr "Аркуш пергаменту"
+@@ -8000,6 +8096,10 @@ msgstr "Металобрухт із руїн старого світу. Мате
+ msgid "Меховой плащ"
+ msgstr "Хутряний плащ"
+ 
++#: data/cities/items.json
++msgid "Мокрая страница с перечнем вычеркнутых смен и отметкой янтарного ключа."
++msgstr "Мокра сторінка з переліком викреслених змін і позначкою бурштинового ключа."
++
+ #: data/cities/items.json
+ msgid "Монета прежней эпохи. Ценится торговцами и коллекционерами."
+ msgstr "Монета колишньої доби. Цінується торговцями й колекціонерами."
+@@ -8168,6 +8268,10 @@ msgstr "Спальник"
+ msgid "Средство для снижения жара."
+ msgstr "Засіб для зниження жару."
+ 
++#: data/cities/items.json
++msgid "Страница журнала водосброса"
++msgstr "Сторінка журналу водоскиду"
++
+ #: data/cities/items.json
+ msgid "Суконные штаны"
+ msgstr "Сукняні штани"
+@@ -8208,6 +8312,10 @@ msgstr "Сокира"
+ msgid "Травяной отвар"
+ msgstr "Трав'яний відвар"
+ 
++#: data/cities/items.json
++msgid "Треснувшая линза, собирающая слабый свет в узкий янтарный луч."
++msgstr "Тріснута лінза, що збирає слабке світло у вузький бурштиновий промінь."
++
+ #: data/cities/items.json
+ msgid "Тяжёлые металлические латы."
+ msgstr "Важкі металеві лати."
+@@ -8224,6 +8332,10 @@ msgstr "Тепла повстяна шапка."
+ msgid "Тёплый меховой плащ."
+ msgstr "Теплий хутряний плащ."
+ 
++#: data/cities/items.json
++msgid "Тёплый фрагмент старого механизма с концентрическими линиями на срезе."
++msgstr "Теплий уламок старого механізму з концентричними лініями на зрізі."
++
+ #: data/cities/items.json
+ msgid "Уголёк для заметок и зарисовок на пергаменте."
+ msgstr "Вуглинка для нотаток і замальовок на пергаменті."
+@@ -8256,6 +8368,10 @@ msgstr "Фляга чистої води"
+ msgid "Фрагмент старой карты, помогающий изучать мир."
+ msgstr "Уламок старої мапи, що допомагає вивчати світ."
+ 
++#: data/cities/items.json
++msgid "Фрагмент янтарного ключа"
++msgstr "Уламок бурштинового ключа"
++
+ #: data/cities/items.json
+ msgid "Хворост"
+ msgstr "Хмиз"
+@@ -9720,6 +9836,302 @@ msgstr "Ельфи живуть по сто вісімдесят, а то й д
+ msgid "Эльфы: Virrathi, лесные, Thalasseri, морские, Nethrali, подземные, Mycari, грибные, и Hemaveth, кровопитные. Последние не бессмертны и не колдуны: им нужна кровь животных или мясной рацион."
+ msgstr "Ельфи: Virrathi, лісові, Thalasseri, морські, Nethrali, підземні, Mycari, грибні, і Hemaveth, кровопитні. Останні не безсмертні й не чаклуни: їм потрібна кров тварин або м'ясний раціон."
+ 
++#: data/story/campaign.json
++msgid "I. Сигнал под стеной"
++msgstr "I. Сигнал під стіною"
++
++#: data/story/campaign.json
++msgid "II. Имена в журнале"
++msgstr "II. Імена в журналі"
++
++#: data/story/campaign.json
++msgid "III. След янтаря"
++msgstr "III. Слід бурштину"
++
++#: data/story/campaign.json
++msgid "IV. Сторож без лица"
++msgstr "IV. Сторож без обличчя"
++
++#: data/story/campaign.json
++msgid "V. Сердце маяка"
++msgstr "V. Серце маяка"
++
++#: data/story/campaign.json
++msgid "Бранн Керн"
++msgstr "Бранн Керн"
++
++#: data/story/campaign.json
++msgid "Бронированный страж прохода. Уязвим к дробящему оружию; его янтарное ядро вспыхивает перед тяжёлым ударом."
++msgstr "Броньований вартовий проходу. Вразливий до дробильної зброї; його бурштинове ядро спалахує перед важким ударом."
++
++#: data/story/campaign.json
++msgid "В старом журнале водосброса перечислены люди, которых официально никогда не существовало. Орен узнаёт почерк инженеров маяка."
++msgstr "У старому журналі водоскиду перелічено людей, яких офіційно ніколи не існувало. Орен впізнає почерк інженерів маяка."
++
++#: data/story/campaign.json
++msgid "Вернуть ключ Маре"
++msgstr "Повернути ключ Марі"
++
++#: data/story/campaign.json
++msgid "Говорит коротко, не просит доверия и всегда называет цену решения."
++msgstr "Говорить коротко, не просить довіри й завжди називає ціну рішення."
++
++#: data/story/campaign.json
++msgid "Голос из-под земли"
++msgstr "Голос з-під землі"
++
++#: data/story/campaign.json
++msgid "Город узнает правду; доверие к власти снизится."
++msgstr "Місто дізнається правду; довіра до влади знизиться."
++
++#: data/story/campaign.json
++msgid "Другие поселения получат предупреждение; проклятые земли станут активнее."
++msgstr "Інші поселення отримають попередження; прокляті землі стануть активнішими."
++
++#: data/story/campaign.json
++msgid "Если пойдёшь к водосбросу, ищи людей, не ответы. Ответы умеют ждать."
++msgstr "Якщо підеш до водоскиду, шукай людей, а не відповіді. Відповіді вміють чекати."
++
++#: data/story/campaign.json
++msgid "За часовней находится узел старого маяка. Последний запуск может предупредить другие поселения, но разбудит то, что отвечает из-под земли."
++msgstr "За каплицею — вузол старого маяка. Останній запуск може попередити інші поселення, але розбудить те, що відповідає з-під землі."
++
++#: data/story/campaign.json
++msgid "Запустить маяк на полную мощность"
++msgstr "Запустити маяк на повну потужність"
++
++#: data/story/campaign.json
++msgid "Затопленная часовня"
++msgstr "Затоплена каплиця"
++
++#: data/story/campaign.json
++msgid "Изучает янтарные фрагменты и надеется вернуть утраченные ремёсла. Не доверяет ни культу, ни городской страже."
++msgstr "Вивчає бурштинові уламки й сподівається повернути втрачені ремесла. Не довіряє ні культові, ні міській варті."
++
++#: data/story/campaign.json
++msgid "Как завершить работу маяка?"
++msgstr "Як завершити роботу маяка?"
++
++#: data/story/campaign.json
++msgid "Как поступить с янтарным ключом?"
++msgstr "Як учинити з бурштиновим ключем?"
++
++#: data/story/campaign.json
++msgid "Капитан ворот"
++msgstr "Капітан воріт"
++
++#: data/story/campaign.json
++msgid "Ключ не открывает дверь. Он напоминает двери, что она когда-то была стеной."
++msgstr "Ключ не відмикає двері. Він нагадує дверям, що колись вони були стіною."
++
++#: data/story/campaign.json
++msgid "Кому доверить первые сведения?"
++msgstr "Кому довірити перші відомості?"
++
++#: data/story/campaign.json
++msgid "Мара Вей"
++msgstr "Мара Вей"
++
++#: data/story/campaign.json
++msgid "Мастер-ремесленник"
++msgstr "Майстер-ремісник"
++
++#: data/story/campaign.json
++msgid "Не вставляй его в первый попавшийся паз. Устройство отвечает на тепло, но запоминает руку."
++msgstr "Не вставляй його в перший-ліпший паз. Пристрій відгукується на тепло, але запам'ятовує руку."
++
++#: data/story/campaign.json
++msgid "Не называй его чудовищем. Он всё ещё выполняет приказ, которого больше никто не помнит."
++msgstr "Не називай його чудовиськом. Він досі виконує наказ, якого більше ніхто не пам'ятає."
++
++#: data/story/campaign.json
++msgid "Никаких вылазок без приказа. Последний, кто пошёл на этот звук, вернулся без имени."
++msgstr "Жодних вилазок без наказу. Останній, хто пішов на цей звук, повернувся без імені."
++
++#: data/story/campaign.json
++msgid "Объясняет через устройство вещей, любит точные определения."
++msgstr "Пояснює через будову речей, любить точні визначення."
++
++#: data/story/campaign.json
++msgid "Орен Соль"
++msgstr "Орен Соль"
++
++#: data/story/campaign.json
++msgid "Отдать ключ Орену для изучения"
++msgstr "Віддати ключ Оренові на вивчення"
++
++#: data/story/campaign.json
++msgid "Открывает ремесленную ветвь и снижает риск при настройке механизма."
++msgstr "Відкриває ремісничу гілку й знижує ризик під час налаштування механізму."
++
++#: data/story/campaign.json
++msgid "Открыть её жителям"
++msgstr "Відкрити її мешканцям"
++
++#: data/story/campaign.json
++msgid "ПРОТОКОЛ НЕ ЗАВЕРШЁН. НАЗОВИТЕ ТЕХ, КТО ОСТАНЕТСЯ."
++msgstr "ПРОТОКОЛ НЕ ЗАВЕРШЕНО. НАЗВІТЬ ТИХ, ХТО ЗАЛИШИТЬСЯ."
++
++#: data/story/campaign.json
++msgid "Пепел помнит имена"
++msgstr "Попіл пам'ятає імена"
++
++#: data/story/campaign.json
++msgid "Передать сигнал Бранну"
++msgstr "Передати сигнал Браннові"
++
++#: data/story/campaign.json
++msgid "Передать страницу Маре"
++msgstr "Передати сторінку Марі"
++
++#: data/story/campaign.json
++msgid "Повторяет знакомые слова с неверными интонациями."
++msgstr "Повторює знайомі слова з хибними інтонаціями."
++
++#: data/story/campaign.json
++msgid "Погасить сигнал навсегда"
++msgstr "Погасити сигнал назавжди"
++
++#: data/story/campaign.json
++msgid "Подземное сердце маяка"
++msgstr "Підземне серце маяка"
++
++#: data/story/campaign.json
++msgid "Полузатопленная часовня, проросшая корнями; вход отмечен тремя янтарными кольцами."
++msgstr "Напівзатоплена каплиця, поросла корінням; вхід позначено трьома бурштиновими кільцями."
++
++#: data/story/campaign.json
++msgid "Помочь Элен и скрыть сигнал"
++msgstr "Допомогти Елен і приховати сигнал"
++
++#: data/story/campaign.json
++msgid "После катастрофы Эшвик держится на старых стенах и чужих тайнах. Сигнал из-под земли зовёт не к спасению, а к выбору: кому достанется право решить, что останется от прежнего мира."
++msgstr "Після катастрофи Ешвік тримається на старих стінах і чужих таємницях. Сигнал з-під землі кличе не до порятунку, а до вибору: кому дістанеться право вирішити, що лишиться від колишнього світу."
++
++#: data/story/campaign.json
++msgid "Приют получит поддержку, но стража станет подозрительнее."
++msgstr "Притулок отримає підтримку, але варта стане підозріливішою."
++
++#: data/story/campaign.json
++msgid "Пытается завершить незаконченный протокол маяка; неясно, человек ли это, память или чужой разум."
++msgstr "Намагається завершити недокінчений протокол маяка; незрозуміло, людина це, пам'ять чи чужий розум."
++
++#: data/story/campaign.json
++msgid "Резкий, практичный, говорит языком долга и последствий."
++msgstr "Різкий, практичний, говорить мовою обов'язку й наслідків."
++
++#: data/story/campaign.json
++msgid "Решение героя становится частью новой летописи Эшвика. У города меняется знамя, а в хронике появляется запись о том, что было сохранено и чем пришлось заплатить."
++msgstr "Рішення героя стає частиною нового літопису Ешвіка. У міста змінюється знамено, а в хроніці з'являється запис про те, що вдалося зберегти і чим довелося заплатити."
++
++#: data/story/campaign.json
++msgid "Свидетель"
++msgstr "Свідок"
++
++#: data/story/campaign.json
++msgid "Сгусток памяти и проклятого янтаря. Меняет темп боя и поддерживает себя импульсами сигнала."
++msgstr "Згусток пам'яті й проклятого бурштину. Змінює темп бою й підтримує себе імпульсами сигналу."
++
++#: data/story/campaign.json
++msgid "Сестра Элен"
++msgstr "Сестра Елен"
++
++#: data/story/campaign.json
++msgid "След ведёт к затопленной часовне за старой дорогой. Там хранится янтарный ключ — не украшение, а часть механизма, удерживающего сигнал."
++msgstr "Слід веде до затопленої каплиці за старою дорогою. Там зберігається бурштиновий ключ — не прикраса, а частина механізму, що тримає сигнал."
++
++#: data/story/campaign.json
++msgid "Слышишь низкий звон? Он идёт не с неба. Под камнем есть второй город — и он проснулся."
++msgstr "Чуєш низький дзвін? Він іде не з неба. Під каменем є друге місто — і воно прокинулося."
++
++#: data/story/campaign.json
++msgid "Смотрительница маяка"
++msgstr "Доглядачка маяка"
++
++#: data/story/campaign.json
++msgid "Сохранить спокойствие и дать Маре время подготовиться."
++msgstr "Зберегти спокій і дати Марі час підготуватися."
++
++#: data/story/campaign.json
++msgid "Спасает людей, которых городские власти записали в пропавшие. Готова нарушить любой приказ ради живых."
++msgstr "Рятує людей, яких міська влада записала у зниклі. Готова порушити будь-який наказ заради живих."
++
++#: data/story/campaign.json
++msgid "Спокойная, внимательная к деталям, не осуждает слабость."
++msgstr "Спокійна, уважна до дрібниць, не засуджує слабкість."
++
++#: data/story/campaign.json
++msgid "Старая сигнальная камера под разрушенным наблюдательным пунктом."
++msgstr "Стара сигнальна камера під зруйнованим спостережним пунктом."
++
++#: data/story/campaign.json
++msgid "Сторож без лица"
++msgstr "Сторож без обличчя"
++
++#: data/story/campaign.json
++msgid "Считает порядок единственной защитой Эшвика. Боится, что открытая правда вызовет панику и расколет город."
++msgstr "Вважає порядок єдиним захистом Ешвіка. Боїться, що відкрита правда спричинить паніку й розколе місто."
++
++#: data/story/campaign.json
++msgid "Треснувшая линза, которая собирает слабый свет в узкий янтарный луч."
++msgstr "Тріснута лінза, яка збирає слабке світло у вузький бурштиновий промінь."
++
++#: data/story/campaign.json
++msgid "Тёплый на ощупь фрагмент старого механизма. На срезе видны концентрические линии, похожие на годовые кольца дерева."
++msgstr "Теплий на дотик уламок старого механізму. На зрізі видно концентричні лінії, схожі на річні кільця дерева."
++
++#: data/story/campaign.json
++msgid "У затопленной часовни стоит страж механизма — существо, собранное из костяных пластин, корней и старых сигнальных колец. Оно не охраняет сокровище. Оно удерживает проход."
++msgstr "Біля затопленої каплиці стоїть вартовий механізму — істота, зібрана з кістяних пластин, коріння й старих сигнальних кілець. Вона не стереже скарб. Вона тримає прохід."
++
++#: data/story/campaign.json
++msgid "У южных ворот Эшвика Мара передаёт герою обрывок сигнала. Бранн требует молчать, Элен просит сначала найти пропавших у старого водосброса."
++msgstr "Біля південних воріт Ешвіка Мара передає героєві уривок сигналу. Бранн вимагає мовчати, Елен просить спершу знайти зниклих біля старого водоскиду."
++
++#: data/story/campaign.json
++msgid "Укрепляет доверие Мары, но часть сведений останется скрытой."
++msgstr "Зміцнює довіру Мари, але частина відомостей лишиться прихованою."
++
++#: data/story/campaign.json
++msgid "Усилить порядок и получить пропуск стражи."
++msgstr "Посилити порядок і отримати перепустку варти."
++
++#: data/story/campaign.json
++msgid "Хочет восстановить маяк, чтобы предупреждать поселения о волнах влияния проклятия. Скрывает, что прежний запуск маяка погубил её отряд."
++msgstr "Хоче відновити маяк, щоб попереджати поселення про хвилі впливу прокляття. Приховує, що попередній запуск маяка згубив її загін."
++
++#: data/story/campaign.json
++msgid "Хранительница приюта"
++msgstr "Доглядачка притулку"
++
++#: data/story/campaign.json
++msgid "Что сделать с найденной страницей?"
++msgstr "Що зробити зі знайденою сторінкою?"
++
++#: data/story/campaign.json
++msgid "Эпилог. Те, кто помнит"
++msgstr "Епілог. Ті, хто пам'ятає"
++
++#: data/story/campaign.json
++msgid "Это не список погибших. Видишь одинаковые пропуски? Здесь вычеркнули не людей — целые смены. Кто-то переписал журнал после запуска."
++msgstr "Це не список загиблих. Бачиш однакові пропуски? Тут викреслили не людей — цілі зміни. Хтось переписав журнал після запуску."
++
++#: data/story/campaign.json
++msgid "Эхо протокола"
++msgstr "Луна протоколу"
++
++#: data/story/campaign.json
++msgid "Эшвик сохранит тишину, но дальние поселения останутся без предупреждения."
++msgstr "Ешвік збереже тишу, але далекі поселення лишаться без попередження."
++
++#: data/story/campaign.json
++msgid "Я не прошу меня оправдать. Найди страницу с отметкой янтарного ключа. Тогда поймёшь, почему я осталась."
++msgstr "Я не прошу мене виправдовувати. Знайди сторінку з позначкою бурштинового ключа. Тоді зрозумієш, чому я лишилася."
++
++#: data/story/campaign.json
++msgid "Я однажды выбрала за всех. Больше не буду. Скажи, что мы должны оставить после себя."
++msgstr "Я колись уже вибрала за всіх. Більше не буду. Скажи, що ми маємо залишити по собі."
++
+ #: data/weather/weather.json
+ msgid "Простая погода: тип погоды выбирается по сезону и биому. Веса — доли времени (не обязаны давать 1). Порядок типов от сухого к мокрому: одно пятно погоды бросает одно число и в соседних биомах даёт похожую погоду. Ниже snow_below_c дождь и гроза становятся снегом. Правка весов меняет климат без кода."
+ msgstr "Проста погода: тип погоди вибирається за сезоном і біомом. Ваги — частки часу (не мусять давати 1). Порядок типів від сухого до мокрого: одна пляма погоди кидає одне число й у сусідніх біомах дає схожу погоду. Нижче snow_below_c дощ і гроза стають снігом. Правка ваг змінює клімат без коду."
+@@ -10256,6 +10668,10 @@ msgstr "F — вилізти: коштує сил і часу, зате відк
+ msgid "F — обшарить место вокруг: еда, хворост, ветошь, лом. Найти можно не всегда: всё решает шанс. Найденное — в сумке (I → 5)."
+ msgstr "F — обшукати місце навколо: їжа, хмиз, ганчір'я, брухт. Знайти можна не завжди: усе вирішує шанс. Знайдене — в сумці (I → 5)."
+ 
++#: tutorial/tutorial.gd
++msgid "I → 6 «Задания»: сверху сюжет «Пепел помнит имена» — глава, цель и особые противники. Задания горожан — ниже, личные заметки — в самом низу."
++msgstr "I → 6 «Завдання»: угорі сюжет «Попіл пам'ятає імена» — розділ, мета й особливі супротивники. Завдання містян — нижче, особисті нотатки — внизу."
++
+ #: tutorial/tutorial.gd
+ msgid "I → 9 «Дневник» → «Справочник выжившего»: все предметы по разделам, рецепты и способности. Там же «Летопись мира» — то, что герой узнал."
+ msgstr "I → 9 «Щоденник» → «Довідник виживальника»: усі предмети за розділами, рецепти й здібності. Там само «Літопис світу» — те, що герой дізнався."
+@@ -10304,6 +10720,10 @@ msgstr "Герой пливе: це витрачає Сили, а без сил
+ msgid "Герой хочет пить. Подойдите к реке или озеру и нажмите E. Сырая вода иногда даёт дизентерию; в городе есть колодцы."
+ msgstr "Герой хоче пити. Підійдіть до річки чи озера й натисніть E. Сира вода іноді дає дизентерію; у місті є колодязі."
+ 
++#: tutorial/tutorial.gd
++msgid "Глава закончена, и ждёт ваше решение: I → 6 «Задания», кнопки выбора под целью. Выбор запомнится в летописи Эшвика."
++msgstr "Розділ закінчено, і чекає ваше рішення: I → 6 «Завдання», кнопки вибору під метою. Вибір запам'ятається в літописі Ешвіка."
++
+ #: tutorial/tutorial.gd
+ msgid "Голод"
+ msgstr "Голод"
+@@ -10344,10 +10764,6 @@ msgstr "За хід — переміщення й одна дія. D — рив
+ msgid "Задания и карта — разделы меню героя (I → 6, I → 7). Карта заполняется сама, чем выше Интеллект, тем подробнее."
+ msgstr "Завдання й мапа — розділи меню героя (I → 6, I → 7). Мапа заповнюється сама, чим вищий Інтелект, тим докладніша."
+ 
+-#: tutorial/tutorial.gd
+-msgid "Задания и справочник"
+-msgstr "Завдання й довідник"
+-
+ #: tutorial/tutorial.gd
+ msgid "Здесь проклятая земля: воздействие проклятья копится каждый час и спадает только на чистой земле. От 100 начинается проклятая хворь. Не задерживайтесь."
+ msgstr "Тут проклята земля: вплив прокляття накопичується щогодини й спадає лише на чистій землі. Від 100 починається проклята хвороба. Не затримуйтеся."
+@@ -10524,10 +10940,6 @@ msgstr "Подивитися, що сталося, — вікно героя (I)
+ msgid "Пошаговый бой"
+ msgstr "Покроковий бій"
+ 
+-#: tutorial/tutorial.gd
+-msgid "Принятые поручения Эшвика и личные заметки — в разделе «Задания» (I → 6). «Справочник выжившего» (I → 9) собирает предметы, рецепты и способности."
+-msgstr "Прийняті доручення Ешвіка й особисті нотатки — в розділі «Завдання» (I → 6). «Довідник виживальника» (I → 9) збирає предмети, рецепти й здібності."
+-
+ #: tutorial/tutorial.gd
+ msgid "Пробел / Enter"
+ msgstr "Пробіл / Enter"
+@@ -10556,13 +10968,17 @@ msgstr "Шлях мишею"
+ msgid "Ремесло"
+ msgstr "Ремесло"
+ 
++#: tutorial/tutorial.gd
++msgid "Решение по сюжету"
++msgstr "Рішення за сюжетом"
++
+ #: tutorial/tutorial.gd
+ msgid "Руины старого мира: F — обыскать. Находки бывают ценные, а через несколько дней тут снова есть что взять."
+ msgstr "Руїни старого світу: F — обшукати. Знахідки бувають цінні, а за кілька днів тут знову є що взяти."
+ 
+ #: tutorial/tutorial.gd
+-msgid "Сверху — значки с числами: здоровье, сытость, вода, энергия, силы, воздействие проклятья; справа время и погода.\nI — меню героя: характеристики, навыки, инвентарь, задания, карта, травмы, дневник и справочник."
+-msgstr "Угорі — значки з числами: здоров'я, ситість, вода, енергія, сили, вплив прокляття; праворуч час і погода.\nI — меню героя: характеристики, навички, інвентар, завдання, мапа, травми, щоденник і довідник."
++msgid "Сверху — значки с числами: здоровье, сытость, вода, энергия, силы, воздействие проклятья; справа время и погода.\nI — меню героя: характеристики, навыки, инвентарь, задания и сюжет, карта, травмы, дневник и справочник."
++msgstr "Угорі — значки з числами: здоров'я, ситість, вода, енергія, сили, вплив прокляття; праворуч час і погода.\nI — меню героя: характеристики, навички, інвентар, завдання й сюжет, мапа, травми, щоденник і довідник."
+ 
+ #: tutorial/tutorial.gd
+ msgid "Сигнальная вышка"
+@@ -10608,6 +11024,18 @@ msgstr "Сумка важча, ніж герой може нести: крок 
+ msgid "Сытость, Вода и Энергия убывают по игровым часам. Пустая Вода или Сытость отнимает здоровье. Пить — E у воды (сырая вода иногда даёт дизентерию), есть — F на карте или из инвентаря (I → 5), спать — Z. После 8 часов сна — «Отдохнувший»: шаг быстрее."
+ msgstr "Ситість, Вода й Енергія спадають за ігровими годинами. Порожня Вода чи Ситість віднімає здоров'я. Пити — E біля води (сира вода іноді дає дизентерію), їсти — F на мапі або з інвентаря (I → 5), спати — Z. Після 8 годин сну — «Відпочилий»: крок швидший."
+ 
++#: tutorial/tutorial.gd
++msgid "Сюжет"
++msgstr "Сюжет"
++
++#: tutorial/tutorial.gd
++msgid "Сюжет и справочник"
++msgstr "Сюжет і довідник"
++
++#: tutorial/tutorial.gd
++msgid "Сюжетная кампания «Пепел помнит имена» идёт по главам: прибыть, выполнить поручения, пройти путь, победить особого противника (его место и условие — в I → 6) и принять решение. Сюжет и задания горожан — в одном разделе «Задания». «Справочник выжившего» (I → 9) собирает предметы, рецепты и способности."
++msgstr "Сюжетна кампанія «Попіл пам'ятає імена» йде за розділами: прибути, виконати доручення, пройти шлях, перемогти особливого супротивника (його місце й умова — в I → 6) і ухвалити рішення. Сюжет і завдання містян — в одному розділі «Завдання». «Довідник виживальника» (I → 9) збирає предмети, рецепти й здібності."
++
+ #: tutorial/tutorial.gd
+ msgid "Температура"
+ msgstr "Температура"
+@@ -10841,8 +11269,8 @@ msgid "продолжить путь мимо"
+ msgstr "продовжити шлях повз"
+ 
+ #: tutorial/tutorial.gd
+-msgid "разделы меню: Характеристики, Навыки, Дары, Черты, Инвентарь, Задания (принятые поручения города, личные заметки), Карта (заполняется сама, подробность — по Интеллекту), Травмы, Дневник (летопись мира и «Справочник выжившего»), Хроника"
+-msgstr "розділи меню: Характеристики, Навички, Дари, Риси, Інвентар, Завдання (прийняті доручення міста, особисті нотатки), Мапа (заповнюється сама, докладність — за Інтелектом), Травми, Щоденник (літопис світу й «Довідник виживальника»), Хроніка"
++msgid "разделы меню: Характеристики, Навыки, Дары, Черты, Инвентарь, Задания (сюжет «Пепел помнит имена», задания города, личные заметки), Карта (заполняется сама, подробность — по Интеллекту), Травмы, Дневник (летопись мира и «Справочник выжившего»), Хроника"
++msgstr "розділи меню: Характеристики, Навички, Дари, Риси, Інвентар, Завдання (сюжет «Попіл пам'ятає імена», завдання міста, особисті нотатки), Мапа (заповнюється сама, докладність — за Інтелектом), Травми, Щоденник (літопис світу й «Довідник виживальника»), Хроніка"
+ 
+ #: tutorial/tutorial.gd
+ msgid "рывок — двойное перемещение"
+@@ -11368,6 +11796,10 @@ msgstr "Заскочили зненацька уві сні!"
+ msgid "Из зарослей выходит прежний странник — %s. Его бросили, и теперь он враг."
+ msgstr "Із хащів виходить колишній мандрівник — %s. Його кинули, і тепер він ворог."
+ 
++#: worlds/worlds.gd
++msgid "Летопись обновлена: %s"
++msgstr "Літопис оновлено: %s"
++
+ #: worlds/worlds.gd
+ msgid "Первая победа в бою. Дорога научила: живой враг приходит снова, мёртвый — нет."
+ msgstr "Перша перемога в бою. Дорога навчила: живий ворог приходить знову, мертвий — ні."
+@@ -11375,3 +11807,11 @@ msgstr "Перша перемога в бою. Дорога навчила: жи
+ #: worlds/worlds.gd
+ msgid "Проиграл бой и чудом остался жив."
+ msgstr "Програв бій і дивом лишився живий."
++
++#: worlds/worlds.gd
++msgid "Сюжетная локация: %s. Координаты: %.0f, %.0f. Подойдите ближе."
++msgstr "Сюжетна локація: %s. Координати: %.0f, %.0f. Підійдіть ближче."
++
++#: worlds/worlds.gd
++msgid "глава завершена"
++msgstr "розділ завершено"
+diff --git a/game/story/campaign.gd b/game/story/campaign.gd
+new file mode 100644
+index 0000000..5bfbce4
+--- /dev/null
++++ b/game/story/campaign.gd
+@@ -0,0 +1,124 @@
++extends RefCounted
++## Кампания «Пепел помнит имена». Состояние хранится в Worlds и сериализуется вместе с миром.
++const FILE := "res://data/story/campaign.json"
++static var _data: Dictionary = {}
++
++static func data() -> Dictionary:
++	if _data.is_empty():
++		var f := FileAccess.open(FILE, FileAccess.READ)
++		if f != null:
++			var parsed: Variant = I18n.tree(JSON.parse_string(f.get_as_text()))  # тексти кампанії — через uk.po, як інші дані
++			if parsed is Dictionary:
++				_data = parsed
++	return _data
++
++static func fresh() -> Dictionary:
++	return {"version": 1, "chapter": 0, "progress": 0, "flags": {}, "decisions": {}, "effects": {}, "completed": [], "bosses": [], "history": []}
++
++## Міграція збереженого стану: 2D 11 (ключа немає) і проміжні збірки з іншою схемою (без version=1) — кампанія з початку.
++## Невідомі поля відкидаються, відсутні — доповнюються з fresh(), щоб старі файли не ламали record()/choose().
++static func migrate(raw: Variant) -> Dictionary:
++	var base: Dictionary = fresh()
++	if not (raw is Dictionary) or int(raw.get("version", 0)) != 1:
++		return base
++	for k in base:
++		if not raw.has(k):
++			continue
++		if base[k] is int and (raw[k] is int or raw[k] is float):  # JSON віддає числа як float
++			base[k] = int(raw[k])
++		elif typeof(raw[k]) == typeof(base[k]):
++			base[k] = raw[k].duplicate(true) if (raw[k] is Dictionary or raw[k] is Array) else raw[k]
++	base["awaiting_choice"] = bool(raw.get("awaiting_choice", false))
++	base["chapter"] = clampi(int(base["chapter"]), 0, chapters().size())
++	return base
++
++static func chapters() -> Array:
++	return data().get("chapters", [])
++
++static func current(state: Dictionary) -> Dictionary:
++	var all: Array = chapters()
++	var i: int = int(state.get("chapter", 0))
++	return all[i] if i >= 0 and i < all.size() else {}
++
++static func is_complete(state: Dictionary) -> bool:
++	return int(state.get("chapter", 0)) >= chapters().size()
++
++static func objective(state: Dictionary) -> Dictionary:
++	return current(state).get("objective", {})
++
++static func record(state: Dictionary, event: String, target: String = "", amount: int = 1) -> bool:
++	if is_complete(state) or amount <= 0:
++		return false
++	var obj: Dictionary = objective(state)
++	if String(obj.get("event", "")) != event:
++		return false
++	var expected: String = String(obj.get("target", ""))
++	if expected != "" and expected != target:
++		return false
++	state["progress"] = int(state.get("progress", 0)) + amount
++	var need: int = maxi(1, int(obj.get("count", 1)))
++	if int(state["progress"]) >= need:
++		state["progress"] = need
++		state["awaiting_choice"] = current(state).has("choice")
++		if not bool(state["awaiting_choice"]):
++			_advance(state)
++	return true
++
++static func choose(state: Dictionary, option_id: String) -> Dictionary:
++	var ch: Dictionary = current(state)
++	var choice: Dictionary = ch.get("choice", {})
++	if choice.is_empty() or not bool(state.get("awaiting_choice", false)):
++		return {}
++	for option in choice.get("options", []):
++		if String(option.get("id", "")) != option_id:
++			continue
++		var key: String = String(choice.get("id", ch.get("id", "choice")))
++		if not (state.get("decisions") is Dictionary): state["decisions"] = {}
++		state["decisions"][key] = option_id
++		var flag: String = String(option.get("flag", ""))
++		if flag != "":
++			if not (state.get("flags") is Dictionary): state["flags"] = {}
++			state["flags"][flag] = true
++		if not (state.get("effects") is Dictionary): state["effects"] = {}
++		for effect in option.get("effects", {}):
++			state["effects"][effect] = int(state["effects"].get(effect, 0)) + int(option["effects"][effect])
++		if not (state.get("history") is Array): state["history"] = []
++		state["history"].append({"chapter": ch.get("id", ""), "choice": key, "option": option_id})
++		_advance(state)
++		if key == "ending" and String(current(state).get("id", "")) == "epilogue":
++			_advance(state)
++		return option
++	return {}
++
++static func _advance(state: Dictionary) -> void:
++	var old: Dictionary = current(state)
++	var done: Array = state.get("completed", [])
++	var id: String = String(old.get("id", ""))
++	if id != "" and not done.has(id): done.append(id)
++	state["completed"] = done
++	state["chapter"] = int(state.get("chapter", 0)) + 1
++	state["progress"] = 0
++	state["awaiting_choice"] = false
++
++static func boss_unlocked(state: Dictionary, boss_id: String) -> bool:
++	var bosses: Array = data().get("bosses", [])
++	for b in bosses:
++		if String(b.get("id", "")) == boss_id:
++			var loc_id: String = String(b.get("location", ""))
++			for loc in data().get("locations", []):
++				if String(loc.get("id", "")) == loc_id:
++					var unlock: String = String(loc.get("unlock_chapter", ""))
++					for c in chapters():
++						if String(c.get("id", "")) == unlock:
++							return state.get("completed", []).has(unlock) or String(current(state).get("id", "")) == unlock
++	return false
++
++static func boss(boss_id: String) -> Dictionary:
++	for b in data().get("bosses", []):
++		if String(b.get("id", "")) == boss_id: return b
++	return {}
++
++static func location(location_id: String) -> Dictionary:
++	for loc in data().get("locations", []):
++		if String(loc.get("id", "")) == location_id: return loc
++	return {}
+diff --git a/game/story/campaign.gd.uid b/game/story/campaign.gd.uid
+new file mode 100644
+index 0000000..03e3ebc
+--- /dev/null
++++ b/game/story/campaign.gd.uid
+@@ -0,0 +1 @@
++uid://bxs2q8g4kx7tx
+diff --git a/game/tests/save_compat_checks.gd b/game/tests/save_compat_checks.gd
+index af250f5..0f7944c 100644
+--- a/game/tests/save_compat_checks.gd
++++ b/game/tests/save_compat_checks.gd
+@@ -1,16 +1,15 @@
+ extends SceneTree
+ ## Сумісність збережень (злиття 2D 12): файл, записаний справжньою грою 2D 11 (tests/fixtures/save_2d11.dat:
+ ## герой «Сумісний» у Ешвіку, взяті доручення шкіряника, ніж), відкривається новою збіркою без втрат.
+-## Кампанію 2D 12 вирізано (modules_cut/quests_2d12): файл 2D 12 з ключем «campaign», сюжетною річчю в сумці
+-## й боєм із сюжетним босом відкривається без помилок; ключ кампанії переноситься в нове збереження без змін.
++## Кампанія в такому файлі відсутня — має початися з першого розділу; після запису й повторного читання прогрес кампанії зберігається.
+ ## Також: перегляд списку збережень не видаляє файли іншої версії (пункт аудиту 2D 10).
+ ## godot --path game --rendering-driver opengl3 -s res://tests/save_compat_checks.gd
+ 
+ const WorldSave := preload("res://world_save.gd")
+ const Trade := preload("res://city/trade.gd")
++const StoryCampaign := preload("res://story/campaign.gd")
+ const FIXTURE := "res://tests/fixtures/save_2d11.dat"
+ const SLOT := "compat_2d11"
+-const SLOT12 := "compat_2d12_campaign"
+ var fails: int = 0
+ var checks: int = 0
+ 
+@@ -84,43 +83,23 @@ func _run() -> void:
+ 	ok(game.cast.hero["actor"].display_name == "Сумісний", "ім'я героя збережене")
+ 	ok(W.current_kind() == "city" and W.current_node() != null and W.current_node().city_id == "s001", "після завантаження — у Ешвіку")
+ 	ok(Trade.count(W.inventory, "knife") == 1 and Trade.count(W.inventory, "water_flask") == 2, "сумка з 2D 11 на місці")
+-	ok(W.get("campaign_state") == null and not W.has_method("campaign_event"), "кампанії в грі немає (модуль вирізано)")
+-	ok(not WorldSave.read(SLOT).is_empty(), "файл 2D 11 і далі читається")
+-
+-	# Файл 2D 12 з кампанією: той самий світ + ключ «campaign», сюжетна річ у сумці, збережений бій із босом
+-	var hdr: Dictionary = {}
+-	var fr := FileAccess.open(WorldSave.path_of(SLOT), FileAccess.READ)
+-	var first: Variant = fr.get_var(false)
+-	fr.close()
+-	if first is Dictionary and first.has("header"):
+-		hdr = first.duplicate(true)
+-	var d12: Dictionary = d.duplicate(true)
+-	var campaign: Dictionary = {"version": 1, "chapter": 2, "progress": 1, "awaiting_choice": true, "completed": ["arrival", "amber_trace"], "flags": {"told_guard": true}, "effects": {}, "history": []}
+-	d12["worlds"]["campaign"] = campaign
+-	d12["worlds"]["inventory"]["items"]["beacon_lens"] = 1
+-	var stack: Array = d12["worlds"].get("stack", [])
+-	stack.append({"kind": "battle", "req": {"origin": "story_boss:boss_warden", "enemies_dicts": [], "allies_ids": []}, "state": {}})
+-	d12["worlds"]["stack"] = stack
+-	var fw := FileAccess.open(WorldSave.path_of(SLOT12), FileAccess.WRITE)
+-	if not hdr.is_empty():
+-		fw.store_var(hdr, false)
+-	fw.store_var(d12, false)
+-	fw.close()
+-	game.queue_free()
+-	await frames(5)
+-	game = await load_game(SLOT12)
+-	await wait_worlds(W)
+-	ok(game.ready_done and not game.cast.hero.is_empty(), "збереження 2D 12 з кампанією завантажилося")
+-	ok(W.current_kind() != "battle", "бій із вирізаним сюжетним босом не відновлюється")
+-	ok(Trade.count(W.inventory, "beacon_lens") == 0 and Trade.count(W.inventory, "knife") == 1, "сюжетна річ прибрана з сумки, решта на місці")
+-	ok(WorldSave.write(game, true), "запис після завантаження")
++	# Вхід у Ешвік під час завантаження сам зараховує мету першого розділу («прибути до Ешвіка»)
++	ok(int(W.campaign_state.get("version", 0)) == 1 and int(W.campaign_state.get("chapter", -1)) == 0 and W.campaign_state.get("completed", [1]).is_empty() and W.campaign_state.get("history", [1]).is_empty(),
++		"кампанія для старого збереження починається з першого розділу")
++
++	# Прогрес кампанії переживає запис і повторне читання
++	ok(W.campaign_event("city_enter", "s001"), "подія кампанії «прибути до Ешвіка» зарахована")
++	var ch_before: int = int(W.campaign_state.get("chapter", 0))
++	var waiting: bool = bool(W.campaign_state.get("awaiting_choice", false))
++	ok(WorldSave.write(game, true), "запис у новому форматі")
+ 	var slot2: String = WorldSave.latest_slot()
+-	var back: Dictionary = WorldSave.read(slot2)
+-	ok(back.get("worlds", {}).get("campaign", {}) == campaign, "ключ кампанії перенесено в нове збереження без змін")
+ 	game.queue_free()
+ 	await frames(5)
++	game = await load_game(slot2)
++	await wait_worlds(W)
++	ok(int(W.campaign_state.get("chapter", -1)) == ch_before and bool(W.campaign_state.get("awaiting_choice", false)) == waiting and int(W.campaign_state.get("version", 0)) == 1,
++		"стан кампанії відновлено (розділ %d, очікує вибору: %s)" % [ch_before, waiting])
+ 	WorldSave.delete(slot2)
+-	WorldSave.delete(SLOT12)
+ 	WorldSave.delete(SLOT)
+ 	print("SAVE COMPAT CHECKS: %d/%d" % [checks - fails, checks])
+ 	quit(1 if fails > 0 else 0)
+diff --git a/game/tests/story_campaign_checks.gd b/game/tests/story_campaign_checks.gd
+new file mode 100644
+index 0000000..d13d33e
+--- /dev/null
++++ b/game/tests/story_campaign_checks.gd
+@@ -0,0 +1,45 @@
++extends SceneTree
++const Campaign := preload("res://story/campaign.gd")
++var fails: int = 0
++var checks: int = 0
++
++
++## Перевірка без assert: assert у безголовому режимі зупиняє функцію й тест зависає без підсумку
++func _ok(cond: bool, what: String) -> bool:
++	checks += 1
++	if not cond:
++		fails += 1
++		print("FAIL: ", what)
++	return cond
++
++
++func _initialize() -> void:
++	var d: Dictionary = Campaign.data()
++	_ok(d.get("chapters", []).size() == 6, "п.1")
++	_ok(d.get("characters", []).size() >= 5, "п.2")
++	_ok(d.get("bosses", []).size() == 2, "п.3")
++	var s: Dictionary = Campaign.fresh()
++	_ok(Campaign.record(s, "city_enter", "s001"), "п.4")
++	_ok(s.get("awaiting_choice", false), "п.5")
++	_ok(Campaign.choose(s, "invalid").is_empty(), "п.6")
++	_ok(Campaign.choose(s, "refugees").get("id", "") == "refugees", "п.7")
++	_ok(Campaign.current(s).get("id", "") == "names", "п.8")
++	_ok(Campaign.record(s, "city_quest", "s001"), "п.9")
++	_ok(Campaign.choose(s, "publish").get("id", "") == "publish", "п.10")
++	for i in 3: _ok(Campaign.record(s, "travel_km"), "п.11")
++	_ok(Campaign.choose(s, "study").get("id", "") == "study", "п.12")
++	_ok(Campaign.boss_unlocked(s, "boss_warden"), "п.13")
++	_ok(Campaign.record(s, "boss_defeated", "boss_warden"), "п.14")
++	_ok(Campaign.boss_unlocked(s, "boss_beacon_core"), "п.15")
++	_ok(Campaign.record(s, "boss_defeated", "boss_beacon_core"), "п.16")
++	_ok(Campaign.choose(s, "warn").get("id", "") == "warn", "п.17")
++	_ok(Campaign.is_complete(s), "п.18")
++	# Міграція стану (злиття 2D 12): 2D 11 без ключа, схема проміжної збірки без version, JSON-числа як float
++	_ok(Campaign.migrate(null) == Campaign.fresh(), "п.19")
++	_ok(int(Campaign.migrate({"chapter": 2, "events": {}, "completed": [], "finished": false}).get("chapter", -1)) == 0, "п.20")
++	var m: Dictionary = Campaign.migrate({"version": 1.0, "chapter": 3.0, "progress": 1.0, "flags": {"a": true}, "junk": 5})
++	_ok(int(m["chapter"]) == 3 and m["chapter"] is int and int(m["progress"]) == 1 and m["flags"].has("a") and not m.has("junk"), "п.21")
++	_ok(int(Campaign.migrate({"version": 1, "chapter": 99}).get("chapter", 0)) == Campaign.chapters().size(), "п.22")
++	_ok(Campaign.migrate({"version": 1, "flags": "зіпсовано"})["flags"] is Dictionary, "п.23")
++	print("story_campaign_checks: %d/%d | FAIL %d" % [checks - fails, checks, fails])
++	quit(1 if fails > 0 else 0)
+diff --git a/game/tests/story_campaign_checks.gd.uid b/game/tests/story_campaign_checks.gd.uid
+new file mode 100644
+index 0000000..5322006
+--- /dev/null
++++ b/game/tests/story_campaign_checks.gd.uid
+@@ -0,0 +1 @@
++uid://bnktvj2hqlhn0
+diff --git a/game/tests/tutorial_checks.gd b/game/tests/tutorial_checks.gd
+index 0814df8..861eee2 100644
+--- a/game/tests/tutorial_checks.gd
++++ b/game/tests/tutorial_checks.gd
+@@ -191,10 +191,13 @@ func _run() -> void:
+ 	ok(not ("WASD" in all_text) and not ("Shift —" in all_text) and not ("Бег (Shift)" in all_text), "в тексте нет WASD и бега по Shift")
+ 	ok(not ("лекарь-НПС" in all_text) and not ("свободной камерой" in all_text), "в тексте нет лекаря-НПС на карте и свободной камеры")
+ 	var ids: Array = T._hints.map(func(h): return h["id"])
+-	ok("guide" in ids and not ("story" in ids) and not ("story_choice" in ids), "есть подсказка про справочник; подсказок вырезанной кампании нет")
+-	ok(not ("Пепел помнит имена" in all_text) and not ("сюжет" in all_text.to_lower()), "довідка не згадує вирізану кампанію")
++	ok("story" in ids and "story_choice" in ids and "guide" in ids, "есть подсказки про сюжет и справочник")
+ 	var HW := load("res://characters/hero_window.gd")
+ 	ok(HW.TABS.size() == 10 and HW.TABS[5] == "quests" and HW.TABS[6] == "map" and HW.TABS[8] == "diary" and HW.TABS[9] == "chronicle", "номера разделов меню героя совпадают с текстом подсказок (6 задания, 7 карта, 9 дневник, 0 хроника)")
++	W.campaign_state["awaiting_choice"] = true
++	ok(T._story_waits(), "сюжет ждёт выбора — подсказка про решение возможна")
++	W.campaign_state["awaiting_choice"] = false
++	ok(not T._story_waits(), "решение принято — подсказки про выбор нет")
+ 
+ 	print("TUTORIAL CHECKS: %d/%d" % [checks - fails, checks])
+ 	quit(1 if fails > 0 else 0)
+diff --git a/game/tutorial/tutorial.gd b/game/tutorial/tutorial.gd
+index a249602..14860d3 100644
+--- a/game/tutorial/tutorial.gd
++++ b/game/tutorial/tutorial.gd
+@@ -52,7 +52,7 @@ static var KEYS: Dictionary = {
+ 		["R", I18n.t("верхом / пешком, если есть лошадь (повозка едет следом); у ворот города R — набрать воды")],
+ 		["I", I18n.t("меню героя: характеристики, навыки, инвентарь, задания, карта, травмы, дневник, хроника")],
+ 		[I18n.t("Окно героя")],
+-		["1 … 9, 0", I18n.t("разделы меню: Характеристики, Навыки, Дары, Черты, Инвентарь, Задания (принятые поручения города, личные заметки), Карта (заполняется сама, подробность — по Интеллекту), Травмы, Дневник (летопись мира и «Справочник выжившего»), Хроника")],
++		["1 … 9, 0", I18n.t("разделы меню: Характеристики, Навыки, Дары, Черты, Инвентарь, Задания (сюжет «Пепел помнит имена», задания города, личные заметки), Карта (заполняется сама, подробность — по Интеллекту), Травмы, Дневник (летопись мира и «Справочник выжившего»), Хроника")],
+ 		["I / Esc", I18n.t("закрыть (пока меню открыто, герой стоит)")],
+ 		[I18n.t("Мышь")],
+ 		[I18n.t("ЛКМ по карте"), I18n.t("герой идёт туда сам, в обход стен и проклятых земель; держать — вести за курсором")],
+@@ -107,7 +107,7 @@ static var MECHANICS: Array = [
+ 	[I18n.t("Воздействие проклятья"), I18n.t("Проклятые лес, пустошь и болото каждый час усиливают воздействие проклятья. Оно спадает только на чистой земле. От 100 начинается проклятая хворь, от 200 и 350 — тяжелее.")],
+ 	[I18n.t("Температура"), I18n.t("В оранжевых жарких горах на 40 °C жарче. Выше 35 °C жажда растёт в 1,6 раза, ниже 0 °C энергия тратится в 1,5 раза быстрее. Мокрая одежда холодит ещё на 4 °C.")],
+ 	[I18n.t("Травмы и болезни"), I18n.t("Падения в горах, путь (особенно ночью) и бой дают травмы, грязная вода и болота — болезни. Всё видно в окне героя (I). Лечит травница в городе (E — говорить, 6 монет); вне городов лекарей пока нет, там помогают повязки, шины и зелья из сумки.")],
+-	[I18n.t("Задания и справочник"), I18n.t("Принятые поручения Эшвика и личные заметки — в разделе «Задания» (I → 6). «Справочник выжившего» (I → 9) собирает предметы, рецепты и способности.")],
++	[I18n.t("Сюжет и справочник"), I18n.t("Сюжетная кампания «Пепел помнит имена» идёт по главам: прибыть, выполнить поручения, пройти путь, победить особого противника (его место и условие — в I → 6) и принять решение. Сюжет и задания горожан — в одном разделе «Задания». «Справочник выжившего» (I → 9) собирает предметы, рецепты и способности.")],
+ 	[I18n.t("Город Эшвик"), I18n.t("Войти можно днём через южные ворота или тайком через стену: шанс выше ночью и с Ловкостью, ниже с травмами и грузом. Попытка стоит 30 сил; если заметят — штраф и казарма. Проникшему 2 часа нельзя попадаться страже. Торговцы работают днём, таверна кормит и сдаёт комнату.")],
+ 	[I18n.t("Пошаговый бой"), I18n.t("Порядок ходов — по инициативе. За ход — перемещение, одно действие, иногда бонусное действие и реакция. При 0 здоровья у героя одна проверка: травма, потеря сознания или смерть. На пути нападают случайно.")],
+ ]
+@@ -227,7 +227,7 @@ func _make_hints() -> void:
+ 			"mark": func(): return {"m": _hero().distance_m},
+ 			"done": func(): return _hero() != null and _hero().distance_m - float(_mark.get("m", 0.0)) > 40.0},
+ 		{"id": "status", "ctx": "map", "title": I18n.t("Состояние героя"), "after": "walk",
+-			"text": I18n.t("Сверху — значки с числами: здоровье, сытость, вода, энергия, силы, воздействие проклятья; справа время и погода.\nI — меню героя: характеристики, навыки, инвентарь, задания, карта, травмы, дневник и справочник."),
++			"text": I18n.t("Сверху — значки с числами: здоровье, сытость, вода, энергия, силы, воздействие проклятья; справа время и погода.\nI — меню героя: характеристики, навыки, инвентарь, задания и сюжет, карта, травмы, дневник и справочник."),
+ 			"when": func(): return _hero() != null,
+ 			"done": func(): return _cast() != null and bool(_cast().get("sheet_visible"))},
+ 		{"id": "gate", "ctx": "map", "title": I18n.t("Ворота города"),
+@@ -284,7 +284,14 @@ func _make_hints() -> void:
+ 		{"id": "notes", "ctx": "map", "title": I18n.t("Пергамент и журнал"), "after": "status", "delay": 60.0,
+ 			"text": I18n.t("Задания и карта — разделы меню героя (I → 6, I → 7). Карта заполняется сама, чем выше Интеллект, тем подробнее."),
+ 			"when": func(): return _hero() != null},
+-		{"id": "guide", "ctx": "map", "title": I18n.t("Справочник"), "after": "notes", "delay": 60.0,
++		{"id": "story", "ctx": "map", "title": I18n.t("Сюжет"), "after": "status", "delay": 45.0,
++			"text": I18n.t("I → 6 «Задания»: сверху сюжет «Пепел помнит имена» — глава, цель и особые противники. Задания горожан — ниже, личные заметки — в самом низу."),
++			"when": func(): return _hero() != null},
++		{"id": "story_choice", "ctx": "map", "title": I18n.t("Решение по сюжету"),
++			"text": I18n.t("Глава закончена, и ждёт ваше решение: I → 6 «Задания», кнопки выбора под целью. Выбор запомнится в летописи Эшвика."),
++			"when": func(): return _hero() != null and _story_waits(),
++			"done": func(): return not _story_waits()},
++		{"id": "guide", "ctx": "map", "title": I18n.t("Справочник"), "after": "story", "delay": 60.0,
+ 			"text": I18n.t("I → 9 «Дневник» → «Справочник выжившего»: все предметы по разделам, рецепты и способности. Там же «Летопись мира» — то, что герой узнал."),
+ 			"when": func(): return _hero() != null},
+ 		{"id": "parchment_open", "ctx": "map", "title": I18n.t("Пергамент"),
+@@ -364,6 +371,11 @@ func _ruins_near() -> bool:
+ 	return false
+ 
+ 
++func _story_waits() -> bool:
++	var st: Variant = _worlds().get("campaign_state")
++	return st is Dictionary and bool(st.get("awaiting_choice", false))
++
++
+ func _city_intruder() -> bool:
+ 	var n: Node = _worlds().current_node()
+ 	return n != null and n.has_method("is_intruder") and n.is_intruder()
+diff --git a/game/world/settlements.gd b/game/world/settlements.gd
+index 0b6ac85..8a520f8 100644
+--- a/game/world/settlements.gd
++++ b/game/world/settlements.gd
+@@ -1,6 +1,7 @@
+ extends Node2D
+ const Art := preload("res://storybook/art.gd")
+ const Growth := preload("res://city/city_growth.gd")
++const StoryCampaign := preload("res://story/campaign.gd")
+ const Sheet := preload("res://characters/sheet.gd")
+ ## Города и поселения на общей карте. Реестр — data/world/settlements.json (tools/make_settlements.py,
+ ## можно править руками). Сейчас по решению Huzzah город один на весь мир, герой появляется у его ворот.
+@@ -811,8 +812,32 @@ func _draw() -> void:
+ 			if vp.has_point(c):
+ 				var rank: int = SIZE_ORDER.find(s["size"])
+ 				var w: float = 24.0 + 3.0 * maxi(rank, 0)
+-				_draw_shield(c + Vector2(0, -w * 0.25), w, s.get("emblem", {}), hl)
++				_draw_shield(c + Vector2(0, -w * 0.25), w, _emblem_for(s), hl)
+ 				_draw_name(s, c + Vector2(0, w * 1.05), font, hl, false)
++	# Сюжетные места появляются на глобальной карте только после открытия соответствующей главы.
++	var world_manager: Node = get_node_or_null("/root/Worlds")
++	var story_state: Dictionary = world_manager.get("campaign_state") if world_manager != null and world_manager.get("campaign_state") is Dictionary else StoryCampaign.fresh()
++	var current_story_id: String = String(StoryCampaign.current(story_state).get("id", ""))
++	var completed_story: Array = story_state.get("completed", [])
++	for loc in StoryCampaign.data().get("locations", []):
++		var unlock_id: String = String(loc.get("unlock_chapter", ""))
++		if current_story_id != unlock_id and not completed_story.has(unlock_id):
++			continue
++		var coords: Array = loc.get("position", [])
++		if coords.size() != 2:
++			continue
++		var marker: Vector2 = game.world_to_screen(Vector2(float(coords[0]), float(coords[1])))
++		if not vp.has_point(marker):
++			continue
++		draw_circle(marker + Vector2(2, 3), 15.0, Color(0, 0, 0, 0.5))
++		draw_arc(marker, 15.0, 0.0, TAU, 40, Color("d6a64a"), 2.0, true)
++		draw_colored_polygon(PackedVector2Array([marker + Vector2(0, -10), marker + Vector2(9, 0), marker + Vector2(0, 10), marker + Vector2(-9, 0)]), Color("3a3025"))
++		draw_polyline(PackedVector2Array([marker + Vector2(0, -10), marker + Vector2(9, 0), marker + Vector2(0, 10), marker + Vector2(-9, 0), marker + Vector2(0, -10)]), Color("e4b75a"), 1.5, true)
++		draw_circle(marker, 2.8, Color("f4d48a"))
++		var loc_name: String = String(loc.get("name", ""))
++		var loc_width: float = font.get_string_size(loc_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
++		draw_string_outline(font, marker + Vector2(-loc_width * 0.5, 28), loc_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color(0, 0, 0, 0.9))
++		draw_string(font, marker + Vector2(-loc_width * 0.5, 28), loc_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("ead7aa"))
+ 	# Підказка біля героя: вибір закритий, E — відкрити
+ 	var qz: Dictionary = _quiet_zone()
+ 	if not qz.is_empty():
+@@ -824,6 +849,28 @@ func _draw() -> void:
+ 
+ 
+ # Щиток: поле, облямівка, фігура емблеми
++func _emblem_for(s: Dictionary) -> Dictionary:
++	var em: Dictionary = s.get("emblem", {}).duplicate(true)
++	var w: Node = get_node_or_null("/root/Worlds")
++	var state: Dictionary = w.get("campaign_state") if w != null and w.get("campaign_state") is Dictionary else {}
++	var flags: Dictionary = state.get("flags", {})
++	if flags.has("aided_refugees") or flags.has("ledger_public"):
++		em["charge"] = "thorn"
++		em["field"] = "#49332e"
++		em["tint"] = "#d6c18b"
++	elif flags.has("told_guard") or flags.has("ledger_sealed"):
++		em["charge"] = "amber_eye"
++		em["field"] = "#292c2b"
++		em["tint"] = "#d6a64a"
++	if flags.has("ending_silence"):
++		em["field"] = "#303a42"
++		em["tint"] = "#aebfbd"
++	elif flags.has("ending_warning"):
++		em["field"] = "#3d2b22"
++		em["tint"] = "#f0b84e"
++	return em
++
++
+ func _draw_shield(c: Vector2, w: float, em: Dictionary, hl: bool) -> void:
+ 	var h: float = w * 1.2
+ 	var top: float = c.y - h * 0.5
+@@ -870,6 +917,11 @@ func _draw_charge(m: Vector2, u: float, em: Dictionary, field: Color, tint: Colo
+ 			draw_colored_polygon(PackedVector2Array([m + Vector2(-2.3*u, 1.8*u), m + Vector2(-1.8*u, -0.4*u), m + Vector2(-0.8*u, -2.3*u), m + Vector2(0.8*u, -2.3*u), m + Vector2(1.8*u, -0.4*u), m + Vector2(2.3*u, 1.8*u)]), tint)
+ 			draw_line(m + Vector2(-2.7*u, 1.8*u), m + Vector2(2.7*u, 1.8*u), tint, maxf(1.0, 0.5*u))
+ 			draw_circle(m + Vector2(0, 2.3*u), 0.55*u, tint)
++		"thorn":
++			for k in 3:
++				var x: float = float(k - 1) * 1.65 * u
++				draw_line(m + Vector2(x, 2.8*u), m + Vector2(x, -2.5*u), tint, maxf(1.0, 0.6*u))
++				draw_colored_polygon(PackedVector2Array([m + Vector2(x, -2.5*u), m + Vector2(x - 1.0*u, -0.7*u), m + Vector2(x + 1.0*u, -0.7*u)]), tint)
+ 		"crown":
+ 			draw_rect(Rect2(m + Vector2(-3.0 * u, 0.5 * u), Vector2(6.0 * u, 1.6 * u)), tint)
+ 			for k in 3:
+@@ -998,7 +1050,7 @@ func _draw_medallion(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:
+ 	var gate_col: Color = Color(1.0, 0.85, 0.4) if (prompt_for == s and prompt_kind == "gate") or hl else Color(0.30, 0.20, 0.12)
+ 	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0) + 1.5, Color(0.1, 0.07, 0.05, 0.9))
+ 	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0), gate_col)
+-	_draw_banner(c0 + Vector2(0, -rp * 0.86), rp * 0.46, s.get("emblem", {}), hl)
++	_draw_banner(c0 + Vector2(0, -rp * 0.86), rp * 0.46, _emblem_for(s), hl)
+ 
+ 
+ ## Знамено з гербом: поперечка, полотнище кольору поля з ластівчиним хвостом, фігура герба
+diff --git a/game/worlds/worlds.gd b/game/worlds/worlds.gd
+index 5d1d3b6..2a7f71a 100644
+--- a/game/worlds/worlds.gd
++++ b/game/worlds/worlds.gd
+@@ -35,7 +35,7 @@ const JournalScript := preload("res://characters/quest_journal.gd")
+ const WearRef := preload("res://characters/wear.gd")
+ const Chronicle := preload("res://characters/chronicle.gd")
+ const Chronology := preload("res://world/chronology.gd")
+-const TradeRef := preload("res://city/trade.gd")
++const StoryCampaign := preload("res://story/campaign.gd")
+ const ALLY_RADIUS_M: float = 60.0
+ const FADE_S: float = 0.25
+ const AUTOSAVE_SEC: float = 300.0
+@@ -58,7 +58,7 @@ var city_states: Dictionary = {}   # city_id -> to_dict() міста після
+ var chronicle: Array = []           # хроніка героя: ключові події (characters/chronicle.gd); зникає разом з героєм
+ var codex: Dictionary = {}          # кодекс: id знайдених записок -> ігрові секунди (world/codex.gd); живе довше за героя
+ var left_carts: Array = []         # Q32: вози загиблих героїв на карті [{pos: [x, y], until: с гри, items}] (hero_death.gd)
+-var _cut_campaign: Variant = null  # стан вирізаної кампанії 2D 12 (ключ «campaign» старих збережень): не читається, лише переноситься в нове збереження, щоб модуль можна було повернути без втрати прогресу
++var campaign_state: Dictionary = StoryCampaign.fresh()  # сюжетная кампания; старые сохранения получают пустое состояние
+ var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
+ var _km_actor: Actor = null
+ var sleep_fx: CanvasLayer = null
+@@ -180,7 +180,7 @@ func _attach(g: Node2D) -> void:
+ 	codex = {}
+ 	chronicle = []
+ 	battles_won = 0
+-	_cut_campaign = null
++	campaign_state = StoryCampaign.fresh()  # новий герой — кампанія з початку (як міста й кодекс)
+ 	g.tree_exiting.connect(_on_game_exiting.bind(g))
+ 
+ 
+@@ -236,6 +236,7 @@ func _process(delta: float) -> void:
+ func _on_hero_km(_total_km: int, h: Actor) -> void:
+ 	if h != hero_actor() or is_away() or busy or not h.alive or not ResourceLoader.exists(ENCOUNTERS):
+ 		return
++	campaign_event("travel_km", "", 1)
+ 	var enc: Script = load(ENCOUNTERS)
+ 	var env: Dictionary = WorldEnv.sample(game, hero_body()["pos"])
+ 	# Механіка 6: дорога зношує одяг на герої
+@@ -348,6 +349,8 @@ func _enter_city_now(city_id: String, ctx: Dictionary, state: Variant = null) ->
+ 	if node.has_signal("exit_requested"):
+ 		node.exit_requested.connect(func(_cid: String, gate_id: String) -> void: _leave_when_free(node, {"gate_id": gate_id}))
+ 	stack.append({"kind": "city", "id": city_id, "node": node, "ctx": c})
++	if city_id == "s001":
++		campaign_event("city_enter", city_id)
+ 	node.enter(city_id, hero_actor(), c)
+ 	if state is Dictionary and node.has_method("load_dict"):
+ 		node.load_dict(state)
+@@ -465,6 +468,10 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
+ 	var outcome: String = String(result.get("outcome", ""))
+ 	if outcome == "win":
+ 		battles_won += 1
++		var story_origin: String = String(e.get("req", {}).get("origin", ""))
++		if story_origin.begins_with("story_boss:"):
++			var boss_id: String = story_origin.trim_prefix("story_boss:")
++			campaign_event("boss_defeated", boss_id)
+ 		# Механіка 2: убиті звірі — на розбирання (Camp.butcher), шаблони з actor_id вороґів
+ 		var enc: Script = load(ENCOUNTERS) if ResourceLoader.exists(ENCOUNTERS) else null
+ 		if enc != null:
+@@ -478,6 +485,33 @@ func _apply_battle_result(e: Dictionary, result: Dictionary) -> void:
+ 	result["return_pos"] = result.get("return_pos", e["req"]["return_pos"])
+ 
+ 
++## Подія сюжетної кампанії; старые сохранения без ключа campaign безопасно начинают кампанию с нуля.
++func campaign_event(event: String, target: String = "", amount: int = 1) -> bool:
++	var changed: bool = StoryCampaign.record(campaign_state, event, target, amount)
++	if changed and game != null:
++		game.event_text = I18n.t("Летопись обновлена: %s") % String(StoryCampaign.current(campaign_state).get("title", I18n.t("глава завершена")))
++		game.event_timer = 4.0
++	return changed
++
++
++## Запуск сюжетного босса только у соответствующей локации. Враги — штатные BattleCreature/Actor, не отдельная боевая заглушка.
++func start_story_boss(boss_id: String) -> void:
++	var boss: Dictionary = StoryCampaign.boss(boss_id)
++	if boss.is_empty() or not StoryCampaign.boss_unlocked(campaign_state, boss_id) or game == null or is_away():
++		return
++	var loc: Dictionary = StoryCampaign.location(String(boss.get("location", "")))
++	var coords: Array = loc.get("position", [])
++	if coords.size() != 2:
++		return
++	var pos := Vector2(float(coords[0]), float(coords[1]))
++	if _overworld_pos().distance_to(pos) > float(loc.get("radius", 80.0)):
++		game.event_text = I18n.t("Сюжетная локация: %s. Координаты: %.0f, %.0f. Подойдите ближе.") % [String(loc.get("name", "")), pos.x, pos.y]
++		game.event_timer = 7.0
++		return
++	var enemy: Actor = Actor.new("foe:%s:0" % String(boss.get("creature", "")), String(boss.get("name", "")), true, hash(boss_id))
++	start_battle({"enemies": [enemy], "origin": "story_boss:" + boss_id, "terrain": String(boss.get("terrain", "wasteland")), "biome": int(boss.get("biome", 4)), "no_cap": true, "story_boss": boss_id})
++
++
+ ## Хроніка героя: перша перемога, кожна п'ята, поразка, втеча. Решта боїв — не ключові події
+ func _log_battle(outcome: String) -> void:
+ 	var t: float = game.clock.total_seconds if game != null and game.get("clock") != null else 0.0
+@@ -526,6 +560,11 @@ func _leave_now(result: Dictionary) -> void:
+ 		if e["node"].has_method("prepare_leave"):
+ 			e["node"].prepare_leave()
+ 		city_states[e["id"]] = e["node"].to_dict()
++		if String(e["id"]) == "s001":
++			var saved_city: Dictionary = city_states[e["id"]]
++			saved_city["story_reputation"] = campaign_state.get("effects", {}).duplicate(true)
++			saved_city["story_flags"] = campaign_state.get("flags", {}).duplicate(true)
++			city_states[e["id"]] = saved_city
+ 	if is_instance_valid(e["node"]):
+ 		e["node"].queue_free()
+ 	if stack.is_empty():
+@@ -667,12 +706,9 @@ func to_dict() -> Dictionary:
+ 			r["enemies_dicts"] = e["req"]["enemies"].map(func(a): return a.to_dict())
+ 			list.append({"kind": "battle", "req": r, "state": state, "clock_was_paused": _clock_was_paused})
+ 	var cities: Dictionary = city_states.duplicate()
+-	var out: Dictionary = {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
++	return {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
+ 		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true), "codex": codex.duplicate(),
+-		"journal": journal.to_array() if journal != null else [], "chronicle": chronicle.duplicate(true)}
+-	if _cut_campaign != null:
+-		out["campaign"] = _cut_campaign  # без змін, як прийшло зі старого збереження
+-	return out
++		"journal": journal.to_array() if journal != null else [], "chronicle": chronicle.duplicate(true), "campaign": campaign_state.duplicate(true)}
+ 
+ 
+ # Після завантаження карти (world_save.apply_late): заново входить у збережені міста й бій, без затемнення
+@@ -694,15 +730,10 @@ func load_dict(d: Dictionary) -> void:
+ 	if journal != null:
+ 		journal.load_array(d.get("journal", []))
+ 	chronicle = d.get("chronicle", []).duplicate(true) if d.get("chronicle") is Array else []
+-	# Сумісність зі збереженнями 2D 12 з кампанією (модуль вирізано, modules_cut/quests_2d12):
+-	# ключ «campaign» не читається, а переноситься як є; речі, яких немає в items.json (сюжетні), прибираються з сумки
+-	_cut_campaign = d.get("campaign").duplicate(true) if d.get("campaign") is Dictionary else null
+-	_drop_unknown_items(inventory)
++	campaign_state = StoryCampaign.migrate(d.get("campaign", null))  # міграція: 2D 11 без ключа, чужа схема без version -> з початку
+ 	if not list.is_empty() and game.get("cast") != null:
+ 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))
+ 	for e in list:
+-		if e["kind"] == "battle" and String(e.get("req", {}).get("origin", "")).begins_with("story_boss:"):
+-			continue  # бій із сюжетним босом вирізаної кампанії: такого суперника більше немає, герой лишається на карті
+ 		if e["kind"] == "city":
+ 			_enter_city_now(String(e["id"]), e.get("ctx", {}), e.get("state"))
+ 		elif e["kind"] == "battle":
+@@ -721,19 +752,6 @@ func load_dict(d: Dictionary) -> void:
+ 			_clock_was_paused = was
+ 
+ 
+-## Прибирає з сумки речі, яких немає в каталозі (data/cities/items.json): інакше вони висіли б у сумці без назви й ваги
+-func _drop_unknown_items(bag: Dictionary) -> void:
+-	var items: Variant = bag.get("items")
+-	if not (items is Dictionary):
+-		return
+-	var known: Dictionary = TradeRef.items()
+-	if known.is_empty():
+-		return  # каталог не прочитався — нічого не чіпати
+-	for id in items.keys():
+-		if not known.has(String(id)):
+-			items.erase(id)
+-
+-
+ func _actor_by_id(id: String) -> Actor:
+ 	if game.get("cast") == null:
+ 		return null

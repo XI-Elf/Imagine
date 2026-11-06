@@ -191,13 +191,10 @@ func _run() -> void:
 	ok(not ("WASD" in all_text) and not ("Shift —" in all_text) and not ("Бег (Shift)" in all_text), "в тексте нет WASD и бега по Shift")
 	ok(not ("лекарь-НПС" in all_text) and not ("свободной камерой" in all_text), "в тексте нет лекаря-НПС на карте и свободной камеры")
 	var ids: Array = T._hints.map(func(h): return h["id"])
-	ok("story" in ids and "story_choice" in ids and "guide" in ids, "есть подсказки про сюжет и справочник")
+	ok("guide" in ids and not ("story" in ids) and not ("story_choice" in ids), "есть подсказка про справочник; подсказок вырезанной кампании нет")
+	ok(not ("Пепел помнит имена" in all_text) and not ("сюжет" in all_text.to_lower()), "довідка не згадує вирізану кампанію")
 	var HW := load("res://characters/hero_window.gd")
 	ok(HW.TABS.size() == 10 and HW.TABS[5] == "quests" and HW.TABS[6] == "map" and HW.TABS[8] == "diary" and HW.TABS[9] == "chronicle", "номера разделов меню героя совпадают с текстом подсказок (6 задания, 7 карта, 9 дневник, 0 хроника)")
-	W.campaign_state["awaiting_choice"] = true
-	ok(T._story_waits(), "сюжет ждёт выбора — подсказка про решение возможна")
-	W.campaign_state["awaiting_choice"] = false
-	ok(not T._story_waits(), "решение принято — подсказки про выбор нет")
 
 	print("TUTORIAL CHECKS: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)
