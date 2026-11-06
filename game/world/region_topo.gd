@@ -211,8 +211,7 @@ void fragment() {
 	col = mix(col, vec3(0.34, 0.19, 0.10), line_i * dens_i * up * 0.85);
 
 	// --- вода зверху: тло, берегова лінія (бордова, як на топокарті світу), ріки
-	float shore = 1.0 - smoothstep(0.0, wa * 1.15, abs(wv - 0.5));
-	col = mix(col, vec3(0.42, 0.13, 0.12), shore * 0.8);
+	// жирної берегової лінії немає: товсті лінії лишено лише для меж регіонів
 
 	// --- кілометрова сітка
 	float gx = abs(fract(P.x / grid_m + 0.5) - 0.5) * grid_m * zoom;
@@ -238,13 +237,22 @@ void fragment() {
 	// --- за межею регіону: сусіди приглушені, межа регіону штрих-пунктиром
 	float lum = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(col, mix(vec3(lum), col, 0.35) * 0.5, (1.0 - ins) * 0.85);
-	float eo = px * 1.4;
-	float a_in = step(abs(prov_at(P) - rid), 0.5);
-	float edge = max(max(abs(a_in - step(abs(prov_at(P + vec2(eo, 0.0)) - rid), 0.5)), abs(a_in - step(abs(prov_at(P - vec2(eo, 0.0)) - rid), 0.5))),
-		max(abs(a_in - step(abs(prov_at(P + vec2(0.0, eo)) - rid), 0.5)), abs(a_in - step(abs(prov_at(P - vec2(0.0, eo)) - rid), 0.5))));
-	float dash = step(0.3, fract((P.x + P.y) / (px * 26.0))) * step(0.12, fract((P.x - P.y) / (px * 400.0)));
+	float eo = px * 2.6;
+	// межа лише там, де по той бік інша область; порожній шар (вода, озерця) межі не дає
+	float p0 = prov_at(P);
+	float a_in = step(abs(p0 - rid), 0.5);
+	vec2 offs[4] = vec2[4](vec2(eo, 0.0), vec2(-eo, 0.0), vec2(0.0, eo), vec2(0.0, -eo));
+	float edge = 0.0;
+	for (int i = 0; i < 4; i++) {
+		float pn = prov_at(P + offs[i]);
+		float n_in = step(abs(pn - rid), 0.5);
+		float n_other = step(0.5, pn) * (1.0 - n_in);
+		float c_other = step(0.5, p0) * (1.0 - a_in);
+		edge = max(edge, max(a_in * n_other, c_other * n_in));
+	}
+	float dash = step(0.22, fract((P.x + P.y) / (px * 30.0))) * step(0.12, fract((P.x - P.y) / (px * 400.0)));
 	edge *= 1.0 - smoothstep(0.3, 0.6, max(wv, rv));   // по воді межі не малюємо: шар областей на воді порожній
-	col = mix(col, vec3(0.36, 0.08, 0.10), edge * dash * 0.92);
+	col = mix(col, vec3(0.40, 0.07, 0.09), edge * dash);
 
 	// --- папір: легке зерно
 	col *= 0.95 + 0.1 * vn(P, max(5.0, px * 1.2));
