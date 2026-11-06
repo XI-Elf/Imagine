@@ -2,7 +2,7 @@ extends RefCounted
 ## Топографічна модель огляду регіону (world/region_view.gd; Huzzah 2026-11-06: «карта регіону — в топографічному стилі,
 ## дані з Місцевості переносити на неї вже в топографічній моделі»).
 ## Тут дві речі:
-##  1) SHADER — земля листа: висоти (map_height.png) -> гіпсометричне забарвлення, світлотінь, горизонталі з потовщеними
+##  1) SHADER — основа листа — затверджена топокарта світу (map_topo_clean.png), поверх неї дані гри: висоти (map_height.png) -> гіпсометричне забарвлення, світлотінь, горизонталі з потовщеними
 ##     основними; вода (map_water.png) -> берегова лінія, мілина, ріки не тонші за 2 px; біоми (map_biomes.png) ->
 ##     умовні знаки (листяне/хвойне дерево, купини болота, крапки пустки), штрих проклятих земель, червоний штрих
 ##     спекотних гір; межа регіону штрих-пунктиром, кілометрова сітка; туман війни — «біла пляма»: невідоме не
@@ -27,6 +27,7 @@ uniform sampler2D water_tex : filter_linear, repeat_disable;
 uniform sampler2D biome_tex : filter_nearest, repeat_disable;
 uniform sampler2D hot_tex : filter_linear, repeat_disable;
 uniform sampler2D province_tex : filter_nearest, repeat_disable;
+uniform sampler2D topo_tex : source_color, filter_linear, repeat_disable;
 uniform sampler2D fog_mask : filter_linear, repeat_disable;
 uniform vec2 map_size = vec2(41625.0, 36000.0);
 uniform vec2 cam_pos = vec2(0.0);
@@ -128,41 +129,16 @@ void fragment() {
 	float rid = region_id;
 	float ins = in_region(P);
 
-	// --- суша: колір біому (м'яка межа з п'яти вибірок) і гіпсометрія
-	float o = 80.0;
-	vec3 col = land_col(b0) * 0.4 + (land_col(biome_at(Pw + vec2(o, 0.0))) + land_col(biome_at(Pw - vec2(o, 0.0)))
-		+ land_col(biome_at(Pw + vec2(0.0, o))) + land_col(biome_at(Pw - vec2(0.0, o)))) * 0.15;
+	// --- основа: затверджена топокарта світу (art/map/map_topo_clean.png: гіпсометрія, світлотінь, береги, ріки, дороги, штрих
+	// проклятих земель і жарких гір), дані гри лише уточнюють її: чіткі горизонталі, берегова лінія, знаки, біла пляма
+	vec3 col = texture(topo_tex, uvp(P)).rgb;
 	float hh = hm(Pw);
-	col = mix(col, vec3(0.78, 0.66, 0.52), smoothstep(25.0, 260.0, hh) * 0.55);
-	col = mix(col, vec3(0.62, 0.56, 0.52), smoothstep(560.0, 820.0, hh) * 0.5);
-	float hot = smoothstep(0.4, 0.6, textureLod(hot_tex, uvp(P), 0.0).r);
-	col = mix(col, vec3(0.74, 0.55, 0.40), hot * 0.55);
-
-	// --- світлотінь: світло з північного заходу, перебільшення рельєфу
-	float e = max(40.0, px * 2.5);
-	float hx = (h_raw(Pw + vec2(e, 0.0)) - h_raw(Pw - vec2(e, 0.0))) * height_max / (2.0 * e);
-	float hy = (h_raw(Pw + vec2(0.0, e)) - h_raw(Pw - vec2(0.0, e))) * height_max / (2.0 * e);
-	vec3 nrm = normalize(vec3(-hx * 1.35, -hy * 1.35, 1.0));
-	vec3 lgt = normalize(vec3(-0.6, -0.6, 0.62));
-	float shade = dot(nrm, lgt) - lgt.z;
-	col *= clamp(1.0 + shade * 1.05, 0.62, 1.32);
 
 	// --- вода: маска малюнка; берегова мілина, ріки не тонші за ~2 px
 	float wv = water_at(Pw);
 	float wa = max(fwidth(wv), 0.004);
 	float wet = smoothstep(0.5 - wa, 0.5 + wa, wv);
 	float rv = max(max(water_at(Pw + vec2(px * 1.3, 0.0)), water_at(Pw - vec2(px * 1.3, 0.0))), max(water_at(Pw + vec2(0.0, px * 1.3)), water_at(Pw - vec2(0.0, px * 1.3))));
-	float river = (1.0 - wet) * smoothstep(0.42, 0.56, rv);
-	float ring = 150.0;
-	float cov = (water_at(Pw + vec2(ring, 0.0)) + water_at(Pw - vec2(ring, 0.0)) + water_at(Pw + vec2(0.0, ring)) + water_at(Pw - vec2(0.0, ring))) * 0.25;
-	vec3 wcol = mix(vec3(0.34, 0.54, 0.68), vec3(0.58, 0.76, 0.82), clamp(1.0 - cov, 0.0, 1.0) * 0.85);
-	wcol *= 0.95 + 0.1 * vn(P, 700.0);
-	// хвильки (світліші горизонтальні штрихи) — лише на глибині
-	float rip = smoothstep(0.93, 1.0, sin(Pw.y / 110.0 * 6.2831853 + vn(P, 900.0) * 9.0)) * (1.0 - clamp(1.0 - cov, 0.0, 1.0) * 1.2);
-	wcol = mix(wcol, vec3(0.74, 0.86, 0.90), clamp(rip, 0.0, 1.0) * 0.28);
-	// пляж: суша біля води світлішає до кремового
-	float nearw = max(max(water_at(Pw + vec2(45.0, 0.0)), water_at(Pw - vec2(45.0, 0.0))), max(water_at(Pw + vec2(0.0, 45.0)), water_at(Pw - vec2(0.0, 45.0))));
-	col = mix(col, vec3(0.90, 0.85, 0.66), smoothstep(0.3, 0.7, nearw) * 0.7 * (1.0 - wet) * (1.0 - smoothstep(200.0, 330.0, hh)));
 
 	// --- умовні знаки біомів: клітинки по сітці sym_m, поза водою й у межах біому
 	vec2 g = P / sym_m;
@@ -216,12 +192,7 @@ void fragment() {
 			if (roll < 0.5) { ink = bi == 8 ? vec3(0.40, 0.28, 0.46) : vec3(0.50, 0.38, 0.20); ink_a = a * 0.75; }
 		}
 	}
-	col = mix(col, ink, ink_a * (1.0 - wet) * (1.0 - river));
-	// проклятий штрих: фіолетовий — на проклятих землях, подвійний на болоті; червоний — на спекотних горах
-	float cursed = step(6.5, b0);
-	float hb = max(hatch(Pw, 72.0, 1.0, 1.1), cursed > 0.5 && b0 > 8.5 ? hatch(Pw, 72.0, -1.0, 1.1) : 0.0);
-	col = mix(col, vec3(0.46, 0.27, 0.58), hb * 0.5 * cursed * (1.0 - wet));
-	col = mix(col, vec3(0.62, 0.20, 0.14), hatch(Pw, 90.0, 1.0, 1.1) * hot * 0.45 * (1.0 - wet));
+	col = mix(col, ink, ink_a * (1.0 - wet));
 
 	// --- горизонталі (лише на суші; рівнина = нуль, ліній нема)
 	float lv = hh / contour_m;
@@ -240,12 +211,8 @@ void fragment() {
 	col = mix(col, vec3(0.34, 0.19, 0.10), line_i * dens_i * up * 0.85);
 
 	// --- вода зверху: тло, берегова лінія (бордова, як на топокарті світу), ріки
-	col = mix(col, wcol, wet);
 	float shore = 1.0 - smoothstep(0.0, wa * 1.15, abs(wv - 0.5));
-	col = mix(col, vec3(0.42, 0.13, 0.12), shore * 0.95);
-	col = mix(col, vec3(0.30, 0.50, 0.64), river * 0.95);
-	float riv_edge = river * (1.0 - smoothstep(0.55, 0.75, rv));
-	col = mix(col, vec3(0.32, 0.14, 0.13), riv_edge * 0.5);
+	col = mix(col, vec3(0.42, 0.13, 0.12), shore * 0.8);
 
 	// --- кілометрова сітка
 	float gx = abs(fract(P.x / grid_m + 0.5) - 0.5) * grid_m * zoom;
