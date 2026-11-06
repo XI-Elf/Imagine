@@ -114,10 +114,10 @@ func _run() -> void:
 	rv.close()
 	rv._closed_t = rv.RELEASE_S
 	await frames(2)
-	ok(rv._root == null and rv.art.atlas == null, "закритий огляд вивантажив вузли й атлас")
+	ok(rv._root == null and rv._geo.is_empty() and rv._ops.is_empty(), "закритий огляд вивантажив вузли й кеш рельєфу")
 	rv.open(a)
 	await frames(2)
-	ok(rv._root != null and rv.art.atlas != null and rv.is_open, "огляд відкривається знову після вивантаження")
+	ok(rv._root != null and rv._geo.has(a) and rv.is_open, "огляд відкривається знову після вивантаження")
 	rv.close()
 	print("world_map_checks: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)
