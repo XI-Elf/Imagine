@@ -44,11 +44,8 @@ const LABEL_LIMIT: int = 26
 const INK := Color(0.22, 0.13, 0.08)
 const MAROON := Color(0.38, 0.10, 0.10)
 const CREAM := Color(0.93, 0.88, 0.72)
-const TAN := Color(0.80, 0.70, 0.52)
-const PASTURE := Color(0.62, 0.70, 0.42)
 const CYAN := Color(0.09, 0.50, 0.58)
 const VIOLET := Color(0.34, 0.20, 0.44)
-const FIELD_C := Color(0.66, 0.68, 0.38)
 
 var game: Node2D
 var art := RegionArt.new()
@@ -552,7 +549,7 @@ func _frame_ops() -> void:
 # Усередині знака: забудова чорними кварталами за планом поточного етапу росту, вулиці світлими лініями, стіна
 # (частокіл — точки, камінь — суцільна лінія), ворота, вежі, городи й витоптана земля; будівництво — пунктиром.
 # ---------------------------------------------------------------------
-const CITY_MIN_PX: float = 20.0    # найменший радіус стіни на екрані 1080 px
+const CITY_MIN_PX: float = 34.0    # найменший радіус забудови на екрані 1080 px
 
 func _place_settlements() -> Array:
 	var blocked: Array = []
@@ -568,7 +565,6 @@ func _place_settlements() -> Array:
 		var plan: Dictionary = s.get("_plan", {})
 		var wall_r: float = float(plan.get("wall_r", 40.0)) * float(plan.get("cell_m", 1.0))
 		var ops: Array = []
-		_ground_ops(ops, st.ground_plan(s))
 		var stage: int = 0
 		var sname: String = ""
 		var progress: String = ""
@@ -599,65 +595,24 @@ func _ppm_at(wall_r: float) -> float:
 	return maxf(_zoom(), CITY_MIN_PX * _s / maxf(wall_r, 1.0))
 
 
-## Органічна основа з settlement_ground.gd (метри від центру, справжній розмір): пасовища, городи, витоптана земля, стежки
-func _ground_ops(ops: Array, gp: Dictionary) -> void:
-	ops.append(["poly", gp["pasture"], Color(PASTURE.r, PASTURE.g, PASTURE.b, 0.40)])
-	ops.append(["pline", gp["pasture"], Color(0.36, 0.45, 0.22, 0.8), 1.0, true])
-	for f in gp["fields"]:
-		var rot: float = f["rot"]
-		var ex := Vector2.from_angle(rot) * float(f["w"])
-		var ey := Vector2.from_angle(rot + PI * 0.5) * float(f["h"])
-		var fc: Vector2 = f["c"]
-		ops.append(["poly", PackedVector2Array([fc - ex - ey, fc + ex - ey, fc + ex + ey, fc - ex + ey]), Color(FIELD_C.r, FIELD_C.g, FIELD_C.b, 0.9)])
-		for i in 4:
-			var t: float = (float(i) + 0.5) / 4.0 * 2.0 - 1.0
-			ops.append(["line", fc - ex + ey * t, fc + ex + ey * t, 0.7, Color(0.34, 0.40, 0.20, 0.9)])
-	ops.append(["poly", gp["trodden"], Color(TAN.r, TAN.g, TAN.b, 0.95)])
-	for rd in gp["roads"]:
-		ops.append(["pline", rd["pts"], Color(MAROON.r, MAROON.g, MAROON.b, 0.85), 1.2, false])
-
-
-## План міста поточного етапу росту: метри від центру (клітинка плану = cell_m м)
+## Знак поселення, як на справжніх топокартах: без кіл, стін, променів і городів — лише забудова. Світла пляма «квартали» під
+## будинками (будинки, збільшені на пару метрів, зливаються в нерівну суцільну площу) і самі будинки чорними прямокутниками;
+## чим більший етап росту, тим більше будинків. Будівництво наступного етапу — порожні прямокутники пунктиром.
 func _plan_ops(ops: Array, view: Dictionary, plan: Dictionary, stage: int, g: Dictionary) -> void:
 	var cm: float = float(plan.get("cell_m", 1.0))
 	var wall_r: float = float(plan.get("wall_r", 40.0))
 	var pc: Array = plan.get("center", [wall_r, wall_r])
 	var pcv := Vector2(float(pc[0]), float(pc[1]))
 	var to_m := func(q: Vector2) -> Vector2: return (q - pcv) * cm
-	for f in view.get("fields", []):
-		var rr: Array = f["rect"]
-		var a: Vector2 = to_m.call(Vector2(rr[0], rr[1]))
-		var sz := Vector2(rr[2], rr[3]) * cm
-		ops.append(["poly", PackedVector2Array([a, a + Vector2(sz.x, 0), a + sz, a + Vector2(0, sz.y)]), Color(FIELD_C.r, FIELD_C.g, FIELD_C.b, 0.95)])
-		for i in 3:
-			var y: float = a.y + (float(i) + 0.5) / 3.0 * sz.y
-			ops.append(["line", Vector2(a.x, y), Vector2(a.x + sz.x, y), 0.7, Color(0.34, 0.40, 0.20, 0.85)])
-	for rd in view.get("roads", []):
-		var a: Vector2 = to_m.call(Vector2(rd["from"][0], rd["from"][1]) + Vector2(0.5, 0.5))
-		var b: Vector2 = to_m.call(Vector2(rd["to"][0], rd["to"][1]) + Vector2(0.5, 0.5))
-		ops.append(["line", a, b, 0.8, CREAM])
-	for sq in view.get("squares", []):
-		var ci: Array = sq.get("circle", [])
-		if ci.size() >= 3:
-			ops.append(["circle", to_m.call(Vector2(ci[0], ci[1])), float(ci[2]) * cm, CREAM, MAROON, 0.8])
+	var rects: Array = []
 	for b in view.get("buildings", []):
 		var rr: Array = b["rect"]
-		var a: Vector2 = to_m.call(Vector2(rr[0], rr[1]))
-		ops.append(["house", Rect2(a, Vector2(rr[2], rr[3]) * cm), String(b.get("kind", "house"))])
+		rects.append([Rect2(to_m.call(Vector2(rr[0], rr[1])), Vector2(rr[2], rr[3]) * cm), String(b.get("kind", "house"))])
 		stats["buildings"] += 1
-	for pr in view.get("props", []):
-		var cells: Array = pr.get("cells", [])
-		if cells.is_empty():
-			continue
-		var q := Vector2.ZERO
-		for cc in cells:
-			q += Vector2(cc[0], cc[1])
-		q = q / float(cells.size()) + Vector2(0.5, 0.5)
-		match String(pr.get("kind", "")):
-			"tech_tower":
-				ops.append(["tri", to_m.call(q), 3.4, CYAN, INK])
-			"tech_wreck":
-				ops.append(["diamond", to_m.call(q), 3.0, CYAN, INK])
+	for r in rects:
+		ops.append(["halo", (r[0] as Rect2).grow(3.5 * cm)])
+	for r in rects:
+		ops.append(["house", r[0], r[1]])
 	# Будівництво: будинки наступного етапу, поки до нього йдуть завдання (частка = прогрес) — пунктиром
 	if Growth.has_growth(plan) and not g.is_empty():
 		var stages: Array = plan["growth"]["stages"]
@@ -677,42 +632,7 @@ func _plan_ops(ops: Array, view: Dictionary, plan: Dictionary, stage: int, g: Di
 				var rr: Array = b["rect"]
 				ops.append(["scaffold", Rect2(to_m.call(Vector2(rr[0], rr[1])), Vector2(rr[2], rr[3]) * cm)])
 				stats["scaffolds"] += 1
-	# Стіна: частокіл (крапки) або камінь (суцільна лінія) за етапом; брама — розрив з двома стовпами
-	var stone: bool = String(view.get("wall", "palisade")) == "stone"
-	stats["walls"] = "stone" if stone else "palisade"
-	var gate_dirs: Array = []
-	for gt in plan.get("gates", []):
-		var gs: Array = gt.get("cells", [])
-		if gs.is_empty():
-			continue
-		var q := Vector2.ZERO
-		for cc in gs:
-			q += Vector2(cc[0], cc[1]) + Vector2(0.5, 0.5)
-		q /= float(gs.size())
-		gate_dirs.append((q - pcv).angle())
-	var r_m: float = wall_r * cm
-	var run := PackedVector2Array()
-	for i in 97:
-		var ang: float = TAU * float(i) / 96.0
-		var near_gate: bool = false
-		for ga in gate_dirs:
-			if absf(angle_difference(ang, ga)) < 0.1:
-				near_gate = true
-		if near_gate:
-			if run.size() > 1:
-				ops.append(["pline", run, MAROON, 1.5 if stone else 1.1, not stone])
-			run = PackedVector2Array()
-		else:
-			run.append(Vector2(cos(ang), sin(ang)) * r_m)
-	if run.size() > 1:
-		ops.append(["pline", run, MAROON, 1.5 if stone else 1.1, not stone])
-	for ga in gate_dirs:
-		for sgn in [-1.0, 1.0]:
-			var ta: float = ga + sgn * 0.1
-			ops.append(["post", Vector2(cos(ta), sin(ta)) * r_m, 2.0, CREAM, MAROON])
-	for tw in plan.get("towers", []):
-		var q: Vector2 = (Vector2(tw[0], tw[1]) + Vector2(0.5, 0.5) - pcv)
-		ops.append(["post", q.normalized() * r_m, 2.0, MAROON if stone else INK, MAROON])
+	stats["walls"] = "stone" if String(view.get("wall", "palisade")) == "stone" else "palisade"   # стіна на карті не малюється (дані — для перевірок)
 
 
 # ---------------------------------------------------------------------
@@ -874,6 +794,8 @@ func _draw_cities() -> void:
 					var hs: float = o[2] * 0.5
 					n.draw_rect(Rect2(o[1] - Vector2(hs, hs), Vector2(hs, hs) * 2.0), o[3])
 					n.draw_rect(Rect2(o[1] - Vector2(hs, hs), Vector2(hs, hs) * 2.0), o[4], false, 0.8 * u)
+				"halo":
+					n.draw_rect(o[1], Color(0.74, 0.62, 0.50, 0.9))
 				"house":
 					_draw_house(n, o[1], o[2], u)
 				"scaffold":
@@ -886,6 +808,11 @@ func _draw_cities() -> void:
 ## Квартал на топокарті: суцільний чорний (з темним відтінком за призначенням); храм — світлий хрест; руїна — порожній контур
 func _draw_house(n: Node2D, rc: Rect2, kind: String, u: float) -> void:
 	var r: Rect2 = rc
+	var min_m: float = 2.6 * u
+	if r.size.x < min_m or r.size.y < min_m:
+		var c0: Vector2 = r.get_center()
+		var sz0 := Vector2(maxf(r.size.x, min_m), maxf(r.size.y, min_m))
+		r = Rect2(c0 - sz0 * 0.5, sz0)
 	if kind == "ruins":
 		n.draw_rect(r, Color(INK.r, INK.g, INK.b, 0.18))
 		n.draw_rect(r, INK, false, 0.8 * u)
@@ -1047,7 +974,7 @@ func _draw_legend(font: Font, vp: Vector2) -> void:
 		["swamp", I18n.t("Болото")],
 		["cursed", I18n.t("Проклятые земли")],
 		["hot", I18n.t("Жаркие горы")],
-		["city", I18n.t("Поселение: стена, дома, огороды")],
+		["city", I18n.t("Поселение (застройка)")],
 		["trail", I18n.t("Тропа, протоптанная героем")],
 		["ruin", I18n.t("Руины")],
 		["tech", I18n.t("Техноостов, сигнальная вышка")],
@@ -1098,8 +1025,9 @@ func _legend_sign(kind: String, c: Vector2) -> void:
 			for k in range(-12, 14, 5):
 				_hud.draw_line(c + Vector2(float(k), 5) * u, c + Vector2(float(k) + 5.0, -5) * u, Color(0.62, 0.20, 0.14), 1.1 * u)
 		"city":
-			_hud.draw_arc(c, 8.0 * u, 0.0, TAU, 20, MAROON, 1.6 * u, true)
-			_hud.draw_rect(Rect2(c - Vector2(3, 3) * u, Vector2(6, 6) * u), INK)
+			_hud.draw_rect(Rect2(c - Vector2(10, 6) * u, Vector2(20, 12) * u), Color(0.74, 0.62, 0.50))
+			for q in [Vector2(-6, -3), Vector2(1, -3), Vector2(-3, 2), Vector2(4, 2), Vector2(7, -2)]:
+				_hud.draw_rect(Rect2(c + q * u, Vector2(3, 3) * u), INK)
 		"trail":
 			_hud.draw_line(c + Vector2(-14, 0) * u, c + Vector2(14, 0) * u, MAROON, 1.6 * u)
 		"ruin":
