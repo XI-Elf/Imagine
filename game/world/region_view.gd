@@ -1,106 +1,53 @@
 extends CanvasLayer
-## Огляд регіону (Huzzah 2026-11-04): окремий режим «як на мальованій карті» — увесь регіон (область із
-## кольоровою межею, map_provinces.png) на один екран. Земля — строго згори (той самий шейдер карти, що й гра),
-## а дерева, гори, руїни, техноруїни й будинки стоять «вгору» в ракурсі 3/4 з однією тінню (світло зліва згори),
-## дальнє за ближнім (сортування за ногами). Довкола регіону — затемнення й рамка гір, над болотами й проклятими
-## землями пливе туман, неісследоване закрите хмарами туману війни.
-##
-## Живе: місто на огляді — той самий план, що в світі міста (data/cities/<id>.json, city/city_growth.gd view),
-## тобто з кожним зданим завданням з'являються нові будинки, стіна з частоколу стає камінною, а будинки
-## наступного етапу стоять у риштованні, поки до нього йдуть завдання. Руїни після обшуку темніють, тропи
-## протоптуються, туман розходиться там, де пройшов герой; знак героя — де він зараз. Стан перевіряється
-## раз на CHECK_S секунд, перебудова — лише коли щось змінилося.
-##
-## Картинки — world/region_art.gd (art/region/manifest.json, заміна з теки region_art/ без правки коду).
+## Огляд регіону — топографічний аркуш (Huzzah 2026-11-06: «карта регіону в топографічному стилі; дані з Місцевості
+## переносити на неї вже в топографічній моделі»; до цього був 2.5D-малюнок із деревами й горами-спрайтами).
+## Регіон (область з кольоровою межею, map_provinces.png) — на один екран, строго згори, у стилі затвердженої топокарти світу:
+##  • рельєф -> горизонталі (звичайні тонкі, основні потовщені й підписані), гіпсометричне забарвлення, світлотінь,
+##    висотні відмітки на вершинах (world/region_topo.gd: SHADER і розрахунок відміток) — висоти ті самі, що ведуть героя в гору;
+##  • вода -> берегова лінія, мілина, ріки; біоми -> умовні знаки (дерево листяне/хвойне, купини болота, крапки пустки),
+##    штрих проклятих земель, червоний штрих спекотних гір;
+##  • поселення -> план міста на поточному етапі росту (вулиці, будинки-квадрати, стіна частоколом чи каменем, вежі, брама,
+##    городи), органічна пляма витоптаної землі й пасовищ з settlement_ground.gd, будинки наступного етапу — пунктиром (будівництво);
+##  • дороги й тропи -> протоптані стежки героя (trails) тонкою бордовою лінією; руїни, сигнальні вежі й техноостови — умовні знаки;
+##  • туман війни -> «біла пляма»: невідоме не малюється взагалі (ні горизонталей, ні знаків), а не закрите хмарами зверху;
+##  • рамка листа з кілометровою сіткою, масштабна лінійка, легенда умовних знаків (L).
+## Живе: місто росте разом зі станом міста (кожне зідане завдання — нові будинки), руїни після обшуку тьмяніють, тропи
+## протоптуються, біла пляма відступає там, де пройшов герой, знак героя — де він зараз. Стан перевіряється раз на CHECK_S
+## секунд, перебудова — лише коли щось змінилося; закритий огляд не коштує нічого, через RELEASE_S секунд усе вивантажується.
 ## Відкрити: V на загальній карті (game.gd) або просмотрщик регіонів (region_viewer.tscn).
-## Керування: колесо — масштаб до курсора, ЛКМ-перетягування або стрілки — зсув, клік по сусідньому регіону
-## (затемненому) — перейти туди, PgUp/PgDn — попередній/наступний регіон, Esc або V — закрити.
+## Керування: колесо — масштаб до курсора, ЛКМ-перетягування або стрілки — зсув, клік по сусідньому (приглушеному)
+## регіону — перейти туди, PgUp/PgDn — попередній/наступний регіон, L — легенда, Esc або V — закрити.
 ## Сюжетні мітки кампанії тут навмисно не малюються.
 
 const RegionArt := preload("res://world/region_art.gd")
+const Topo := preload("res://world/region_topo.gd")
 const Ruins := preload("res://world/ruins.gd")
 const Growth := preload("res://city/city_growth.gd")
 const Art := preload("res://storybook/art.gd")
 
-const LAYER: int = 6               # над світом, туманом карти (1) і фільтром світу (5): огляд має свій, м'якший фільтр; під інтерфейсом (10+)
-const GRADE: float = 0.55           # сила темного фільтра світу на огляді (ui/world_grade.gd): стиль той самий, але видно деталі
-const STEP_PX: float = 9.0         # крок розстановки дерев на екрані 1080 px при огляді всього регіону
-const MOUNTAIN_STEP: float = 2.8   # гори — рідша сітка (у кроках STEP_PX)
-const FRAME_CELLS: int = 2         # товщина рамки гір довкола регіону (у кроках гір)
+const LAYER: int = 6               # над світом, туманом карти (1) і фільтром світу (5); під інтерфейсом (10+)
+const GRADE: float = 0.22          # слабкий фільтр темного світу: лист лишається читабельним, настрій той самий
 const MARGIN: float = 1.1          # запас довкола регіону при вписуванні в екран
 const MAX_ZOOM: float = 4.0
-const RELEASE_S: float = 90.0       # стільки секунд закритий огляд тримає в пам'яті картинки й вузли
+const RELEASE_S: float = 90.0       # стільки секунд закритий огляд тримає в пам'яті текстури й вузли
 const CHECK_S: float = 1.0         # як часто перевіряти, чи змінився світ
 const REBUILD_MIN_S: float = 5.0   # не частіше перебудова через тропи й туман (місто й руїни — одразу)
 const CITY_R_PX: Dictionary = {"hamlet": 52.0, "village": 70.0, "town": 90.0, "city": 125.0, "capital": 145.0}
 const TOP_PX: float = 96.0         # згори екрана — панель часу й табличка: регіон вписується нижче
-const MIST_MAX: int = 240
-const SHADOW_DX: float = 0.16      # тінь зсунута вправо на частку ширини (світло зліва згори)
+const GEO_STEP_M: float = 70.0     # крок сітки висот для відміток і підписів горизонталей
+const SPOT_MIN_H: float = 140.0    # нижче цієї висоти (над низиною) відміток не ставимо
+const SPOT_LIMIT: int = 22
+const LABEL_LIMIT: int = 26
 
-const OUTSIDE_SHADER := """
-shader_type canvas_item;
-render_mode unshaded;
-uniform sampler2D province_tex : filter_nearest, repeat_disable;
-uniform vec2 map_size = vec2(41625.0, 36000.0);
-uniform vec2 cam_pos = vec2(0.0);
-uniform vec2 view_px = vec2(1280.0, 720.0);
-uniform float zoom = 1.0;
-uniform float region_id = 0.0;
-uniform float feather_m = 90.0;
-float inside_at(vec2 P) {
-	vec2 Q = P / map_size;
-	if (Q.x < 0.0 || Q.y < 0.0 || Q.x > 1.0 || Q.y > 1.0) return 0.0;
-	return step(abs(texture(province_tex, Q).r * 255.0 - region_id), 0.5);
-}
-void fragment() {
-	vec2 P = cam_pos + (UV - vec2(0.5)) * view_px / zoom;
-	float f = feather_m;
-	float k = inside_at(P) * 0.36;
-	k += (inside_at(P + vec2(f, 0.0)) + inside_at(P - vec2(f, 0.0)) + inside_at(P + vec2(0.0, f)) + inside_at(P - vec2(0.0, f))) * 0.1;
-	k += (inside_at(P + vec2(f, f)) + inside_at(P - vec2(f, f)) + inside_at(P + vec2(f, -f)) + inside_at(P + vec2(-f, f))) * 0.06;
-	float out_a = 1.0 - smoothstep(0.25, 0.75, k);
-	float edge = smoothstep(0.15, 0.5, k) * (1.0 - smoothstep(0.5, 0.85, k));
-	// за межею — темна мальована «поза картою», на самій межі — тонка чорнильна лінія
-	vec2 sc = UV - vec2(0.5);
-	float vign = smoothstep(0.35, 0.75, length(sc * vec2(1.0, view_px.y / view_px.x) * 1.4));
-	vec3 col = mix(vec3(0.05, 0.055, 0.065), vec3(0.02, 0.02, 0.03), vign);
-	float a = max(out_a * 0.74, edge * 0.55) + vign * 0.25;
-	COLOR = vec4(col, clamp(a, 0.0, 0.92));
-}
-"""
-
-const FOG_SHADER := """
-shader_type canvas_item;
-render_mode unshaded;
-uniform sampler2D mask : filter_linear, repeat_disable;
-uniform sampler2D clouds : filter_linear_mipmap, repeat_enable;
-uniform sampler2D province_tex : filter_linear, repeat_disable;
-uniform float region_id = 0.0;
-uniform vec2 map_size = vec2(41625.0, 36000.0);
-uniform vec2 cam_pos = vec2(0.0);
-uniform vec2 view_px = vec2(1280.0, 720.0);
-uniform float zoom = 1.0;
-uniform float anim = 0.0;
-uniform float cloud_m = 2600.0;
-void fragment() {
-	vec2 P = cam_pos + (UV - vec2(0.5)) * view_px / zoom;
-	vec2 Q = P / map_size;
-	vec2 px = vec2(110.0) / map_size;
-	float known = texture(mask, Q).r * 0.4 + (texture(mask, Q + vec2(px.x, 0.0)).r + texture(mask, Q - vec2(px.x, 0.0)).r
-		+ texture(mask, Q + vec2(0.0, px.y)).r + texture(mask, Q - vec2(0.0, px.y)).r) * 0.15;
-	// два шари тієї самої бесшовної картинки з різним масштабом і поворотом — повтор не видно
-	vec2 R = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * P;
-	float c1 = texture(clouds, P / cloud_m + vec2(anim * 0.004, anim * 0.0015)).a;
-	float c2 = texture(clouds, R / (cloud_m * 0.61) + vec2(-anim * 0.006, anim * 0.003) + 0.37).a;
-	float c = c1 * 0.6 + c2 * 0.4;
-	float a = 1.0 - smoothstep(0.35, 0.7, known + (c - 0.5) * 0.55);
-	// мальовані хмари темного світу: світліші верхівки, холодні сірі низи; крізь тонкі місця ледь видно землю
-	vec3 col = mix(vec3(0.16, 0.17, 0.21), vec3(0.60, 0.60, 0.66), smoothstep(0.2, 0.9, c));
-	// лише над самим регіоном: довкола вже темна «поза картою»
-	float ins = 1.0 - smoothstep(0.0, 1.5, abs(texture(province_tex, Q).r * 255.0 - region_id));
-	COLOR = vec4(col, a * mix(0.8, 0.96, c) * ins);
-}
-"""
+# Палітра аркуша (затверджена топокарта світу: art/map/map_topo.png)
+const INK := Color(0.22, 0.13, 0.08)
+const MAROON := Color(0.38, 0.10, 0.10)
+const CREAM := Color(0.93, 0.88, 0.72)
+const TAN := Color(0.80, 0.70, 0.52)
+const PASTURE := Color(0.62, 0.70, 0.42)
+const CYAN := Color(0.09, 0.50, 0.58)
+const VIOLET := Color(0.34, 0.20, 0.44)
+const FIELD_C := Color(0.66, 0.68, 0.38)
 
 var game: Node2D
 var art := RegionArt.new()
@@ -108,21 +55,20 @@ var region_id: int = 0
 var is_open: bool = false
 var standalone: bool = false        # просмотрщик регіонів: туман війни можна вимкнути, тексти інші
 var fog_enabled: bool = true
+var legend_on: bool = true
 var build_ms: float = 0.0           # скільки тривала остання перебудова (для замірів і тесту)
 var stats: Dictionary = {}          # скільки чого розставлено (тест, панель)
+var fog_on: bool = false            # біла пляма зараз діє (є герой і туман війни)
 
 var _root: Control
 var _ground: ColorRect
-var _ground_mat: ShaderMaterial
-var _outside: ColorRect
-var _outside_mat := ShaderMaterial.new()
-var _static: Node2D                 # усе нерухоме: плоске (тропи, місто), тіні, спрайти — один список за y
-var _live: Node2D                   # туман над болотами й знак героя — щокадру
-var _fog: ColorRect
-var _fog_mat := ShaderMaterial.new()
+var _ground_mat := ShaderMaterial.new()
+var _static: Node2D                 # усе нерухоме: поселення, тропи, умовні знаки, рамка — у «базових» пікселях
+var _live: Node2D                   # знак героя — щокадру
 var _fog_tex: ImageTexture
+var _fog_blank: ImageTexture
 var _fog_version: int = -1
-var _hud: Node2D                    # підписи (не масштабуються)
+var _hud: Node2D                    # підписи, відмітки, сітка, лінійка, легенда (не масштабуються)
 var _grade: ColorRect
 var _info: Label
 var _title: Label
@@ -134,13 +80,15 @@ var _center := Vector2.ZERO
 var _fitz: float = 0.1              # пікселів на метр, коли видно весь регіон
 var _uz: float = 1.0                # наближення понад це
 var _cam := Vector2.ZERO            # центр огляду, метри
-var _s: float = 1.0                 # масштаб спрайтів: висота екрана / 1080
+var _s: float = 1.0                 # масштаб значків: висота екрана / 1080
 
-var _flats: Array = []              # [тип, дані] — плоске під тінями
-var _items: Array = []              # [y, ключ, Rect2, Color] — спрайти
-var _shadows: Array = []            # Rect2
-var _mist: Array = []               # [точка (базові px), розмір, фаза, колір]
-var _labels: Array = []             # [точка (метри), текст, розмір шрифту]
+var _ops: Array = []                # що малювати в _static (у порядку шарів)
+var _marks: Array = []              # знаки на місцевості: [вид, точка (метри), обшукано]
+var _spots: Array = []              # висотні відмітки {pos, h}
+var _clabels: Array = []            # підписи основних горизонталей {pos, angle, h}
+var _labels: Array = []             # [точка (метри), назва, друга рядок]
+var _geo: Dictionary = {}           # регіон -> {grid, spots, labels: {крок: [...]}} — рельєф не змінюється, рахується раз
+var _contour: Array = [40.0, 5]
 var _trails_tex: ImageTexture
 var _trails_rect := Rect2()
 var _trails_img: Image
@@ -166,11 +114,11 @@ func setup(g: Node2D) -> void:
 	game = g
 
 
-## Картинки й вузли — при першому відкритті (запуск гри не повільнішає)
+## Текстури й вузли — при першому відкритті (запуск гри не повільнішає)
 func _ensure_built() -> void:
 	if _root != null:
 		return
-	art.load_all()
+	art.load_all(false)   # лише плоскі текстури (табличка); спрайтів і атласу топокарта не потребує
 	_build_nodes()
 
 
@@ -184,32 +132,12 @@ func _build_nodes() -> void:
 	_ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ground.color = Color(0.1, 0.1, 0.1)
 	_root.add_child(_ground)
-	_outside = ColorRect.new()
-	_outside.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_outside.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sh := Shader.new()
-	sh.code = OUTSIDE_SHADER
-	_outside_mat.shader = sh
-	_outside.material = _outside_mat
-	_root.add_child(_outside)
 	_static = Node2D.new()
 	_static.draw.connect(_draw_static)
 	_root.add_child(_static)
 	_live = Node2D.new()
 	_live.draw.connect(_draw_live)
 	_root.add_child(_live)
-	_fog = ColorRect.new()
-	_fog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var fs := Shader.new()
-	fs.code = FOG_SHADER
-	_fog_mat.shader = fs
-	if art.textures.has("fog_clouds"):
-		var ci: Image = art.textures["fog_clouds"].get_image()
-		ci.generate_mipmaps()
-		_fog_mat.set_shader_parameter("clouds", ImageTexture.create_from_image(ci))
-	_fog.material = _fog_mat
-	_root.add_child(_fog)
 	# Свій фільтр темного світу (той самий шейдер, слабший): огляд лежить над фільтром карти
 	var WorldGrade: GDScript = load("res://ui/world_grade.gd")
 	_grade = WorldGrade.rect()
@@ -313,26 +241,26 @@ func release() -> void:
 	_root.queue_free()
 	_root = null
 	_ground = null
-	_outside = null
 	_static = null
 	_live = null
-	_fog = null
 	_hud = null
 	_grade = null
 	_info = null
 	_title = null
 	_hint = null
 	_plate = null
-	_ground_mat = null
+	_ground_mat = ShaderMaterial.new()
 	_fog_tex = null
+	_fog_blank = null
 	_fog_version = -1
 	_trails_tex = null
 	_trails_img = null
-	_flats.clear()
-	_items.clear()
-	_shadows.clear()
-	_mist.clear()
+	_ops.clear()
+	_marks.clear()
+	_spots.clear()
+	_clabels.clear()
 	_labels.clear()
+	_geo.clear()
 	_sig = ""
 	_sig_quick = ""
 	_applied = -1
@@ -403,53 +331,32 @@ func _sc(vp: Vector2) -> Vector2:
 
 
 # =====================================================================
-# ЗЕМЛЯ: той самий шейдер, що й карта, власна камера; террейни можна підмінити з region_art/terrain/
+# ЗЕМЛЯ ЛИСТА: топошейдер читає ті самі шари, що й гра (висоти, вода, біоми, спека, області)
 # =====================================================================
 func _ensure_ground() -> void:
-	if _ground_mat != null:
+	if _ground_mat.shader != null:
+		_ground.material = _ground_mat
 		return
-	_ground_mat = game.render_mat.duplicate() as ShaderMaterial
-	_ground_mat.set_shader_parameter("show_clouds", 0.0)
-	_ground_mat.set_shader_parameter("border_mode", 0)
-	_ground_mat.set_shader_parameter("overview_flat", 1.0)   # рівна земля без намальованих гір, лісу й рельєфу (map_shaders.gd)
-	var imgs: Array[Image] = []
-	var any: bool = false
-	for n in game.TERRAIN_FILES:
-		var img: Image = art.terrain_override(n)
-		if img != null:
-			any = true
-		else:
-			var path: String = "res://art/terrain/%s.png" % n
-			if not ResourceLoader.exists(path):
-				imgs.clear()
-				break
-			img = (load(path) as Texture2D).get_image()
-			if img.is_compressed():
-				img.decompress()
-		img.convert(Image.FORMAT_RGB8)
-		if img.get_width() != 512 or img.get_height() != 512:
-			img.resize(512, 512, Image.INTERPOLATE_LANCZOS)
-		img.generate_mipmaps()
-		imgs.append(img)
-	if any and imgs.size() == game.TERRAIN_FILES.size():
-		var arr := Texture2DArray.new()
-		arr.create_from_images(imgs)
-		_ground_mat.set_shader_parameter("terrain_tex", arr)
-		_ground_mat.set_shader_parameter("use_textures", true)
+	var sh := Shader.new()
+	sh.code = Topo.SHADER
+	_ground_mat.shader = sh
+	var rm: ShaderMaterial = game.render_mat
+	for n in ["noise_tex", "height_tex", "water_tex", "biome_tex", "hot_tex", "province_tex"]:
+		_ground_mat.set_shader_parameter(n, rm.get_shader_parameter(n))
+	_ground_mat.set_shader_parameter("map_size", game.MAP_SIZE)
+	_ground_mat.set_shader_parameter("height_max", Topo.HEIGHT_MAX_M)
+	var blank := Image.create(1, 1, false, Image.FORMAT_R8)
+	blank.fill(Color(1, 1, 1, 1))
+	_fog_blank = ImageTexture.create_from_image(blank)
+	_ground_mat.set_shader_parameter("fog_mask", _fog_blank)
 	_ground.material = _ground_mat
-	if game.province_img != null:
-		var pt := ImageTexture.create_from_image(game.province_img)
-		_outside_mat.set_shader_parameter("province_tex", pt)
-		_fog_mat.set_shader_parameter("province_tex", pt)
-	_outside_mat.set_shader_parameter("map_size", game.MAP_SIZE)
-	_fog_mat.set_shader_parameter("map_size", game.MAP_SIZE)
 
 
 var _applied: int = -1
 var _closed_t: float = 0.0
 func _process(delta: float) -> void:
 	if not is_open or game == null:
-		# Закритий огляд довго не потрібен — віддаємо пам'ять (атлас, текстури землі, вузли); V відбудує за мить
+		# Закритий огляд довго не потрібен — віддаємо пам'ять (текстури, вузли); V відбудує за мить
 		if _root != null and not standalone and game != null:
 			_closed_t += delta
 			if _closed_t >= RELEASE_S:
@@ -457,32 +364,25 @@ func _process(delta: float) -> void:
 		return
 	var vp: Vector2 = _root.get_viewport_rect().size
 	var z: float = _zoom()
-	if game.physics != null and game.physics.version != _applied:
-		_applied = game.physics.version
-		game.physics.apply_to(_ground_mat)
-	var t: float = fposmod(Time.get_ticks_msec() / 1000.0, 86400.0)
-	var cam_c: Vector2 = _cam - (_sc(vp) - vp * 0.5) / z   # точка карти в середині екрана (для шейдерів)
-	for m in [_ground_mat, _outside_mat, _fog_mat]:
-		m.set_shader_parameter("cam_pos", cam_c)
-		m.set_shader_parameter("zoom", z)
-		m.set_shader_parameter("view_px", vp)
-	_ground_mat.set_shader_parameter("anim", t)
-	_ground_mat.set_shader_parameter("flow_phase", game.physics.flow_phase if game.physics != null else 0.0)
-	_outside_mat.set_shader_parameter("region_id", float(region_id))
-	_fog_mat.set_shader_parameter("region_id", float(region_id))
-	_outside_mat.set_shader_parameter("feather_m", 6.0 / z)
-	_fog_mat.set_shader_parameter("anim", t)
+	var cam_c: Vector2 = _cam - (_sc(vp) - vp * 0.5) / z   # точка карти в середині екрана (для шейдера)
+	_ground_mat.set_shader_parameter("cam_pos", cam_c)
+	_ground_mat.set_shader_parameter("zoom", z)
+	_ground_mat.set_shader_parameter("view_px", vp)
+	_ground_mat.set_shader_parameter("region_id", float(region_id))
+	var cs: Array = Topo.contour_steps(_uz)
+	if cs != _contour:
+		_contour = cs
+		_refresh_labels()
+	_ground_mat.set_shader_parameter("contour_m", float(cs[0]))
+	_ground_mat.set_shader_parameter("index_every", float(cs[1]))
+	_ground_mat.set_shader_parameter("sym_m", Topo.CELL_PX * _s / _fitz)
 	_update_fog()
-	# Спрайти — у «базових» пікселях огляду цілого регіону; зсув і наближення — лише перетворення
+	# Значки — у «базових» пікселях огляду цілого регіону; зсув і наближення — лише перетворення
 	var off: Vector2 = _sc(vp) + (_center - _cam) * z
 	for n in [_static, _live]:
 		n.position = off
 		n.scale = Vector2(_uz, _uz)
 	var hour: float = game.clock.hour_of_day() if game.clock != null else 12.0
-	var daylight: float = clampf(sin((hour - 6.0) / 12.0 * PI) * 1.4, 0.0, 1.0)
-	var light: Color = Color(0.45, 0.5, 0.62).lerp(Color.WHITE, daylight)
-	_static.modulate = light
-	_live.modulate = light
 	_grade.get_material().set_shader_parameter("strength", GRADE * load("res://ui/world_grade.gd").strength_at(hour))
 	_live.queue_redraw()
 	_hud.queue_redraw()
@@ -493,21 +393,21 @@ func _process(delta: float) -> void:
 		_refresh_if_changed()
 
 
+## Біла пляма: маска відкритого героєм (клітинки туману війни) йде в шейдер як дані, а не окремим шаром
 func _update_fog() -> void:
 	var fl: Node = game.get("fog")
-	var on: bool = fog_enabled and fl != null and fl.has_method("active") and fl.active()
-	_fog.visible = on
-	if not on:
+	fog_on = fog_enabled and fl != null and fl.has_method("active") and fl.active()
+	_ground_mat.set_shader_parameter("fog_on", 1.0 if fog_on else 0.0)
+	if not fog_on:
 		return
 	if _fog_tex == null or _fog_version != fl.model.version:
 		var img := Image.create_from_data(fl.model.cols, fl.model.rows, false, Image.FORMAT_R8, fl.model.cells)
 		if _fog_tex == null:
 			_fog_tex = ImageTexture.create_from_image(img)
-			_fog_mat.set_shader_parameter("mask", _fog_tex)
+			_ground_mat.set_shader_parameter("fog_mask", _fog_tex)
 		else:
 			_fog_tex.update(img)
 		_fog_version = fl.model.version
-	_fog_mat.set_shader_parameter("cloud_m", maxf(_bbox.size.x, _bbox.size.y) * 0.7)
 
 
 # =====================================================================
@@ -543,28 +443,28 @@ func _signature(full: bool) -> String:
 func _refresh_if_changed() -> void:
 	var now: float = Time.get_ticks_msec() / 1000.0
 	var quick: String = _signature(false)
-	# місто й руїни — одразу; тропи — не частіше REBUILD_MIN_S
+	# місто й руїни — одразу; тропи й біла пляма — не частіше REBUILD_MIN_S
 	if quick != _sig_quick:
 		_rebuild()
 	elif _signature(true) != _sig and now - _last_build_t >= REBUILD_MIN_S:
 		_rebuild()
 
 
-## Перебудувати весь регіон (місто, ліс, гори, руїни, тропи, туман над болотами)
+## Перебудувати весь аркуш (поселення, тропи, знаки, відмітки висот)
 func _rebuild() -> void:
 	var t0: int = Time.get_ticks_usec()
 	_fit()
-	_flats.clear()
-	_items.clear()
-	_shadows.clear()
-	_mist.clear()
+	_ops.clear()
+	_marks.clear()
 	_labels.clear()
-	stats = {"trees": 0, "mountains": 0, "frame": 0, "ruins": 0, "towers": 0, "buildings": 0, "scaffolds": 0, "mist": 0, "cities": 0}
-	var blocked: Array = _place_settlements()
+	stats = {"cities": 0, "buildings": 0, "scaffolds": 0, "ruins": 0, "towers": 0, "spots": 0, "contour_labels": 0, "walls": "", "contour_m": 0.0}
+	_contour = Topo.contour_steps(_uz)
+	_ensure_geo()
+	_frame_ops()
 	_place_trails()
-	_place_nature(blocked)
+	var blocked: Array = _place_settlements()
 	_place_ruins(blocked)
-	_items.sort_custom(func(a, b): return a[0] < b[0])
+	_refresh_labels()
 	_sig = _signature(true)
 	_sig_quick = _signature(false)
 	_last_build_t = Time.get_ticks_msec() / 1000.0
@@ -578,29 +478,58 @@ func _b(p: Vector2) -> Vector2:
 	return (p - _center) * _fitz
 
 
-func _add(key: String, foot_m: Vector2, h: float, tint: Color = Color.WHITE, by_width: bool = false) -> void:
-	if not art.has(key):
-		return
-	var foot: Vector2 = _b(foot_m)
-	var r: Rect2 = art.rect_for_width(key, foot, h) if by_width else art.rect_for(key, foot, h)
-	_items.append([foot.y, key, r, tint])
-	if art.has("shadow"):
-		var w: float = r.size.x * 0.92
-		_shadows.append(Rect2(foot + Vector2(-w * 0.5 + w * SHADOW_DX, -w * 0.13), Vector2(w, w * 0.3)))
-
-
 func _inside(p: Vector2) -> bool:
 	return game.province_at(p) == region_id
 
 
-## Під туманом війни руїн, веж і туману над болотами не показуємо (не підказуємо, де що)
+## Під білою плямою руїн, веж і відміток не показуємо (не підказуємо, де що)
 func _seen(p: Vector2) -> bool:
 	var fl: Node = game.get("fog")
 	return not fog_enabled or fl == null or not fl.has_method("known") or fl.known(p)
 
 
 # ---------------------------------------------------------------------
-# ПОСЕЛЕННЯ: план міста на поточному етапі росту, стіна за етапом, риштування наступного етапу
+# РЕЛЬЄФ: висотні відмітки й місця підписів горизонталей (раз на регіон)
+# ---------------------------------------------------------------------
+func _ensure_geo() -> void:
+	if _geo.has(region_id):
+		return
+	var step: float = maxf(GEO_STEP_M, maxf(_bbox.size.x, _bbox.size.y) / 150.0)
+	var grid: Dictionary = Topo.height_grid(game, _bbox, region_id, step)
+	_geo[region_id] = {
+		"grid": grid,
+		"spots": Topo.spot_heights(grid, SPOT_MIN_H, 1100.0, SPOT_LIMIT),
+		"labels": {},
+	}
+
+
+## Підписи основних горизонталей для поточного кроку (кеш за кроком); під білою плямою — не показуються
+func _refresh_labels() -> void:
+	if not _geo.has(region_id):
+		return
+	var g: Dictionary = _geo[region_id]
+	var idx_m: float = float(_contour[0]) * float(_contour[1])
+	if not g["labels"].has(idx_m):
+		g["labels"][idx_m] = Topo.contour_labels(g["grid"], idx_m, maxf(900.0, idx_m * 5.0), LABEL_LIMIT)
+	_clabels = (g["labels"][idx_m] as Array).filter(func(l): return _seen(l["pos"]))
+	_spots = (g["spots"] as Array).filter(func(s): return _seen(s["pos"]))
+	stats["spots"] = _spots.size()
+	stats["contour_labels"] = _clabels.size()
+	stats["contour_m"] = float(_contour[0])
+
+
+# ---------------------------------------------------------------------
+# РАМКА ЛИСТА
+# ---------------------------------------------------------------------
+func _frame_ops() -> void:
+	var r: Rect2 = _bbox.grow(minf(_bbox.size.x, _bbox.size.y) * 0.03)
+	var a: Vector2 = _b(r.position)
+	var c: Vector2 = _b(r.end)
+	_ops.append(["frame", Rect2(a, c - a)])
+
+
+# ---------------------------------------------------------------------
+# ПОСЕЛЕННЯ: план міста на поточному етапі росту в умовних знаках
 # ---------------------------------------------------------------------
 func _place_settlements() -> Array:
 	var blocked: Array = []
@@ -615,6 +544,7 @@ func _place_settlements() -> Array:
 		var r_px: float = float(CITY_R_PX.get(String(s.get("size", "town")), 66.0)) * _s
 		var r_m: float = r_px / _fitz
 		blocked.append([c, r_m * 1.25])
+		_place_ground(st, s, c, r_m)
 		var plan: Dictionary = s.get("_plan", {})
 		var stage: int = 0
 		var sname: String = ""
@@ -632,12 +562,51 @@ func _place_settlements() -> Array:
 		elif not plan.is_empty():
 			_place_plan(c, r_m, plan, plan, 0, {})
 		else:
-			_add("bld_house", c, r_px * 0.9, Color.WHITE, true)
+			_ops.append(["rect", Rect2(_b(c) - Vector2(4, 4) * _s, Vector2(8, 8) * _s), INK, INK, 1.0])
 		var name_line: String = String(s.get("name", ""))
 		if sname != "":
 			name_line += " · " + sname
 		_labels.append([c + Vector2(0, r_m * 1.12), name_line, progress])
 	return blocked
+
+
+## Органічна основа: пасовища й витоптана земля нерівною плямою, городи, дороги за межі — з settlement_ground.gd,
+## масштаб такий, щоб витоптана земля лягла під стіну плану міста
+func _place_ground(st: Node, s: Dictionary, c: Vector2, r_m: float) -> void:
+	var gp: Dictionary = st.ground_plan(s)
+	var k: float = r_m * 0.95 / (float(gp["R"]) * 1.3) * _fitz   # пікселів на метр плану основи
+	var cp: Vector2 = _b(c)
+	var to_px := func(pts: PackedVector2Array) -> PackedVector2Array:
+		var out := PackedVector2Array()
+		for q in pts:
+			out.append(cp + q * k)
+		return out
+	_ops.append(["poly", to_px.call(gp["pasture"]), Color(PASTURE.r, PASTURE.g, PASTURE.b, 0.42)])
+	_ops.append(["pline", to_px.call(gp["pasture"]), Color(0.36, 0.45, 0.22, 0.85), 1.1, true])
+	for f in gp["fields"]:
+		var rot: float = f["rot"]
+		var ex := Vector2.from_angle(rot) * float(f["w"]) * k
+		var ey := Vector2.from_angle(rot + PI * 0.5) * float(f["h"]) * k
+		var fc: Vector2 = cp + Vector2(f["c"]) * k
+		_ops.append(["poly", PackedVector2Array([fc - ex - ey, fc + ex - ey, fc + ex + ey, fc - ex + ey]), Color(FIELD_C.r, FIELD_C.g, FIELD_C.b, 0.9)])
+		for i in 4:
+			var t: float = (float(i) + 0.5) / 4.0 * 2.0 - 1.0
+			_ops.append(["line", fc - ex + ey * t, fc + ex + ey * t, 0.8, Color(0.34, 0.40, 0.20, 0.9)])
+		_ops.append(["pline", PackedVector2Array([fc - ex - ey, fc + ex - ey, fc + ex + ey, fc - ex + ey, fc - ex - ey]), Color(0.34, 0.40, 0.20), 0.9, false])
+	_ops.append(["poly", to_px.call(gp["trodden"]), Color(TAN.r, TAN.g, TAN.b, 0.95)])
+	# стежки за межу: двозначна лінія (кант і заливка), тане до кінця
+	for rd in gp["roads"]:
+		var pl := PackedVector2Array()
+		for q in rd["pts"]:
+			var pq: Vector2 = cp + q * k
+			if pq.distance_to(cp) > r_m * _fitz * 1.9:
+				break
+			pl.append(pq)
+		if pl.size() < 2:
+			continue
+		var w: float = clampf(float(rd["w"]) * k * 0.4, 1.4 * _s, 2.6 * _s)
+		_ops.append(["pline", pl, Color(MAROON.r, MAROON.g, MAROON.b, 0.9), w + 1.4 * _s, false])
+		_ops.append(["pline", pl, CREAM, w * 0.6, false])
 
 
 func _place_plan(c: Vector2, r_m: float, view: Dictionary, plan: Dictionary, stage: int, g: Dictionary) -> void:
@@ -647,28 +616,40 @@ func _place_plan(c: Vector2, r_m: float, view: Dictionary, plan: Dictionary, sta
 	var k: float = r_m / wall_r                     # метрів огляду на клітинку плану
 	var kp: float = k * _fitz                       # пікселів на клітинку плану
 	var to_m := func(q: Vector2) -> Vector2: return c + (q - pcv) * k
-	# Плоске: утоптана земля в межах стіни, поля, вулиці, площа
-	_flats.append(["disc", _b(c), r_m * _fitz * 1.04, Color(0.33, 0.29, 0.23, 0.92)])
+	var cb: Vector2 = _b(c)
+	var r_px: float = r_m * _fitz
+	# Городи
 	for f in view.get("fields", []):
 		var rr: Array = f["rect"]
 		var a: Vector2 = _b(to_m.call(Vector2(rr[0], rr[1])))
-		_flats.append(["tile", Rect2(a, Vector2(rr[2], rr[3]) * kp), "field"])
+		var rc := Rect2(a, Vector2(rr[2], rr[3]) * kp)
+		_ops.append(["poly", PackedVector2Array([rc.position, rc.position + Vector2(rc.size.x, 0), rc.end, rc.position + Vector2(0, rc.size.y)]), Color(FIELD_C.r, FIELD_C.g, FIELD_C.b, 0.95)])
+		var n: int = maxi(2, int(rc.size.y / (3.0 * _s)))
+		for i in n:
+			var y: float = rc.position.y + (float(i) + 0.5) / float(n) * rc.size.y
+			_ops.append(["line", Vector2(rc.position.x, y), Vector2(rc.end.x, y), 0.7, Color(0.34, 0.40, 0.20, 0.85)])
+	# Вулиці: кант і заливка
+	var roads: Array = []
 	for rd in view.get("roads", []):
-		_flats.append(["line", _b(to_m.call(Vector2(rd["from"][0], rd["from"][1]) + Vector2(0.5, 0.5))),
-			_b(to_m.call(Vector2(rd["to"][0], rd["to"][1]) + Vector2(0.5, 0.5))), maxf(1.0, float(rd.get("w", 1)) * kp * 0.8), Color(0.47, 0.4, 0.3, 0.9)])
+		var a: Vector2 = _b(to_m.call(Vector2(rd["from"][0], rd["from"][1]) + Vector2(0.5, 0.5)))
+		var b: Vector2 = _b(to_m.call(Vector2(rd["to"][0], rd["to"][1]) + Vector2(0.5, 0.5)))
+		roads.append([a, b, maxf(1.4 * _s, float(rd.get("w", 1)) * kp * 0.85)])
+	for rd in roads:
+		_ops.append(["line", rd[0], rd[1], rd[2] + 1.5 * _s, Color(MAROON.r, MAROON.g, MAROON.b, 0.9)])
+	for rd in roads:
+		_ops.append(["line", rd[0], rd[1], rd[2], CREAM])
 	for sq in view.get("squares", []):
 		var ci: Array = sq.get("circle", [])
 		if ci.size() >= 3:
-			_flats.append(["disc", _b(to_m.call(Vector2(ci[0], ci[1]))), float(ci[2]) * kp, Color(0.5, 0.45, 0.36, 0.95)])
-	# Будинки поточного етапу (вид за етапом, якщо є картинка етапу)
+			var sp: Vector2 = _b(to_m.call(Vector2(ci[0], ci[1])))
+			_ops.append(["circle", sp, float(ci[2]) * kp, CREAM, MAROON, 1.2])
+	# Будинки поточного етапу: квадрати чорнилом (храм — з хрестом, руїна — порожня)
 	for b in view.get("buildings", []):
 		var rr: Array = b["rect"]
-		var foot: Vector2 = to_m.call(Vector2(rr[0] + rr[2] * 0.5, rr[1] + rr[3]))
+		var a: Vector2 = _b(to_m.call(Vector2(rr[0], rr[1])))
+		var rc := Rect2(a, Vector2(rr[2], rr[3]) * kp)
 		var kind: String = String(b.get("kind", "house"))
-		var key: String = "bld_ruin" if kind == "ruins" else "bld_" + kind
-		if not art.has(key):
-			key = "bld_house"
-		_add(art.stage_key(key, stage), foot, maxf(float(rr[2]) * kp * 1.25, 7.0 * _s), Color.WHITE, true)
+		_ops.append(["house", rc, kind])
 		stats["buildings"] += 1
 	for pr in view.get("props", []):
 		var cells: Array = pr.get("cells", [])
@@ -677,15 +658,21 @@ func _place_plan(c: Vector2, r_m: float, view: Dictionary, plan: Dictionary, sta
 		var q := Vector2.ZERO
 		for cc in cells:
 			q += Vector2(cc[0], cc[1])
-		q = q / float(cells.size()) + Vector2(0.5, 1.0)
-		var pk: String = {"stall": "prop_stall", "well": "prop_well", "tech_tower": "tech_tower", "tech_wreck": "tech_wreck", "tree": "tree_broad"}.get(String(pr.get("kind", "")), "")
-		if pk != "":
-			var w: float = maxf(float(cells.size()) * kp * 1.6, 6.0 * _s)
-			if pk == "tree_broad" or pk == "tech_tower":
-				_add(pk, to_m.call(q), (24.0 if pk == "tree_broad" else 30.0) * _s)
-			else:
-				_add(pk, to_m.call(q), w, Color.WHITE, true)
-	# Риштування: будинки наступного етапу, поки до нього йдуть завдання (частка = прогрес)
+		q = q / float(cells.size()) + Vector2(0.5, 0.5)
+		var pk: String = String(pr.get("kind", ""))
+		var pp: Vector2 = _b(to_m.call(q))
+		match pk:
+			"well":
+				_ops.append(["circle", pp, 2.2 * _s, CREAM, INK, 1.0])
+			"stall":
+				_ops.append(["rect", Rect2(pp - Vector2(2.2, 1.6) * _s, Vector2(4.4, 3.2) * _s), TAN, INK, 0.9])
+			"tech_tower":
+				_ops.append(["tri", pp, 4.0 * _s, CYAN, INK])
+			"tech_wreck":
+				_ops.append(["diamond", pp, 3.6 * _s, CYAN, INK])
+			"tree":
+				_ops.append(["circle", pp, 2.6 * _s, Color(0.40, 0.55, 0.30), Color(0.16, 0.30, 0.14), 0.9])
+	# Будівництво: будинки наступного етапу, поки до нього йдуть завдання (частка = прогрес) — пунктиром
 	if Growth.has_growth(plan) and not g.is_empty():
 		var stages: Array = plan["growth"]["stages"]
 		if stage + 1 < stages.size():
@@ -702,13 +689,12 @@ func _place_plan(c: Vector2, r_m: float, view: Dictionary, plan: Dictionary, sta
 				if b.is_empty():
 					continue
 				var rr: Array = b["rect"]
-				_add("scaffold", to_m.call(Vector2(rr[0] + rr[2] * 0.5, rr[1] + rr[3])), maxf(float(rr[2]) * kp * 1.2, 7.0 * _s), Color.WHITE, true)
+				var a: Vector2 = _b(to_m.call(Vector2(rr[0], rr[1])))
+				_ops.append(["scaffold", Rect2(a, Vector2(rr[2], rr[3]) * kp)])
 				stats["scaffolds"] += 1
-	# Стіна: частокіл або камінь за етапом; брама там, де в плані
+	# Стіна: частокіл (крапки) або камінь (суцільна товста лінія) за етапом; брама — розрив із двома вежами
 	var stone: bool = String(view.get("wall", "palisade")) == "stone"
-	var seg: String = "wall_stone" if stone else "wall_palisade"
-	var tower: String = "tower_stone" if stone else "tower_wood"
-	var gate: String = "gate_stone" if stone else "gate_wood"
+	stats["walls"] = "stone" if stone else "palisade"
 	var gate_dirs: Array = []
 	for gt in plan.get("gates", []):
 		var gs: Array = gt.get("cells", [])
@@ -719,180 +705,41 @@ func _place_plan(c: Vector2, r_m: float, view: Dictionary, plan: Dictionary, sta
 			q += Vector2(cc[0], cc[1]) + Vector2(0.5, 0.5)
 		q /= float(gs.size())
 		gate_dirs.append((q - pcv).angle())
-	var r_px: float = r_m * _fitz
-	var seg_px: float = 11.0 * _s
-	var n_seg: int = maxi(12, int(TAU * r_px / seg_px))
-	for i in n_seg:
+	var n_seg: int = maxi(48, int(TAU * r_px / (2.5 * _s)))
+	var run := PackedVector2Array()
+	var runs: Array = []
+	for i in n_seg + 1:
 		var ang: float = TAU * float(i) / float(n_seg)
 		var near_gate: bool = false
 		for ga in gate_dirs:
-			if absf(angle_difference(ang, ga)) < 0.2:
+			if absf(angle_difference(ang, ga)) < 0.13:
 				near_gate = true
 		if near_gate:
-			continue
-		_add(seg, c + Vector2(cos(ang), sin(ang)) * r_m, seg_px * 1.15, Color.WHITE, true)
+			if run.size() > 1:
+				runs.append(run)
+			run = PackedVector2Array()
+		else:
+			run.append(cb + Vector2(cos(ang), sin(ang)) * r_px)
+	if run.size() > 1:
+		runs.append(run)
+	for rn in runs:
+		if stone:
+			_ops.append(["pline", rn, Color(MAROON.r, MAROON.g, MAROON.b, 0.35), 5.0 * _s, false])
+			_ops.append(["pline", rn, MAROON, 2.6 * _s, false])
+		else:
+			_ops.append(["pline", rn, MAROON, 1.7 * _s, true])
 	for ga in gate_dirs:
-		_add(gate, c + Vector2(cos(ga), sin(ga)) * r_m, seg_px * 2.4, Color.WHITE, true)
+		for sgn in [-1.0, 1.0]:
+			var ta: float = ga + sgn * 0.13
+			_ops.append(["rect", Rect2(cb + Vector2(cos(ta), sin(ta)) * r_px - Vector2(2.4, 2.4) * _s, Vector2(4.8, 4.8) * _s), CREAM, MAROON, 1.4])
 	for tw in plan.get("towers", []):
 		var q: Vector2 = (Vector2(tw[0], tw[1]) + Vector2(0.5, 0.5) - pcv)
-		_add(tower, c + q.normalized() * r_m, seg_px * 0.95, Color.WHITE, true)
+		var tp: Vector2 = cb + q.normalized() * r_px
+		_ops.append(["rect", Rect2(tp - Vector2(2.4, 2.4) * _s, Vector2(4.8, 4.8) * _s), MAROON if stone else INK, MAROON, 1.0])
 
 
 # ---------------------------------------------------------------------
-# ПРИРОДА: ліс, болота, пустки, гори, рамка гір довкола регіону, туман над болотами
-# ---------------------------------------------------------------------
-func _place_nature(blocked: Array) -> void:
-	var step_m: float = STEP_PX * _s / _fitz
-	var decor: Node = game.get("decor")
-	var tl: Node = game.get("trails")
-	var r0 := Rect2(_bbox.position - _bbox.size * 0.06, _bbox.size * 1.12)
-	var nx: int = ceili(r0.size.x / step_m)
-	var ny: int = ceili(r0.size.y / step_m)
-	var tree_h: float = 24.0 * _s
-	for y in ny:
-		for x in nx:
-			var n: float = Art.seed_at(x + 9000, y + 4000, 41)
-			var p := r0.position + (Vector2(x, y) + Vector2(0.15 + 0.7 * n, 0.15 + 0.7 * Art.seed_at(x, y, 43))) * step_m
-			if not _inside(p) or _blocked(p, blocked):
-				continue
-			var b: int = game.biome_at(p)
-			if b <= 1 or b == 6:
-				continue
-			if _on_trail(p):
-				continue   # на протоптаній тропі дерев немає (як на карті гри)
-			var hv: float = 0.82 + 0.36 * Art.seed_at(x, y, 47)
-			match b:
-				3:
-					var glade: bool = decor != null and decor.has_method("glade") and decor.glade(p, b)
-					if glade and n < 0.9:
-						continue
-					var m: float = Art.seed_at(floori(p.x / 900.0), floori(p.y / 900.0), 51)
-					var key: String = "tree_pine" if n < 0.35 + m * 0.5 else ("tree_broad" if n < 0.9 else "tree_light")
-					_add(key, p, tree_h * hv)
-					stats["trees"] += 1
-				7:
-					_add("tree_cursed" if n < 0.78 else "tree_dead", p, tree_h * hv, Color(0.92, 0.86, 1.0))
-					stats["trees"] += 1
-				5, 9:
-					if n > 0.55:
-						_add("reed", p, 9.0 * _s * hv, Color(0.85, 0.8, 0.95) if b == 9 else Color.WHITE)
-					elif n > 0.47:
-						_add("tree_dead", p, tree_h * 0.8 * hv)
-						stats["trees"] += 1
-				4, 8:
-					if n > 0.93:
-						_add("rock", p, 9.0 * _s * hv, Color(0.86, 0.82, 0.92) if b == 8 else Color.WHITE)
-					elif n > 0.88:
-						_add("tree_dead", p, tree_h * 0.75 * hv)
-						stats["trees"] += 1
-				2:
-					if n > 0.8:
-						_add("tree_broad", p, tree_h * 0.9 * hv)
-						stats["trees"] += 1
-					elif n > 0.74:
-						_add("rock", p, 7.0 * _s)
-	_place_mountains(blocked)
-	_place_mist()
-
-
-func _blocked(p: Vector2, blocked: Array, mult: float = 1.0) -> bool:
-	for b in blocked:
-		if p.distance_to(b[0]) < b[1] * mult:
-			return true
-	return false
-
-
-## Гори всередині регіону (біом 6) і рамка гір по суші одразу за межею — як рамка мальованої карти
-func _place_mountains(blocked: Array) -> void:
-	var step_m: float = STEP_PX * MOUNTAIN_STEP * _s / _fitz
-	var pad: float = step_m * float(FRAME_CELLS + 1)
-	var r0 := Rect2(_bbox.position - Vector2(pad, pad), _bbox.size + Vector2(pad, pad) * 2.0)
-	var nx: int = ceili(r0.size.x / step_m)
-	var ny: int = ceili(r0.size.y / step_m)
-	var inside := PackedByteArray()
-	inside.resize(nx * ny)
-	var pts: Array = []
-	pts.resize(nx * ny)
-	for y in ny:
-		for x in nx:
-			var n: float = Art.seed_at(x + 300, y + 700, 61)
-			var p := r0.position + (Vector2(x, y) + Vector2(0.2 + 0.6 * n, 0.2 + 0.6 * Art.seed_at(x, y, 63))) * step_m
-			pts[y * nx + x] = p
-			inside[y * nx + x] = 1 if _inside(p) else 0
-	# Відстань до регіону в клітинках (хвиля від клітинок регіону, не далі FRAME_CELLS)
-	var dist := PackedInt32Array()
-	dist.resize(nx * ny)
-	dist.fill(99)
-	var q: Array = []
-	for i in nx * ny:
-		if inside[i] == 1:
-			dist[i] = 0
-			q.append(i)
-	var head: int = 0
-	while head < q.size():
-		var i: int = q[head]
-		head += 1
-		if dist[i] >= FRAME_CELLS:
-			continue
-		var cx: int = i % nx
-		var cy: int = i / nx
-		for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1)]:
-			var xx: int = cx + o.x
-			var yy: int = cy + o.y
-			if xx < 0 or yy < 0 or xx >= nx or yy >= ny:
-				continue
-			var j: int = yy * nx + xx
-			if dist[j] > dist[i] + 1:
-				dist[j] = dist[i] + 1
-				q.append(j)
-	for i in nx * ny:
-		var p: Vector2 = pts[i]
-		var x: int = i % nx
-		var y: int = i / nx
-		var n: float = Art.seed_at(x, y, 67)
-		var up: float = clampf(game.height_at(p) / game.HEIGHT_MAX_M, 0.0, 1.0)
-		if inside[i] == 1:
-			if game.biome_at(p) != 6 or _blocked(p, blocked, 1.2):
-				continue
-			var hot: bool = game.is_hot(p)
-			var key: String = (["mountain_hot", "mesa_hot", "mountain_hot"][int(n * 7.0) % 3] if hot
-				else ("mountain_b" if up > 0.6 and n > 0.35 else ["mountain_a", "mountain_a", "ridge", "mountain_b"][int(n * 11.0) % 4]))
-			_add(key, p, 62.0 * _s * (0.7 + 0.55 * up) * (0.85 + 0.3 * n))
-			stats["mountains"] += 1
-		elif dist[i] >= 1 and dist[i] <= FRAME_CELLS:
-			var b: int = game.biome_at(p)
-			if b <= 1:
-				continue
-			var key2: String = "mountain_b" if n > 0.6 else ("mountain_a" if n > 0.15 else "ridge")
-			var hh: float = 66.0 * _s * (0.8 + 0.15 * float(dist[i])) * (0.85 + 0.3 * n)
-			_add(key2, p, hh, Color(0.78, 0.8, 0.86))
-			stats["frame"] += 1
-
-
-## Клуби туману над болотами й проклятими землями (пливуть у _draw_live)
-func _place_mist() -> void:
-	var step_m: float = STEP_PX * 5.0 * _s / _fitz
-	var nx: int = ceili(_bbox.size.x / step_m)
-	var ny: int = ceili(_bbox.size.y / step_m)
-	for y in ny:
-		for x in nx:
-			if _mist.size() >= MIST_MAX:
-				break
-			var n: float = Art.seed_at(x + 77, y + 55, 71)
-			var p := _bbox.position + (Vector2(x, y) + Vector2(n, Art.seed_at(x, y, 73))) * step_m
-			if not _inside(p):
-				continue
-			var b: int = game.biome_at(p)
-			var cursed: bool = b >= 7
-			if not (b == 5 or cursed) or n < (0.25 if cursed else 0.5) or not _seen(p):
-				continue
-			var col: Color = Color(0.72, 0.52, 0.95, 0.42) if cursed else Color(0.74, 0.82, 0.74, 0.32)
-			_mist.append([_b(p), 70.0 * _s * (0.8 + 0.6 * n), n * TAU, col])
-	stats["mist"] = _mist.size()
-
-
-# ---------------------------------------------------------------------
-# РУЇНИ, ВЕЖІ, ТРОПИ
+# РУЇНИ, ВЕЖІ
 # ---------------------------------------------------------------------
 func _place_ruins(blocked: Array) -> void:
 	var cast: Node = game.get("cast")
@@ -904,13 +751,11 @@ func _place_ruins(blocked: Array) -> void:
 		var c: Vector2i = Vector2i(floori(p.x / Ruins.GRID_M), floori(p.y / Ruins.GRID_M))
 		var roll: float = Art.seed_at(c.x, c.y, 31)
 		var b: int = game.biome_at(p)
-		var key: String = "ruin_temple"
-		if b == 7:
-			key = "ruin_hall" if roll > 0.55 else "ruin_temple"
-		elif b == 8:
-			key = "tech_dome" if roll > 0.68 else "tech_wreck"
+		var kind: String = "ruin"
+		if b == 8:
+			kind = "tech_dome" if roll > 0.68 else "tech_wreck"
 		var looted: bool = cast != null and Ruins.looted_now(cast.ruins_looted, site["key"], now)
-		_add(key, p, float(art.heights.get(key, 28.0)) * _s, Color(0.55, 0.55, 0.6) if looted else Color.WHITE)
+		_marks.append([kind, p, looted])
 		stats["ruins"] += 1
 	# Сигнальні вежі — ті самі точки, що в декорі карти (storybook/world_decor.gd tower_near)
 	var s: float = 64.0
@@ -922,24 +767,18 @@ func _place_ruins(blocked: Array) -> void:
 			var q := (Vector2(x, y) + Vector2(0.15 + n * 0.7, 0.15 + Art.seed_at(x, y, 14) * 0.7)) * s
 			if not _inside(q) or not game.biome_at(q) in [2, 3, 4, 7, 8] or _blocked(q, blocked) or not _seen(q):
 				continue
-			_add("tech_tower", q, float(art.heights.get("tech_tower", 46.0)) * _s)
+			_marks.append(["tower", q, false])
 			stats["towers"] += 1
 
 
-## Чи лежить точка на протоптаній тропі (з сусідніми клітинками групи — дерево ширше за тропу)
-func _on_trail(p: Vector2) -> bool:
-	if _trails_img == null:
-		return false
-	var c := Vector2i(floori(p.x / _trails_cm), floori(p.y / _trails_cm)) - _trails_c0
-	for dy in range(-1, 2):
-		for dx in range(-1, 2):
-			var q := c + Vector2i(dx, dy)
-			if q.x >= 0 and q.y >= 0 and q.x < _trails_img.get_width() and q.y < _trails_img.get_height() and _trails_img.get_pixel(q.x, q.y).a > 0.6:
-				return true
+func _blocked(p: Vector2, blocked: Array, mult: float = 1.0) -> bool:
+	for b in blocked:
+		if p.distance_to(b[0]) < b[1] * mult:
+			return true
 	return false
 
 
-## Протоптані тропи регіону — одна картинка (клітинка троп = піксель), розтягнута на регіон
+## Протоптані тропи регіону — одна картинка (клітинка троп = піксель), розтягнута на регіон; тонкою бордовою лінією
 func _place_trails() -> void:
 	var tl: Node = game.get("trails")
 	_trails_tex = null
@@ -967,12 +806,11 @@ func _place_trails() -> void:
 			img.fill(Color(0, 0, 0, 0))
 		var a: float = [0.0, 0.55, 0.7, 0.85, 1.0][stg]
 		if img.get_pixel(cg.x - c0.x, cg.y - c0.y).a < a:
-			img.set_pixel(cg.x - c0.x, cg.y - c0.y, Color(0.70, 0.58, 0.40, a))
+			img.set_pixel(cg.x - c0.x, cg.y - c0.y, Color(MAROON.r, MAROON.g, MAROON.b, a))
 		n += 1
 	stats["trail_cells"] = n
 	if img == null:
 		return
-	# Тропа вужча за клітинку на огляді — розширюємо на піксель, щоб її було видно
 	_trails_img = img
 	_trails_c0 = c0
 	_trails_cm = cm
@@ -981,76 +819,322 @@ func _place_trails() -> void:
 
 
 # =====================================================================
-# МАЛЮВАННЯ
+# МАЛЮВАННЯ ЗНАКІВ (у базових пікселях; масштаб і зсув — перетворенням вузла)
 # =====================================================================
+func _dashed(node: Node2D, pts: PackedVector2Array, col: Color, w: float) -> void:
+	var on: float = 3.0 * _s
+	var off: float = 2.4 * _s
+	var run: float = 0.0
+	var draw_on: bool = true
+	for i in pts.size() - 1:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[i + 1]
+		var len: float = a.distance_to(b)
+		if len < 0.01:
+			continue
+		var dir: Vector2 = (b - a) / len
+		var t: float = 0.0
+		while t < len:
+			var lim: float = (on if draw_on else off) - run
+			var step: float = minf(lim, len - t)
+			if draw_on:
+				node.draw_line(a + dir * t, a + dir * (t + step), col, w)
+			t += step
+			run += step
+			if run >= (on if draw_on else off) - 0.001:
+				run = 0.0
+				draw_on = not draw_on
+
+
 func _draw_static() -> void:
-	var tex: Texture2D = art.atlas
-	for f in _flats:
-		match f[0]:
-			"disc":
-				_static.draw_circle(f[1], f[2], f[3])
+	for o in _ops:
+		match o[0]:
+			"frame":
+				var r: Rect2 = o[1]
+				_static.draw_rect(r, Color(0.20, 0.12, 0.08, 0.9), false, 2.2)
+				_static.draw_rect(r.grow(-3.0), Color(0.20, 0.12, 0.08, 0.5), false, 0.8)
+			"poly":
+				if (o[1] as PackedVector2Array).size() >= 3:
+					_static.draw_colored_polygon(o[1], o[2])
+			"pline":
+				var pts: PackedVector2Array = o[1]
+				if pts.size() >= 2:
+					if o[4]:
+						_dashed(_static, pts, o[2], o[3])
+					else:
+						_static.draw_polyline(pts, o[2], o[3], true)
 			"line":
-				_static.draw_line(f[1], f[2], f[4], f[3])
-			"tile":
-				var t: Texture2D = art.textures.get(f[2])
-				if t != null:
-					_static.draw_texture_rect(t, f[1], true, Color(0.9, 0.9, 0.85))
+				_static.draw_line(o[1], o[2], o[4], o[3], true)
+			"rect":
+				var rc: Rect2 = o[1]
+				if o[2] != null:
+					_static.draw_rect(rc, o[2])
+				if o[3] != null:
+					_static.draw_rect(rc, o[3], false, o[4])
+			"circle":
+				_static.draw_circle(o[1], o[2], o[3])
+				_static.draw_arc(o[1], o[2], 0.0, TAU, 24, o[4], o[5], true)
+			"tri":
+				var c: Vector2 = o[1]
+				var sz: float = o[2]
+				var tri := PackedVector2Array([c + Vector2(0, -sz), c + Vector2(sz * 0.9, sz * 0.7), c + Vector2(-sz * 0.9, sz * 0.7)])
+				_static.draw_colored_polygon(tri, o[3])
+				_static.draw_polyline(PackedVector2Array([tri[0], tri[1], tri[2], tri[0]]), o[4], 0.9, true)
+			"diamond":
+				var c2: Vector2 = o[1]
+				var sz2: float = o[2]
+				var dm := PackedVector2Array([c2 + Vector2(0, -sz2), c2 + Vector2(sz2, 0), c2 + Vector2(0, sz2), c2 + Vector2(-sz2, 0)])
+				_static.draw_colored_polygon(dm, o[3])
+				_static.draw_polyline(PackedVector2Array([dm[0], dm[1], dm[2], dm[3], dm[0]]), o[4], 0.9, true)
+			"house":
+				_draw_house(o[1], o[2])
+			"scaffold":
+				var sr: Rect2 = o[1]
+				var sp := PackedVector2Array([sr.position, sr.position + Vector2(sr.size.x, 0), sr.end, sr.position + Vector2(0, sr.size.y), sr.position])
+				_static.draw_rect(sr, Color(CREAM.r, CREAM.g, CREAM.b, 0.55))
+				_dashed(_static, sp, Color(0.78, 0.44, 0.10), 1.1)
 	if _trails_tex != null:
-		# Тінь-обведення під тропою, потім сама тропа (з кроком у пів пікселя для ширини)
-		for o in [Vector2(0.8, 0.8)]:
-			_static.draw_texture_rect(_trails_tex, Rect2(_trails_rect.position + o, _trails_rect.size), false, Color(0.1, 0.08, 0.05, 0.6))
-		_static.draw_texture_rect(_trails_tex, _trails_rect, false, Color(1, 0.95, 0.85, 1))
-	if tex == null:
+		# Кремовий підклад під тропою, потім сама тропа
+		_static.draw_texture_rect(_trails_tex, Rect2(_trails_rect.position + Vector2(0.7, 0.7), _trails_rect.size), false, Color(CREAM.r, CREAM.g, CREAM.b, 0.7))
+		_static.draw_texture_rect(_trails_tex, _trails_rect, false, Color.WHITE)
+	for m in _marks:
+		_draw_mark(m)
+
+
+func _draw_house(rc: Rect2, kind: String) -> void:
+	var r: Rect2 = rc.grow(-0.2)
+	if kind == "ruins":
+		_static.draw_rect(r, Color(INK.r, INK.g, INK.b, 0.18))
+		_static.draw_rect(r, INK, false, 0.9)
+		_static.draw_line(r.position, r.end, Color(INK.r, INK.g, INK.b, 0.7), 0.8)
 		return
-	var sh: Rect2 = art.regions.get("shadow", Rect2())
-	if sh.size.x > 0.0:
-		for r in _shadows:
-			_static.draw_texture_rect_region(tex, r, sh, Color(1, 1, 1, 0.55))
-	for it in _items:
-		_static.draw_texture_rect_region(tex, it[2], art.regions[it[1]], it[3])
+	var fill: Color = INK
+	match kind:
+		"hall":
+			fill = Color(0.30, 0.12, 0.10)
+		"temple":
+			fill = Color(0.28, 0.20, 0.34)
+		"inn", "shop", "smithy", "healer":
+			fill = Color(0.26, 0.15, 0.08)
+	_static.draw_rect(r, fill)
+	_static.draw_rect(r, Color(0.08, 0.05, 0.03), false, 0.7)
+	if kind == "temple" and r.size.x > 4.0:
+		var c: Vector2 = r.get_center()
+		var q: float = minf(r.size.x, r.size.y) * 0.3
+		_static.draw_line(c - Vector2(0, q), c + Vector2(0, q), CREAM, 0.9)
+		_static.draw_line(c - Vector2(q, 0), c + Vector2(q, 0), CREAM, 0.9)
+
+
+func _draw_mark(m: Array) -> void:
+	var c: Vector2 = _b(m[1])
+	var dim: float = 0.45 if m[2] else 1.0
+	var sz: float = 4.4 * _s
+	match String(m[0]):
+		"ruin":
+			var col := Color(VIOLET.r, VIOLET.g, VIOLET.b, dim)
+			# руїна: квадрат без верхньої стіни й уламок поряд
+			_static.draw_polyline(PackedVector2Array([c + Vector2(-sz, -sz * 0.2), c + Vector2(-sz, sz), c + Vector2(sz, sz), c + Vector2(sz, -sz * 0.2)]), col, 1.4, true)
+			_static.draw_line(c + Vector2(-sz, -sz * 0.2), c + Vector2(-sz * 0.4, -sz * 0.9), col, 1.4, true)
+			_static.draw_line(c + Vector2(sz, -sz * 0.2), c + Vector2(sz * 0.3, -sz * 0.6), col, 1.4, true)
+			_static.draw_circle(c + Vector2(sz * 1.5, sz * 0.9), 0.9, col)
+		"tech_wreck", "tech_dome":
+			var tc := Color(CYAN.r, CYAN.g, CYAN.b, dim)
+			var dm := PackedVector2Array([c + Vector2(0, -sz * 1.1), c + Vector2(sz * 1.1, 0), c + Vector2(0, sz * 1.1), c + Vector2(-sz * 1.1, 0), c + Vector2(0, -sz * 1.1)])
+			_static.draw_colored_polygon(dm.slice(0, 4), Color(tc.r, tc.g, tc.b, 0.25 * dim))
+			_static.draw_polyline(dm, tc, 1.4, true)
+			if String(m[0]) == "tech_dome":
+				_static.draw_arc(c, sz * 0.5, PI, TAU, 10, tc, 1.2, true)
+			else:
+				_static.draw_circle(c, 1.1, tc)
+		"tower":
+			var vc := Color(CYAN.r, CYAN.g, CYAN.b, dim)
+			var tri := PackedVector2Array([c + Vector2(0, -sz * 1.2), c + Vector2(sz, sz * 0.8), c + Vector2(-sz, sz * 0.8), c + Vector2(0, -sz * 1.2)])
+			_static.draw_polyline(tri, vc, 1.4, true)
+			_static.draw_circle(c + Vector2(0, sz * 0.15), 1.1, vc)
 
 
 func _draw_live() -> void:
-	var tex: Texture2D = art.atlas
-	if tex == null:
-		return
 	var t: float = Time.get_ticks_msec() / 1000.0
-	var mr: Rect2 = art.regions.get("mist", Rect2())
-	if mr.size.x > 0.0:
-		for m in _mist:
-			var p: Vector2 = m[0] + Vector2(sin(t * 0.07 + m[2]) * 10.0, cos(t * 0.05 + m[2]) * 4.0) * _s
-			var w: float = m[1] * (1.0 + 0.08 * sin(t * 0.2 + m[2]))
-			var col: Color = m[3]
-			col.a *= 0.75 + 0.25 * sin(t * 0.3 + m[2] * 2.0)
-			_live.draw_texture_rect_region(tex, Rect2(p - Vector2(w, w * 0.75) * 0.5, Vector2(w, w * 0.75)), mr, col)
-	# Знак героя
 	var cast: Node = game.get("cast")
-	if cast != null and not cast.hero.is_empty() and not cast.hero_away and art.has("hero"):
+	if cast != null and not cast.hero.is_empty() and not cast.hero_away:
 		var hp: Vector2 = cast.hero["pos"]
 		if _bbox.grow(200.0).has_point(hp):
 			var foot: Vector2 = _b(hp)
 			var pulse: float = 0.5 + 0.5 * sin(t * 3.0)
-			_live.draw_arc(foot, (10.0 + 6.0 * pulse) * _s / _uz, 0.0, TAU, 32, Color(1.0, 0.7, 0.2, 0.7 * (1.0 - pulse * 0.6)), 2.0 / _uz)
-			var h: float = art.heights.get("hero", 30.0) * _s / sqrt(_uz)
-			_live.draw_texture_rect_region(tex, art.rect_for("hero", foot, h), art.regions["hero"])
+			var u: float = 1.0 / _uz
+			_live.draw_arc(foot, (9.0 + 6.0 * pulse) * _s * u, 0.0, TAU, 32, Color(0.95, 0.62, 0.10, 0.75 * (1.0 - pulse * 0.6)), 2.0 * u)
+			# знак героя: золотий ромб із чорною обводкою й крапкою
+			var d: float = 5.0 * _s * u
+			var dm := PackedVector2Array([foot + Vector2(0, -d * 1.3), foot + Vector2(d, 0), foot + Vector2(0, d * 1.3), foot + Vector2(-d, 0)])
+			_live.draw_colored_polygon(dm, Color(0.98, 0.78, 0.18))
+			_live.draw_polyline(PackedVector2Array([dm[0], dm[1], dm[2], dm[3], dm[0]]), Color(0.16, 0.09, 0.04), 1.6 * u, true)
+			_live.draw_circle(foot, 1.3 * u, Color(0.16, 0.09, 0.04))
+
+
+# =====================================================================
+# ЕКРАННІ ПІДПИСИ: назви, висоти, сітка, лінійка, легенда
+# =====================================================================
+func _text(font: Font, pos: Vector2, s: String, fs: int, col: Color, halo: Color = Color(CREAM.r, CREAM.g, CREAM.b, 0.85)) -> void:
+	_hud.draw_string_outline(font, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(3, fs / 4), halo)
+	_hud.draw_string(font, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 
 
 func _draw_hud() -> void:
 	var font: Font = ThemeDB.fallback_font
 	var vp: Vector2 = _root.get_viewport_rect().size
 	var z: float = _zoom()
+	var view := Rect2(Vector2.ZERO, vp).grow(40.0)
+	# Кілометрова сітка: підписи по краях (кілометри від початку карти)
+	var gs: float = 1000.0
+	var gpx: float = gs * z
+	if gpx >= 34.0 * _s:
+		var fsg: int = int(12 * _s)
+		var top_left: Vector2 = _cam + (Vector2(0, 0) - _sc(vp)) / z
+		var bot_right: Vector2 = _cam + (vp - _sc(vp)) / z
+		for kx in range(ceili(top_left.x / gs), floori(bot_right.x / gs) + 1):
+			var sx: float = _sc(vp).x + (float(kx) * gs - _cam.x) * z
+			if sx > 90.0 and sx < vp.x - 90.0:
+				_text(font, Vector2(sx + 3.0, vp.y - 6.0), str(kx), fsg, Color(0.18, 0.28, 0.40), Color(CREAM.r, CREAM.g, CREAM.b, 0.7))
+		for ky in range(ceili(top_left.y / gs), floori(bot_right.y / gs) + 1):
+			var sy: float = _sc(vp).y + (float(ky) * gs - _cam.y) * z
+			if sy > TOP_PX * _s + 20.0 and sy < vp.y - 30.0:
+				_text(font, Vector2(4.0, sy - 3.0), str(ky), fsg, Color(0.18, 0.28, 0.40), Color(CREAM.r, CREAM.g, CREAM.b, 0.7))
+	# Підписи основних горизонталей: уздовж лінії
+	var fsc: int = int(11 * _s)
+	if _uz >= 0.99:
+		for l in _clabels:
+			var sp: Vector2 = _sc(vp) + (l["pos"] - _cam) * z
+			if not view.has_point(sp):
+				continue
+			var txt: String = str(int(l["h"]))
+			var w: float = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsc).x
+			_hud.draw_set_transform(sp, float(l["angle"]), Vector2.ONE)
+			_hud.draw_string_outline(font, Vector2(-w * 0.5, fsc * 0.35), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsc, 5, Color(0.80, 0.70, 0.52, 0.85))
+			_hud.draw_string(font, Vector2(-w * 0.5, fsc * 0.35), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsc, Color(0.32, 0.18, 0.09))
+		_hud.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# Висотні відмітки: трикутник і число
+	var fsh: int = int(12 * _s)
+	for s in _spots:
+		var sp2: Vector2 = _sc(vp) + (s["pos"] - _cam) * z
+		if not view.has_point(sp2):
+			continue
+		var d: float = 3.4 * _s
+		var tri := PackedVector2Array([sp2 + Vector2(0, -d), sp2 + Vector2(d * 0.95, d * 0.7), sp2 + Vector2(-d * 0.95, d * 0.7)])
+		_hud.draw_colored_polygon(tri, Color(0.28, 0.14, 0.08))
+		_text(font, sp2 + Vector2(d + 2.0, d * 0.7), str(int(roundf(s["h"]))), fsh, Color(0.22, 0.11, 0.06))
+	# Назви поселень
 	for l in _labels:
-		var sp: Vector2 = _sc(vp) + (l[0] - _cam) * z
+		var sp3: Vector2 = _sc(vp) + (l[0] - _cam) * z
 		var fs: int = int(18 * _s)
-		var w: float = font.get_string_size(l[1], HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x
-		_hud.draw_string_outline(font, sp - Vector2(w * 0.5, 0), l[1], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, Color(0, 0, 0, 0.9))
-		_hud.draw_string(font, sp - Vector2(w * 0.5, 0), l[1], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("f0d9a0"))
+		var w3: float = font.get_string_size(l[1], HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x
+		_text(font, sp3 - Vector2(w3 * 0.5, 0), l[1], fs, Color(0.14, 0.08, 0.04), Color(CREAM.r, CREAM.g, CREAM.b, 0.92))
 		if String(l[2]) != "":
-			var fs2: int = int(14 * _s)
+			var fs2: int = int(13 * _s)
 			var w2: float = font.get_string_size(l[2], HORIZONTAL_ALIGNMENT_CENTER, -1, fs2).x
-			var p2: Vector2 = sp + Vector2(-w2 * 0.5, fs * 1.1)
-			_hud.draw_string_outline(font, p2, l[2], HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, 5, Color(0, 0, 0, 0.9))
-			_hud.draw_string(font, p2, l[2], HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color("d8cfb6"))
+			_text(font, sp3 + Vector2(-w2 * 0.5, fs * 1.1), l[2], fs2, Color(0.30, 0.18, 0.08), Color(CREAM.r, CREAM.g, CREAM.b, 0.85))
+	_draw_scale_bar(font, vp, z)
+	if legend_on:
+		_draw_legend(font, vp)
+
+
+## Масштабна лінійка зі штрихами й підписом, під серединою листа
+func _draw_scale_bar(font: Font, vp: Vector2, z: float) -> void:
+	var sb: Array = Topo.scale_bar(z, 150.0 * _s)
+	var len_px: float = sb[1]
+	var x0: float = vp.x * 0.5 - len_px * 0.5
+	var y: float = vp.y - 26.0 * _s
+	_hud.draw_rect(Rect2(x0 - 8.0, y - 20.0 * _s, len_px + 16.0, 36.0 * _s), Color(0.07, 0.06, 0.05, 0.62))
+	var fsb: int = int(12 * _s)
+	_hud.draw_line(Vector2(x0, y), Vector2(x0 + len_px, y), CREAM, 2.0)
+	for i in 5:
+		var xx: float = x0 + len_px * float(i) / 4.0
+		_hud.draw_line(Vector2(xx, y - (6.0 if i % 2 == 0 else 3.5) * _s), Vector2(xx, y), CREAM, 1.5)
+	var txt: String = Topo.length_text(float(sb[0]), I18n.t("км"), I18n.t("м"))
+	_hud.draw_string(font, Vector2(x0, y + 14.0 * _s), "0", HORIZONTAL_ALIGNMENT_LEFT, -1, fsb, CREAM)
+	var w: float = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsb).x
+	_hud.draw_string(font, Vector2(x0 + len_px - w, y + 14.0 * _s), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsb, CREAM)
+
+
+## Легенда умовних знаків (L — свернуть)
+func _draw_legend(font: Font, vp: Vector2) -> void:
+	var rows: Array = [
+		["contour", I18n.t("Горизонталь, шаг %d м") % int(_contour[0])],
+		["index", I18n.t("Основная горизонталь, подпись — высота, м")],
+		["spot", I18n.t("Высотная отметка (вершина), м")],
+		["water", I18n.t("Море, озеро, река")],
+		["forest", I18n.t("Лес: лиственный, хвойный")],
+		["swamp", I18n.t("Болото")],
+		["cursed", I18n.t("Проклятые земли")],
+		["hot", I18n.t("Жаркие горы")],
+		["city", I18n.t("Поселение: стена, дома, огороды")],
+		["trail", I18n.t("Тропа, протоптанная героем")],
+		["ruin", I18n.t("Руины")],
+		["tech", I18n.t("Техноостов, сигнальная вышка")],
+		["border", I18n.t("Граница региона")],
+		["blank", I18n.t("Не исследовано (белое пятно)")],
+	]
+	var fs: int = int(12 * _s)
+	var row_h: float = 18.0 * _s
+	var w: float = 270.0 * _s
+	var h: float = row_h * float(rows.size()) + 12.0 * _s
+	var x0: float = 12.0 * _s
+	var y0: float = vp.y - 52.0 * _s - h
+	_hud.draw_rect(Rect2(Vector2(x0, y0), Vector2(w, h)), Color(0.07, 0.06, 0.05, 0.74))
+	_hud.draw_rect(Rect2(Vector2(x0, y0), Vector2(w, h)), Color(0.55, 0.45, 0.28, 0.8), false, 1.0)
+	for i in rows.size():
+		var cy: float = y0 + 6.0 * _s + row_h * (float(i) + 0.5)
+		var sx: float = x0 + 22.0 * _s
+		_legend_sign(String(rows[i][0]), Vector2(sx, cy))
+		_hud.draw_string(font, Vector2(x0 + 46.0 * _s, cy + 4.0 * _s), rows[i][1], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("e8dcb0"))
+
+
+func _legend_sign(kind: String, c: Vector2) -> void:
+	var u: float = _s
+	match kind:
+		"contour":
+			_hud.draw_line(c + Vector2(-14, 2) * u, c + Vector2(14, -2) * u, Color(0.62, 0.40, 0.24), 1.0 * u)
+		"index":
+			_hud.draw_line(c + Vector2(-14, 2) * u, c + Vector2(14, -2) * u, Color(0.78, 0.50, 0.28), 2.2 * u)
+		"spot":
+			_hud.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -4) * u, c + Vector2(4, 3) * u, c + Vector2(-4, 3) * u]), Color(0.78, 0.50, 0.28))
+		"water":
+			_hud.draw_rect(Rect2(c - Vector2(13, 5) * u, Vector2(26, 10) * u), Color(0.34, 0.54, 0.68))
+			_hud.draw_line(c + Vector2(-13, 5) * u, c + Vector2(13, 5) * u, Color(0.62, 0.22, 0.20), 1.2 * u)
+		"forest":
+			_hud.draw_rect(Rect2(c - Vector2(13, 5) * u, Vector2(26, 10) * u), Color(0.55, 0.64, 0.36))
+			_hud.draw_arc(c + Vector2(-5, 0) * u, 3.4 * u, 0.0, TAU, 14, Color(0.16, 0.30, 0.14), 1.2 * u, true)
+			_hud.draw_polyline(PackedVector2Array([c + Vector2(5, 3) * u, c + Vector2(8, -3) * u, c + Vector2(11, 3) * u, c + Vector2(5, 3) * u]), Color(0.16, 0.30, 0.14), 1.2 * u, true)
+		"swamp":
+			_hud.draw_rect(Rect2(c - Vector2(13, 5) * u, Vector2(26, 10) * u), Color(0.46, 0.58, 0.42))
+			for k in [-3.0, 0.0, 3.0]:
+				_hud.draw_line(c + Vector2(-6, k) * u, c + Vector2(6, k) * u, Color(0.20, 0.38, 0.40), 1.1 * u)
+		"cursed":
+			_hud.draw_rect(Rect2(c - Vector2(13, 5) * u, Vector2(26, 10) * u), Color(0.49, 0.53, 0.47))
+			for k in range(-12, 14, 5):
+				_hud.draw_line(c + Vector2(float(k), 5) * u, c + Vector2(float(k) + 5.0, -5) * u, Color(0.46, 0.27, 0.58), 1.1 * u)
+		"hot":
+			_hud.draw_rect(Rect2(c - Vector2(13, 5) * u, Vector2(26, 10) * u), Color(0.74, 0.55, 0.40))
+			for k in range(-12, 14, 5):
+				_hud.draw_line(c + Vector2(float(k), 5) * u, c + Vector2(float(k) + 5.0, -5) * u, Color(0.62, 0.20, 0.14), 1.1 * u)
+		"city":
+			_hud.draw_arc(c, 8.0 * u, 0.0, TAU, 20, MAROON, 1.6 * u, true)
+			_hud.draw_rect(Rect2(c - Vector2(3, 3) * u, Vector2(6, 6) * u), INK)
+		"trail":
+			_hud.draw_line(c + Vector2(-14, 0) * u, c + Vector2(14, 0) * u, MAROON, 1.6 * u)
+		"ruin":
+			var col := VIOLET
+			_hud.draw_polyline(PackedVector2Array([c + Vector2(-5, -1) * u, c + Vector2(-5, 5) * u, c + Vector2(5, 5) * u, c + Vector2(5, -1) * u]), col, 1.4 * u)
+			_hud.draw_line(c + Vector2(-5, -1) * u, c + Vector2(-2, -5) * u, col, 1.4 * u)
+		"tech":
+			_hud.draw_polyline(PackedVector2Array([c + Vector2(-9, 0) * u, c + Vector2(-6, -5) * u, c + Vector2(-3, 0) * u, c + Vector2(-6, 5) * u, c + Vector2(-9, 0) * u]), CYAN, 1.4 * u)
+			_hud.draw_polyline(PackedVector2Array([c + Vector2(3, 5) * u, c + Vector2(7, -5) * u, c + Vector2(11, 5) * u, c + Vector2(3, 5) * u]), CYAN, 1.4 * u)
+		"border":
+			for k in range(-14, 12, 7):
+				_hud.draw_line(c + Vector2(float(k), 0) * u, c + Vector2(float(k) + 4.0, 0) * u, Color(0.65, 0.20, 0.22), 1.8 * u)
+		"blank":
+			_hud.draw_rect(Rect2(c - Vector2(13, 5) * u, Vector2(26, 10) * u), Color(0.76, 0.71, 0.58))
+			for k in range(-12, 14, 6):
+				_hud.draw_line(c + Vector2(float(k), 5) * u, c + Vector2(float(k) + 5.0, -5) * u, Color(0.50, 0.42, 0.30), 0.8 * u)
 
 
 func _layout_hud(vp: Vector2) -> void:
@@ -1065,7 +1149,7 @@ func _layout_hud(vp: Vector2) -> void:
 	_hint.size = Vector2(vp.x * 0.45, 40)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_hint.text = (I18n.t("регион %d · PgUp/PgDn или клик по соседнему — другой регион · колесо — масштаб · перетащить — сдвиг · %s — закрыть") % [region_id,
+	_hint.text = (I18n.t("регион %d · PgUp/PgDn или клик по соседнему — другой регион · колесо — масштаб · перетащить — сдвиг · L — легенда · %s — закрыть") % [region_id,
 		"Esc" if standalone else "V / Esc"]) + ("" if not standalone else I18n.t(" · F — туман войны · G — город растёт"))
 	_info.position = Vector2(vp.x * 0.5 - 16.0, vp.y - 190.0 * _s)
 	_info.size = Vector2(vp.x * 0.5, 170.0 * _s)
@@ -1097,6 +1181,7 @@ func _update_info() -> void:
 	lines.append(I18n.t("Руин: %d (обысканы недавно: %d), сигнальных вышек: %d") % [stats["ruins"], looted, stats["towers"]])
 	if int(stats.get("trail_cells", 0)) > 0:
 		lines.append(I18n.t("Протоптано троп: %.1f км") % (float(stats["trail_cells"]) * 12.0 / 1000.0))
+	lines.append(I18n.t("Горизонтали через %d м; высоты — над низиной") % int(_contour[0]))
 	_info.text = "\n".join(lines)
 
 
@@ -1115,6 +1200,8 @@ func _input(event: InputEvent) -> void:
 			return   # у просмотрщику Esc — вихід (region_viewer.gd)
 		if not event.echo and (k == KEY_ESCAPE or (k == KEY_V and not standalone)):
 			close()
+		elif not event.echo and k == KEY_L:
+			legend_on = not legend_on
 		elif not event.echo and k == KEY_PAGEDOWN:
 			step_region(1)
 		elif not event.echo and k == KEY_PAGEUP:
@@ -1171,7 +1258,7 @@ func _clamp() -> void:
 	_cam = _cam.clamp(_center - half, _center + half)
 
 
-## Клік по сусідньому (затемненому) регіону — відкрити його
+## Клік по сусідньому (приглушеному) регіону — відкрити його
 func _click(sp: Vector2) -> void:
 	var vp: Vector2 = _root.get_viewport_rect().size
 	var p: Vector2 = _cam + (sp - _sc(vp)) / _zoom()

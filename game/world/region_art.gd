@@ -36,7 +36,8 @@ static func override_dir() -> String:
 	return OS.get_executable_path().get_base_dir().path_join(OVERRIDE_DIR)
 
 
-func load_all() -> void:
+## objects = false — лише плоскі текстури (табличка, плитки): топографічний огляд спрайтів не малює, атлас не збирається
+func load_all(objects: bool = true) -> void:
 	if FileAccess.file_exists(MANIFEST):
 		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
 		if d is Dictionary:
@@ -45,11 +46,13 @@ func load_all() -> void:
 	var imgs: Dictionary = {}
 	for key in assets:
 		var a: Dictionary = assets[key]
+		var kind: String = String(a.get("kind", "object"))
+		if not objects and kind == "object":
+			continue
 		var img: Image = _image(String(a["file"]))
 		if img == null:
 			missing.append(key)
 			continue
-		var kind: String = String(a.get("kind", "object"))
 		if kind == "object" or key == "shadow" or key == "mist":
 			imgs[key] = img
 			var size: Array = a.get("size", [img.get_width(), img.get_height()])
@@ -67,7 +70,8 @@ func load_all() -> void:
 						heights[vk] = heights[key]
 		if kind != "object":
 			textures[key] = ImageTexture.create_from_image(img)
-	_pack(imgs)
+	if objects:
+		_pack(imgs)
 
 
 ## Картинка: спершу region_art/ користувача, потім заглушка з art/region/
