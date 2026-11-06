@@ -35,6 +35,7 @@ const JournalScript := preload("res://characters/quest_journal.gd")
 const WearRef := preload("res://characters/wear.gd")
 const Chronicle := preload("res://characters/chronicle.gd")
 const Chronology := preload("res://world/chronology.gd")
+const TradeRef := preload("res://city/trade.gd")
 const ALLY_RADIUS_M: float = 60.0
 const FADE_S: float = 0.25
 const AUTOSAVE_SEC: float = 300.0
@@ -57,6 +58,7 @@ var city_states: Dictionary = {}   # city_id -> to_dict() міста після 
 var chronicle: Array = []           # хроніка героя: ключові події (characters/chronicle.gd); зникає разом з героєм
 var codex: Dictionary = {}          # кодекс: id знайдених записок -> ігрові секунди (world/codex.gd); живе довше за героя
 var left_carts: Array = []         # Q32: вози загиблих героїв на карті [{pos: [x, y], until: с гри, items}] (hero_death.gd)
+var _cut_campaign: Variant = null  # стан вирізаної кампанії 2D 12 (ключ «campaign» старих збережень): не читається, лише переноситься в нове збереження, щоб модуль можна було повернути без втрати прогресу
 var battles_won: int = 0           # перемоги героя в боях за гру (доручення «перемогти» в містах, city_growth.gd)
 var _km_actor: Actor = null
 var sleep_fx: CanvasLayer = null
@@ -178,6 +180,7 @@ func _attach(g: Node2D) -> void:
 	codex = {}
 	chronicle = []
 	battles_won = 0
+	_cut_campaign = null
 	g.tree_exiting.connect(_on_game_exiting.bind(g))
 
 
@@ -664,9 +667,12 @@ func to_dict() -> Dictionary:
 			r["enemies_dicts"] = e["req"]["enemies"].map(func(a): return a.to_dict())
 			list.append({"kind": "battle", "req": r, "state": state, "clock_was_paused": _clock_was_paused})
 	var cities: Dictionary = city_states.duplicate()
-	return {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
+	var out: Dictionary = {"stack": list, "hero_controlled": _hero_controlled if is_away() else false,
 		"inventory": inventory, "city_states": cities, "battles_won": battles_won, "left_carts": left_carts.duplicate(true), "codex": codex.duplicate(),
 		"journal": journal.to_array() if journal != null else [], "chronicle": chronicle.duplicate(true)}
+	if _cut_campaign != null:
+		out["campaign"] = _cut_campaign  # без змін, як прийшло зі старого збереження
+	return out
 
 
 # Після завантаження карти (world_save.apply_late): заново входить у збережені міста й бій, без затемнення
@@ -688,9 +694,15 @@ func load_dict(d: Dictionary) -> void:
 	if journal != null:
 		journal.load_array(d.get("journal", []))
 	chronicle = d.get("chronicle", []).duplicate(true) if d.get("chronicle") is Array else []
+	# Сумісність зі збереженнями 2D 12 з кампанією (модуль вирізано, modules_cut/quests_2d12):
+	# ключ «campaign» не читається, а переноситься як є; речі, яких немає в items.json (сюжетні), прибираються з сумки
+	_cut_campaign = d.get("campaign").duplicate(true) if d.get("campaign") is Dictionary else null
+	_drop_unknown_items(inventory)
 	if not list.is_empty() and game.get("cast") != null:
 		game.cast.controls_hero = bool(d.get("hero_controlled", game.cast.controls_hero))
 	for e in list:
+		if e["kind"] == "battle" and String(e.get("req", {}).get("origin", "")).begins_with("story_boss:"):
+			continue  # бій із сюжетним босом вирізаної кампанії: такого суперника більше немає, герой лишається на карті
 		if e["kind"] == "city":
 			_enter_city_now(String(e["id"]), e.get("ctx", {}), e.get("state"))
 		elif e["kind"] == "battle":
@@ -707,6 +719,19 @@ func load_dict(d: Dictionary) -> void:
 			var was: bool = bool(e.get("clock_was_paused", false))
 			_start_battle_now(r, e.get("state"))
 			_clock_was_paused = was
+
+
+## Прибирає з сумки речі, яких немає в каталозі (data/cities/items.json): інакше вони висіли б у сумці без назви й ваги
+func _drop_unknown_items(bag: Dictionary) -> void:
+	var items: Variant = bag.get("items")
+	if not (items is Dictionary):
+		return
+	var known: Dictionary = TradeRef.items()
+	if known.is_empty():
+		return  # каталог не прочитався — нічого не чіпати
+	for id in items.keys():
+		if not known.has(String(id)):
+			items.erase(id)
 
 
 func _actor_by_id(id: String) -> Actor:

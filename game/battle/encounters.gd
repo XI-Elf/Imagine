@@ -111,19 +111,6 @@ static func stealth_mult(c: float) -> float:
 	return clampf(1.0 - 3.0 * (c - CONCEAL_REF), 0.25, 1.6)
 
 
-## Слово для інтерфейсу
-static func concealment_word(c: float) -> String:
-	if c < 0.1:
-		return I18n.t("на виду")
-	if c < 0.25:
-		return I18n.t("заметен")
-	if c < 0.4:
-		return I18n.t("в тени")
-	if c < 0.6:
-		return I18n.t("укрыт")
-	return I18n.t("невидим")
-
-
 ## Шанс нападу за hours годин гри, поки герой стоїть, спить або шукає на місці
 static func chance_for_hours(hero: Actor, env: Dictionary, hours: float) -> float:
 	var ter: String = terrain_key(int(env.get("biome", 4)))

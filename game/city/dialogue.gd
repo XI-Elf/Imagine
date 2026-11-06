@@ -65,7 +65,7 @@ static func allowed(opt: Dictionary, hero: Actor, bag: Dictionary, state: Dictio
 
 
 ## Підпис варіанта: текст уже містить мітку, якщо автор її поставив; інакше — мітка характеристики з вимоги.
-## Герой з Умом 3 і нижче (Sheet.dumb) говорить варіантом dumb, а без нього довга фраза мимриться (mumble)
+## Герой з Інтелектом 3 і нижче (Sheet.dumb) говорить варіантом dumb, а без нього довга фраза мимриться (mumble)
 static func label(opt: Dictionary, hero: Actor = null) -> String:
 	var t: String = String(opt.get("text", "…"))
 	if hero != null and Sheet.dumb(hero):

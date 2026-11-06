@@ -1,0 +1,24 @@
+diff --git a/game/city/city_world.gd b/game/city/city_world.gd
+index 8e20b5a..98cc604 100644
+--- a/game/city/city_world.gd
++++ b/game/city/city_world.gd
+@@ -1123,6 +1123,8 @@ func hear_tale(n: Dictionary) -> void:
+ 	bag["money"] = int(bag["money"]) - fee
+ 	var w: Node = get_node_or_null("/root/Worlds")
+ 	w.codex[String(tale["id"])] = clock.total_seconds
++	if w.has_method("campaign_event"):
++		w.campaign_event("codex")
+ 	_chronicle("talk", I18n.t("Услышал от %s: «%s». Записано в дневник.") % [n["actor"].display_name, tale["title"]], "tale:" + String(tale["id"]))
+ 	var opts: Array = [[I18n.t("Назад"), func(): talk(n)]]
+ 	_open_panel("talk", "%s: %s" % [n["actor"].display_name, tale["title"]], "%s\n\n%s" % [tale["text"], I18n.t("Записано в дневник героя (вкладка 6).")], opts)
+@@ -2116,6 +2118,10 @@ func turn_in(n: Dictionary, q: Dictionary, choice: String = "") -> void:
+ 	var id: String = String(n["def"]["id"])
+ 	var extra: int = _speech_extra(q)
+ 	Growth.complete(full_def, growth, q, bag)
++	if not bool(q.get("endless", false)):  # безкінечні доручення сюжет не рухають (фільтр Pass5)
++		var world_manager: Node = get_node_or_null("/root/Worlds")
++		if world_manager != null and world_manager.has_method("campaign_event"):
++			world_manager.campaign_event("city_quest", city_id)
+ 	_chronicle("quest", I18n.t("Выполнил поручение «%s» для %s.") % [q["title"], n["actor"].display_name], "quest:" + String(q["id"]))
+ 	var text: String = "«%s»" % q["done"]
+ 	if fork_text != "":

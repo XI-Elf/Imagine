@@ -74,7 +74,7 @@ func _run() -> void:
 
 	# F1 поверх гри: пауза, вкладка за місцем, клавіші не йдуть у гру
 	await key(KEY_F1)
-	ok(T.is_help_open() and paused and T._tabs.current_tab == 0, "F1 на карте — справка, вкладка «Карта»")
+	ok(T.is_help_open() and paused and T._tabs.current_tab == 0, "F1 на местности — справка, вкладка «Местность»")
 	await shot("t02_help_map.png")
 	var had_hero: bool = not game.cast.hero.is_empty()
 	await key(KEY_G)
@@ -100,7 +100,7 @@ func _run() -> void:
 		game.settlements.choose_continue()
 	await create_timer(T.MIN_SHOW_S + 0.3).timeout
 	ok(T.seen.has("welcome"), "приветствие закрылось само, когда герой появился")
-	ok(await wait_hint(T, "walk", T.GAP_S + 2.0), "подсказка «Герой» (WASD, Shift)")
+	ok(await wait_hint(T, "walk", T.GAP_S + 2.0), "подсказка «Герой» (стрелки, мышь)")
 	await shot("t04_walk.png")
 	T.dismiss()
 	ok(T.seen.has("walk") and not T._card.visible, "«Понятно» закрывает подсказку")
@@ -178,6 +178,23 @@ func _run() -> void:
 	ok(await wait_hint(T, "hunger"), "включить снова в справке — подсказки вернулись (голод)")
 	T.restart()
 	ok(T.seen.is_empty(), "«Начать обучение заново» очищает показанное")
+
+	# Правдивість тексту (2D 12): того, чого в грі вже немає, довідка не обіцяє
+	var all_text: String = ""
+	for tab in T.KEYS:
+		for r in T.KEYS[tab]:
+			all_text += " ".join(PackedStringArray(r)) + " "
+	for m in T.MECHANICS:
+		all_text += String(m[1]) + " "
+	for h in T._hints:
+		all_text += String(h["text"]) + " "
+	ok(not ("WASD" in all_text) and not ("Shift —" in all_text) and not ("Бег (Shift)" in all_text), "в тексте нет WASD и бега по Shift")
+	ok(not ("лекарь-НПС" in all_text) and not ("свободной камерой" in all_text), "в тексте нет лекаря-НПС на карте и свободной камеры")
+	var ids: Array = T._hints.map(func(h): return h["id"])
+	ok("guide" in ids and not ("story" in ids) and not ("story_choice" in ids), "есть подсказка про справочник; подсказок вырезанной кампании нет")
+	ok(not ("Пепел помнит имена" in all_text) and not ("сюжет" in all_text.to_lower()), "довідка не згадує вирізану кампанію")
+	var HW := load("res://characters/hero_window.gd")
+	ok(HW.TABS.size() == 10 and HW.TABS[5] == "quests" and HW.TABS[6] == "map" and HW.TABS[8] == "diary" and HW.TABS[9] == "chronicle", "номера разделов меню героя совпадают с текстом подсказок (6 задания, 7 карта, 9 дневник, 0 хроника)")
 
 	print("TUTORIAL CHECKS: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)

@@ -858,12 +858,14 @@ func _draw_ruins(font: Font) -> void:
 	var now: float = game.clock.total_seconds
 	for s in Ruins.in_rect(game, Rect2(game.cam_pos - vs * 0.5, vs).grow(40.0)):
 		var sp: Vector2 = game.world_to_screen(s["pos"])
-		var h: float = clampf(9.0 * game.zoom, 8.0, 260.0)
+		var h: float = clampf(24.0 * game.zoom, 12.0, 480.0)  # спрайт руїн у world_decor — до 23 м заввишки
 		var done: bool = Ruins.looted_now(ruins_looted, s["key"], now)
-		var tint: Color = Color(0.62, 0.6, 0.56) if done else Color(0.92, 0.86, 0.78)
-		var key: String = "tech_dome" if Art.seed_at(absi(hash(s["key"])) % 9973, 7, 31) > 0.6 else "tech_wreck"
-		Art.sprite(self, key, sp + Vector2(-h * 0.1, 0.0), h * 0.8, tint)
-		Art.sprite(self, "rock", sp + Vector2(h * 0.62, h * 0.12), h * 0.3, tint)
+		# Самі руїни малює шар світу (storybook/world_decor.gd, Pass4: храм/зала/техноруїни за біомом).
+		# Тут — лише те, що змінюється в грі: обшукані руїни притінені попелястою плямою, і підпис
+		if done:
+			draw_set_transform(sp + Vector2(0, -h * 0.25), 0.0, Vector2(1.0, 0.55))
+			draw_circle(Vector2.ZERO, h * 0.75, Color(0.18, 0.17, 0.16, 0.42))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		if game.zoom >= 0.6:
 			var label: String = I18n.t("Руины") + (I18n.t(" (обысканы)") if done else "")
 			draw_string_outline(font, sp + Vector2(-60, -h * 0.85), label, HORIZONTAL_ALIGNMENT_CENTER, 120, 13, 4, Color(0, 0, 0, 0.9))
@@ -898,40 +900,6 @@ func _update_status() -> void:
 				int(round(a.feels_temp(env))), a.calculate_speed(env)]
 	_status.position = Vector2(14.0, vp.y - 34.0)
 	sheet_visible = window.visible or _creator != null
-
-
-## Аркуш персонажа: годиться для героя й для будь-якого НПС
-func sheet_text(a: Actor) -> String:
-	var t: String = "%s%s\n\n" % [a.display_name, I18n.t(" (НПС)") if a.is_npc else ""]
-	var ch: Dictionary = R.characteristics()
-	# «Телосложение» — и характеристика 09, и ресурс пака: ресурс здесь зовётся «Запас сил»;
-	# голод и жажда пака — шкалы сытости и воды (100 — сыт и напоен)
-	var shown: Dictionary = {"hunger": I18n.t("Сытость"), "thirst": I18n.t("Вода"), "stamina": I18n.t("Запас сил")}
-	for r in Actor.RESOURCES:
-		t += "%s: %d / %d\n" % [shown.get(r, ch.get(r, {}).get("name_ru", r)), int(a.res[r]), int(a.max_of(r))]
-	var names: Dictionary = R.section("stats").get("names", {})
-	t += "\n"
-	for s in Actor.STATS:
-		t += "%s %d   " % [names.get(s, s), int(a.stat(s))]
-	t += I18n.t("\n\nСостояния:")
-	if a.conditions.is_empty() and a.buffs.is_empty():
-		t += I18n.t(" нет")
-	for c in a.conditions:
-		var d: Dictionary = R.condition(c["id"])
-		t += "\n  %s%s" % [d.get("name_ru", c["id"]), "" if c["id"] != "radiation_sickness" else I18n.t(" (стадия %d)") % int(c["stage"])]
-	for bf in a.buffs:
-		t += I18n.t("\n  + %s (%.0f ч)") % [R.buffs().get(bf["id"], {}).get("name_ru", bf["id"]), float(bf["left_h"])]
-	var dv: Dictionary = a.derived()
-	t += I18n.t("\n\nСила удара ×%.2f   Поиск ×%.2f   Скорость ×%.2f\nПереносимый вес %.0f кг   Защита от проклятья %d %%\n") % [
-		dv["attack_power"], dv["search_efficiency"], dv["move_speed"], dv["carry_weight"], int(dv["radiation_resist"] * 100.0)]
-	t += I18n.t("\nУровень %d, опыт %d / %d") % [a.level, int(a.xp), Sheet.xp_to_next(a)]
-	t += I18n.t("\nНавыки:")
-	var sk: Dictionary = R.skills()
-	for k in sk:
-		t += "\n  %s %d %%%s" % [sk[k].get("name_ru", k), a.skill(k), " ◆" if a.tags.has(k) else ""]
-	t += I18n.t("\n\nПройдено %.1f км") % (a.distance_m / 1000.0)
-	t += I18n.t("\n\nЛКМ идти, Z сон, E пить, F еда или обыскать руины, T лекарь, R верхом / пешком, I меню героя")
-	return t
 
 
 # =====================================================================

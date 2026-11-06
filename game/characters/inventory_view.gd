@@ -42,9 +42,9 @@ static var STAT_NAMES: Dictionary = {"health": I18n.t("Здоровье"), "hung
 ## Опис показника для підказки (Huzzah 2026-10-29: наведення й клік на показник — віконце з описом)
 static var STAT_DESC: Dictionary = {
 	"health": I18n.t("Здоровье. На нуле герой погибает. Отнимают его раны, кровотечение, яд, болезни, голод и жажда на нуле. Само понемногу заживает, пока герой сыт, напоен и не истекает кровью. Лечат снадобья из сумки и лекарь."),
-	"hunger": I18n.t("Сытость. Каждый час понемногу падает. На нуле голод отнимает здоровье, и раны перестают заживать. Поднимает еда; искать её — F на карте."),
+	"hunger": I18n.t("Сытость. Каждый час понемногу падает. На нуле голод отнимает здоровье, и раны перестают заживать. Поднимает еда; искать её — F на местности."),
 	"thirst": I18n.t("Вода. Падает быстрее сытости, в жару ещё быстрее. На нуле жажда отнимает здоровье и бодрость. Напиться: E у реки или озера, колодец в городе, питьё из сумки."),
-	"energy": I18n.t("Энергия — бодрость. Тратится весь день; в пути, на трудной местности и в холод быстрее. Восстанавливает сон: Z на карте, «Ночлег» в городе."),
+	"energy": I18n.t("Энергия — бодрость. Тратится весь день; в пути, на трудной местности и в холод быстрее. Восстанавливает сон: Z на местности, «Ночлег» в городе."),
 	"stamina": I18n.t("Силы — на бег и плавание. Тратятся за секунды и так же быстро возвращаются шагом или на месте. Без сил не побежать, а в воде герой начинает тонуть."),
 	"radiation": I18n.t("Воздействие проклятья. Копится в проклятых лесах, пустошах и болотах, на чистой земле медленно спадает. Набравшись его, герой заболевает проклятой хворью, и чем больше, тем тяжелее."),
 }
@@ -260,7 +260,7 @@ func _layout() -> void:
 			b.tooltip_text = I18n.t("До %d видов оружия; окно «Подготовка к бою» предложит этот выбор") % loadout_max
 			row.add_child(b)
 		if s == "parchment" or s == "charcoal_stick":
-			row.add_child(_btn(I18n.t("Карта"), win.open_parchment, 14))
+			row.add_child(_btn(I18n.t("Карта героя"), win.open_parchment, 14))
 		elif not Trade.bound(s):
 			row.add_child(_btn(I18n.t("Выбросить"), win.drop_item.bind(s), 14))
 	queue_redraw()
@@ -278,15 +278,6 @@ func _btn(text: String, cb: Callable, size_px: int, on: bool = false) -> Button:
 		b.add_theme_color_override("font_color", Color("ffe2a8"))
 	b.pressed.connect(cb)
 	return b
-
-
-## Стиль кнопки коміксу (раніше — плита мармуру; назву залишено для старих викликів)
-static func marble_box(light: bool, hover: bool = false, dim: bool = false) -> StyleBox:
-	if dim:
-		return ComicUI.button_box("disabled")
-	if light:
-		return ComicUI.button_box("hover_pressed" if hover else "pressed")
-	return ComicUI.button_box("hover" if hover else "normal")
 
 
 func _stat_at(p: Vector2) -> String:
@@ -501,19 +492,6 @@ func _draw_doll() -> void:
 	_doll.draw(self, fig, female, looks(), build)
 
 
-## Силует героя за текстурою його фішки: темна заливка зі світлою обвідкою
-static func pawn_silhouette(ci: CanvasItem, fig: Rect2) -> void:
-	var t: Texture2D = silhouette_tex()
-	if t == null:
-		return
-	var k: float = minf(fig.size.y / float(t.get_height()), fig.size.x / float(t.get_width()))
-	var sz: Vector2 = Vector2(t.get_size()) * k
-	var r := Rect2(Vector2(fig.get_center().x - sz.x * 0.5, fig.end.y - sz.y), sz)
-	for d in [Vector2(-2, 0), Vector2(2, 0), Vector2(0, -2), Vector2(0, 2), Vector2(-1.5, -1.5), Vector2(1.5, 1.5), Vector2(-1.5, 1.5), Vector2(1.5, -1.5)]:
-		ci.draw_texture_rect(t, Rect2(r.position + d, r.size), false, Color(0.62, 0.67, 0.74, 0.9))
-	ci.draw_texture_rect(t, r, false, Color(0.13, 0.15, 0.18))
-
-
 ## Білий силует із картинки фішки (альфа та сама), фарбується модуляцією; один на гру
 static func silhouette_tex() -> Texture2D:
 	if _tex.has("pawn"):
@@ -603,12 +581,6 @@ static func marble(light: bool) -> Texture2D:
 			img.set_pixel(x, y, c.lerp(vc, clampf(vein * (0.6 if light else 0.8) + fine, 0.0, 1.0)))
 	_tex[key] = ImageTexture.create_from_image(img)
 	return _tex[key]
-
-
-static func rivet(ci: CanvasItem, c: Vector2, r: float = 3.5) -> void:
-	ci.draw_circle(c + Vector2(0.8, 1.2), r, Color(0, 0, 0, 0.5))
-	ci.draw_circle(c, r, Color("8796ab"))
-	ci.draw_circle(c - Vector2(r, r) * 0.3, r * 0.45, Color("e6edf6"))
 
 
 ## Комірка: сталева комірка коміксу (дрібна — тонка табличка, щоб умістився підпис),

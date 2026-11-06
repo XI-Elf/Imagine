@@ -1,0 +1,686 @@
+{
+ "_note": "Обзор региона: картинки и их точки опоры. Пишет tools/make_region_art.py; читает world/region_art.gd. Заменить картинку: тот же файл, тот же размер (или крупнее с теми же пропорциями) — в art/region/ или в папку region_art/ рядом с exe. Вариант здания по этапу роста города: bld_<вид>_s<этап>.png (необязателен).",
+ "style": "Game asset in a unified 2.5D style, close to realism: physically based painted look, semi-realistic proportions, believable materials (worn leather, dull iron, rough wool, weathered wood, cracked stone, corroded alloy). Slightly top-down three-quarter view, camera about 35 to 40 degrees above the horizon, same angle for every asset, subject centered with a little margin. Soft directional light from the upper left, gentle ambient occlusion, subtle rim light. Dark sci-fi fantasy setting: medieval European world with remnants of lost technology. Muted desaturated palette (ash grey, mud brown, dark olive, rust, cold steel blue), small accents of amber glow only on technology and amber stones. Fine surface detail, scratches, dust, wear, no cartoon outlines, no cel shading, no pixel art, no glossy plastic, no neon, no text, no watermark, no logo.",
+ "assets": {
+  "tree_pine": {
+   "file": "tree_pine.png",
+   "size": [
+    192,
+    256
+   ],
+   "anchor": [
+    96,
+    248
+   ],
+   "kind": "object",
+   "h": 24,
+   "stages": false
+  },
+  "tree_broad": {
+   "file": "tree_broad.png",
+   "size": [
+    224,
+    224
+   ],
+   "anchor": [
+    112,
+    217
+   ],
+   "kind": "object",
+   "h": 22,
+   "stages": false
+  },
+  "tree_light": {
+   "file": "tree_light.png",
+   "size": [
+    192,
+    224
+   ],
+   "anchor": [
+    96,
+    217
+   ],
+   "kind": "object",
+   "h": 22,
+   "stages": false
+  },
+  "tree_cursed": {
+   "file": "tree_cursed.png",
+   "size": [
+    224,
+    224
+   ],
+   "anchor": [
+    112,
+    217
+   ],
+   "kind": "object",
+   "h": 22,
+   "stages": false
+  },
+  "tree_dead": {
+   "file": "tree_dead.png",
+   "size": [
+    224,
+    224
+   ],
+   "anchor": [
+    112,
+    217
+   ],
+   "kind": "object",
+   "h": 18,
+   "stages": false
+  },
+  "reed": {
+   "file": "reed.png",
+   "size": [
+    128,
+    96
+   ],
+   "anchor": [
+    64,
+    93
+   ],
+   "kind": "object",
+   "h": 9,
+   "stages": false
+  },
+  "rock": {
+   "file": "rock.png",
+   "size": [
+    160,
+    128
+   ],
+   "anchor": [
+    80,
+    124
+   ],
+   "kind": "object",
+   "h": 9,
+   "stages": false
+  },
+  "mountain_a": {
+   "file": "mountain_a.png",
+   "size": [
+    384,
+    288
+   ],
+   "anchor": [
+    192,
+    279
+   ],
+   "kind": "object",
+   "h": 70,
+   "stages": false
+  },
+  "mountain_b": {
+   "file": "mountain_b.png",
+   "size": [
+    384,
+    320
+   ],
+   "anchor": [
+    192,
+    310
+   ],
+   "kind": "object",
+   "h": 86,
+   "stages": false
+  },
+  "ridge": {
+   "file": "ridge.png",
+   "size": [
+    448,
+    192
+   ],
+   "anchor": [
+    224,
+    186
+   ],
+   "kind": "object",
+   "h": 44,
+   "stages": false
+  },
+  "mountain_hot": {
+   "file": "mountain_hot.png",
+   "size": [
+    384,
+    288
+   ],
+   "anchor": [
+    192,
+    279
+   ],
+   "kind": "object",
+   "h": 66,
+   "stages": false
+  },
+  "mesa_hot": {
+   "file": "mesa_hot.png",
+   "size": [
+    384,
+    224
+   ],
+   "anchor": [
+    192,
+    217
+   ],
+   "kind": "object",
+   "h": 50,
+   "stages": false
+  },
+  "ruin_temple": {
+   "file": "ruin_temple.png",
+   "size": [
+    256,
+    256
+   ],
+   "anchor": [
+    128,
+    248
+   ],
+   "kind": "object",
+   "h": 30,
+   "stages": false
+  },
+  "ruin_hall": {
+   "file": "ruin_hall.png",
+   "size": [
+    256,
+    256
+   ],
+   "anchor": [
+    128,
+    248
+   ],
+   "kind": "object",
+   "h": 30,
+   "stages": false
+  },
+  "tech_wreck": {
+   "file": "tech_wreck.png",
+   "size": [
+    256,
+    160
+   ],
+   "anchor": [
+    128,
+    155
+   ],
+   "kind": "object",
+   "h": 22,
+   "stages": false
+  },
+  "tech_dome": {
+   "file": "tech_dome.png",
+   "size": [
+    256,
+    144
+   ],
+   "anchor": [
+    128,
+    139
+   ],
+   "kind": "object",
+   "h": 20,
+   "stages": false
+  },
+  "tech_tower": {
+   "file": "tech_tower.png",
+   "size": [
+    128,
+    320
+   ],
+   "anchor": [
+    64,
+    310
+   ],
+   "kind": "object",
+   "h": 46,
+   "stages": false
+  },
+  "bld_house": {
+   "file": "bld_house.png",
+   "size": [
+    256,
+    208
+   ],
+   "anchor": [
+    128,
+    201
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": true
+  },
+  "bld_hall": {
+   "file": "bld_hall.png",
+   "size": [
+    256,
+    256
+   ],
+   "anchor": [
+    128,
+    248
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": true
+  },
+  "bld_temple": {
+   "file": "bld_temple.png",
+   "size": [
+    256,
+    256
+   ],
+   "anchor": [
+    128,
+    248
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": true
+  },
+  "bld_inn": {
+   "file": "bld_inn.png",
+   "size": [
+    256,
+    224
+   ],
+   "anchor": [
+    128,
+    217
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": true
+  },
+  "bld_shop": {
+   "file": "bld_shop.png",
+   "size": [
+    256,
+    208
+   ],
+   "anchor": [
+    128,
+    201
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": true
+  },
+  "bld_healer": {
+   "file": "bld_healer.png",
+   "size": [
+    256,
+    208
+   ],
+   "anchor": [
+    128,
+    201
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": true
+  },
+  "bld_smithy": {
+   "file": "bld_smithy.png",
+   "size": [
+    256,
+    224
+   ],
+   "anchor": [
+    128,
+    217
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": true
+  },
+  "bld_ruin": {
+   "file": "bld_ruin.png",
+   "size": [
+    256,
+    208
+   ],
+   "anchor": [
+    128,
+    201
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "prop_stall": {
+   "file": "prop_stall.png",
+   "size": [
+    192,
+    160
+   ],
+   "anchor": [
+    96,
+    155
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "prop_well": {
+   "file": "prop_well.png",
+   "size": [
+    128,
+    128
+   ],
+   "anchor": [
+    64,
+    124
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "wall_palisade": {
+   "file": "wall_palisade.png",
+   "size": [
+    128,
+    112
+   ],
+   "anchor": [
+    64,
+    108
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "wall_stone": {
+   "file": "wall_stone.png",
+   "size": [
+    128,
+    112
+   ],
+   "anchor": [
+    64,
+    108
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "tower_wood": {
+   "file": "tower_wood.png",
+   "size": [
+    96,
+    176
+   ],
+   "anchor": [
+    48,
+    170
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "tower_stone": {
+   "file": "tower_stone.png",
+   "size": [
+    96,
+    176
+   ],
+   "anchor": [
+    48,
+    170
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "gate_wood": {
+   "file": "gate_wood.png",
+   "size": [
+    160,
+    160
+   ],
+   "anchor": [
+    80,
+    155
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "gate_stone": {
+   "file": "gate_stone.png",
+   "size": [
+    160,
+    160
+   ],
+   "anchor": [
+    80,
+    155
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "scaffold": {
+   "file": "scaffold.png",
+   "size": [
+    192,
+    176
+   ],
+   "anchor": [
+    96,
+    170
+   ],
+   "kind": "object",
+   "h": 0,
+   "stages": false
+  },
+  "hero": {
+   "file": "hero.png",
+   "size": [
+    128,
+    160
+   ],
+   "anchor": [
+    64,
+    155
+   ],
+   "kind": "object",
+   "h": 30,
+   "stages": false
+  },
+  "field": {
+   "file": "field.png",
+   "size": [
+    256,
+    256
+   ],
+   "anchor": [
+    128,
+    128
+   ],
+   "kind": "ground",
+   "h": 0,
+   "stages": false
+  },
+  "city_ground": {
+   "file": "city_ground.png",
+   "size": [
+    256,
+    256
+   ],
+   "anchor": [
+    128,
+    128
+   ],
+   "kind": "ground",
+   "h": 0,
+   "stages": false
+  },
+  "shadow": {
+   "file": "shadow.png",
+   "size": [
+    128,
+    64
+   ],
+   "anchor": [
+    64,
+    32
+   ],
+   "kind": "overlay",
+   "h": 0,
+   "stages": false
+  },
+  "mist": {
+   "file": "mist.png",
+   "size": [
+    256,
+    192
+   ],
+   "anchor": [
+    128,
+    96
+   ],
+   "kind": "overlay",
+   "h": 70,
+   "stages": false
+  },
+  "fog_clouds": {
+   "file": "fog_clouds.png",
+   "size": [
+    512,
+    512
+   ],
+   "anchor": [
+    256,
+    256
+   ],
+   "kind": "overlay",
+   "h": 0,
+   "stages": false
+  },
+  "title_plate": {
+   "file": "title_plate.png",
+   "size": [
+    1024,
+    192
+   ],
+   "anchor": [
+    512,
+    96
+   ],
+   "kind": "ui",
+   "h": 0,
+   "stages": false
+  }
+ },
+ "terrain": {
+  "t00_water": {
+   "file": "terrain/t00_water.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "вода (море, озёра, реки)"
+  },
+  "t01_coast": {
+   "file": "terrain/t01_coast.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "берег"
+  },
+  "t02_forest": {
+   "file": "terrain/t02_forest.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "лесная подстилка"
+  },
+  "t03_field1": {
+   "file": "terrain/t03_field1.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "луг 1"
+  },
+  "t04_field2": {
+   "file": "terrain/t04_field2.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "луг 2"
+  },
+  "t05_wasteland": {
+   "file": "terrain/t05_wasteland.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "пустошь"
+  },
+  "t06_swamp": {
+   "file": "terrain/t06_swamp.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "болото"
+  },
+  "t07_mountains": {
+   "file": "terrain/t07_mountains.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "горы (каменистая земля)"
+  },
+  "t08_hot_mountains": {
+   "file": "terrain/t08_hot_mountains.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "жаркие горы"
+  },
+  "t09_rad_forest": {
+   "file": "terrain/t09_rad_forest.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "проклятый лес (подстилка)"
+  },
+  "t10_rad_wasteland": {
+   "file": "terrain/t10_rad_wasteland.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "проклятая пустошь"
+  },
+  "t11_rad_swamp": {
+   "file": "terrain/t11_rad_swamp.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "проклятое болото"
+  },
+  "t12_glow": {
+   "file": "terrain/t12_glow.png",
+   "size": [
+    512,
+    512
+   ],
+   "what": "маска свечения (чёрно-белая)"
+  }
+ }
+}

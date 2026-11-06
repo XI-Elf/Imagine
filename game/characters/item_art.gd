@@ -94,6 +94,13 @@ static func draw(ci: CanvasItem, id: String, r: Rect2) -> bool:
 	var o: Vector2 = r.get_center()
 	var s: float = minf(r.size.x, r.size.y) * 0.5
 	_shape(ci, String(sp[0]), o, s, Color(String(sp[1])), Color(String(sp[2])), String(sp[3]))
+	# Лёгкая сухая штриховка поверх заливки: единая тушевая фактура для еды,
+	# материалов, оружия и экипировки, без замены исходных силуэтов предметов.
+	var seed_value: int = abs(hash(id))
+	for i in 4:
+		var x: float = -0.42 + float((seed_value >> (i * 3)) & 7) * 0.11
+		var y: float = -0.48 + float((seed_value >> (i * 4 + 2)) & 7) * 0.12
+		ci.draw_line(o + Vector2(x, y) * s, o + Vector2(x + 0.13, y + 0.18) * s, Color(0.10, 0.07, 0.05, 0.22), maxf(0.8, s * 0.012))
 	return true
 
 

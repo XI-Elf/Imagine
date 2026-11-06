@@ -72,11 +72,6 @@ static func weight(bag: Dictionary) -> float:
 	return kg
 
 
-## Що із сумки годиться для лікування (ключі для Actor.treat)
-static func remedies(bag: Dictionary) -> Array:
-	return bag["items"].keys().filter(func(id): return bool(item(id).get("treat", false)))
-
-
 # Цены: решает разница навыков Торговли героя и торговца (Харизма даёт стартовую Торговлю),
 # дары «Купец» (−25 % к покупке), «Всеобщий любимец». Числа — data/characters/sheet.json «trade»
 static func buy_price(id: String, buyer: Actor, trader: Actor = null) -> int:

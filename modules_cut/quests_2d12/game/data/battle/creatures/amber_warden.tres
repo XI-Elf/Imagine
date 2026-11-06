@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BattleCreature" format=3]
+
+[ext_resource type="Script" path="res://battle/res/battle_creature.gd" id="1_amber_warden"]
+
+[resource]
+script = ExtResource("1_amber_warden")
+id = "amber_warden"
+title = "Сторож без лица"
+level = 4
+scores = {
+"cha": 6,
+"con": 18,
+"dex": 10,
+"int": 8,
+"lck": 10,
+"str": 17,
+"wis": 14
+}
+hp_dice = "8d8"
+natural_ac = 16
+weapons = PackedStringArray("mace")
+abilities = PackedStringArray("root_snare")
+immune = PackedStringArray()
+save_profs = PackedStringArray("con")
+speed_ft = 30
+ai = "melee"
+morale = 0.0
