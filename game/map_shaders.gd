@@ -459,7 +459,7 @@ void fragment() {
 			if (hot > 0.5 && layer_over != TEX_WATER) { layer_over = TEX_HOT; }
 			vec3 painted_mean = tex_mean(layer_over);
 			float old_luma = dot(base, vec3(0.299, 0.587, 0.114));
-			base = mix(base, painted_mean * (0.78 + old_luma * 0.45), 0.48);
+			base = mix(base, painted_mean * (0.78 + old_luma * 0.45), 0.48 * smoothstep(0.06, 0.5, zoom));   // вдалині — чиста топокарта
 		}
 		// Вода по рисунку: граница без лесенки, сглажена на один пиксель экрана
 		float wv = water_at(P);
