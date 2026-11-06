@@ -1,5 +1,6 @@
 extends Node2D
 const Art := preload("res://storybook/art.gd")
+const Ground := preload("res://world/settlement_ground.gd")
 const Growth := preload("res://city/city_growth.gd")
 const StoryCampaign := preload("res://story/campaign.gd")
 const Sheet := preload("res://characters/sheet.gd")
@@ -54,11 +55,11 @@ const ENTER_MAX_M: float = 48.0     # «Увійти» — коло знака �
 const FOOTPRINT_M: float = 10.0     # слід міста для шляху героя й клітинок (_radius, _rect): не залежить від зуму
 const GATE_OFFSET_M: float = 6.0    # брама й точка виходу — стільки метрів від точки міста
 const CLEAR_M: float = 18.0         # навколо точки декор не садить дерев і кущів
-const MEDAL_MIN_PX: float = 30.0    # радіус медальйона здалеку не менший за цей (місто лишається точкою інтересу)
 const MEDALLION_DIR := "res://art/medallion/"
 const MEDALLIONS: Array = ["m0_camp", "m1_ostrog", "m2_sloboda", "m3_posad", "m4_gorod", "m5_bolshoy_gorod"]
 const SIZE_LEVEL: Dictionary = {"hamlet": 0, "village": 2, "town": 3, "city": 4, "capital": 5}
 var _medallions: Dictionary = {}
+var _ground: Dictionary = {}          # id -> план вигляду (settlement_ground.gd)
 const CITY_DIR := "res://data/cities/"
 
 var game: Node2D
@@ -269,12 +270,37 @@ func blocks(p: Vector2) -> bool:
 	return not s.is_empty() and bool(s["walled"]) and not radial(s)
 
 
-## Точка p ближче CLEAR_M до точки міста (декор тут нічого не садить)
+## Точка p в галявині міста: ліс розступається нерівним колом, що росте з рівнем розвитку (settlement_ground.gd);
+## не менше CLEAR_M. Радіус галявини кешується в ground_plan
 func near_dot(p: Vector2) -> bool:
 	for s in list:
-		if radial(s) and p.distance_squared_to(s["_center"]) < CLEAR_M * CLEAR_M:
+		if not radial(s):
+			continue
+		var d2: float = p.distance_squared_to(s["_center"])
+		var far: float = Ground.clear_m(5) * 1.3
+		if d2 > far * far:
+			continue
+		var level: int = dev_level(s)
+		var ang: float = (p - s["_center"]).angle()
+		var r: float = maxf(CLEAR_M, Ground.clear_m(level) * Ground.clear_edge(int(ground_plan(s)["seed"]), ang))
+		if d2 < r * r:
 			return true
 	return false
+
+
+## План вигляду поселення за його рівнем розвитку (кеш; зміна рівня перебудовує плями й розставляє ліс заново)
+func ground_plan(s: Dictionary) -> Dictionary:
+	var level: int = dev_level(s)
+	var id: String = String(s["id"])
+	var cached: Dictionary = _ground.get(id, {})
+	if cached.is_empty() or int(cached["level"]) != level:
+		var gd: Vector2 = (s["_gate"] - s["_center"]).normalized()
+		var had: bool = not cached.is_empty()
+		cached = Ground.plan(id, level, gd)
+		_ground[id] = cached
+		if had and game != null and game.get("decor") != null and game.decor.has_method("forget_area"):
+			game.decor.forget_area(s["_center"], Ground.clear_m(5) * 1.4)
+	return cached
 
 
 ## Брама міста зараз відчинена (години — rules плану міста, як у city/city_world.gd)
@@ -800,9 +826,14 @@ func _draw() -> void:
 				var zpx: float = zone_radius(s) * z
 				if zpx > rp + 2.0:
 					draw_arc(c0, zpx, 0.0, TAU, 96, Color(1.0, 0.85, 0.4, 0.5), 2.0, true)   # сама зона города, когда она крупнее знака
-				_draw_medallion(s, c0, rp, hl or s == prompt_for)
+				var gp: Dictionary = ground_plan(s)
+				var gk: float = Ground.scale_for(int(gp["level"]), z, rp)
+				Ground.paint(self, gp, c0, gk, hl or (s == prompt_for and prompt_kind == "wall"))
+				_draw_gate_mark(s, c0, float(gp["R"]) * gk, hl)
+				var top: float = maxf(rp, float(gp["R"]) * gk * 1.05)
+				_draw_banner(c0 + Vector2(0, -top * 0.78), clampf(top * 0.3, 12.0, 30.0), _emblem_for(s), hl)
 				# Підпис над знаменом: герой з'являється під містом, на південь
-				_draw_name(s, c0 - Vector2(0, rp * 1.55 + 6.0), font, hl, hl)
+				_draw_name(s, c0 - Vector2(0, top * 1.5 + 6.0), font, hl, hl)
 		elif cs >= OUTLINE_CELL_PX:
 			if vp.intersects(sr):
 				_draw_outline(s, cs, z)
@@ -1030,27 +1061,15 @@ func _draw_outline(s: Dictionary, cs: float, z: float) -> void:
 		draw_circle(gw + along * gh * sgn, wid * 1.5, gate_col)
 
 
-# Медальон поселения (Huzzah 2026-10-23, референс ): круглая картинка в рамке, сверху знамя с гербом.
-# Картинка — по уровню развития (art/medallion, tools/make_settlement_medallions.py): город с ростом (city_growth.gd) —
-# по этапу, остальные — по размеру. Медальон занимает круг поселения на карте; издали радиус не меньше MEDAL_MIN_PX
-func _draw_medallion(s: Dictionary, c0: Vector2, rp: float, hl: bool) -> void:
-	var tex: Texture2D = medallion_texture(dev_level(s))
-	draw_circle(c0 + Vector2(3, 5), rp * 1.02, Color(0, 0, 0, 0.35))
-	if tex != null:
-		# Рамка картинки — на 314 із 320 px від центру (див. генератор)
-		var half: float = rp * 320.0 / 314.0
-		draw_texture_rect(tex, Rect2(c0 - Vector2(half, half), Vector2(half, half) * 2.0), false)
-	else:
-		draw_circle(c0, rp, Color(0.55, 0.44, 0.30))
-	var near: bool = prompt_for == s and prompt_kind == "wall"
-	if hl or near:
-		draw_arc(c0, rp + 2.0, 0.0, TAU, 96, Color(1.0, 0.85, 0.4), maxf(2.0, rp * 0.03), true)
-	# Брама: точка на колі з боку брами на карті
+# Брама при підході: світла мітка на краю стіни з боку брами (сама картинка поселення — settlement_ground.gd)
+func _draw_gate_mark(s: Dictionary, c0: Vector2, r_px: float, hl: bool) -> void:
+	var on: bool = (prompt_for == s and prompt_kind == "gate") or hl
+	if not on:
+		return
 	var gd: Vector2 = (s["_gate"] - s["_center"]).normalized()
-	var gate_col: Color = Color(1.0, 0.85, 0.4) if (prompt_for == s and prompt_kind == "gate") or hl else Color(0.30, 0.20, 0.12)
-	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0) + 1.5, Color(0.1, 0.07, 0.05, 0.9))
-	draw_circle(c0 + gd * rp, maxf(rp * 0.05, 3.0), gate_col)
-	_draw_banner(c0 + Vector2(0, -rp * 0.86), rp * 0.46, _emblem_for(s), hl)
+	var q: Vector2 = c0 + gd * r_px * Vector2(1.02, 0.88)
+	draw_circle(q, 5.5, Color(0.1, 0.07, 0.05, 0.9))
+	draw_circle(q, 4.0, Color(1.0, 0.85, 0.4))
 
 
 ## Знамено з гербом: поперечка, полотнище кольору поля з ластівчиним хвостом, фігура герба

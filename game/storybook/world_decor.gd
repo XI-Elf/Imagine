@@ -117,6 +117,18 @@ func _process(_delta: float) -> void:
 		_bands.erase(old)
 
 
+## Галявина міста змінилась (місто виросло) — ділянка довкола розставляється заново
+func forget_area(center: Vector2, radius: float) -> void:
+	for cy in range(floori((center.y - radius) / CHUNK), floori((center.y + radius) / CHUNK) + 1):
+		for cx in range(floori((center.x - radius) / CHUNK), floori((center.x + radius) / CHUNK) + 1):
+			var k := Vector2i(cx, cy)
+			_data.erase(k)
+			_bands.erase(k)
+			if _rows.has(k.y):
+				_rows[k.y]["full"] = false
+				_rows[k.y]["c0"] = -1
+
+
 # Змінився ступінь протоптаної клітинки — її ділянка розставляється заново (дорога витоптує ліс)
 func _drop_trodden_chunks() -> void:
 	var tl: Node = game.get("trails")

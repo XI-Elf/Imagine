@@ -166,7 +166,7 @@ func _run() -> void:
 		ok(st.settlement_at(city["_center"] + Vector2(mr + 0.3, 0)).is_empty() and not st.settlement_at(city["_center"] + Vector2(mr - 0.3, 0)).is_empty(),
 			"зум %.1f: наведение и клик по знаку той же границы" % zz)
 	ok(st.MARKER_PX["hamlet"] < st.MARKER_PX["village"] and st.MARKER_PX["village"] < st.MARKER_PX["town"] and st.MARKER_PX["town"] < st.MARKER_PX["city"] and st.MARKER_PX["city"] < st.MARKER_PX["capital"], "знаки разных городов пропорциональны размеру")
-	ok(st.medallion_texture(st.dev_level(city)) != null, "внутри знака города — картинка")
+	ok(st.medallion_texture(st.dev_level(city)) != null, "картинка поселения для панели есть")
 	game.zoom = 0.4
 
 	# Уночі брама замкнена: біля точки — «Спробувати проникнути» (перелізти стіну)
@@ -319,5 +319,24 @@ func _run() -> void:
 	for k in 6:
 		ok(st.medallion_texture(k) != null, "картинка медальона %d" % k)
 	ok(st.dev_level({"size": "hamlet"}) == 0 and st.dev_level({"size": "capital"}) == 5, "без роста — по размеру: деревушка — стоянка, столица — большой город")
+	# Поселення вписане в місцевість (world/settlement_ground.gd): росте з рівнем, детерміноване, ліс розступається
+	var G := preload("res://world/settlement_ground.gd")
+	var gdir := Vector2(0, 1)
+	var prev_b: int = 0
+	var prev_r: float = 0.0
+	for lv in 6:
+		var pl: Dictionary = G.plan("t", lv, gdir)
+		var pl2: Dictionary = G.plan("t", lv, gdir)
+		ok(pl["buildings"].size() > prev_b and pl["R"] > prev_r, "рівень %d: забудова й радіус ростуть (%d буд.)" % [lv, pl["buildings"].size()])
+		ok(pl["buildings"] == pl2["buildings"] and pl["pasture"] == pl2["pasture"], "рівень %d: вигляд детермінований" % lv)
+		ok(pl["roads"].size() >= 2 and pl["trodden"].size() > 8, "рівень %d: стежки й витоптана земля є" % lv)
+		prev_b = pl["buildings"].size()
+		prev_r = pl["R"]
+	ok(G.plan("t", 0, gdir)["wall"] == 0 and G.plan("t", 2, gdir)["wall"] == 1 and G.plan("t", 4, gdir)["wall"] == 2, "стіна: нема → частокіл → камінь")
+	ok(G.scale_for(0, 0.05, 30.0) * G.radius_m(0) * 1.3 >= 29.9 and G.scale_for(5, 3.0, 30.0) == 3.0, "здалеку поселення не менше мінімуму px, зблизька — справжній розмір")
+	var cp: Dictionary = st.ground_plan(city)
+	var cc: Vector2 = city["_center"]
+	ok(st.near_dot(cc) and st.near_dot(cc + Vector2(8, 0)) and not st.near_dot(cc + Vector2(G.clear_m(5) * 1.4, 0)), "галявина: у центрі лісу нема, далеко — є")
+	ok(int(cp["level"]) == st.dev_level(city), "план вигляду відповідає рівню розвитку")
 	print("ИТОГ: %d/%d" % [checks - fails, checks])
 	quit(1 if fails > 0 else 0)
