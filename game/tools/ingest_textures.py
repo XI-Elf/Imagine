@@ -141,6 +141,32 @@ def make_fx(img: Image.Image, shadow: bool = False) -> Image.Image:
     return im.crop(bb) if bb else im
 
 
+def fade_edges(im: Image.Image, frac: float = 0.07) -> Image.Image:
+    """Рваний край декалі не має торкатися меж кадру: плавно гасимо альфу в смузі frac від кожного краю."""
+    w, h = im.size
+    def ramp(n):
+        r = np.minimum(np.arange(n), np.arange(n)[::-1]) / max(1.0, n * frac)
+        r = np.clip(r, 0, 1)
+        return r * r * (3 - 2 * r)
+    k = np.outer(ramp(h), ramp(w))
+    a = np.asarray(im).copy().astype(np.float32)
+    a[..., 3] *= k
+    return Image.fromarray(a.astype(np.uint8), "RGBA")
+
+
+def process_ready(path: str, outdir: str):
+    """Файл уже RGBA з реальною альфою (партії restart): тільки краї декалей і безшовність тайлів."""
+    name = os.path.basename(path)
+    stem = os.path.splitext(name)[0]
+    src = Image.open(path)
+    if stem.startswith(TILE_PREFIX):
+        res = make_tile(src, src.size[0])
+    else:
+        res = fade_edges(src.convert("RGBA"))
+    res.save(os.path.join(outdir, name), optimize=True)
+    return [stem, "ready", res.size[0], res.size[1], 1.0]
+
+
 def process(path: str, outdir: str):
     name = os.path.basename(path)
     stem = os.path.splitext(name)[0]
@@ -168,8 +194,9 @@ def main():
     src, dst = args[0], args[1]
     os.makedirs(dst, exist_ok=True)
     rows = []
+    ready = "--ready" in sys.argv   # вже RGBA з альфою: лише краї й безшовність
     for p in sorted(glob.glob(os.path.join(src, "**", "*.png"), recursive=True)):
-        rows.append(process(p, dst))
+        rows.append((process_ready if ready else process)(p, dst))
         print(rows[-1])
     if "--report" in sys.argv:
         rp = sys.argv[sys.argv.index("--report") + 1]

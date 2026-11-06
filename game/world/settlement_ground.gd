@@ -26,7 +26,8 @@ const AI_KEY: Dictionary = {
 }
 const PROP_KINDS: Array = ["hay", "cart", "wood", "crates", "hut", "shed", "fence", "garden", "firewood"]
 const PROP_H: Dictionary = {"hay": 3.6, "cart": 3.2, "wood": 2.4, "crates": 2.6, "hut": 4.6, "shed": 4.0, "fence": 2.0, "garden": 3.4, "firewood": 2.2}
-const SCUFFS: Array = ["edge_scuff_01", "edge_scuff_02", "edge_scuff_03"]
+const SCUFFS: Array = ["edge_scuff_01", "edge_scuff_02", "edge_scuff_03", "edge_scuff_04", "edge_scuff_05", "edge_scuff_06"]
+const LITTER: Array = ["edge_straw_01", "edge_straw_02", "edge_pebbles_01", "edge_puddle_01", "edge_puddle_02"]
 const BLOB_LAYERS: int = 5
 static var _tex_cache: Dictionary = {}
 
@@ -198,6 +199,13 @@ static func plan(id: String, level: int, gate_dir: Vector2) -> Dictionary:
 			pk = "hay"
 		var pv: Vector2 = Vector2.from_angle(a6) * R * rp.randf_range(0.95, 1.5) * clear_edge(seed_v, a6) * Vector2(1.0, 0.86)
 		bld.append({"key": pk, "p": pv, "h": float(PROP_H[pk]) * rp.randf_range(0.9, 1.15), "prop": true})
+	var litter: Array = []
+	for i in 3 + level * 2:   # солома, камінці, калюжі: дрібні декалі на витоптаній землі й біля стежок
+		var a7: float = rp.randf() * TAU
+		var lk: String = LITTER[rp.randi() % LITTER.size()]
+		litter.append({"tex": lk, "p": Vector2.from_angle(a7) * R * rp.randf_range(0.2, 1.5) * clear_edge(seed_v, a7) * Vector2(1.0, 0.86),
+			"w": R * rp.randf_range(0.18, 0.34), "rot": rp.randf() * TAU})
+	out["litter"] = litter
 	out["scuff"] = [rp.randi() % SCUFFS.size(), rp.randi() % SCUFFS.size(), rp.randf() * TAU, rp.randf() * TAU]
 	bld.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["p"].y < b["p"].y)
 	out["buildings"] = bld
@@ -258,6 +266,11 @@ static func paint(node: Node2D, p: Dictionary, c0: Vector2, k: float, hl: bool) 
 			var b: Vector2 = c0 + pts[i + 1] * k
 			node.draw_line(a, b, Color(EARTH.r, EARTH.g, EARTH.b, 0.50 * fade + 0.06), maxf(1.5, w * (0.6 + 0.6 * fade)), true)
 			node.draw_line(a, b, Color(EARTH_DARK.r, EARTH_DARK.g, EARTH_DARK.b, 0.22 * fade), maxf(0.8, w * 0.18), true)
+	# 3б. Дрібні декалі (солома, камінці, калюжі)
+	for lt in p.get("litter", []):
+		var lx: Texture2D = ai_tex(String(lt["tex"]))
+		if lx != null:
+			draw_decal(node, lx, c0 + Vector2(lt["p"]) * k, float(lt["w"]) * k, float(lt["rot"]) * 0.2, Color(0.95, 0.92, 0.86, 0.92))
 	# 4. Стіна з проламом для брами
 	var wall: int = p["wall"]
 	if wall > 0:
