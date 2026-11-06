@@ -50,12 +50,23 @@ static func ai_name(key: String, level: int) -> String:
 
 
 ## Малювання намальованої картинки: опора — низ по центру (поле 4 %), висота h. Своєї тіні в картинці немає — м'яка ковзна тінь тут
-static func draw_ai(node: Node2D, tex: Texture2D, foot: Vector2, h: float, tint: Color = Color.WHITE) -> void:
+static func draw_ai(node: Node2D, tex: Texture2D, foot: Vector2, h: float, tint: Color = Color.WHITE, skirt: bool = true) -> void:
 	var size := Vector2(tex.get_size()) * (h / float(tex.get_height()))
-	node.draw_set_transform(foot + Vector2(0, 1.5), 0.0, Vector2(1, 0.28))
-	node.draw_circle(Vector2.ZERO, size.x * 0.34, Color(0.10, 0.08, 0.06, 0.22 * tint.a))
+	var w: float = size.x
+	# М'яка кругла пляма витоптаної землі під будівлею: ховає край її власної плити без прямокутників
+	if skirt:
+		for i in 6:
+			var f2: float = 1.0 - 0.13 * float(i)
+			node.draw_set_transform(foot + Vector2(0, -h * 0.02), 0.0, Vector2(1.0, 0.55))
+			node.draw_circle(Vector2.ZERO, w * 0.62 * f2, Color(EARTH_DARK.r, EARTH_DARK.g, EARTH_DARK.b, 0.075))
+		node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# Одна тінь на всіх: м'яка, зсунута праворуч-вниз (світло зверху-ліворуч), кілька шарів замість різкого овалу
+	for i in 4:
+		var f: float = 1.0 - 0.2 * float(i)
+		node.draw_set_transform(foot + Vector2(w * 0.10, h * 0.02), 0.0, Vector2(1.0, 0.30))
+		node.draw_circle(Vector2.ZERO, w * 0.40 * f, Color(0.07, 0.06, 0.04, 0.10 * tint.a))
 	node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	node.draw_texture_rect(tex, Rect2(foot + Vector2(-size.x * 0.5, -size.y * 0.96), size), false, tint)
+	node.draw_texture_rect(tex, Rect2(foot + Vector2(-w * 0.5, -size.y * 0.96), size), false, tint)
 
 
 ## Плоска декаль (вид згори) з центром у c, шириною w, поворотом rot
@@ -247,7 +258,7 @@ static func paint(node: Node2D, p: Dictionary, c0: Vector2, k: float, hl: bool) 
 		var c: Vector2 = c0 + Vector2(f["c"]) * k
 		var ft: Texture2D = ai_tex("out_field_strip_b" if f["green"] else "out_field_strip_a")
 		if ft != null:
-			draw_decal(node, ft, c, float(f["w"]) * 1.5 * k, rot * 0.35, Color(1, 0.97, 0.92, 0.95))
+			draw_decal(node, ft, c, float(f["w"]) * 1.3 * k, (float(int(float(f["c"].x) * 13.0) % 7) - 3.0) * 0.03, Color(1, 0.97, 0.92, 0.95))
 			continue
 		node.draw_colored_polygon(PackedVector2Array([c - ex - ey, c + ex - ey, c + ex + ey, c - ex + ey]), Color(col.r, col.g, col.b, 0.32))
 		for s in 4:   # борозни
@@ -264,48 +275,57 @@ static func paint(node: Node2D, p: Dictionary, c0: Vector2, k: float, hl: bool) 
 			var fade: float = 1.0 - float(i) / float(pts.size())
 			var a: Vector2 = c0 + pts[i] * k
 			var b: Vector2 = c0 + pts[i + 1] * k
-			node.draw_line(a, b, Color(EARTH.r, EARTH.g, EARTH.b, 0.50 * fade + 0.06), maxf(1.5, w * (0.6 + 0.6 * fade)), true)
+			var rt: Texture2D = ai_tex(SCUFFS[(i + int(p["seed"])) % 3])
+			if rt != null and i % 2 == 0:
+				draw_decal(node, rt, a, maxf(3.0, w * (3.4 + 2.0 * fade)), float(i) * 1.3 + float(p["seed"] % 7), Color(0.55, 0.46, 0.36, 0.55 * fade + 0.15))
+			node.draw_line(a, b, Color(EARTH.r, EARTH.g, EARTH.b, 0.40 * fade + 0.05), maxf(1.5, w * (0.5 + 0.5 * fade)), true)
 			node.draw_line(a, b, Color(EARTH_DARK.r, EARTH_DARK.g, EARTH_DARK.b, 0.22 * fade), maxf(0.8, w * 0.18), true)
 	# 3б. Дрібні декалі (солома, камінці, калюжі)
 	for lt in p.get("litter", []):
 		var lx: Texture2D = ai_tex(String(lt["tex"]))
 		if lx != null:
 			draw_decal(node, lx, c0 + Vector2(lt["p"]) * k, float(lt["w"]) * k, float(lt["rot"]) * 0.2, Color(0.95, 0.92, 0.86, 0.92))
-	# 4. Стіна з проламом для брами
+	# 4. Стіна з проламом для брами: ряд намальованих секцій (частокіл / кам'яні башточки), а не сіра лінія
 	var wall: int = p["wall"]
 	if wall > 0:
 		var gd: Vector2 = p["gate"]
-		var seg: int = 32
 		var gaps: Array = p["wall_gaps"]
-		var col: Color = Color(0.30, 0.21, 0.12) if wall == 1 else Color(0.55, 0.52, 0.46)
-		var wd: float = maxf(1.4, k * (1.1 if wall == 1 else 1.9))
 		var sd: int = int(p["seed"])
+		var wt: Texture2D = ai_tex("wall_palisade_corner" if wall == 1 else "wall_stone_corner")
+		var n_seg: int = 48
 		var prev: Vector2 = Vector2.INF
-		for i in seg + 1:
-			var ang: float = TAU * float(i % seg) / float(seg)
+		var wcol: Color = Color(0.25, 0.18, 0.11) if wall == 1 else Color(0.30, 0.27, 0.23)
+		var wd: float = maxf(1.2, k * (0.7 if wall == 1 else 1.1))
+		var towers: Array = []
+		for i in n_seg + 1:
+			var ang: float = TAU * float(i % n_seg) / float(n_seg)
 			var v: Vector2 = Vector2.from_angle(ang)
 			var q: Vector2 = c0 + v * R * 0.9 * clear_edge(sd, ang) * Vector2(1.0, 0.86) * k
-			var in_gate: bool = v.dot(gd) > 0.95
-			if prev != Vector2.INF and not in_gate and not bool(gaps[(i - 1) % seg]):
-				node.draw_line(prev + Vector2(0, 1.2), q + Vector2(0, 1.2), Color(0, 0, 0, 0.25), wd + 1.0, true)
-				node.draw_line(prev, q, col, wd, true)
-				if wall == 1 and i % 2 == 0:   # загострені палі
-					node.draw_line(q, q + Vector2(0, -wd * 1.4), col.lightened(0.12), maxf(1.0, wd * 0.55), true)
-			if wall == 2 and i % 5 == 0 and not in_gate and not bool(gaps[i % seg]):
-				node.draw_rect(Rect2(q - Vector2(wd, wd * 1.6), Vector2(wd * 2.0, wd * 2.2)), col.lightened(0.1))
-				node.draw_rect(Rect2(q - Vector2(wd, wd * 1.6), Vector2(wd * 2.0, wd * 2.2)), Color(0, 0, 0, 0.45), false, 1.0)
+			var skip: bool = v.dot(gd) > 0.95 or bool(gaps[(i * 32 / n_seg) % 32])
+			if prev != Vector2.INF and not skip:
+				node.draw_line(prev + Vector2(0, 1.2), q + Vector2(0, 1.2), Color(0, 0, 0, 0.22), wd + 1.0, true)
+				node.draw_line(prev, q, wcol, wd, true)
+			if i % 8 == 0 and not skip and i < n_seg:
+				towers.append(q)
 			prev = q
+		for q in towers:
+			if wt != null:
+				draw_ai(node, wt, q, 3.4 * k, Color(0.88, 0.85, 0.80), false)
 		for sgn in [-1.0, 1.0]:   # стовпи брами
 			var ga: float = gd.angle() + 0.17 * sgn
 			var gp: Vector2 = c0 + Vector2.from_angle(ga) * R * 0.9 * clear_edge(sd, ga) * Vector2(1.0, 0.86) * k
-			node.draw_rect(Rect2(gp - Vector2(wd * 0.8, wd * 1.8), Vector2(wd * 1.6, wd * 2.4)), Color(0.22, 0.15, 0.09))
+			var gt: Texture2D = ai_tex("gate_wood_open" if wall == 1 else "gate_stone_open")
+			if gt != null and sgn > 0.0:
+				draw_ai(node, gt, c0 + Vector2.from_angle(gd.angle()) * R * 0.9 * clear_edge(sd, gd.angle()) * Vector2(1.0, 0.86) * k, 6.0 * k, Color(0.88, 0.85, 0.80), false)
+			elif gt == null:
+				node.draw_rect(Rect2(gp - Vector2(k, k * 2.0), Vector2(k * 1.6, k * 2.4)), Color(0.22, 0.15, 0.09))
 	# 5. Будинки, дерева — за y
 	for b in p["buildings"]:
 		var bt: Texture2D = ai_tex(ai_name(String(b["key"]), int(p["level"])))
 		if bt != null:
 			var hk: float = float(b["h"]) * k * (2.0 if not bool(b.get("prop", false)) else 1.6)
-			draw_ai(node, bt, c0 + Vector2(b["p"]) * k, hk, Color(0.96, 0.93, 0.88))
-		elif not bool(b.get("prop", false)):
+			draw_ai(node, bt, c0 + Vector2(b["p"]) * k, hk, Color(0.88, 0.85, 0.80), not bool(b.get("prop", false)) or String(b["key"]) in ["hut", "shed"])
+		elif not bool(b.get("prop", false)) and not String(b["key"]).begins_with("tree_"):
 			Art.sprite(node, String(b["key"]), c0 + Vector2(b["p"]) * k, float(b["h"]) * k)
 	# Виділення: золотий пунктир по краю витоптаної землі
 	if hl:
