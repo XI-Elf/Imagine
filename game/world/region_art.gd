@@ -8,6 +8,14 @@ extends RefCounted
 const DIR := "res://art/region/"
 const MANIFEST := "res://art/region/manifest.json"
 const OVERRIDE_DIR := "region_art"
+## Намальовані нейромережею текстури (art/textures_ai, готує tools/ingest_textures.py): ключ огляду -> файл без .png.
+## Основа без етапу (hall/inn/...) бере варіант s2, щоб на всіх етапах без власного варіанту був справжній, а не заглушка.
+const AI_DIR := "res://art/textures_ai/"
+const AI_ALIAS: Dictionary = {
+	"bld_house": "bld_house_s2", "bld_hall": "bld_hall_s2", "bld_temple": "bld_temple_s2", "bld_inn": "bld_inn_s2",
+	"bld_shop": "bld_shop_s2", "bld_healer": "bld_healer_s2", "bld_smithy": "bld_smithy_s2",
+	"prop_well": "out_well", "prop_stall": "out_market_stall", "gate_wood": "gate_wood_open", "gate_stone": "gate_stone_open",
+}
 const MAX_SIDE: int = 512          # більша картинка в атласі зменшується до цього (пропорції ті самі)
 const ATLAS_W: int = 4096
 
@@ -70,6 +78,12 @@ func _image(file: String) -> Image:
 		if img != null and not img.is_empty():
 			overridden.append(file)
 			return _prep(img)
+	var stem: String = file.get_basename()
+	var ai: String = AI_DIR + String(AI_ALIAS.get(stem, stem)) + ".png"
+	if ResourceLoader.exists(ai):
+		var at: Texture2D = load(ai)
+		if at != null:
+			return _prep(at.get_image())
 	var res_path: String = DIR + file
 	if ResourceLoader.exists(res_path):
 		var tex: Texture2D = load(res_path)

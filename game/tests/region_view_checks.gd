@@ -69,7 +69,7 @@ func art_checks() -> void:
 	var art2 := RegionArt.new()
 	art2.load_all()
 	ok(art2.overridden.has("tree_pine.png") and art2.regions["tree_pine"].size == Vector2(96, 128), "картинка из region_art/ заменила заглушку")
-	ok(art2.stage_key("bld_house", 2) == "bld_house_s2" and art2.stage_key("bld_house", 3) == "bld_house", "вариант дома по этапу роста берётся, если есть")
+	ok(art2.stage_key("bld_house", 2) == "bld_house_s2" and art2.stage_key("bld_house", 3) == "bld_house_s3" and art2.stage_key("bld_ruin", 3) == "bld_ruin", "вариант дома по этапу роста берётся (s0–s4 из textures_ai), без варианта — основная картинка")
 	var r: Rect2 = art2.rect_for("tree_pine", Vector2(100, 200), 64.0)
 	ok(is_equal_approx(r.size.y, 64.0) and absf(r.end.y - (200.0 + 64.0 * (1.0 - art2.anchors["tree_pine"].y))) < 0.01, "спрайт стоит опорой в точке земли")
 	DirAccess.remove_absolute(dir.path_join("tree_pine.png"))

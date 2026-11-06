@@ -17,7 +17,52 @@ const FIELD := Color(0.50, 0.42, 0.24)
 const FIELD_GREEN := Color(0.30, 0.38, 0.17)
 const KINDS: Array = ["house", "house", "house", "house", "inn", "smithy", "stall", "house", "temple", "well"]
 const KIND_H: Dictionary = {"house": 5.2, "inn": 6.6, "smithy": 5.6, "stall": 3.6, "temple": 8.4, "well": 2.6, "hall": 9.0}
+## Намальовані текстури (art/textures_ai): ключ плану -> файл. Будинки за рівнем розвитку: house_s0..s4.
+const AI_DIR := "res://art/textures_ai/"
+const AI_KEY: Dictionary = {
+	"hall": "bld_hall_s2", "inn": "bld_inn_s2", "smithy": "bld_smithy_s2", "temple": "bld_temple_s2", "stall": "out_market_stall",
+	"well": "out_well", "hay": "out_haystack", "cart": "out_cart", "wood": "out_woodpile", "crates": "out_crates_barrels",
+	"hut": "out_hut_a", "shed": "out_hut_b", "fence": "out_fence_seg", "garden": "out_garden_beds", "firewood": "out_firewood",
+}
+const PROP_KINDS: Array = ["hay", "cart", "wood", "crates", "hut", "shed", "fence", "garden", "firewood"]
+const PROP_H: Dictionary = {"hay": 3.6, "cart": 3.2, "wood": 2.4, "crates": 2.6, "hut": 4.6, "shed": 4.0, "fence": 2.0, "garden": 3.4, "firewood": 2.2}
+const SCUFFS: Array = ["edge_scuff_01", "edge_scuff_02", "edge_scuff_03"]
 const BLOB_LAYERS: int = 5
+static var _tex_cache: Dictionary = {}
+
+
+## Текстура з art/textures_ai за іменем файлу (без .png); null — файлу немає, діє стара заглушка
+static func ai_tex(name: String) -> Texture2D:
+	if name == "":
+		return null
+	if not _tex_cache.has(name):
+		var p: String = AI_DIR + name + ".png"
+		_tex_cache[name] = load(p) if ResourceLoader.exists(p) else null
+	return _tex_cache[name] as Texture2D
+
+
+## Файл для ключа будівлі плану: будинок — за рівнем розвитку, решта — за таблицею
+static func ai_name(key: String, level: int) -> String:
+	if key == "house":
+		return "bld_house_s%d" % clampi(level, 0, 4)
+	return String(AI_KEY.get(key, ""))
+
+
+## Малювання намальованої картинки: опора — низ по центру (поле 4 %), висота h. Своєї тіні в картинці немає — м'яка ковзна тінь тут
+static func draw_ai(node: Node2D, tex: Texture2D, foot: Vector2, h: float, tint: Color = Color.WHITE) -> void:
+	var size := Vector2(tex.get_size()) * (h / float(tex.get_height()))
+	node.draw_set_transform(foot + Vector2(0, 1.5), 0.0, Vector2(1, 0.28))
+	node.draw_circle(Vector2.ZERO, size.x * 0.34, Color(0.10, 0.08, 0.06, 0.22 * tint.a))
+	node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	node.draw_texture_rect(tex, Rect2(foot + Vector2(-size.x * 0.5, -size.y * 0.96), size), false, tint)
+
+
+## Плоска декаль (вид згори) з центром у c, шириною w, поворотом rot
+static func draw_decal(node: Node2D, tex: Texture2D, c: Vector2, w: float, rot: float, tint: Color) -> void:
+	var size := Vector2(tex.get_size()) * (w / float(tex.get_width()))
+	node.draw_set_transform(c, rot, Vector2.ONE)
+	node.draw_texture_rect(tex, Rect2(-size * 0.5, size), false, tint)
+	node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 const EDGE_STEPS: int = 40
 
 
@@ -141,6 +186,19 @@ static func plan(id: String, level: int, gate_dir: Vector2) -> Dictionary:
 			continue
 		bld.append({"key": "tree_oak" if rng.randf() < 0.65 else "tree_crooked", "p": Vector2.from_angle(a5) * R * rng.randf_range(1.0, 1.4) * clear_edge(seed_v, a5) * Vector2(1.0, 0.86),
 			"h": rng.randf_range(6.0, 9.0)})
+	# Господарські дрібниці (копиця, віз, дрова…): окремий rng — основна послідовність плану не змінюється
+	var rp := RandomNumberGenerator.new()
+	rp.seed = seed_v + 4417
+	for i in 1 + level * 2:
+		var a6: float = rp.randf() * TAU
+		if Vector2.from_angle(a6).dot(gd) > 0.8:
+			continue
+		var pk: String = PROP_KINDS[rp.randi() % PROP_KINDS.size()]
+		if pk == "garden" and level < 1:
+			pk = "hay"
+		var pv: Vector2 = Vector2.from_angle(a6) * R * rp.randf_range(0.95, 1.5) * clear_edge(seed_v, a6) * Vector2(1.0, 0.86)
+		bld.append({"key": pk, "p": pv, "h": float(PROP_H[pk]) * rp.randf_range(0.9, 1.15), "prop": true})
+	out["scuff"] = [rp.randi() % SCUFFS.size(), rp.randi() % SCUFFS.size(), rp.randf() * TAU, rp.randf() * TAU]
 	bld.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["p"].y < b["p"].y)
 	out["buildings"] = bld
 	return out
@@ -161,6 +219,15 @@ static func _fan(node: Node2D, pts: PackedVector2Array, c0: Vector2, k: float, s
 ## Малювання. alpha — загальна прозорість (для виділення/зникання), hl — золота пунктирна обводка
 static func paint(node: Node2D, p: Dictionary, c0: Vector2, k: float, hl: bool) -> void:
 	var R: float = p["R"]
+	# 0. Рвані декалі витоптаної трави (намальовані): ховають шов і дають справжню фактуру краю
+	var sc: Array = p.get("scuff", [])
+	if sc.size() == 4:
+		var t1: Texture2D = ai_tex(SCUFFS[int(sc[0])])
+		var t2: Texture2D = ai_tex(SCUFFS[int(sc[1])])
+		if t1 != null:
+			draw_decal(node, t1, c0, R * 4.4 * k, float(sc[2]) * 0.15, Color(0.92, 0.88, 0.80, 0.78))
+		if t2 != null:
+			draw_decal(node, t2, c0, R * 2.9 * k, float(sc[3]) * 0.15, Color(0.95, 0.90, 0.82, 0.70))
 	# 1. Пасовиська: плавне розчинення в землі (багато слабких шарів)
 	for i in BLOB_LAYERS:
 		_fan(node, p["pasture"], c0, k, 1.0 - 0.16 * float(i), Color(FIELD.r, FIELD.g, FIELD.b, 0.045))
@@ -170,6 +237,10 @@ static func paint(node: Node2D, p: Dictionary, c0: Vector2, k: float, hl: bool) 
 		var ex := Vector2.from_angle(rot) * float(f["w"]) * k
 		var ey := Vector2.from_angle(rot + PI * 0.5) * float(f["h"]) * k
 		var c: Vector2 = c0 + Vector2(f["c"]) * k
+		var ft: Texture2D = ai_tex("out_field_strip_b" if f["green"] else "out_field_strip_a")
+		if ft != null:
+			draw_decal(node, ft, c, float(f["w"]) * 1.5 * k, rot * 0.35, Color(1, 0.97, 0.92, 0.95))
+			continue
 		node.draw_colored_polygon(PackedVector2Array([c - ex - ey, c + ex - ey, c + ex + ey, c - ex + ey]), Color(col.r, col.g, col.b, 0.32))
 		for s in 4:   # борозни
 			var t: float = (float(s) + 0.5) / 4.0 * 2.0 - 1.0
@@ -217,7 +288,12 @@ static func paint(node: Node2D, p: Dictionary, c0: Vector2, k: float, hl: bool) 
 			node.draw_rect(Rect2(gp - Vector2(wd * 0.8, wd * 1.8), Vector2(wd * 1.6, wd * 2.4)), Color(0.22, 0.15, 0.09))
 	# 5. Будинки, дерева — за y
 	for b in p["buildings"]:
-		Art.sprite(node, String(b["key"]), c0 + Vector2(b["p"]) * k, float(b["h"]) * k)
+		var bt: Texture2D = ai_tex(ai_name(String(b["key"]), int(p["level"])))
+		if bt != null:
+			var hk: float = float(b["h"]) * k * (2.0 if not bool(b.get("prop", false)) else 1.6)
+			draw_ai(node, bt, c0 + Vector2(b["p"]) * k, hk, Color(0.96, 0.93, 0.88))
+		elif not bool(b.get("prop", false)):
+			Art.sprite(node, String(b["key"]), c0 + Vector2(b["p"]) * k, float(b["h"]) * k)
 	# Виділення: золотий пунктир по краю витоптаної землі
 	if hl:
 		var sd2: int = int(p["seed"])
