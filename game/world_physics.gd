@@ -452,11 +452,6 @@ func sun_elevation_deg_at(lat: float, lon: float) -> float:
 	return rad_to_deg(asin(clampf(u, -1.0, 1.0)))
 
 
-# Місцевий сонячний час у точці з довготою (радіани)
-func local_hour_at(lon: float) -> float:
-	return fposmod(utc_h + lon / TAU * 24.0, 24.0)
-
-
 # Довжина світлого дня на широті (години). 24 це полярний день, 0 це полярна ніч
 func day_length_at(lat: float) -> float:
 	var c: float = clampf(-tan(lat) * tan(decl), -1.0, 1.0)
@@ -466,19 +461,6 @@ func day_length_at(lat: float) -> float:
 # Температура на рівні моря за широтою, середньорічна
 func zonal_t(lat: float) -> float:
 	return 27.0 - 52.0 * pow(absf(lat) / (PI / 2.0), 1.8)
-
-
-# Скільки метрів землі в одному метрі карти по горизонталі на цій широті
-func ground_scale_x(lat: float) -> float:
-	return maxf(cos(lat), 0.0)
-
-
-# Межа снігу (висота, вище якої середня температура нижче нуля) на цій широті
-func snowline_at(lat: float) -> float:
-	var t0: float = 9.0 + zonal_t(lat) - zonal_t(deg_to_rad(50.0))
-	var ampf: float = (0.15 + 0.85 * pow(sin(absf(lat)), 0.9)) / 0.818
-	var hemi: float = 1.0 # Один календарний сезон для всієї карти (як у шейдері)
-	return clampf((t0 + 9.25 * ampf * seas * hemi + 1.25) / 0.0065, 0.0, 6000.0)
 
 
 # Рахує все, що залежить від часу

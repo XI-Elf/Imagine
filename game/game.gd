@@ -44,6 +44,7 @@ const CastScript := preload("res://characters/cast.gd")
 const SettlementsScript := preload("res://world/settlements.gd")
 const TrailsScript := preload("res://world/trails_layer.gd")
 const FogScript := preload("res://world/fog_layer.gd")
+const RegionTrackerScript := preload("res://world/region_tracker.gd")
 
 # Колишня розгортка 36000 x 18000 м: у ній живе модель атмосфери
 const SRC_SIZE := Vector2(36000.0, 18000.0)
@@ -123,6 +124,8 @@ var settlements: Node2D     # міста й поселення на загаль
 var trails: Node2D          # протоптані дороги (world/trails_layer.gd): з'являються там, де ходять
 var fog: CanvasLayer        # туман війни (world/fog_layer.gd): невідоме закрите, досліджене зберігається
 var decor: Node2D           # дерева, гори, кущі (storybook/world_decor.gd)
+var region_tracker: Node       # області світу: дані, дослідженість, відвідані (world/region_tracker.gd)
+var region_view: CanvasLayer  # V: огляд регіону «як мальована карта» (world/region_view.gd)
 
 
 func _ready() -> void:
@@ -193,6 +196,12 @@ func _startup() -> void:
 	fog = FogScript.new()
 	fog.game = self
 	add_child(fog)
+	region_tracker = RegionTrackerScript.new()
+	add_child(region_tracker)
+	region_tracker.setup(self)
+	region_view = preload("res://world/region_view.gd").new()
+	add_child(region_view)
+	region_view.setup(self)
 	# Два кадри: шейдер компілюється при першому малюванні
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -382,6 +391,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			physics.change_weather_speed(1)
 		if event.physical_keycode == KEY_COMMA:
 			physics.change_weather_speed(-1)
+		# Огляд регіону (world/region_view.gd): закриває V / Esc сам огляд
+		if event.physical_keycode == KEY_V and region_view != null:
+			region_view.open()
 		# Хмари згори
 		if event.physical_keycode == KEY_C:
 			show_clouds = not show_clouds
@@ -582,7 +594,7 @@ func toggle_global_map() -> void:
 		var vs: Vector2 = get_viewport_rect().size
 		zoom = clampf(minf(vs.x / MAP_SIZE.x, vs.y / MAP_SIZE.y) * 0.97, min_zoom, MAX_ZOOM)
 		cam_pos = MAP_SIZE * 0.5
-		event_text = I18n.t("Глобальная карта · M — назад")
+		event_text = I18n.t("Карта мира · M — назад")
 	else:
 		zoom = _gm_zoom
 		cam_pos = _gm_cam

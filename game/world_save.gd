@@ -23,30 +23,60 @@ static func path_of(slot: String) -> String:
 	return LEGACY_PATH if slot == "legacy" else DIR + slot + ".dat"
 
 
-# Список збережень, нові першими: {slot, title, saved_at, unix, char_name, game_date}
+# Список збережень, нові першими: {slot, title, saved_at, unix, char_name, game_date}.
+# ВАЖНО: просмотр списка никогда не удаляет и не переписывает файлы. Сохранения
+# неизвестной версии и старый legacy-файл остаются на диске до явного решения игрока.
 static func list() -> Array:
 	var out: Array = []
+	var seen: Dictionary = {}
 	var dir := DirAccess.open(DIR)
 	if dir != null:
 		for f in dir.get_files():
-			if not f.ends_with(".dat"):
+			var is_backup: bool = f.ends_with(".dat.bak")
+			if not f.ends_with(".dat") and not is_backup:
 				continue
-			var slot: String = f.get_basename()
-			var h: Dictionary = _header(path_of(slot))
-			if h.is_empty() or int(h.get("version", 0)) != VERSION:
-				# Від іншої збірки — видалити: завантажити його однаково не можна (Q05)
-				push_warning("world_save: удалено сохранение другой версии %s" % path_of(slot))
-				DirAccess.remove_absolute(path_of(slot))
+			var slot: String = f.trim_suffix(".bak").trim_suffix(".dat") if is_backup else f.get_basename()
+			if seen.has(slot):
 				continue
+			var primary: String = path_of(slot)
+			var backup: String = primary + ".bak"
+			var chosen: String = _valid_save_path(primary)
+			if chosen == "":
+				chosen = _valid_save_path(backup)
+			if chosen == "":
+				# Повреждённые/чужие версии сохраняем, но не предлагаем к загрузке.
+				continue
+			var h: Dictionary = _header(chosen)
 			h["slot"] = slot
+			h["recovered_from_backup"] = chosen == backup
+			seen[slot] = true
 			out.append(h)
-	# Стара комірка LEGACY_PATH лежить поза DIR і без заголовка — теж видаляється (версії 1–4 не читаються)
-	if FileAccess.file_exists(LEGACY_PATH):
-		DirAccess.remove_absolute(LEGACY_PATH)
 	for h in out:
 		h["title"] = I18n.t("Автосохранение") if h["slot"] == AUTOSAVE else I18n.t("Сохранение")
-	out.sort_custom(func(a, b): return int(a["unix"]) > int(b["unix"]))
+	out.sort_custom(func(a, b): return int(a.get("unix", 0)) > int(b.get("unix", 0)))
 	return out
+
+
+# Возвращает путь только к сохранению с поддерживаемым заголовком и версией.
+static func _valid_save_path(path: String) -> String:
+	if not FileAccess.file_exists(path):
+		return ""
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return ""
+	var h: Variant = f.get_var(false)
+	var payload: Variant = f.get_var(false) if h is Dictionary and h.has("header") else null
+	f.close()
+	if not (h is Dictionary) or not h.has("header") or not (payload is Dictionary):
+		return ""
+	if int(h.get("version", 0)) != VERSION or int(payload.get("version", 0)) != VERSION:
+		return ""
+	return path
+
+
+# Старые файлы намеренно не удаляются: они могут пригодиться для мигратора.
+static func legacy_save_exists() -> bool:
+	return FileAccess.file_exists(LEGACY_PATH)
 
 
 static func exists() -> bool:
@@ -74,28 +104,37 @@ static func read(slot: String = "") -> Dictionary:
 		slot = latest_slot()
 	if slot == "":
 		return {}
-	var f := FileAccess.open(path_of(slot), FileAccess.READ)
+	var path: String = path_of(slot)
+	var chosen: String = _valid_save_path(path)
+	if chosen == "":
+		chosen = _valid_save_path(path + ".bak")
+	if chosen == "":
+		push_warning("world_save: %s отсутствует, повреждено или имеет неподдерживаемую версию; файл сохранён без изменений" % path)
+		return {}
+	var f := FileAccess.open(chosen, FileAccess.READ)
 	if f == null:
-		push_warning("world_save: не открыть %s (%s)" % [path_of(slot), error_string(FileAccess.get_open_error())])
+		push_warning("world_save: не открыть %s (%s)" % [chosen, error_string(FileAccess.get_open_error())])
 		return {}
 	var first: Variant = f.get_var(false)
-	var d: Variant = first
-	if first is Dictionary and first.has("header"):
-		d = f.get_var(false)
+	var d: Variant = f.get_var(false) if first is Dictionary and first.has("header") else first
 	f.close()
 	if not (d is Dictionary):
-		push_warning("world_save: %s повреждено — нет данных мира" % path_of(slot))
+		push_warning("world_save: %s повреждено — нет данных мира" % chosen)
 		return {}
 	if int(d.get("version", 0)) != VERSION:
-		push_warning("world_save: %s версии %d, игра читает только %d" % [path_of(slot), int(d.get("version", 0)), VERSION])
+		# Дополнительная проверка: заголовок и payload обязаны иметь ту же версию.
+		push_warning("world_save: %s содержит данные версии %d, ожидается %d" % [chosen, int(d.get("version", 0)), VERSION])
 		return {}
+	if chosen.ends_with(".bak"):
+		push_warning("world_save: используется резервная копия %s; основное сохранение не перезаписано" % chosen)
 	return d
 
 
 static func delete(slot: String) -> void:
 	var p: String = path_of(slot)
-	if FileAccess.file_exists(p):
-		DirAccess.remove_absolute(p)
+	for candidate in [p, p + ".bak", p + ".tmp"]:
+		if FileAccess.file_exists(candidate):
+			DirAccess.remove_absolute(candidate)
 
 
 # Стан атмосфери береться, коли фоновий потік вільний (чекаємо до 2 с)
@@ -123,6 +162,8 @@ static func build(game: Node) -> Dictionary:
 		d["trails"] = game.trails.to_dict()
 	if game.get("fog") != null:
 		d["fog"] = game.fog.to_dict()
+	if game.get("region_tracker") != null:
+		d["world_map"] = game.region_tracker.to_dict()
 	var worlds: Node = _worlds(game)
 	if worlds != null:
 		d["worlds"] = worlds.to_dict()
@@ -213,6 +254,8 @@ static func apply_late(game: Node, d: Dictionary) -> void:
 		game.trails.load_dict(d.get("trails", {}))
 	if game.get("fog") != null:
 		game.fog.load_dict(d.get("fog", {}))
+	if game.get("region_tracker") != null:
+		game.region_tracker.load_dict(d.get("world_map"))
 	var worlds: Node = _worlds(game)
 	if worlds != null and d.get("worlds") is Dictionary:
 		worlds.load_dict(d["worlds"])

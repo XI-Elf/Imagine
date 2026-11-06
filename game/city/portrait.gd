@@ -16,6 +16,12 @@ var mood: int = 0
 var _blink_t: float = 2.0
 var _blinking: float = 0.0
 var _hover: bool = false
+var _art: TextureRect = null      # ручний арт ролі (Pass6): погруддя зі спрайта art/storybook
+var _t: float = 0.0
+## Роль -> спрайт art/storybook (Pass6). Ролі без ключа малюються кодом, як раніше
+const ROLE_ART: Dictionary = {"guard": "guard", "bandit": "bandit", "healer": "woman", "elder": "woman",
+	"trader": "traveler", "innkeeper": "traveler", "traveler": "traveler", "smith": "villager", "tanner": "villager", "citizen": "villager"}
+const ART_CROP: float = 0.42      # верхня частка спрайта (голова й плечі)
 
 
 func _ready() -> void:
@@ -25,19 +31,57 @@ func _ready() -> void:
 	mouse_entered.connect(func(): _hover = true; queue_redraw())
 	mouse_exited.connect(func(): _hover = false; queue_redraw())
 	tooltip_text = I18n.t("Присмотреться")
+	_art = TextureRect.new()
+	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_art.clip_contents = true
+	add_child(_art)
+	_update_art()
 
 
 func show_for(a: Actor, r: String, m: int) -> void:
 	seed_value = hash(a.actor_id) if a != null else 0
 	role = r
 	mood = m
+	_update_art()
 	queue_redraw()
+
+
+## Погруддя з ручного арту (Pass6, доведено до робочого стану): дочірній TextureRect з областю спрайта.
+## Малювання текстури прямо в _draw давало в рендері Compatibility суцільний білий прямокутник.
+## Немає спрайта ролі — лишається намальований кодом портрет з живими очима.
+func _update_art() -> void:
+	if _art == null:
+		return
+	var path: String = "res://art/storybook/%s.png" % String(ROLE_ART.get(role, ""))
+	if not ROLE_ART.has(role) or not ResourceLoader.exists(path):
+		_art.visible = false
+		return
+	var tex: Texture2D = load(path)
+	var at := AtlasTexture.new()
+	at.atlas = tex
+	at.region = Rect2(0.0, 0.0, tex.get_width(), tex.get_height() * ART_CROP)
+	_art.texture = at
+	_art.visible = true
+	_art.position = Vector2(13.0, 13.0)
+	_art.size = size - Vector2(26.0, 26.0)
+
+
+func has_art() -> bool:
+	return _art != null and _art.visible
 
 
 func _process(delta: float) -> void:
 	if not is_visible_in_tree():
 		return
 	_blink_t -= delta
+	_t += delta
+	if has_art():
+		# живе погруддя: ледь помітне дихання; наведення — тепліший тон, як у рамки
+		_art.size = size - Vector2(26.0, 26.0)
+		_art.position = Vector2(13.0, 13.0 + sin(_t * 1.6) * 1.2)
+		_art.modulate = Color(1.06, 1.0, 0.9) if _hover else Color.WHITE
 	if _blinking > 0.0:
 		_blinking -= delta
 	elif _blink_t <= 0.0:
@@ -58,6 +102,8 @@ func _draw() -> void:
 	var box: StyleBoxTexture = ComicUI.box("portrait", Color(1.0, 0.92, 0.7) if _hover else Color.WHITE)
 	draw_style_box(box, r)
 	draw_rect(r.grow(-12.0), Color(0.16, 0.14, 0.12))
+	if has_art():
+		return  # обличчя — на спрайті; рамка й тло вже намальовані
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var skin: Color = Color(0.86, 0.7, 0.56).lerp(Color(0.55, 0.38, 0.27), rng.randf())
@@ -66,11 +112,29 @@ func _draw() -> void:
 	var c := Vector2(size.x * 0.5, size.y * 0.44)
 	var hr: float = size.x * 0.22
 	# плечі й тулуб
-	draw_colored_polygon(PackedVector2Array([Vector2(size.x * 0.12, size.y - 12.0), Vector2(size.x * 0.2, size.y * 0.72), Vector2(size.x * 0.8, size.y * 0.72), Vector2(size.x * 0.88, size.y - 12.0)]), cloth)
+	var torso := PackedVector2Array([Vector2(size.x * 0.12, size.y - 12.0), Vector2(size.x * 0.2, size.y * 0.72), Vector2(size.x * 0.8, size.y * 0.72), Vector2(size.x * 0.88, size.y - 12.0)])
+	draw_colored_polygon(torso, cloth)
+	var torso_line := torso.duplicate(); torso_line.append(torso[0])
+	draw_polyline(torso_line, Color(0.08, 0.07, 0.06, 0.9), 2.2, true)
+	# Штриховка ткани: короткие неровные штрихи вместо гладкой заливки.
+	for k in 7:
+		var xx: float = size.x * (0.24 + float(k) * 0.075)
+		draw_line(Vector2(xx, size.y * 0.78), Vector2(xx - size.x * 0.055, size.y * 0.91), cloth.lightened(0.16), 1.0)
+	draw_line(Vector2(size.x * 0.5, size.y * 0.72), Vector2(size.x * 0.5, size.y - 13.0), Color(0.08, 0.07, 0.06, 0.8), 1.4)
 	draw_rect(Rect2(c + Vector2(-hr * 0.35, hr * 0.7), Vector2(hr * 0.7, hr * 0.6)), skin.darkened(0.15))
 	# голова, волосся
 	draw_circle(c, hr, skin)
-	draw_arc(c, hr, PI * 1.05, PI * 1.95, 18, hair, hr * 0.5)
+	draw_arc(c, hr, 0.0, TAU, 36, Color(0.08, 0.06, 0.05), 1.8, true)
+	# Неровная масса волос с прядями, тушевая обводка лица.
+	draw_colored_polygon(PackedVector2Array([c + Vector2(-hr, -hr * 0.05), c + Vector2(-hr * 0.86, -hr * 0.78), c + Vector2(-hr * 0.25, -hr * 1.12), c + Vector2(hr * 0.45, -hr * 1.04), c + Vector2(hr, -hr * 0.2), c + Vector2(hr * 0.62, -hr * 0.52), c + Vector2(-hr * 0.48, -hr * 0.5)]), hair)
+	draw_polyline(PackedVector2Array([c + Vector2(-hr, -hr * 0.05), c + Vector2(-hr * 0.86, -hr * 0.78), c + Vector2(-hr * 0.25, -hr * 1.12), c + Vector2(hr * 0.45, -hr * 1.04), c + Vector2(hr, -hr * 0.2)]), Color(0.06, 0.05, 0.04), 1.8, true)
+	for strand in 4:
+		var sx: float = -hr * 0.55 + float(strand) * hr * 0.34
+		draw_line(c + Vector2(sx, -hr * 0.85), c + Vector2(sx - hr * 0.12, -hr * 0.48), hair.lightened(0.2), 1.0)
+	if role in ["elder", "innkeeper", "smith"]:
+		# Щетина/борода — разные силуэты у старших и ремесленников.
+		draw_colored_polygon(PackedVector2Array([c + Vector2(-hr * 0.72, hr * 0.2), c + Vector2(-hr * 0.52, hr * 0.78), c + Vector2(0, hr * 1.18), c + Vector2(hr * 0.52, hr * 0.78), c + Vector2(hr * 0.72, hr * 0.2)]), hair.darkened(0.08))
+		draw_polyline(PackedVector2Array([c + Vector2(-hr * 0.72, hr * 0.2), c + Vector2(0, hr * 1.18), c + Vector2(hr * 0.72, hr * 0.2)]), Color(0.07, 0.05, 0.04), 1.5, true)
 	if role == "guard":
 		draw_arc(c, hr * 1.05, PI, TAU, 18, Color(0.45, 0.45, 0.42), hr * 0.35)   # шолом
 	# очі стежать за курсором

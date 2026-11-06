@@ -59,5 +59,13 @@ func run() -> void:
 		if W != null:
 			W.city_states[String(s.get("city_id", s["id"]))] = {"growth": g}
 		world.settlements.queue_redraw()
+		for i in 40:
+			await process_frame
 		await capture("m%02d_etap_%d_%s" % [st + 2, st, Growth.stage_name(plan, st)])
+		if st in [1, 3, 4]:
+			world.zoom = 3.0
+			for i in 40:
+				await process_frame
+			await capture("m%02d_blyzko_%d" % [st + 2, st])
+			world.zoom = 1.0
 	quit()

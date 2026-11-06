@@ -17,14 +17,18 @@ const R := preload("res://characters/actor_rules.gd")
 const S := preload("res://characters/sheet.gd")
 const Trade := preload("res://city/trade.gd")
 const Inv := preload("res://characters/inventory_view.gd")
+const FieldGuide := preload("res://characters/field_guide.gd")
+const ItemGlyph := preload("res://characters/item_glyph.gd")
+const Growth := preload("res://city/city_growth.gd")
 const ComicUI := preload("res://ui/comic_ui.gd")
 const BATTLE_CONFIG := "res://data/battle/config.tres"
 
 const Codex := preload("res://world/codex.gd")
 const Chronicle := preload("res://characters/chronicle.gd")
+const StoryCampaign := preload("res://story/campaign.gd")
 const TABS: Array = ["stats", "skills", "perks", "traits", "bag", "quests", "map", "injuries", "diary", "chronicle"]
 static var TAB_TITLES: Dictionary = {"stats": I18n.t("Характеристики"), "skills": I18n.t("Навыки"), "perks": I18n.t("Дары"), "traits": I18n.t("Черты характера"), "bag": I18n.t("Инвентарь"),
-	"quests": I18n.t("Задания"), "map": I18n.t("Карта"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
+	"quests": I18n.t("Задания"), "map": I18n.t("Карта героя"), "injuries": I18n.t("Травмы"), "diary": I18n.t("Дневник"), "chronicle": I18n.t("Хроника")}
 const TAB_KEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 const EMBED_H: float = 500.0       # высота вкладок «Задания» и «Карта»
 const COL_TEXT := Color("d8cfb0")
@@ -54,6 +58,8 @@ var inv_drop_armed: bool = false   # «Кинути все» натиснуто 
 var _drop_t: float = 0.0
 var _undo: Dictionary = {}       # навык -> сколько раз поднят, пока окно открыто (можно вернуть)
 var perk_sel: String = ""        # дар, выбранный во вкладке «Дары»
+var diary_mode: String = "lore"
+var guide_category: String = "all"
 var _embedded: Array = []        # что сейчас прикреплено к вкладке: журнал и/или карта (вернуть на место перед перестройкой)
 
 
@@ -192,9 +198,16 @@ func refresh() -> void:
 	var a: Actor = _actor()
 	var sig: String = tab + "|" + JSON.stringify(_bag())
 	if tab == "diary":
-		sig += "|%d" % _codex().size()
+		sig += "|%d|%s|%s" % [_codex().size(), diary_mode, guide_category]
+	if tab == "quests":
+		var w_story: Node = _worlds()
+		sig += "|%s" % JSON.stringify(w_story.get("campaign_state") if w_story != null else {})
 	if tab == "chronicle":
 		sig += "|%d" % Chronicle.entries(get_node_or_null("/root/Worlds")).size()
+	if tab == "quests":
+		var active_city := _active_city_node()
+		if active_city != null:
+			sig += "|%s|%.1f|%d" % [JSON.stringify(active_city.growth), active_city.hero_km(), active_city.battles_won()]
 	if a != null:
 		sig += "|%s|%s|%s|%d|%s|%d|%d|%d|%d|%s|%s" % [a.display_name, JSON.stringify(a.skills), JSON.stringify(a.traits), int(a.carry_capacity()),
 			JSON.stringify(a.perks), a.skill_points, a.perk_picks, a.level, int(a.xp), JSON.stringify(a.quirks), perk_sel]
@@ -217,7 +230,7 @@ func refresh() -> void:
 		c.queue_free()
 	if a == null:
 		_title.text = I18n.t("Героя нет")
-		_body.add_child(_label(I18n.t("Создайте героя: G на карте."), 16, COL_DIM))
+		_body.add_child(_label(I18n.t("Создайте героя: G на местности."), 16, COL_DIM))
 		if tab == "map":
 			_fill_map()
 		return
@@ -271,14 +284,78 @@ func _embed_host() -> Control:
 
 
 func _fill_quests() -> void:
+	_fill_story()  # сюжетна кампанія — перший розділ «Завдань» (не 11-та вкладка: меню героя має рівно 10 розділів)
+	_body.add_child(HSeparator.new())
+	_fill_active_city_quests()
 	var w: Node = _worlds()
 	var j: Variant = w.get("journal") if w != null else null
 	if j == null:
 		_body.add_child(_label(I18n.t("Журнала нет."), 15, COL_DIM))
 		return
+	_body.add_child(_label(I18n.t("Личные заметки героя"), 16, COL_GOLD))
 	j.mount(_embed_host())
 	_embedded.append(j)
 	_title.text = "%s — %s" % [String(_actor().display_name) if _actor() != null else "", TAB_TITLES["quests"]]
+
+
+func _active_city_node() -> Node:
+	var w: Node = _worlds()
+	if w == null or w.stack.is_empty():
+		return null
+	var top: Dictionary = w.stack[-1]
+	if String(top.get("kind", "")) != "city":
+		return null
+	var city: Variant = top.get("node")
+	return city if city is Node and is_instance_valid(city) else null
+
+
+func _fill_active_city_quests() -> void:
+	var city: Node = _active_city_node()
+	if city == null:
+		return
+	var active: Array = []
+	for npc in city.npcs:
+		var nd: Dictionary = npc.get("def", {})
+		var npc_id: String = String(nd.get("id", ""))
+		if npc_id == "":
+			continue
+		for q in Growth.available(city.full_def, city.growth, npc_id):
+			if Growth.taken(city.growth, q):
+				active.append({"quest": q, "npc": npc})
+	if active.is_empty():
+		return
+	_body.add_child(_label(I18n.t("Принятые поручения Эшвика"), 17, COL_GOLD))
+	for entry in active:
+		var q: Dictionary = entry.quest
+		var npc: Dictionary = entry.npc
+		var actor: Actor = npc.get("actor")
+		var npc_name: String = actor.display_name if actor != null else String(npc.get("def", {}).get("name", ""))
+		var p: Array = Growth.progress(city.growth, q, city.bag, city.hero_km(), city.battles_won())
+		var target: float = maxf(float(p[1]), 1.0)
+		var current: float = clampf(float(p[0]), 0.0, target)
+		var ready: bool = Growth.ready(city.growth, q, city.bag, city.hero_km(), city.battles_won())
+		var card := VBoxContainer.new()
+		card.add_theme_constant_override("separation", 3)
+		_body.add_child(card)
+		var title := Label.new()
+		title.text = "%s — %s" % [npc_name, String(q.get("title", I18n.t("Поручение")))]
+		title.add_theme_font_size_override("font_size", 15)
+		title.add_theme_color_override("font_color", COL_TEXT)
+		card.add_child(title)
+		var status := Label.new()
+		status.text = city.quest_status(q) + (I18n.t(" · можно сдать") if ready else "")
+		status.add_theme_font_size_override("font_size", 13)
+		status.add_theme_color_override("font_color", COL_GOOD if ready else COL_DIM)
+		card.add_child(status)
+		var bar := ProgressBar.new()
+		bar.min_value = 0.0
+		bar.max_value = target
+		bar.value = current
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(0.0, 9.0)
+		ComicUI.bar_styles(bar)
+		card.add_child(bar)
+		_body.add_child(HSeparator.new())
 
 
 func _fill_map() -> void:
@@ -646,11 +723,31 @@ func _codex() -> Dictionary:
 # ДНЕВНИК: записки кодексу, зібрані в книгу за розділами
 # =====================================================================
 func _fill_diary() -> void:
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 8)
+	_body.add_child(mode_row)
+	var lore_btn := Button.new()
+	lore_btn.text = I18n.t("Летопись мира")
+	lore_btn.toggle_mode = true
+	lore_btn.button_pressed = diary_mode == "lore"
+	ComicUI.button_styles(lore_btn, 14)
+	lore_btn.pressed.connect(_set_diary_mode.bind("lore"))
+	mode_row.add_child(lore_btn)
+	var guide_btn := Button.new()
+	guide_btn.text = I18n.t("Справочник выжившего")
+	guide_btn.toggle_mode = true
+	guide_btn.button_pressed = diary_mode == "guide"
+	ComicUI.button_styles(guide_btn, 14)
+	guide_btn.pressed.connect(_set_diary_mode.bind("guide"))
+	mode_row.add_child(guide_btn)
+	if diary_mode == "guide":
+		_fill_guide()
+		return
 	var found: Dictionary = _codex()
 	var pr: Dictionary = Codex.progress(found)
 	_body.add_child(_label(I18n.t("Записки найдены: %d из %d") % [int(pr["found"]), int(pr["total"])], 17, COL_GOLD))
 	if found.is_empty():
-		_body.add_child(_wrap(I18n.t("Пока пусто. Записки лежат в руинах на карте и в тайниках городов (F у руин, E у тайника). Найденное само складывается в книгу по разделам."), 15, COL_DIM))
+		_body.add_child(_wrap(I18n.t("Пока пусто. Записки лежат в руинах на местности и в тайниках городов (F у руин, E у тайника). Найденное само складывается в книгу по разделам."), 15, COL_DIM))
 		return
 	for ch in Codex.chapters():
 		var here: Array = []
@@ -669,7 +766,135 @@ func _fill_diary() -> void:
 			_body.add_child(_wrap(_read_note(String(n["text"])), 14, COL_TEXT))
 
 
-## Записка очима героя: з Умом 3 і нижче розбираються лише окремі слова
+func _set_diary_mode(mode: String) -> void:
+	diary_mode = mode
+	_sig = ""
+	refresh()
+
+
+func _set_guide_category(category: String) -> void:
+	guide_category = category
+	_sig = ""
+	refresh()
+
+
+func _fill_guide() -> void:
+	# Страница справочника оформлена как полевая книга: тёплая бумага, чернильный текст, тонкие латунные разделители.
+	var page := PanelContainer.new()
+	# Рамка — коміксна, як усі вікна (comic_ui_checks: без плоских StyleBoxFlat)
+	page.add_theme_stylebox_override("panel", ComicUI.panel(12.0))
+	ComicUI.ribbon(page, 18.0)
+	_body.add_child(page)
+	var book := VBoxContainer.new()
+	book.add_theme_constant_override("separation", 7)
+	page.add_child(book)
+	var ink := COL_TEXT   # світлий текст на темній коміксній рамці
+	var muted := COL_DIM
+	var head := Label.new()
+	head.text = I18n.t("Полевой справочник")
+	head.add_theme_font_size_override("font_size", 21)
+	head.add_theme_color_override("font_color", ink)
+	book.add_child(head)
+	var intro := Label.new()
+	intro.text = I18n.t("Предметы, материалы, ремесло и приёмы, известные герою. Сведения берутся из игровых баз данных.")
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_font_size_override("font_size", 13)
+	intro.add_theme_color_override("font_color", muted)
+	book.add_child(intro)
+	var filters := HFlowContainer.new()
+	filters.add_theme_constant_override("h_separation", 5)
+	filters.add_theme_constant_override("v_separation", 4)
+	book.add_child(filters)
+	for category in FieldGuide.categories():
+		var b := Button.new()
+		b.text = I18n.t(FieldGuide.category_name(String(category)))
+		b.toggle_mode = true
+		b.button_pressed = guide_category == String(category)
+		ComicUI.button_styles(b, 12)
+		b.pressed.connect(_set_guide_category.bind(String(category)))
+		filters.add_child(b)
+	var count_lbl := Label.new()
+	count_lbl.text = I18n.t("Предметов в разделе: %d") % FieldGuide.items(guide_category).size()
+	count_lbl.add_theme_font_size_override("font_size", 13)
+	count_lbl.add_theme_color_override("font_color", muted)
+	book.add_child(count_lbl)
+	for entry in FieldGuide.items(guide_category):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 9)
+		book.add_child(row)
+		var glyph := ItemGlyph.new()
+		glyph.item_id = String(entry.id)
+		glyph.custom_minimum_size = Vector2(54, 54)
+		row.add_child(glyph)
+		var details := VBoxContainer.new()
+		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(details)
+		var name_lbl := Label.new()
+		name_lbl.text = String(entry.data.get("name", entry.id))
+		name_lbl.add_theme_font_size_override("font_size", 15)
+		name_lbl.add_theme_color_override("font_color", ink)
+		details.add_child(name_lbl)
+		var desc := Label.new()
+		desc.text = String(entry.data.get("description", ""))
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc.add_theme_font_size_override("font_size", 12)
+		desc.add_theme_color_override("font_color", muted)
+		details.add_child(desc)
+		var meta: PackedStringArray = []
+		if float(entry.data.get("weight", 0.0)) > 0.0:
+			meta.append(I18n.t("%s кг") % str(entry.data.get("weight", 0.0)))
+		if int(entry.data.get("price", 0)) > 0:
+			meta.append(I18n.t("%s мон.") % str(entry.data.get("price", 0)))
+		if entry.data.has("use"):
+			meta.append(I18n.t("можно употребить"))
+		if entry.data.has("wear"):
+			meta.append(I18n.t("экипировка"))
+		if bool(entry.data.get("bound", false)):
+			meta.append(I18n.t("неотъемлемая вещь"))
+		var meta_lbl := Label.new()
+		meta_lbl.text = " · ".join(meta)
+		meta_lbl.add_theme_font_size_override("font_size", 11)
+		meta_lbl.add_theme_color_override("font_color", Color("c9a86a"))
+		details.add_child(meta_lbl)
+		var sep := HSeparator.new()
+		sep.add_theme_color_override("separator", Color("9b815b"))
+		book.add_child(sep)
+	book.add_child(_guide_section_title(I18n.t("Ремесло и рецепты"), ink))
+	for recipe in FieldGuide.recipes():
+		var out_name := Trade.item_name(String(recipe.get("out", "")))
+		var materials: PackedStringArray = []
+		for material_id in recipe.get("in", {}):
+			materials.append("%s ×%d" % [Trade.item_name(String(material_id)), int(recipe.get("in", {}).get(material_id, 0))])
+		var line := Label.new()
+		line.text = "%s — %s. %s: %d; %s: %d; %s: %d" % [out_name, ", ".join(materials), I18n.t("уровень ремесла"), int(recipe.get("level", 0)), I18n.t("работа"), int(recipe.get("work", 0)), I18n.t("плата мастеру"), int(recipe.get("fee", 0))]
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.add_theme_font_size_override("font_size", 12)
+		line.add_theme_color_override("font_color", ink)
+		book.add_child(line)
+	book.add_child(_guide_section_title(I18n.t("Боевые способности"), ink))
+	for ability in FieldGuide.abilities():
+		var title := Label.new()
+		title.text = String(ability.title)
+		title.add_theme_font_size_override("font_size", 14)
+		title.add_theme_color_override("font_color", ink)
+		book.add_child(title)
+		var desc := Label.new()
+		desc.text = String(ability.description)
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc.add_theme_font_size_override("font_size", 12)
+		desc.add_theme_color_override("font_color", muted)
+		book.add_child(desc)
+
+
+func _guide_section_title(text: String, color: Color) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 17)
+	l.add_theme_color_override("font_color", color)
+	return l
+
+
+## Записка очима героя: з Інтелектом 3 і нижче розбираються лише окремі слова
 func _read_note(text: String) -> String:
 	var a: Actor = _actor()
 	if a == null or not S.dumb(a):
@@ -686,6 +911,93 @@ func _read_note(text: String) -> String:
 # =====================================================================
 # ХРОНІКА: ключові події життя самого героя (не історія світу)
 # =====================================================================
+
+
+# =====================================================================
+# СЮЖЕТНАЯ КАМПАНИЯ: выборы, персонажи и особые встречи
+# =====================================================================
+func _fill_story() -> void:
+	var w: Node = _worlds()
+	var state: Dictionary = w.get("campaign_state") if w != null and w.get("campaign_state") is Dictionary else StoryCampaign.fresh()
+	var data: Dictionary = StoryCampaign.data()
+	_body.add_child(_label(String(data.get("title", I18n.t("Кампания"))), 21, COL_GOLD))
+	_body.add_child(_wrap(String(data.get("premise", "")), 15, COL_TEXT))
+	_body.add_child(HSeparator.new())
+	if StoryCampaign.is_complete(state):
+		_body.add_child(_label(I18n.t("Кампания завершена"), 19, COL_GOOD))
+		_body.add_child(_wrap(I18n.t("Ваш выбор стал частью летописи Эшвика."), 15, COL_TEXT))
+	else:
+		var ch: Dictionary = StoryCampaign.current(state)
+		_body.add_child(_label(String(ch.get("title", "")), 19, COL_GOLD))
+		_body.add_child(_wrap(String(ch.get("summary", "")), 15, COL_TEXT))
+		for line in ch.get("dialogue", []):
+			_body.add_child(_label("%s" % String(line.get("speaker", "")), 14, COL_GOLD))
+			_body.add_child(_wrap("«%s»" % String(line.get("text", "")), 14, COL_TEXT))
+		var obj: Dictionary = ch.get("objective", {})
+		var need: int = maxi(1, int(obj.get("count", 1)))
+		var have: int = mini(int(state.get("progress", 0)), need)
+		var objective_names: Dictionary = {"city_enter": I18n.t("Прибыть в Эшвик"), "city_quest": I18n.t("Сдать поручение в Эшвике"), "travel_km": I18n.t("Пройти указанное расстояние"), "boss_defeated": I18n.t("Победить особого противника"), "ending_chosen": I18n.t("Закрепить финальное решение")}
+		var objective_text: String = String(objective_names.get(String(obj.get("event", "")), String(obj.get("event", ""))))
+		_body.add_child(HSeparator.new())
+		_body.add_child(_label(I18n.t("Цель: %s — %d/%d") % [objective_text, have, need], 15, COL_GOOD if have >= need else COL_DIM))
+		if bool(state.get("awaiting_choice", false)):
+			var choice: Dictionary = ch.get("choice", {})
+			_body.add_child(_label(String(choice.get("prompt", I18n.t("Ваше решение"))), 17, COL_GOLD))
+			for option in choice.get("options", []):
+				var b := Button.new()
+				b.text = String(option.get("title", "")) + " — " + String(option.get("description", ""))
+				b.custom_minimum_size = Vector2(0, 48)
+				b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				b.pressed.connect(_choose_story.bind(String(option.get("id", ""))))
+				_body.add_child(b)
+		_body.add_child(HSeparator.new())
+		_body.add_child(_label(I18n.t("Особые противники"), 17, COL_GOLD))
+		for boss in data.get("bosses", []):
+			var boss_id: String = String(boss.get("id", ""))
+			var loc: Dictionary = StoryCampaign.location(String(boss.get("location", "")))
+			var unlocked: bool = StoryCampaign.boss_unlocked(state, boss_id) and w != null
+			_body.add_child(_label(String(boss.get("name", "")) + (" · " + I18n.t("доступен") if unlocked else " · " + I18n.t("пока закрыт")), 15, COL_GOOD if unlocked else COL_DIM))
+			_body.add_child(_wrap(String(boss.get("description", "")) + "\n" + String(loc.get("name", "")) + " — " + str(loc.get("position", [])), 13, COL_DIM))
+			if unlocked:
+				var bb := Button.new()
+				bb.text = I18n.t("Вступить в бой")
+				bb.pressed.connect(func(): w.start_story_boss(boss_id); _sig = ""; refresh())
+				_body.add_child(bb)
+	_body.add_child(HSeparator.new())
+	_body.add_child(_label(I18n.t("Действующие лица"), 17, COL_GOLD))
+	for person in data.get("characters", []):
+		_body.add_child(_label(String(person.get("name", "")) + " — " + String(person.get("role", "")), 15, COL_TEXT))
+		_body.add_child(_wrap(I18n.t("Мотив: %s\nМанера речи: %s") % [String(person.get("motive", "")), String(person.get("voice", ""))], 13, COL_DIM))
+	_body.add_child(HSeparator.new())
+	_body.add_child(_label(I18n.t("История решений"), 17, COL_GOLD))
+	for decision in state.get("history", []):
+		_body.add_child(_label("%s: %s" % [String(decision.get("chapter", "")), String(decision.get("option", ""))], 14, COL_GOOD))
+
+func _choose_story(option_id: String) -> void:
+	var w: Node = _worlds()
+	if w == null: return
+	var state: Dictionary = w.get("campaign_state")
+	var option: Dictionary = StoryCampaign.choose(state, option_id)
+	if option.is_empty(): return
+	var inventory: Dictionary = w.get("inventory")
+	if inventory is Dictionary:
+		for item_id in option.get("items", {}):
+			Trade.add(inventory, String(item_id), int(option["items"][item_id]))
+	# Последствия решений закрепляются в состоянии поселения и переживают выход/повторный вход.
+	var cities: Dictionary = w.get("city_states")
+	if cities is Dictionary:
+		var ashwick: Dictionary = cities.get("s001", {})
+		var rep: Dictionary = ashwick.get("story_reputation", {})
+		for effect_id in state.get("effects", {}):
+			if String(effect_id).ends_with("_reputation"):
+				rep[String(effect_id)] = int(state["effects"][effect_id])
+		ashwick["story_reputation"] = rep
+		ashwick["story_flags"] = state.get("flags", {}).duplicate(true)
+		cities["s001"] = ashwick
+	_sig = ""
+	refresh()
+
+
 func _fill_chronicle() -> void:
 	var log: Array = Chronicle.entries(get_node_or_null("/root/Worlds"))
 	if log.is_empty():

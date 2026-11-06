@@ -2,74 +2,671 @@
   "_note": "Предметы для торговли в городах. price — базовая цена в монетах, weight — кг. use: eat/drink — что делает при использовании (Actor.eat/drink), treat — ключ для лечения (rules.json treatments). wear — одежда: slot (head, body, back, hands, legs, feet), look — как рисуется на кукле героя (characters/paper_doll.gd), color. bound — вещь при герое всегда (пергамент и уголёк для карты, M): не выбросить и не продать. transport — лошадь или повозка (characters/transport.gd, вопрос Q16): в сумке, но не в сетке инвентаря; unique — одна на героя; requires — что нужно иметь до покупки. Все числа [Q19: проверяет tests/balance_checks.gd].",
   "currency": "монеты",
   "items": {
-    "bread":            {"name": "Хлеб",                 "price": 3,  "weight": 0.5, "use": {"eat": 20, "kind": "cooked"}},
-    "dried_meat":       {"name": "Вяленое мясо",         "price": 6,  "weight": 0.4, "use": {"eat": 30, "kind": "cooked"}},
-    "stew":             {"name": "Горячая похлёбка",     "price": 8,  "weight": 0.8, "use": {"eat": 40, "kind": "warm"}},
-    "water_flask":      {"name": "Фляга чистой воды",    "price": 2,  "weight": 1.0, "use": {"drink": 35, "kind": "clean"}},
-    "ale":              {"name": "Кружка эля",           "price": 4,  "weight": 0.5, "use": {"drink": 20, "kind": "clean"}},
-    "bandage":          {"name": "Бинт",                 "price": 5,  "weight": 0.1, "treat": true},
-    "splint":           {"name": "Шина",                 "price": 9,  "weight": 0.6, "treat": true},
-    "salve":            {"name": "Мазь",                 "price": 10, "weight": 0.2, "treat": true},
-    "herbal_decoction": {"name": "Травяной отвар",       "price": 8,  "weight": 0.3, "treat": true},
-    "charcoal":         {"name": "Толчёный уголь",       "price": 3,  "weight": 0.1, "treat": true},
-    "anti_rad_potion":  {"name": "Очищающее зелье",  "price": 30, "weight": 0.3, "treat": true},
-    "healing_potion":   {"name": "Целебное зелье",       "price": 25, "weight": 0.3, "treat": true},
-    "fever_potion":     {"name": "Жаропонижающее",       "price": 12, "weight": 0.2, "treat": true},
-    "warming_potion":   {"name": "Согревающее",          "price": 10, "weight": 0.2, "treat": true},
-    "vermifuge":        {"name": "Глистогонное",         "price": 9,  "weight": 0.1, "treat": true},
-    "stimulant":        {"name": "Бодрящее",             "price": 14, "weight": 0.1, "treat": true},
-    "strong_potion":    {"name": "Крепкое зелье",        "price": 35, "weight": 0.3, "treat": true},
-    "knife":            {"name": "Нож",                  "price": 15, "weight": 0.4},
-    "axe":              {"name": "Топор",                "price": 28, "weight": 1.8},
-    "rope":             {"name": "Верёвка",              "price": 4,  "weight": 1.0},
-    "torch":            {"name": "Факел",                "price": 2,  "weight": 0.5},
-    "hide":             {"name": "Шкура",                "price": 7,  "weight": 2.0},
-    "scrap":            {"name": "Металлолом",           "price": 3,  "weight": 1.5},
-    "old_coin":         {"name": "Древная монета",     "price": 12, "weight": 0.02},
-    "amber":            {"name": "Кусок янтаря",         "price": 20, "weight": 0.1},
-    "vegetables":       {"name": "Овощи",                "price": 2,  "weight": 0.5, "use": {"eat": 12, "kind": "cooked"}},
-    "horse":            {"name": "Лошадь",               "price": 80, "weight": 0.0, "transport": "horse", "unique": true},
-    "cart":             {"name": "Повозка",              "price": 50, "weight": 0.0, "transport": "cart", "unique": true, "requires": "horse"},
-    "straw_hat":        {"name": "Соломенная шляпа",    "price": 8,  "weight": 0.3, "wear": {"slot": "head", "look": "straw_hat", "color": "d8b45a"}},
-    "felt_cap":         {"name": "Войлочная шапка",     "price": 6,  "weight": 0.2, "wear": {"slot": "head", "look": "cap", "color": "6b4a3a"}},
-    "linen_shirt":      {"name": "Льняная рубаха",      "price": 7,  "weight": 0.4, "wear": {"slot": "body", "look": "shirt", "color": "e4d8bc"}},
-    "leather_jacket":   {"name": "Кожаная куртка",      "price": 30, "weight": 2.5, "wear": {"slot": "body", "look": "jacket", "color": "7a5232", "armor": "leather"}},
-    "travel_cloak":     {"name": "Дорожный плащ",       "price": 18, "weight": 1.5, "wear": {"slot": "back", "look": "cloak", "color": "5d7a4a"}},
-    "gloves":           {"name": "Рукавицы",            "price": 5,  "weight": 0.2, "wear": {"slot": "hands", "look": "gloves", "color": "8a6a44"}},
-    "trousers":         {"name": "Суконные штаны",      "price": 9,  "weight": 0.6, "wear": {"slot": "legs", "look": "trousers", "color": "4b5568"}},
-    "boots":            {"name": "Сапоги",              "price": 20, "weight": 1.2, "wear": {"slot": "feet", "look": "boots", "color": "5a3a22"}},
-    "hide_vest":        {"name": "Шкурная безрукавка",  "price": 14, "weight": 3.0, "wear": {"slot": "body", "look": "jacket", "color": "8b6b4a", "armor": "hides"}},
-    "leather_cap":      {"name": "Кожаный колпак",      "price": 8,  "weight": 0.4, "wear": {"slot": "head", "look": "cap", "color": "6e4a2c"}},
-    "fur_cloak":        {"name": "Меховой плащ",        "price": 22, "weight": 3.0, "wear": {"slot": "back", "look": "cloak", "color": "6b5440"}},
-    "chain_mail":       {"name": "Кольчуга",            "price": 90, "weight": 10.0, "wear": {"slot": "body", "look": "jacket", "color": "8a8d92", "armor": "chain"}},
-    "plate_armor":      {"name": "Латы",                "price": 180, "weight": 15.0, "wear": {"slot": "body", "look": "jacket", "color": "a7abb2", "armor": "plate"}},
-    "spear":            {"name": "Копьё",               "price": 14, "weight": 2.0},
-    "mace":             {"name": "Булава",              "price": 22, "weight": 2.5},
-    "shortsword":       {"name": "Короткий меч",        "price": 40, "weight": 1.5},
-    "berries":          {"name": "Лесные ягоды",        "price": 1,  "weight": 0.2, "use": {"eat": 6, "kind": "raw"}},
-    "mushrooms":        {"name": "Грибы",               "price": 2,  "weight": 0.3, "use": {"eat": 9, "kind": "raw"}},
-    "toadstool":        {"name": "Сомнительные грибы",  "price": 0,  "weight": 0.3, "use": {"eat": 9, "kind": "spoiled_food"}},
-    "roots":            {"name": "Съедобные корни",     "price": 1,  "weight": 0.3, "use": {"eat": 7, "kind": "raw"}},
-    "shellfish":        {"name": "Ракушки",             "price": 2,  "weight": 0.4, "use": {"eat": 10, "kind": "raw_meat"}},
-    "wild_herbs":       {"name": "Дикие травы",         "price": 3,  "weight": 0.1},
-    "brushwood":        {"name": "Хворост",             "price": 1,  "weight": 1.5},
-    "driftwood":        {"name": "Плавник",             "price": 1,  "weight": 2.0},
-    "reed":             {"name": "Камыш",               "price": 1,  "weight": 0.5},
-    "flint":            {"name": "Кремень",             "price": 2,  "weight": 0.3},
-    "parchment":        {"name": "Лист пергамента",     "price": 0,  "weight": 0.05, "bound": true},
-    "charcoal_stick":   {"name": "Уголёк для рисования", "price": 0, "weight": 0.02, "bound": true},
-    "color_charcoals":  {"name": "Набор цветных углей", "price": 15, "weight": 0.1, "unique": true},
-    "map_fragment":     {"name": "Отрывок карты",       "price": 12, "weight": 0.02},
-    "raw_meat":         {"name": "Сырое мясо",          "price": 3,  "weight": 0.5, "use": {"eat": 10, "kind": "raw_meat"}},
-    "tainted_meat":     {"name": "Порченое мясо",       "price": 0,  "weight": 0.5, "use": {"eat": 10, "kind": "spoiled_food"}},
-    "roasted_meat":     {"name": "Жареное мясо",        "price": 6,  "weight": 0.4, "use": {"eat": 25, "kind": "cooked"}},
-    "field_stew":       {"name": "Похлёбка из котелка", "price": 6,  "weight": 0.8, "use": {"eat": 30, "kind": "warm"}},
-    "roasted_mushrooms": {"name": "Печёные грибы",      "price": 3,  "weight": 0.3, "use": {"eat": 14, "kind": "cooked"}},
-    "charred_food":     {"name": "Подгоревшая еда",     "price": 0,  "weight": 0.3, "use": {"eat": 6, "kind": "cooked"}},
-    "bone":             {"name": "Кость",               "price": 1,  "weight": 0.3},
-    "fat":              {"name": "Жир",                 "price": 3,  "weight": 0.3},
-    "bedroll":          {"name": "Спальник",            "price": 12, "weight": 2.0, "unique": true},
-    "tent":             {"name": "Палатка",             "price": 35, "weight": 5.0, "unique": true},
-    "repair_kit":       {"name": "Набор для починки",   "price": 15, "weight": 0.8}
+    "bread": {
+      "name": "Хлеб",
+      "price": 3,
+      "weight": 0.5,
+      "use": {
+        "eat": 20,
+        "kind": "cooked"
+      },
+      "category": "food",
+      "description": "Простой дорожный хлеб. Восстанавливает сытость."
+    },
+    "dried_meat": {
+      "name": "Вяленое мясо",
+      "price": 6,
+      "weight": 0.4,
+      "use": {
+        "eat": 30,
+        "kind": "cooked"
+      },
+      "category": "food",
+      "description": "Высушенное мясо для долгого пути. Восстанавливает сытость."
+    },
+    "stew": {
+      "name": "Горячая похлёбка",
+      "price": 8,
+      "weight": 0.8,
+      "use": {
+        "eat": 40,
+        "kind": "warm"
+      },
+      "category": "food",
+      "description": "Горячая похлёбка. Хорошо насыщает."
+    },
+    "water_flask": {
+      "name": "Фляга чистой воды",
+      "price": 2,
+      "weight": 1.0,
+      "use": {
+        "drink": 35,
+        "kind": "clean"
+      },
+      "category": "food",
+      "description": "Фляга с чистой водой для долгого пути."
+    },
+    "ale": {
+      "name": "Кружка эля",
+      "price": 4,
+      "weight": 0.5,
+      "use": {
+        "drink": 20,
+        "kind": "clean"
+      },
+      "category": "food",
+      "description": "Кружка эля из городской таверны. Утоляет часть жажды."
+    },
+    "bandage": {
+      "name": "Бинт",
+      "price": 5,
+      "weight": 0.1,
+      "treat": true,
+      "category": "medicine",
+      "description": "Перевязочный материал для лечения ран."
+    },
+    "splint": {
+      "name": "Шина",
+      "price": 9,
+      "weight": 0.6,
+      "treat": true,
+      "category": "medicine",
+      "description": "Шина для фиксации повреждённой конечности."
+    },
+    "salve": {
+      "name": "Мазь",
+      "price": 10,
+      "weight": 0.2,
+      "treat": true,
+      "category": "medicine",
+      "description": "Лечебная мазь для обработки повреждений."
+    },
+    "herbal_decoction": {
+      "name": "Травяной отвар",
+      "price": 8,
+      "weight": 0.3,
+      "treat": true,
+      "category": "medicine",
+      "description": "Отвар из трав, применяемый при лечении."
+    },
+    "charcoal": {
+      "name": "Толчёный уголь",
+      "price": 3,
+      "weight": 0.1,
+      "treat": true,
+      "category": "medicine",
+      "description": "Толчёный уголь для лечебных процедур."
+    },
+    "anti_rad_potion": {
+      "name": "Очищающее зелье",
+      "price": 30,
+      "weight": 0.3,
+      "treat": true,
+      "category": "medicine",
+      "description": "Очищающее зелье, помогает бороться с влиянием проклятия."
+    },
+    "healing_potion": {
+      "name": "Целебное зелье",
+      "price": 25,
+      "weight": 0.3,
+      "treat": true,
+      "category": "medicine",
+      "description": "Целебное зелье для восстановления здоровья."
+    },
+    "fever_potion": {
+      "name": "Жаропонижающее",
+      "price": 12,
+      "weight": 0.2,
+      "treat": true,
+      "category": "medicine",
+      "description": "Средство для снижения жара."
+    },
+    "warming_potion": {
+      "name": "Согревающее",
+      "price": 10,
+      "weight": 0.2,
+      "treat": true,
+      "category": "medicine",
+      "description": "Согревающее средство для холодного пути."
+    },
+    "vermifuge": {
+      "name": "Глистогонное",
+      "price": 9,
+      "weight": 0.1,
+      "treat": true,
+      "category": "medicine",
+      "description": "Лекарство от паразитов."
+    },
+    "stimulant": {
+      "name": "Бодрящее",
+      "price": 14,
+      "weight": 0.1,
+      "treat": true,
+      "category": "medicine",
+      "description": "Бодрящий состав."
+    },
+    "strong_potion": {
+      "name": "Крепкое зелье",
+      "price": 35,
+      "weight": 0.3,
+      "treat": true,
+      "category": "medicine",
+      "description": "Крепкое зелье неизвестного состава."
+    },
+    "knife": {
+      "name": "Нож",
+      "price": 15,
+      "weight": 0.4,
+      "category": "weapons",
+      "description": "Небольшой клинок для ближнего боя и хозяйственных работ."
+    },
+    "axe": {
+      "name": "Топор",
+      "price": 28,
+      "weight": 1.8,
+      "category": "weapons",
+      "description": "Тяжёлый топор; пригодится в бою и при работе с древесиной."
+    },
+    "rope": {
+      "name": "Верёвка",
+      "price": 4,
+      "weight": 1.0,
+      "category": "tools",
+      "description": "Верёвка для походных и ремесленных задач."
+    },
+    "torch": {
+      "name": "Факел",
+      "price": 2,
+      "weight": 0.5,
+      "category": "weapons",
+      "description": "Факел для освещения и применения в бою."
+    },
+    "hide": {
+      "name": "Шкура",
+      "price": 7,
+      "weight": 2.0,
+      "category": "resources",
+      "description": "Сырая шкура, добываемая с животных. Основной материал кожевника."
+    },
+    "scrap": {
+      "name": "Металлолом",
+      "price": 3,
+      "weight": 1.5,
+      "category": "resources",
+      "description": "Металлолом из руин старого мира. Материал для кузнечных изделий."
+    },
+    "old_coin": {
+      "name": "Древная монета",
+      "price": 12,
+      "weight": 0.02,
+      "category": "resources",
+      "description": "Монета прежней эпохи. Ценится торговцами и коллекционерами."
+    },
+    "amber": {
+      "name": "Кусок янтаря",
+      "price": 20,
+      "weight": 0.1,
+      "category": "resources",
+      "description": "Кусок янтаря — редкая ценность и характерный материал мира."
+    },
+    "vegetables": {
+      "name": "Овощи",
+      "price": 2,
+      "weight": 0.5,
+      "use": {
+        "eat": 12,
+        "kind": "cooked"
+      },
+      "category": "food",
+      "description": "Овощи с огородов и городских запасов."
+    },
+    "horse": {
+      "name": "Лошадь",
+      "price": 80,
+      "weight": 0.0,
+      "transport": "horse",
+      "unique": true,
+      "category": "transport",
+      "description": "Лошадь ускоряет передвижение по миру."
+    },
+    "cart": {
+      "name": "Повозка",
+      "price": 50,
+      "weight": 0.0,
+      "transport": "cart",
+      "unique": true,
+      "requires": "horse",
+      "category": "transport",
+      "description": "Повозка для перевозки дополнительного груза; требуется лошадь."
+    },
+    "straw_hat": {
+      "name": "Соломенная шляпа",
+      "price": 8,
+      "weight": 0.3,
+      "wear": {
+        "slot": "head",
+        "look": "straw_hat",
+        "color": "d8b45a"
+      },
+      "category": "clothing",
+      "description": "Лёгкая соломенная шляпа."
+    },
+    "felt_cap": {
+      "name": "Войлочная шапка",
+      "price": 6,
+      "weight": 0.2,
+      "wear": {
+        "slot": "head",
+        "look": "cap",
+        "color": "6b4a3a"
+      },
+      "category": "clothing",
+      "description": "Тёплая войлочная шапка."
+    },
+    "linen_shirt": {
+      "name": "Льняная рубаха",
+      "price": 7,
+      "weight": 0.4,
+      "wear": {
+        "slot": "body",
+        "look": "shirt",
+        "color": "e4d8bc"
+      },
+      "category": "clothing",
+      "description": "Простая льняная рубаха."
+    },
+    "leather_jacket": {
+      "name": "Кожаная куртка",
+      "price": 30,
+      "weight": 2.5,
+      "wear": {
+        "slot": "body",
+        "look": "jacket",
+        "color": "7a5232",
+        "armor": "leather"
+      },
+      "category": "clothing",
+      "description": "Кожаная куртка с защитными свойствами."
+    },
+    "travel_cloak": {
+      "name": "Дорожный плащ",
+      "price": 18,
+      "weight": 1.5,
+      "wear": {
+        "slot": "back",
+        "look": "cloak",
+        "color": "5d7a4a"
+      },
+      "category": "clothing",
+      "description": "Дорожный плащ от ветра и непогоды."
+    },
+    "gloves": {
+      "name": "Рукавицы",
+      "price": 5,
+      "weight": 0.2,
+      "wear": {
+        "slot": "hands",
+        "look": "gloves",
+        "color": "8a6a44"
+      },
+      "category": "clothing",
+      "description": "Рукавицы для защиты рук."
+    },
+    "trousers": {
+      "name": "Суконные штаны",
+      "price": 9,
+      "weight": 0.6,
+      "wear": {
+        "slot": "legs",
+        "look": "trousers",
+        "color": "4b5568"
+      },
+      "category": "clothing",
+      "description": "Прочные суконные штаны."
+    },
+    "boots": {
+      "name": "Сапоги",
+      "price": 20,
+      "weight": 1.2,
+      "wear": {
+        "slot": "feet",
+        "look": "boots",
+        "color": "5a3a22"
+      },
+      "category": "clothing",
+      "description": "Крепкие сапоги для дальних переходов."
+    },
+    "hide_vest": {
+      "name": "Шкурная безрукавка",
+      "price": 14,
+      "weight": 3.0,
+      "wear": {
+        "slot": "body",
+        "look": "jacket",
+        "color": "8b6b4a",
+        "armor": "hides"
+      },
+      "category": "clothing",
+      "description": "Безрукавка из выделанной шкуры."
+    },
+    "leather_cap": {
+      "name": "Кожаный колпак",
+      "price": 8,
+      "weight": 0.4,
+      "wear": {
+        "slot": "head",
+        "look": "cap",
+        "color": "6e4a2c"
+      },
+      "category": "clothing",
+      "description": "Кожаный головной убор."
+    },
+    "fur_cloak": {
+      "name": "Меховой плащ",
+      "price": 22,
+      "weight": 3.0,
+      "wear": {
+        "slot": "back",
+        "look": "cloak",
+        "color": "6b5440"
+      },
+      "category": "clothing",
+      "description": "Тёплый меховой плащ."
+    },
+    "chain_mail": {
+      "name": "Кольчуга",
+      "price": 90,
+      "weight": 10.0,
+      "wear": {
+        "slot": "body",
+        "look": "jacket",
+        "color": "8a8d92",
+        "armor": "chain"
+      },
+      "category": "clothing",
+      "description": "Кольчужная защита корпуса."
+    },
+    "plate_armor": {
+      "name": "Латы",
+      "price": 180,
+      "weight": 15.0,
+      "wear": {
+        "slot": "body",
+        "look": "jacket",
+        "color": "a7abb2",
+        "armor": "plate"
+      },
+      "category": "clothing",
+      "description": "Тяжёлые металлические латы."
+    },
+    "spear": {
+      "name": "Копьё",
+      "price": 14,
+      "weight": 2.0,
+      "category": "weapons",
+      "description": "Длинное древковое оружие с наконечником."
+    },
+    "mace": {
+      "name": "Булава",
+      "price": 22,
+      "weight": 2.5,
+      "category": "weapons",
+      "description": "Ударное оружие против защищённого противника."
+    },
+    "shortsword": {
+      "name": "Короткий меч",
+      "price": 40,
+      "weight": 1.5,
+      "category": "weapons",
+      "description": "Короткий клинок для ближнего боя."
+    },
+    "berries": {
+      "name": "Лесные ягоды",
+      "price": 1,
+      "weight": 0.2,
+      "use": {
+        "eat": 6,
+        "kind": "raw"
+      },
+      "category": "food",
+      "description": "Лесные ягоды. Можно съесть сырыми."
+    },
+    "mushrooms": {
+      "name": "Грибы",
+      "price": 2,
+      "weight": 0.3,
+      "use": {
+        "eat": 9,
+        "kind": "raw"
+      },
+      "category": "food",
+      "description": "Съедобные лесные грибы. Перед едой стоит быть осторожным."
+    },
+    "toadstool": {
+      "name": "Сомнительные грибы",
+      "price": 0,
+      "weight": 0.3,
+      "use": {
+        "eat": 9,
+        "kind": "spoiled_food"
+      },
+      "category": "food",
+      "description": "Сомнительные грибы. Употребление опасно."
+    },
+    "roots": {
+      "name": "Съедобные корни",
+      "price": 1,
+      "weight": 0.3,
+      "use": {
+        "eat": 7,
+        "kind": "raw"
+      },
+      "category": "food",
+      "description": "Съедобные корни, которые можно найти в дикой местности."
+    },
+    "shellfish": {
+      "name": "Ракушки",
+      "price": 2,
+      "weight": 0.4,
+      "use": {
+        "eat": 10,
+        "kind": "raw_meat"
+      },
+      "category": "food",
+      "description": "Ракушки у воды. Сырая пища."
+    },
+    "wild_herbs": {
+      "name": "Дикие травы",
+      "price": 3,
+      "weight": 0.1,
+      "category": "resources",
+      "description": "Дикие травы, используемые как сырьё для приготовления средств."
+    },
+    "brushwood": {
+      "name": "Хворост",
+      "price": 1,
+      "weight": 1.5,
+      "category": "resources",
+      "description": "Хворост для костра и походных нужд."
+    },
+    "driftwood": {
+      "name": "Плавник",
+      "price": 1,
+      "weight": 2.0,
+      "category": "resources",
+      "description": "Плавник, выброшенный водой на берег."
+    },
+    "reed": {
+      "name": "Камыш",
+      "price": 1,
+      "weight": 0.5,
+      "category": "resources",
+      "description": "Камыш, растущий у водоёмов."
+    },
+    "flint": {
+      "name": "Кремень",
+      "price": 2,
+      "weight": 0.3,
+      "category": "resources",
+      "description": "Кремень для хозяйственных и походных задач."
+    },
+    "parchment": {
+      "name": "Лист пергамента",
+      "price": 0,
+      "weight": 0.05,
+      "bound": true,
+      "category": "tools",
+      "description": "Лист пергамента для записей и карт."
+    },
+    "charcoal_stick": {
+      "name": "Уголёк для рисования",
+      "price": 0,
+      "weight": 0.02,
+      "bound": true,
+      "category": "tools",
+      "description": "Уголёк для заметок и зарисовок на пергаменте."
+    },
+    "color_charcoals": {
+      "name": "Набор цветных углей",
+      "price": 15,
+      "weight": 0.1,
+      "unique": true,
+      "category": "tools",
+      "description": "Набор цветных углей для пометок и рисунков."
+    },
+    "map_fragment": {
+      "name": "Отрывок карты",
+      "price": 12,
+      "weight": 0.02,
+      "category": "tools",
+      "description": "Фрагмент старой карты, помогающий изучать мир."
+    },
+    "raw_meat": {
+      "name": "Сырое мясо",
+      "price": 3,
+      "weight": 0.5,
+      "use": {
+        "eat": 10,
+        "kind": "raw_meat"
+      },
+      "category": "food",
+      "description": "Сырое мясо, добытое на охоте. Лучше приготовить."
+    },
+    "tainted_meat": {
+      "name": "Порченое мясо",
+      "price": 0,
+      "weight": 0.5,
+      "use": {
+        "eat": 10,
+        "kind": "spoiled_food"
+      },
+      "category": "food",
+      "description": "Испорченное мясо. Есть его рискованно."
+    },
+    "roasted_meat": {
+      "name": "Жареное мясо",
+      "price": 6,
+      "weight": 0.4,
+      "use": {
+        "eat": 25,
+        "kind": "cooked"
+      },
+      "category": "food",
+      "description": "Приготовленное мясо для восстановления сытости."
+    },
+    "field_stew": {
+      "name": "Похлёбка из котелка",
+      "price": 6,
+      "weight": 0.8,
+      "use": {
+        "eat": 30,
+        "kind": "warm"
+      },
+      "category": "food",
+      "description": "Похлёбка, приготовленная в походном котелке."
+    },
+    "roasted_mushrooms": {
+      "name": "Печёные грибы",
+      "price": 3,
+      "weight": 0.3,
+      "use": {
+        "eat": 14,
+        "kind": "cooked"
+      },
+      "category": "food",
+      "description": "Грибы, приготовленные на огне."
+    },
+    "charred_food": {
+      "name": "Подгоревшая еда",
+      "price": 0,
+      "weight": 0.3,
+      "use": {
+        "eat": 6,
+        "kind": "cooked"
+      },
+      "category": "food",
+      "description": "Подгоревшая еда. Питательность невелика."
+    },
+    "bone": {
+      "name": "Кость",
+      "price": 1,
+      "weight": 0.3,
+      "category": "resources",
+      "description": "Кость, остающаяся после разделки добычи."
+    },
+    "fat": {
+      "name": "Жир",
+      "price": 3,
+      "weight": 0.3,
+      "category": "food",
+      "description": "Жир, побочный продукт разделки добычи."
+    },
+    "bedroll": {
+      "name": "Спальник",
+      "price": 12,
+      "weight": 2.0,
+      "unique": true,
+      "category": "tools",
+      "description": "Походный спальник для отдыха вне поселения."
+    },
+    "tent": {
+      "name": "Палатка",
+      "price": 35,
+      "weight": 5.0,
+      "unique": true,
+      "category": "tools",
+      "description": "Палатка для устройства временного лагеря."
+    },
+    "repair_kit": {
+      "name": "Набор для починки",
+      "price": 15,
+      "weight": 0.8,
+      "category": "tools",
+      "description": "Набор для ремонта снаряжения."
+    },
+    "amber_key_fragment": {
+      "name": "Фрагмент янтарного ключа",
+      "price": 0,
+      "weight": 0.2,
+      "unique": true,
+      "category": "quest",
+      "description": "Тёплый фрагмент старого механизма с концентрическими линиями на срезе."
+    },
+    "flooded_ledger_page": {
+      "name": "Страница журнала водосброса",
+      "price": 0,
+      "weight": 0.05,
+      "unique": true,
+      "category": "quest",
+      "description": "Мокрая страница с перечнем вычеркнутых смен и отметкой янтарного ключа."
+    },
+    "beacon_lens": {
+      "name": "Линза сигнального маяка",
+      "price": 0,
+      "weight": 0.6,
+      "unique": true,
+      "category": "quest",
+      "description": "Треснувшая линза, собирающая слабый свет в узкий янтарный луч."
+    }
   }
 }

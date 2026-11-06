@@ -95,13 +95,3 @@ static func east_dir(p: Vector2) -> Vector2:
 	var s: Vector2 = south_dir(p)
 	return Vector2(s.y, -s.x)
 
-
-# Вектор у місцевих осях (схід, північ) -> вектор на дошці
-static func en_to_board(p: Vector2, east: float, north: float) -> Vector2:
-	return east_dir(p) * east - south_dir(p) * north
-
-
-# Напрямок x схід, y південь, z угору (як WorldPhysics._dir_enu) -> осі дошки (x, y екрана, z угору)
-static func enu_to_board(p: Vector2, d: Vector3) -> Vector3:
-	var xy: Vector2 = east_dir(p) * d.x + south_dir(p) * d.y
-	return Vector3(xy.x, xy.y, d.z)

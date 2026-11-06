@@ -87,10 +87,6 @@ func share(ty: String, biome: int, season: int) -> float:
 	return float(cum[idx]) - (float(cum[idx - 1]) if idx > 0 else 0.0)
 
 
-func type_name(ty: String) -> String:
-	return str(_types.get(ty, {}).get("name", ty))
-
-
 # Число 0..1 із цілих (однаково на всіх машинах)
 func _hash(a: int, b: int, c: int, salt: int) -> float:
 	var h: int = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791) ^ (salt * 2654435761) ^ seed_value

@@ -21,6 +21,7 @@ var _refreshed_at: float = -1.0
 const CLEAR_STAGE: int = 2                     # зі стежки й вище дерева й кущі декору на клітинці не ростуть
 var _layers: Array = []
 var _vis: Array = []           # клітинки зі стежками в кадрі
+var _vis_key: Array = []       # область кадру й версія моделі, для яких зібрано _vis
 
 
 func _process(_delta: float) -> void:
@@ -33,9 +34,9 @@ func _process(_delta: float) -> void:
 	var cast: Node = game.get("cast")
 	if cast != null and cast.hero_away and not cast.hero.is_empty():
 		model.forget(cast.hero["actor"])
-	_collect()
-	for d in _layers:
-		d.queue_redraw()
+	if _collect():
+		for d in _layers:
+			d.queue_redraw()
 
 
 ## Тіло b (словник characters/cast.gd) зробило крок
@@ -86,16 +87,33 @@ func _ready() -> void:
 		_layers.append(d)
 
 
-## Клітинки зі стежками в кадрі (із запасом) — їх і малюють шари ступенів у цьому кадрі
-func _collect() -> void:
-	_vis.clear()
-	if model.stage_of.is_empty():
-		return
+## Клітинки зі стежками в кадрі (із запасом) — їх і малюють шари ступенів у цьому кадрі.
+## Перебір іде або по клітинках області кадру, або по всіх стежках — що менше (раніше щокадру обходили всі клітинки світу).
+## Повертає true, якщо набір видимих клітинок міг змінитися.
+func _collect() -> bool:
 	var vp: Rect2 = get_viewport_rect().grow(40.0)
 	var area := Rect2(game._screen_world(vp.position), vp.size / game.zoom).grow(CELL_M * 2.0)
-	for c in model.stage_of:
-		if area.has_point(model.center_of(c)):
-			_vis.append(c)
+	var key: Array = [area, model.version, model.stage_of.size()]
+	if key == _vis_key:
+		return false
+	_vis_key = key
+	_vis.clear()
+	if model.stage_of.is_empty():
+		return true
+	var c0: Vector2i = model.cell_at(area.position)
+	var c1: Vector2i = model.cell_at(area.end)
+	var span: int = (c1.x - c0.x + 1) * (c1.y - c0.y + 1)
+	if span < model.stage_of.size():
+		for y in range(c0.y, c1.y + 1):
+			for x in range(c0.x, c1.x + 1):
+				var c := Vector2i(x, y)
+				if model.stage_of.has(c) and area.has_point(model.center_of(c)):
+					_vis.append(c)
+	else:
+		for c in model.stage_of:
+			if area.has_point(model.center_of(c)):
+				_vis.append(c)
+	return true
 
 
 ## Малює клітинки ступеня s і стики, у яких менший із двох ступенів — s

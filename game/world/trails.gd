@@ -153,13 +153,17 @@ func clear() -> void:
 
 
 func to_dict() -> Dictionary:
+	# Масив одразу потрібного розміру: append на десятках тисяч клітинок давав помітну паузу під час збереження
 	var flat := PackedFloat64Array()
+	flat.resize(cells.size() * 4)
+	var i: int = 0
 	for c in cells:
 		var e: Array = cells[c]
-		flat.append(c.x)
-		flat.append(c.y)
-		flat.append(float(e[0]))
-		flat.append(float(e[1]))
+		flat[i] = c.x
+		flat[i + 1] = c.y
+		flat[i + 2] = float(e[0])
+		flat[i + 3] = float(e[1])
+		i += 4
 	return {"cell_m": cell_m, "cells": flat}
 
 

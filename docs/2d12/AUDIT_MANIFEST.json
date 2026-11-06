@@ -1,0 +1,35 @@
+{
+  "project": "Amber World",
+  "source_build": "2D 11",
+  "target_build": "2D 12",
+  "audit_type": "static source and data audit",
+  "godot_runtime_available": false,
+  "gdscript_files": 140,
+  "test_scripts": 43,
+  "items": 69,
+  "recipes": 13,
+  "npcs": 29,
+  "buildings": 43,
+  "city_growth_stages": 5,
+  "documents": [
+    "AUDIT_2D11.md",
+    "ASSETS_REWORK.md",
+    "QUEST_DESIGN.md",
+    "ROADMAP_2D12.md"
+  ],
+  "save_system_hardening": {
+    "status": "implemented_static_unverified",
+    "files": [
+      "game/world_save.gd",
+      "game/tests/code_audit_checks.gd",
+      "SAVE_SYSTEM_HARDENING.md"
+    ],
+    "changes": [
+      "non_destructive_save_listing",
+      "legacy_save_preservation",
+      "backup_fallback",
+      "explicit_delete_cleans_temp_files"
+    ],
+    "godot_runtime_tests": "not_run_godot_4_7_unavailable"
+  }
+}
