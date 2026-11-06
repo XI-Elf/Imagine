@@ -830,7 +830,7 @@ func _draw() -> void:
 				Ground.paint(self, gp, c0, gk, hl or (s == prompt_for and prompt_kind == "wall"))
 				_draw_gate_mark(s, c0, float(gp["R"]) * gk, hl)
 				var top: float = maxf(rp, float(gp["R"]) * gk * 1.05)
-				_draw_banner(c0 + Vector2(0, -top * 0.78), clampf(top * 0.3, 12.0, 30.0), _emblem_for(s), hl)
+				_draw_banner(c0 + Vector2(0, -top * 0.78), clampf(top * 0.3, 12.0, 30.0), s.get("emblem", {}), hl)
 				# Підпис над знаменом: герой з'являється під містом, на південь
 				_draw_name(s, c0 - Vector2(0, top * 1.5 + 6.0), font, hl, hl)
 		elif cs >= OUTLINE_CELL_PX:
